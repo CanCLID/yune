@@ -201,6 +201,60 @@ impl EntryWeightDomain {
     }
 }
 
+fn log_sum_exp(weights: impl IntoIterator<Item = f64>) -> f64 {
+    let weights = weights.into_iter().collect::<Vec<_>>();
+    let max_weight = weights
+        .iter()
+        .copied()
+        .filter(|weight| !weight.is_nan())
+        .fold(f64::NEG_INFINITY, f64::max);
+    if !max_weight.is_finite() {
+        return max_weight;
+    }
+    max_weight
+        + weights
+            .into_iter()
+            .filter(|weight| !weight.is_nan())
+            .map(|weight| (weight - max_weight).exp())
+            .sum::<f64>()
+            .ln()
+}
+
+fn compiled_log_rounding_interval(weight: f32) -> (f64, f64) {
+    if !weight.is_finite() {
+        return (f64::from(weight), f64::from(weight));
+    }
+    let bits = weight.to_bits();
+    let previous = if weight == 0.0 {
+        f32::from_bits(0x8000_0001)
+    } else if weight.is_sign_positive() {
+        f32::from_bits(bits - 1)
+    } else {
+        f32::from_bits(bits + 1)
+    };
+    let next = if weight == 0.0 {
+        f32::from_bits(1)
+    } else if weight.is_sign_positive() {
+        f32::from_bits(bits + 1)
+    } else {
+        f32::from_bits(bits - 1)
+    };
+    let weight = f64::from(weight);
+    let previous = f64::from(previous);
+    let next = f64::from(next);
+    let lower = if previous.is_finite() {
+        (previous + weight) * 0.5
+    } else {
+        weight - (next - weight) * 0.5
+    };
+    let upper = if next.is_finite() {
+        (weight + next) * 0.5
+    } else {
+        weight + (weight - previous) * 0.5
+    };
+    (lower, upper)
+}
+
 fn build_script_encoder_character_codes(
     entries: impl IntoIterator<Item = (char, String, f32)>,
     weight_domain: EntryWeightDomain,
@@ -234,34 +288,39 @@ fn build_script_encoder_character_codes(
                 EntryWeightDomain::NaturalLog => {
                     // librime stores `ln(raw_weight)` in `.table.bin`, but
                     // EntryCollector applies ScriptEncoder's five-percent
-                    // threshold before that transform. Compare in log space so
-                    // the owned compiled-table path neither sums logarithms nor
-                    // risks overflow while reconstructing the raw weights.
-                    let max_weight = codes
-                        .values()
-                        .copied()
-                        .filter(|weight| !weight.is_nan())
-                        .fold(f32::NEG_INFINITY, f32::max);
-                    let total_log_weight = if max_weight == f32::NEG_INFINITY {
-                        f64::NEG_INFINITY
-                    } else if max_weight == f32::INFINITY {
-                        f64::INFINITY
-                    } else {
-                        f64::from(max_weight)
-                            + codes
-                                .values()
-                                .copied()
-                                .filter(|weight| !weight.is_nan())
-                                .map(|weight| (f64::from(weight) - f64::from(max_weight)).exp())
-                                .sum::<f64>()
-                                .ln()
-                    };
-                    let minimum_log_weight = total_log_weight + 0.05_f64.ln();
-                    codes
+                    // threshold before that transform. The compiled table then
+                    // narrows each logarithm to `f32`, so its exact source value
+                    // is only known to lie inside that float's rounding bin.
+                    // Retain a reading when any source value represented by the
+                    // compiled bytes could have met the 5% boundary. This is the
+                    // narrowest comparison that preserves librime's inclusive
+                    // exact-boundary behavior without inventing a free-form
+                    // tolerance or reconstructing large raw weights.
+                    let bounded_codes = codes
                         .into_iter()
                         .filter_map(|(code, weight)| {
-                            (!weight.is_nan() && f64::from(weight) >= minimum_log_weight)
-                                .then_some(code)
+                            (!weight.is_nan()).then(|| {
+                                let (lower, upper) = compiled_log_rounding_interval(weight);
+                                (code, lower, upper)
+                            })
+                        })
+                        .collect::<Vec<_>>();
+                    bounded_codes
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(candidate_index, (code, _, candidate_upper))| {
+                            let maximum_share_total =
+                                log_sum_exp(bounded_codes.iter().enumerate().map(
+                                    |(index, (_, lower, _))| {
+                                        if index == candidate_index {
+                                            *candidate_upper
+                                        } else {
+                                            *lower
+                                        }
+                                    },
+                                ));
+                            (*candidate_upper >= maximum_share_total + 0.05_f64.ln())
+                                .then(|| code.clone())
                         })
                         .collect()
                 }

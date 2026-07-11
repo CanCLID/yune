@@ -396,6 +396,40 @@ fn natural_log_table_weights_apply_script_encoder_filter_in_the_raw_domain() {
         !natural_log_texts.iter().any(|text| text == "遮蓋"),
         "蓋/ge at 0.09% must not create the false zhege phrase"
     );
+
+    let boundary_entries = vec![
+        TableEntry::new("chang", "長", 100.0),
+        TableEntry::new("ju", "句", 100.0),
+        TableEntry::new("ju", "足", 5.0),
+        TableEntry::new("zhu", "朱", 100.0),
+        TableEntry::new("zhu", "足", 1.0),
+        TableEntry::new("zu", "足", 94.0),
+    ];
+    let boundary_log_entries = boundary_entries
+        .into_iter()
+        .map(|entry| TableEntry::new(&entry.code, &entry.text, entry.weight.ln()))
+        .collect::<Vec<_>>();
+    let boundary_vocabulary = [PresetVocabularyEntry::new("長足", 989.0)];
+    let boundary_model = UpstreamSentenceModel::from_natural_log_table_entries(
+        boundary_log_entries,
+        &boundary_vocabulary,
+        10,
+    );
+
+    assert!(
+        boundary_model
+            .candidates_for_input("changju")
+            .iter()
+            .any(|candidate| candidate.text == "長足"),
+        "f32 log rounding must not exclude 足/ju at the source's exact 5% boundary"
+    );
+    assert!(
+        boundary_model
+            .candidates_for_input("changzhu")
+            .iter()
+            .all(|candidate| candidate.text != "長足"),
+        "the compiled-log reconstruction must still exclude 足/zhu below 5%"
+    );
 }
 
 #[test]

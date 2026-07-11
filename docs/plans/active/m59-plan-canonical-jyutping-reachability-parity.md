@@ -9,8 +9,13 @@
 > `typeduck_windows_boundary` is 4/4, physical/API controls are equivalent, and
 > source-current WASM reaches `zi -> 諮` in four PageDown operations. The green
 > evidence and informational algebra/CJ-1/OpenCC/risk checkpoint are under
-> `increment-2-profile-paging/`. Compiled sort and transformed-algebra 3a/3b are
-> next; no other open behavior or final-gate row is implied complete here.
+> `increment-2-profile-paging/`. Increment 3a's compiled-sort and oracle-capture
+> series is complete through `d55b203e`. Increment 3b's schema-general
+> transformed-algebra implementation, oracle packet, deterministic asset
+> rebuild, and focused release gates are published as a review candidate; its
+> five-round owner-signed Windows ratchet remains pending an uncontaminated
+> measurement window. Increment 3b is therefore not yet accepted, and no D-48
+> ordering lane or other final-gate row is implied complete here.
 >
 > Nothing remaining moves to M60 or another milestone. After 4a lands, **no
 > subsequent engine-behavior increment** (including 4b) starts until Fable's
@@ -68,8 +73,18 @@
   Windows harnesses without golden edits; one `Engine` policy now governs
   forward completion for Standard, long TypeDuck, and short bounded TypeDuck
   inputs across Engine/native/API/browser controls. M59-NAV-01 is green; the
-  informational checkpoint preserves the still-uncaptured `hknivs` and
-  `cl3su3j06` whole-input oracle rows rather than inventing outputs.
+  informational checkpoint recorded `hknivs` and `cl3su3j06` as uncaptured at
+  that historical boundary rather than inventing outputs. Increment 3b has now
+  imported fresh pinned-librime whole-input captures for both rows and uses
+  those fixtures as the authoritative expected text/provenance.
+- **Increment 4b checklist residual from 3b:** close the pre-existing
+  fuzzy-versus-abbreviation collision on the heap/source
+  `ExpandedSpellingCode` path with full pinned spelling-type precedence and
+  exact abbreviation provenance/graph tests. Increment 3b fixes and covers the
+  normal-correction collision, and its writer/compiled/deployed-index paths are
+  type-aware; that does **not** establish general heap collision parity. This
+  row remains in 4b alongside the `n`/`nri`/`ngohaig` abbreviation and
+  segmentation work and is subject to the same Fable/performance stop.
 
 ## Honest baseline (`7d5ec9b8`, verified 2026-07-06)
 

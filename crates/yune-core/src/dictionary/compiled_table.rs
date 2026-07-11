@@ -12,7 +12,7 @@ use crate::dictionary::source::{
 use crate::CandidateSource;
 use crate::{MemoryOwnerClass, MemoryOwnerRow};
 use std::borrow::Cow;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt;
 use std::mem;
 use std::ops::Range;
@@ -66,6 +66,16 @@ pub trait CompactMarisaStringTable: fmt::Debug + Send + Sync {
     fn get(&self, id: u32) -> Option<String>;
 
     fn num_keys(&self) -> usize;
+
+    fn keys_for_ids(&self, ids: &[u32]) -> Result<Vec<String>, RimeTableBinParseError> {
+        ids.iter()
+            .map(|id| {
+                (usize::try_from(*id).ok().filter(|id| *id < self.num_keys()))
+                    .and_then(|_| self.get(*id))
+                    .ok_or(RimeTableBinParseError::InvalidCount)
+            })
+            .collect()
+    }
 
     fn mapping_mode(&self) -> &'static str;
 }
@@ -251,6 +261,50 @@ impl CompactMarisaStringTable for SafeReadMarisaStringTable {
         self.num_keys
     }
 
+    fn keys_for_ids(&self, ids: &[u32]) -> Result<Vec<String>, RimeTableBinParseError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut positions = HashMap::<usize, Vec<usize>>::new();
+        for (output_index, id) in ids.iter().copied().enumerate() {
+            let id = usize::try_from(id).map_err(|_| RimeTableBinParseError::InvalidCount)?;
+            if id >= self.num_keys {
+                return Err(RimeTableBinParseError::InvalidCount);
+            }
+            positions.entry(id).or_default().push(output_index);
+        }
+        let mut output = vec![None; ids.len()];
+        let requested_ids = positions.keys().copied().collect::<HashSet<_>>();
+        let mut resolved_ids = HashSet::new();
+        let mut agent = rsmarisa::Agent::new();
+        agent.set_query_str("");
+        while self.trie.predictive_search(&mut agent) {
+            let id = agent.key().id();
+            if requested_ids.contains(&id) && !resolved_ids.insert(id) {
+                return Err(RimeTableBinParseError::InvalidCount);
+            }
+            let Some(output_indices) = positions.remove(&id) else {
+                continue;
+            };
+            let key = std::str::from_utf8(agent.key().as_bytes())
+                .map_err(|_| RimeTableBinParseError::InvalidUtf8)?
+                .to_owned();
+            for output_index in output_indices {
+                output[output_index] = Some(key.clone());
+            }
+            if positions.is_empty() {
+                break;
+            }
+        }
+        if !positions.is_empty() {
+            return Err(RimeTableBinParseError::InvalidCount);
+        }
+        output
+            .into_iter()
+            .map(|key| key.ok_or(RimeTableBinParseError::InvalidCount))
+            .collect()
+    }
+
     fn mapping_mode(&self) -> &'static str {
         "read_from_byte_source"
     }
@@ -338,6 +392,9 @@ impl CompactTableStore {
         if version < 4.0 - f64::EPSILON {
             return Err(RimeTableBinParseError::UnsupportedVersion);
         }
+        let expected_syllable_count =
+            usize::try_from(read_u32_le(bytes, 36).map_err(map_metadata_error)?)
+                .map_err(|_| RimeTableBinParseError::InvalidCount)?;
 
         let syllabary_offset =
             read_offset_ptr(bytes, 44)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
@@ -359,10 +416,11 @@ impl CompactTableStore {
                 index_offset,
                 string_table_offset,
                 string_table_size as usize,
+                expected_syllable_count,
             );
         }
 
-        let syllable_refs = read_syllabary_refs(bytes, syllabary_offset)?;
+        let syllable_refs = read_syllabary_refs(bytes, syllabary_offset, expected_syllable_count)?;
         let syllabary_codes = syllable_refs
             .iter()
             .map(|reference| reference.as_str(bytes).to_owned())
@@ -388,17 +446,12 @@ impl CompactTableStore {
         index_offset: usize,
         string_table_offset: usize,
         string_table_size: usize,
+        expected_syllable_count: usize,
     ) -> Result<Self, RimeTableBinParseError> {
         let string_table = source.marisa_string_table(string_table_offset, string_table_size)?;
-        let syllable_ids = read_marisa_syllabary_ids(source.bytes(), syllabary_offset)?;
-        let syllabary_codes = syllable_ids
-            .iter()
-            .map(|id| {
-                string_table
-                    .get(*id)
-                    .ok_or(RimeTableBinParseError::InvalidUtf8)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+        let syllable_ids =
+            read_marisa_syllabary_ids(source.bytes(), syllabary_offset, expected_syllable_count)?;
+        let syllabary_codes = string_table.keys_for_ids(&syllable_ids)?;
         let syllable_ids_by_code = syllabary_codes
             .iter()
             .enumerate()
@@ -1896,8 +1949,12 @@ fn map_lookup_byte_store_error(error: DictionaryLookupByteStoreError) -> RimeTab
 fn read_syllabary_refs(
     bytes: &[u8],
     offset: usize,
+    expected_count: usize,
 ) -> Result<Vec<ByteStringRef>, RimeTableBinParseError> {
     let count = read_count(bytes, offset)?;
+    if count != expected_count {
+        return Err(RimeTableBinParseError::InvalidCount);
+    }
     let start = offset
         .checked_add(4)
         .ok_or(RimeTableBinParseError::OutOfBounds)?;
@@ -1926,8 +1983,12 @@ fn read_syllabary_refs(
 fn read_marisa_syllabary_ids(
     bytes: &[u8],
     offset: usize,
+    expected_count: usize,
 ) -> Result<Vec<u32>, RimeTableBinParseError> {
     let count = read_count(bytes, offset)?;
+    if count != expected_count {
+        return Err(RimeTableBinParseError::InvalidCount);
+    }
     let start = offset
         .checked_add(4)
         .ok_or(RimeTableBinParseError::OutOfBounds)?;
@@ -3034,5 +3095,69 @@ fn map_metadata_error(error: super::RimeCompiledMetadataError) -> RimeTableBinPa
         super::RimeCompiledMetadataError::MissingRequiredSection => {
             RimeTableBinParseError::MissingRequiredSection
         }
+    }
+}
+
+#[cfg(test)]
+mod marisa_key_enumeration_tests {
+    use super::{CompactMarisaStringTable, RimeTableBinParseError, SafeReadMarisaStringTable};
+
+    fn serialized_trie(keys: &[&str]) -> Vec<u8> {
+        let mut keyset = rsmarisa::Keyset::new();
+        for key in keys {
+            keyset
+                .push_back_str(key)
+                .expect("test key should be accepted");
+        }
+        let mut trie = rsmarisa::Trie::new();
+        trie.build(&mut keyset, 0);
+        let mut writer = rsmarisa::grimoire::io::Writer::from_vec(Vec::new());
+        trie.write(&mut writer).expect("test trie should serialize");
+        writer.into_inner().expect("serialized bytes should return")
+    }
+
+    #[test]
+    fn predictive_enumeration_returns_complete_marisa_id_order() {
+        let bytes = serialized_trie(&["zeta", "alpha", "middle", "å»£"]);
+        let table = SafeReadMarisaStringTable::from_bytes(&bytes, 0, bytes.len())
+            .expect("serialized trie should parse");
+        let requested = [2, 0, 2, 1];
+        let enumerated = table
+            .keys_for_ids(&requested)
+            .expect("predictive enumeration should resolve requested ids");
+        let reverse_lookup_order = requested
+            .into_iter()
+            .map(|id| table.get(id).expect("id should reverse-resolve"))
+            .collect::<Vec<_>>();
+        assert_eq!(enumerated, reverse_lookup_order);
+        assert_eq!(
+            table.keys_for_ids(&[table.num_keys() as u32]),
+            Err(RimeTableBinParseError::InvalidCount)
+        );
+    }
+
+    #[derive(Debug)]
+    struct MissingIdTable;
+
+    impl CompactMarisaStringTable for MissingIdTable {
+        fn get(&self, id: u32) -> Option<String> {
+            (id != 1).then(|| format!("key-{id}"))
+        }
+
+        fn num_keys(&self) -> usize {
+            3
+        }
+
+        fn mapping_mode(&self) -> &'static str {
+            "test-corrupt"
+        }
+    }
+
+    #[test]
+    fn default_enumeration_fails_closed_on_missing_id() {
+        assert_eq!(
+            MissingIdTable.keys_for_ids(&[0, 1, 2]),
+            Err(RimeTableBinParseError::InvalidCount)
+        );
     }
 }

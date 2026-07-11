@@ -138,22 +138,22 @@
     },
     {
       "path": "luna_pinyin_yune_reverse.table.bin",
-      "sha256": "2d1570ed51d91dd09f991bcb0e6ed5131c22aa665a34e4a0e744a0f11866e46b",
+      "sha256": "fa8066bafef05726dafd14dbd7cbeae234377ada5484bac94f5295cc4a5a00e4",
       "bytes": 4640555,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin_yune_reverse.reverse.bin",
-      "sha256": "f274be35ff3eae18922662c7d6e17abf19cea753274ec17aea1bd0d2b5992a5f",
+      "sha256": "1b7c006863e3a8f02013861379eee8ed67e65719f74b68c923665f9a181947eb",
       "bytes": 1263091,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin_yune_reverse.prism.bin",
-      "sha256": "d9d5feb17825838f89469e59fd96efe9dce8fa669cb96a8eb72668dfd3b3f387",
-      "bytes": 1497453,
+      "sha256": "12e61e3e18f983b343418457060bbaab3e0d3674d9f0d20456334521ee01ccfb",
+      "bytes": 2039301,
       "tier": "shared",
       "required": true
     },
@@ -313,8 +313,8 @@
     },
     {
       "path": "cangjie5.prism.bin",
-      "sha256": "323d3c9b537a44cd9ebbb4067968fa1a0a617612bd12e6b2855476b5556b08d8",
-      "bytes": 1451557,
+      "sha256": "9ed2b0e59a07a3a30b05e9f60653ba133333b03a9e723d21c2bd4abfd9f7a412",
+      "bytes": 516416,
       "tier": "shared",
       "required": true
     },
@@ -334,8 +334,8 @@
     },
     {
       "path": "jyut6ping3_mobile.prism.bin",
-      "sha256": "75dc3ef5c149023d7ae9689bdf1c3089de45f51e5f1d805a0df61a35fd0b972e",
-      "bytes": 19354757,
+      "sha256": "26d30c52ea35c6d72e63f0e8261f2ca4a6b6e43a82e1572b0a3c803ec29fe6b2",
+      "bytes": 32140173,
       "tier": "shared",
       "required": true
     },
@@ -355,50 +355,50 @@
     },
     {
       "path": "jyut6ping3_scolar.prism.bin",
-      "sha256": "bb66de69bcb59a8d7c9614e5e4dc2b75e4c54ddf30a3a6d0071aa423ddbdca87",
-      "bytes": 325,
+      "sha256": "4c136a1dfb37e68b97a0571c09c24ac01417cc31ac87ad26b09bb38c754d7738",
+      "bytes": 320,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.table.bin",
-      "sha256": "4b376be51169bf7741acfe7c77f005ec52d2261699184b0573286bc18878d16f",
+      "sha256": "f931cca5a3ed44f03b15f1d46171b459314b5bfba5404452fb15cf5c1706387f",
       "bytes": 4640486,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.reverse.bin",
-      "sha256": "f975eaf31d95e56e930c4582a3b4138ce4335a0c66c03e00bf0316761262f431",
+      "sha256": "7d737f2738ed871df05aa1d0e25abae1b0737e8794f4e41fc2fe985a8ff14319",
       "bytes": 1263091,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.prism.bin",
-      "sha256": "342de2078ad714e1ff78f53d80353e21355e9a198911fb6b5ed860fbea92a219",
-      "bytes": 1642925,
+      "sha256": "7fac0de0a1757b870447b25ea4316db2cb928251c015aa6e1465ea1725669eff",
+      "bytes": 2149733,
       "tier": "shared",
       "required": true
     },
     {
       "path": "stroke.table.bin",
-      "sha256": "269c817f3c991ffd56e5d2c0b4f2a46194257735b6a44fdcb1bc822caa8d7250",
-      "bytes": 4548476,
+      "sha256": "2975e6d171d2a8558378b30bc3fe02583969a651fb1af805fbca03e0652e36d8",
+      "bytes": 17248974,
       "tier": "shared",
       "required": true
     },
     {
       "path": "stroke.reverse.bin",
-      "sha256": "65540b9e06a381981d0fb2995909d3ce424210c1613dd8b08b001d25b05e7300",
-      "bytes": 1498516,
+      "sha256": "9baafae675fdf8231b254719f863918f2d8098b12dadd2f81ec1ba8f6af54e7e",
+      "bytes": 4417332,
       "tier": "shared",
       "required": true
     },
     {
       "path": "stroke.prism.bin",
-      "sha256": "df938cb21bd60f2575884efe6f6f4430645938e592cce7b43e3d15e34ebc9990",
-      "bytes": 3501372,
+      "sha256": "2f73eaac22da4943d41895c7760f01ab61728624968925376513b76eb3817e96",
+      "bytes": 3670336,
       "tier": "shared",
       "required": true
     },

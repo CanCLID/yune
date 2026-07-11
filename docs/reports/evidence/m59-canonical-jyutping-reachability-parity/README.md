@@ -11,6 +11,14 @@ Yune `luna_pinyin` vs `librime 1.17.0` + upstream luna. TypeDuck profile is a
 regression guard, not an acceptance oracle.
 
 > **Current update (2026-07-10):**
+> [`increment-3b-transformed-algebra/`](./increment-3b-transformed-algebra/) is
+> the source-current 3b candidate packet. Its schema-general mechanism, seven
+> required deploy rows plus Stroke control, external oracle properties,
+> deterministic product rebuild, and focused release gates are green. The
+> owner-signed five-round Windows ratchet is still pending an uncontaminated
+> measurement window, so the increment is not yet landed and this packet does
+> not close M59 or a D-48 ordering lane.
+>
 > [`increment-2-profile-paging/`](./increment-2-profile-paging/) is the green
 > M59-NAV-01 acceptance packet for implementation commit `e37ee011`. It records
 > the mechanism-honest Cantonese 38/41 -> 41/41 and Windows 2/4 -> 4/4 repair,

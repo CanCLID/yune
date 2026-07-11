@@ -1,16 +1,40 @@
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fs,
+    path::Path,
+    sync::Arc,
+};
 
+use crate::translator::{sentence_path_score_replaces, SentencePathScore};
 use crate::{
     build_prism_bin, build_table_bin, parse_rime_prism_bin_payload,
-    parse_rime_table_bin_advanced_data, parse_rime_table_bin_dictionary, Candidate,
-    CandidateFilter, CandidateRequest, CandidateSource, CompactTableStore, Context,
-    DartsDoubleArray, DictionaryLookupRecord, Engine, HistoryTranslator, MemoryOwnerClass,
-    PresetVocabularyEntry, PunctuationTranslator, ReverseLookupTranslator, RimeCorrectionEntry,
-    RimePrismBinPayload, RimePrismSpellingDescriptor, RimeToleranceRule, StaticTableTranslator,
-    Status, TableDictionary, TableDictionaryAdvancedData, TableEntry, Translator,
+    parse_rime_prism_runtime_payload, parse_rime_table_bin_advanced_data,
+    parse_rime_table_bin_dictionary, Candidate, CandidateFilter, CandidateRequest, CandidateSource,
+    CompactTableByteSource, CompactTableStore, Context, DartsDoubleArray, DictionaryLookupRecord,
+    Engine, HistoryTranslator, MemoryOwnerClass, PresetVocabularyEntry, PunctuationTranslator,
+    ReverseLookupTranslator, RimeCorrectionEntry, RimePrismBinPayload, RimePrismSpellingDescriptor,
+    RimeToleranceRule, StaticTableTranslator, Status, TableDictionary, TableDictionaryAdvancedData,
+    TableEntry, Translator, UniquifierFilter,
 };
 
 struct DropFirstWindowFilter;
+
+#[derive(Debug)]
+struct AlgebraPrismByteSource(Arc<[u8]>);
+
+impl CompactTableByteSource for AlgebraPrismByteSource {
+    fn bytes(&self) -> &[u8] {
+        &self.0
+    }
+
+    fn storage_label(&self) -> &'static str {
+        "byte_backed"
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        "owned_test_bytes"
+    }
+}
 
 impl CandidateFilter for DropFirstWindowFilter {
     fn name(&self) -> &'static str {
@@ -1011,6 +1035,107 @@ Y	def	1
 }
 
 #[test]
+fn sentence_span_fold_prefers_exact_then_quality_and_keeps_first_tie() {
+    let _guard = super::m37_metrics_test_guard();
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ab", "FUZZY", 1000.0),
+        TableEntry::new("ax", "FIRST", 10.0),
+        TableEntry::new("ax", "SECOND", 10.0),
+        TableEntry::new("cd", "TAIL", 10.0),
+    ]);
+    let translator = StaticTableTranslator::from_dictionary(dictionary)
+        .with_spelling_algebra(&["derive/^ab$/ax/".to_owned()])
+        .with_sentence(true);
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let candidates = translator.translate("axcd");
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(
+        candidates[0].text, "FIRSTTAIL",
+        "an exact surface beats a heavier fuzzy row and an exact tie keeps source order"
+    );
+    assert_eq!(metrics.sentence_entry_matches_collected, 2);
+    assert_eq!(metrics.sentence_path_clones, 2);
+}
+
+#[test]
+fn sentence_span_shadow_replays_nan_endpoint_comparisons_per_candidate() {
+    let dictionary = TableDictionary::with_advanced_data(
+        [
+            TableEntry::new("ab", "OLD", 1.0),
+            TableEntry::new("cd", "PATH", 1.0),
+            TableEntry::new("abc", "NEW", 1.0),
+            TableEntry::new("d", "NAN", f32::NAN),
+            TableEntry::new("d", "GOOD", 10.0),
+        ],
+        TableDictionaryAdvancedData {
+            sort_by_weight: Some(false),
+            ..TableDictionaryAdvancedData::default()
+        },
+    );
+    let translator = StaticTableTranslator::from_dictionary(dictionary)
+        .with_sentence(true)
+        .with_sentence_word_penalty(f32::NAN);
+
+    let candidates = translator.translate("abcd");
+
+    assert_eq!(candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(
+        candidates[0].text, "NEWGOOD",
+        "the first unordered local row must not hide a later row that wins against the live endpoint"
+    );
+}
+
+#[test]
+fn sentence_path_shadow_uses_predecessor_added_f32_rounding() {
+    let predecessor = 16_777_216.0_f32;
+    let candidate = SentencePathScore {
+        fuzzy_pieces: 0,
+        quality: predecessor + 0.5,
+        raw_quality: 11.0,
+    };
+    let existing = SentencePathScore {
+        fuzzy_pieces: 0,
+        quality: predecessor,
+        raw_quality: 10.0,
+    };
+
+    assert_eq!(candidate.quality, existing.quality);
+    assert!(sentence_path_score_replaces(candidate, existing));
+}
+
+#[test]
+fn sentence_path_shadow_uses_raw_quality_for_sub_one_weights() {
+    let lower = SentencePathScore {
+        fuzzy_pieces: 0,
+        quality: 0.0,
+        raw_quality: 0.25,
+    };
+    let higher = SentencePathScore {
+        raw_quality: 0.5,
+        ..lower
+    };
+
+    assert!(sentence_path_score_replaces(higher, lower));
+    assert!(!sentence_path_score_replaces(lower, higher));
+}
+
+#[test]
+fn sentence_path_shadow_keeps_the_first_exact_tie() {
+    let first = SentencePathScore {
+        fuzzy_pieces: 1,
+        quality: 2.0,
+        raw_quality: 3.0,
+    };
+
+    assert!(!sentence_path_score_replaces(first, first));
+}
+
+#[test]
 fn static_table_sentence_candidate_records_m39_owner_metrics() {
     let _guard = super::m37_metrics_test_guard();
     let dictionary = TableDictionary::parse_rime_dict_yaml(
@@ -1711,14 +1836,22 @@ HAU	hau	100
 "#,
     )
     .expect("dictionary should parse");
-    let syllabary = ["nei", "ngo", "hai", "hau"].map(str::to_owned);
     let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
-    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
-        .expect("test prism should parse");
-    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
-        .with_completion(true)
-        .with_dynamic_correction_lookup(true)
-        .with_spelling_algebra(&formulas);
+    let table_bytes = build_table_bin(&dictionary, 1);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("Track B table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("Track B compact table should parse");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &formulas, 1, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("Track B byte-backed prism should parse");
+    let translator =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_completion(true)
+            .with_dynamic_correction_lookup(true)
+            .with_spelling_algebra(&formulas);
 
     for input in ["nei", "ngo"] {
         let full = translator.translate(input);
@@ -1798,26 +1931,1893 @@ AB3	ab	88
         .map(|candidate| candidate.text.as_str())
         .collect::<Vec<_>>();
     assert_eq!(
-        metrics.prism_lookup_calls, 9,
-        "bounded prefix fallback should scan strict prefixes once and skip prism expansion for exact prefix codes"
+        metrics.prism_lookup_calls, 1,
+        "bounded prefix fallback should use the authoritative prism descriptors without a redundant sentence-alias lookup per strict prefix"
     );
     assert_eq!(
         prefix_candidates,
         ["AB1", "AB2"],
         "long compact prefix fallback should keep the M55 two-candidate per-fetch cap"
     );
+    assert!(
+        !result
+            .candidates
+            .iter()
+            .any(|candidate| candidate.text == "AB3"),
+        "the bounded batch must not cross the two-row per-fetch cap"
+    );
+    assert!(
+        !result.is_complete,
+        "hitting the per-fetch cap cannot prove that no later unique row exists"
+    );
+    assert!(
+        result
+            .full_count
+            .is_some_and(|count| count > result.candidates.len()),
+        "debug full_count must carry the conservative has-more witness"
+    );
 
     crate::m37_metrics_enable(true);
     crate::m37_metrics_reset();
-    let _ = translator.translate("abcdefghij");
+    let full = translator.translate("abcdefghij");
     let full_metrics = crate::m37_metrics_snapshot();
     crate::m37_metrics_enable(false);
 
     assert_eq!(
-        full_metrics.prism_lookup_calls, 10,
-        "full prefix fallback should not duplicate strict-prefix scans when a full exact candidate already enables fallback; \
-         M59 finding #8 completion skip drops the leading-single walk's prism lookups on non-syllabary prefixes (was 18) \
-         while the surfaced candidates (AB1/AB2) are unchanged"
+        full_metrics.prism_lookup_calls, 1,
+        "full prefix fallback should use the authoritative prism descriptors without the former lossy sentence-alias augmentation while AB1/AB2 remain unchanged"
+    );
+    assert!(
+        full.iter().any(|candidate| candidate.text == "AB3"),
+        "the unbounded page-turn path must retain rows omitted by the bounded cap"
+    );
+}
+
+fn double_pinyin_shaped_algebra() -> Vec<String> {
+    [
+        "xform/^zh/V/",
+        "xform/i?ong$/S/",
+        "xform/(.)ao$/$1K/",
+        "xform/^ha$/h/",
+        "xlit/KVS/kvs/",
+    ]
+    .map(str::to_owned)
+    .to_vec()
+}
+
+fn double_pinyin_reachability_dictionary() -> TableDictionary {
+    TableDictionary::new([
+        TableEntry::new("hao", "\u{597d}", 100.0),
+        TableEntry::new("ha", "\u{54c8}", 90.0),
+        TableEntry::new("ni", "\u{4f60}", 80.0),
+        TableEntry::new("zhong", "\u{4e2d}", 70.0),
+    ])
+}
+
+fn assert_surface_leading_single(
+    translator: &StaticTableTranslator,
+    input: &str,
+    expected_text: &str,
+    expected_raw_code: &str,
+    expected_consumed: usize,
+) {
+    let result = translator.translate_with_context_and_request(
+        input,
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(8).with_debug_full_count(true),
+    );
+    let leading = result
+        .candidates
+        .iter()
+        .find(|candidate| candidate.text == expected_text)
+        .unwrap_or_else(|| {
+            panic!(
+                "surface input {input:?} must reach {expected_text:?}; got {:?}",
+                result
+                    .candidates
+                    .iter()
+                    .map(|candidate| (&candidate.text, &candidate.comment, &candidate.source))
+                    .collect::<Vec<_>>()
+            )
+        });
+    assert_eq!(
+        leading.comment, expected_raw_code,
+        "surface admission must not replace canonical raw-code metadata"
+    );
+    assert_eq!(
+        leading.source,
+        CandidateSource::PartialTable {
+            consumed: expected_consumed,
+            recompose_on_default: true,
+        },
+        "the partial candidate must consume the deployed surface spelling, not the canonical fetch code"
+    );
+}
+
+#[test]
+fn transformed_double_pinyin_surface_reaches_canonical_row_on_compact_and_heap_paths() {
+    // Structural replay of the pinned diagnostic spelling sequence: hao -> hk,
+    // ni -> ni, zhong -> vs. The test deliberately asserts only the first
+    // surface->canonical reachability edge; whole-sentence text belongs to the
+    // external oracle capture, not an invented engine golden.
+    let formulas = double_pinyin_shaped_algebra();
+    let syllabary = ["hao", "ha", "ni", "zhong"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("double-pinyin-shaped prism should parse");
+    assert_eq!(
+        prism
+            .lookup_canonical_codes("hk", &syllabary)
+            .into_iter()
+            .map(|lookup| lookup.code)
+            .collect::<Vec<_>>(),
+        ["hao"],
+        "the test algebra must deploy the diagnostic hao -> hk surface edge"
+    );
+    let compact = StaticTableTranslator::from_compact_dictionary(
+        double_pinyin_reachability_dictionary(),
+        Some(prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_leading_syllable_reachability(true)
+    .with_sentence(false);
+    let heap = StaticTableTranslator::new([
+        ("hao", "\u{597d}"),
+        ("ha", "\u{54c8}"),
+        ("ni", "\u{4f60}"),
+        ("zhong", "\u{4e2d}"),
+    ])
+    .with_spelling_algebra(&formulas)
+    .with_leading_syllable_reachability(true)
+    .with_sentence(false);
+
+    for (storage, translator) in [("compact", &compact), ("heap/source", &heap)] {
+        assert_surface_leading_single(translator, "hknivs", "\u{597d}", "hao", 2);
+        let bare = translator.translate("hk");
+        assert_eq!(
+            bare.iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["\u{597d}"],
+            "{storage}: the alias-aware bare-syllable guard must not inject the shorter h -> ha family"
+        );
+    }
+
+    let disabled_prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("control prism should parse");
+    let disabled = StaticTableTranslator::from_compact_dictionary(
+        double_pinyin_reachability_dictionary(),
+        Some(disabled_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_leading_syllable_reachability(false)
+    .with_sentence(false);
+    assert!(
+        disabled.translate("hknivs").is_empty(),
+        "explicit-false reachability must not inject a transformed leading single"
+    );
+}
+
+#[test]
+fn exact_surface_duplicate_promotes_shorter_prefix_fallback_consumed_span() {
+    // Product Jyutping deploys both a toneless exact (`zi2` -> `zi`) and the
+    // initial abbreviation (`zi2` -> `z`). The complete merge inserts the `z`
+    // family first; when both paths yield 子, the visible first duplicate must
+    // retain the longer admitted `zi` span so explicit selection consumes all
+    // of the input instead of committing 子 and leaving raw `i` behind.
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "abbrev/^([a-z]).+$/$1/".to_owned(),
+    ];
+    let translator = StaticTableTranslator::new([("zi2", "\u{5b50}")])
+        .with_prefix_fallback(true)
+        .with_leading_syllable_reachability(true)
+        .with_spelling_algebra(&formulas)
+        .with_sentence(false);
+    let mut eager = translator.translate("zi");
+    let mut bounded = translator
+        .translate_with_context_and_request(
+            "zi",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(1),
+        )
+        .candidates;
+    UniquifierFilter.apply(&mut eager);
+    UniquifierFilter.apply(&mut bounded);
+    assert_eq!(bounded, eager[..bounded.len()]);
+    assert_eq!(
+        bounded[0].source,
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: false,
+        },
+        "a full bounded page must apply the same duplicate span promotion as the eager list"
+    );
+
+    let mut engine = Engine::new();
+    engine.add_translator(translator);
+    engine.process_sequence("zi");
+
+    let target_index = engine
+        .context()
+        .candidates
+        .iter()
+        .position(|candidate| candidate.text == "\u{5b50}")
+        .expect("the product-shaped exact/abbreviation collision should expose 子");
+    assert_eq!(
+        engine.context().candidates[target_index].source,
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: false,
+        },
+        "the earlier abbreviation row must inherit the admitted full-exact surface span"
+    );
+    assert_eq!(
+        engine.select_candidate(target_index).as_deref(),
+        Some("\u{5b50}")
+    );
+    assert!(
+        engine.context().composition.input.is_empty(),
+        "selecting 子 for exact surface `zi` must not leave a raw `i` remainder"
+    );
+}
+
+#[test]
+fn cross_translator_duplicate_promotes_longest_surface_span_but_not_abbreviation_only() {
+    let abbreviated = StaticTableTranslator::new([("si6", "\u{662f}")])
+        .with_prefix_fallback(true)
+        .with_spelling_algebra(&["abbrev/^([a-z]).+$/$1/".to_owned()])
+        .with_sentence(false);
+    let toneless = StaticTableTranslator::new([("si6", "\u{662f}")])
+        .with_prefix_fallback(true)
+        .with_spelling_algebra(&["derive/\\d//".to_owned()])
+        .with_sentence(false);
+    let mut merged = Engine::new();
+    merged.add_translator(abbreviated);
+    merged.add_translator(toneless);
+    merged.add_filter(UniquifierFilter);
+    merged.process_sequence("sij");
+    let target_index = merged
+        .context()
+        .candidates
+        .iter()
+        .position(|candidate| candidate.text == "\u{662f}")
+        .expect("both deployed surfaces should expose the shared text");
+    assert_eq!(
+        merged.context().candidates[target_index].source,
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: true,
+        }
+    );
+    assert_eq!(
+        merged.select_candidate(target_index).as_deref(),
+        Some("\u{662f}")
+    );
+    assert_eq!(merged.context().composition.input, "j");
+
+    let abbreviation_only = StaticTableTranslator::new([("si6", "\u{662f}")])
+        .with_prefix_fallback(true)
+        .with_spelling_algebra(&["abbrev/^([a-z]).+$/$1/".to_owned()])
+        .with_sentence(false);
+    let mut negative = Engine::new();
+    negative.add_translator(abbreviation_only);
+    negative.add_filter(UniquifierFilter);
+    negative.process_sequence("sij");
+    let target_index = negative
+        .context()
+        .candidates
+        .iter()
+        .position(|candidate| candidate.text == "\u{662f}")
+        .expect("abbreviation-only control should expose the shared text");
+    assert_eq!(
+        negative.context().candidates[target_index].source,
+        CandidateSource::PartialTable {
+            consumed: 1,
+            recompose_on_default: false,
+        },
+        "without a longer deployed surface, uniquification must not invent one"
+    );
+
+    let short_abbreviation = StaticTableTranslator::new([("si6", "\u{662f}")])
+        .with_prefix_fallback(true)
+        .with_spelling_algebra(&["abbrev/^([a-z]).+$/$1/".to_owned()])
+        .with_sentence(false);
+    let long_abbreviation = StaticTableTranslator::new([("si6", "\u{662f}")])
+        .with_prefix_fallback(true)
+        .with_spelling_algebra(&["abbrev/^si6$/si/".to_owned()])
+        .with_sentence(false);
+    assert!(long_abbreviation.translate("sij").iter().any(|candidate| {
+        candidate.text == "\u{662f}"
+            && candidate.source
+                == CandidateSource::PartialTable {
+                    consumed: 2,
+                    recompose_on_default: false,
+                }
+    }));
+    let mut two_abbreviations = Engine::new();
+    two_abbreviations.add_translator(short_abbreviation);
+    two_abbreviations.add_translator(long_abbreviation);
+    two_abbreviations.add_filter(UniquifierFilter);
+    two_abbreviations.process_sequence("sij");
+    let target = two_abbreviations
+        .context()
+        .candidates
+        .iter()
+        .find(|candidate| candidate.text == "\u{662f}")
+        .expect("two-abbreviation control should expose the shared text");
+    assert_eq!(
+        target.source,
+        CandidateSource::PartialTable {
+            consumed: 1,
+            recompose_on_default: false,
+        },
+        "a longer abbreviation-only duplicate is not non-abbreviation proof and must not promote the earlier selection span"
+    );
+}
+
+#[test]
+fn transformed_bopomofo_surface_preserves_digits_on_byte_backed_and_heap_paths() {
+    // Bopomofo keyboard spellings carry tone keys. These deliberately-shaped
+    // rules prove that `cl3` remains the consumed surface (3 bytes), while the
+    // canonical `hao3` comment remains available to the tone/syllable logic.
+    let formulas = [
+        "xform/^hao/cl/".to_owned(),
+        "xform/^ni/su/".to_owned(),
+        "xform/^wan/j0/".to_owned(),
+    ];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("hao3", "\u{597d}", 100.0),
+        TableEntry::new("ni3", "\u{4f60}", 90.0),
+        TableEntry::new("wan6", "\u{73a9}", 80.0),
+    ]);
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("compiled table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed compiled table should parse");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &formulas, 0x1234_5678, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed transformed prism should parse");
+    let byte_backed =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_spelling_algebra(&formulas)
+            .with_leading_syllable_reachability(true)
+            .with_sentence(false);
+    let heap = StaticTableTranslator::new([
+        ("hao3", "\u{597d}"),
+        ("ni3", "\u{4f60}"),
+        ("wan6", "\u{73a9}"),
+    ])
+    .with_spelling_algebra(&formulas)
+    .with_leading_syllable_reachability(true)
+    .with_sentence(false);
+
+    for translator in [&byte_backed, &heap] {
+        assert_surface_leading_single(translator, "cl3su3j06", "\u{597d}", "hao3", 3);
+    }
+}
+
+#[test]
+fn transformed_correction_only_surface_is_not_a_default_reachability_edge() {
+    let formulas = ["derive/^hao$/hx/correction".to_owned()];
+    let heap = StaticTableTranslator::new([("hao", "\u{597d}"), ("ni", "\u{4f60}")])
+        .with_spelling_algebra(&formulas)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+    let syllabary = ["hao", "ni"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("correction-only compact prism should parse");
+    let compact = StaticTableTranslator::from_compact_dictionary(
+        TableDictionary::new([
+            TableEntry::new("hao", "\u{597d}", 100.0),
+            TableEntry::new("ni", "\u{4f60}", 90.0),
+        ]),
+        Some(prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_leading_syllable_reachability(true)
+    .with_sentence(false);
+
+    for (storage, translator) in [("heap/source", &heap), ("compact", &compact)] {
+        assert!(
+            !translator
+                .translate("hxni")
+                .iter()
+                .any(|candidate| candidate.text == "\u{597d}"),
+            "{storage}: a correction-only algebra spelling must not become a default-on leading reachability edge"
+        );
+    }
+}
+
+#[test]
+fn normal_correction_wins_a_fuzzy_collision_for_compact_and_heap_reachability() {
+    let formulas = [
+        "fuzz/^hao$/hx/".to_owned(),
+        "derive/^hao$/hx/correction".to_owned(),
+        "abbrev/^hu$/h/".to_owned(),
+    ];
+    let syllabary = ["hao", "hu", "ni"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("collision prism should parse");
+    let descriptor = prism
+        .lookup_canonical_codes("hx", &syllabary)
+        .into_iter()
+        .next()
+        .expect("colliding surface should have one merged descriptor");
+    assert!(!descriptor.abbreviation);
+    assert!(
+        descriptor.correction,
+        "pinned Update adopts the normal correction path over the fuzzy non-correction path"
+    );
+
+    let dictionary = TableDictionary::new([
+        TableEntry::new("hao", "\u{597d}", 100.0),
+        TableEntry::new("hu", "\u{56de}", 95.0),
+        TableEntry::new("ni", "\u{4f60}", 90.0),
+    ]);
+    let compact = StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(prism))
+        .with_spelling_algebra(&formulas)
+        .with_leading_syllable_reachability(true)
+        .with_prefix_fallback(true)
+        .with_sentence(false);
+    let heap = StaticTableTranslator::from_dictionary(dictionary)
+        .with_spelling_algebra(&formulas)
+        .with_leading_syllable_reachability(true)
+        .with_prefix_fallback(true)
+        .with_sentence(false);
+
+    let mut bare_qualities = Vec::new();
+    for (storage, translator) in [("compact", &compact), ("heap/source", &heap)] {
+        let bare = translator.translate("hx");
+        assert_eq!(
+            bare.iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["\u{597d}"],
+            "{storage}: the correction alias remains an ordinary exact spelling"
+        );
+        bare_qualities.push(bare[0].quality.to_bits());
+        assert!(
+            !translator
+                .translate("hxni")
+                .iter()
+                .any(|candidate| candidate.text == "\u{597d}"),
+            "{storage}: merged correction provenance must remain a guard, not an injectable leading edge"
+        );
+    }
+    assert_eq!(
+        bare_qualities[0], bare_qualities[1],
+        "compact and heap collision paths must apply the same merged credibility"
+    );
+}
+
+#[test]
+fn pinned_correction_surface_order_matches_heap_owned_and_byte_backed_paths() {
+    let oracle: serde_json::Value = serde_json::from_str(include_str!(
+        "../../tests/fixtures/upstream-1.17.0/m59-correction-spelling.json"
+    ))
+    .expect("curated correction oracle fixture should parse");
+    assert_eq!(
+        oracle["source_capture"]["sha256"],
+        "f5e1cf58cca162c03eadf71473b80376e440c044958ead3ca25e27e36565eee9"
+    );
+    assert_eq!(
+        oracle["source_capture"]["evidence_manifest_sha256"],
+        "4cb688f0624a7c19dd7a35b506aec0f30419f62a4eee0f93911d8caf7c6dcf48"
+    );
+    for option in ["enable_completion", "enable_sentence", "enable_correction"] {
+        assert_eq!(oracle["schema"][option], false);
+    }
+    let expected = oracle["candidates"]
+        .as_array()
+        .expect("oracle candidates should be an array")
+        .iter()
+        .map(|candidate| {
+            (
+                candidate["text"]
+                    .as_str()
+                    .expect("candidate text")
+                    .to_owned(),
+                candidate["comment"]
+                    .as_str()
+                    .expect("candidate comment")
+                    .to_owned(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        expected,
+        [
+            ("\u{7c97}".to_owned(), "cu".to_owned()),
+            ("\u{932f}".to_owned(), "cuo".to_owned()),
+        ]
+    );
+
+    let formulas = [
+        "abbrev/^chang$/c/".to_owned(),
+        "derive/^cuo$/cu/correction".to_owned(),
+    ];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("cu", "\u{7c97}", 0.0),
+        TableEntry::new("cuo", "\u{932f}", 0.0),
+        TableEntry::new("chang", "\u{9577}", 0.0),
+    ]);
+    let syllabary = ["cu", "cuo", "chang"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("guard-only correction prism should parse");
+    let heap = StaticTableTranslator::from_dictionary(dictionary.clone())
+        .with_leading_syllable_reachability(true)
+        .with_spelling_algebra(&formulas)
+        .with_completion(false)
+        .with_correction(false)
+        .with_sentence(false);
+    let compact = StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(prism))
+        .with_leading_syllable_reachability(true)
+        .with_spelling_algebra(&formulas)
+        .with_completion(false)
+        .with_correction(false)
+        .with_sentence(false);
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("correction oracle table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("correction oracle table should load byte-backed");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &formulas, 0x1234_5678, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("correction oracle prism should load byte-backed");
+    let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_leading_syllable_reachability(true)
+    .with_spelling_algebra(&formulas)
+    .with_completion(false)
+    .with_correction(false)
+    .with_sentence(false);
+
+    let mut quality_bits = Vec::new();
+    for (storage, translator) in [
+        ("heap/source", &heap),
+        ("owned compact", &compact),
+        ("byte-backed compact", &byte_backed),
+    ] {
+        let candidates = translator.translate("cu");
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|candidate| (candidate.text.clone(), candidate.comment.clone()))
+                .collect::<Vec<_>>(),
+            expected,
+            "{storage}: deployed correction admission must match the complete pinned upstream order"
+        );
+        assert!(
+            candidates[0].quality > candidates[1].quality,
+            "{storage}: equal-weight direct `cu` must outrank correction-penalized `cuo`"
+        );
+        quality_bits.push(
+            candidates
+                .iter()
+                .map(|candidate| candidate.quality.to_bits())
+                .collect::<Vec<_>>(),
+        );
+        let bounded = translator.translate_with_context_and_request(
+            "cu",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(2),
+        );
+        assert_eq!(
+            bounded
+                .candidates
+                .iter()
+                .map(|candidate| (candidate.text.clone(), candidate.comment.clone()))
+                .collect::<Vec<_>>(),
+            expected,
+            "{storage}: bounded/ref lookup must preserve the complete oracle order"
+        );
+        let concatenated = translator.translate("cuni");
+        assert!(
+            concatenated
+                .iter()
+                .any(|candidate| candidate.text == "\u{7c97}"),
+            "{storage}: the exact normal cu edge must remain reachable in a longer input"
+        );
+        assert!(
+            !concatenated
+                .iter()
+                .any(|candidate| candidate.text == "\u{932f}"),
+            "{storage}: the correction cuo sibling must remain exact-only"
+        );
+    }
+    assert!(
+        quality_bits.windows(2).all(|pair| pair[0] == pair[1]),
+        "heap, owned compact, and byte-backed compact must emit identical correction qualities"
+    );
+}
+
+#[test]
+fn transformed_lookahead_aliases_reach_concatenated_inputs_on_heap_and_byte_backed_paths() {
+    let formulas = [
+        "derive/^ng(?=[aeiou])//".to_owned(),
+        "derive/^n(?!g)/l/".to_owned(),
+    ];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ngo", "\u{6211}", 100.0),
+        TableEntry::new("na", "\u{90a3}", 90.0),
+        TableEntry::new("ni", "\u{4f60}", 80.0),
+    ]);
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("lookahead table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("lookahead byte-backed table should parse");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &formulas, 0x1234_5678, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("lookahead byte-backed prism should parse");
+    let byte_backed =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_leading_syllable_reachability(true)
+            .with_spelling_algebra(&formulas)
+            .with_sentence(false);
+    let heap =
+        StaticTableTranslator::new([("ngo", "\u{6211}"), ("na", "\u{90a3}"), ("ni", "\u{4f60}")])
+            .with_leading_syllable_reachability(true)
+            .with_spelling_algebra(&formulas)
+            .with_sentence(false);
+
+    for translator in [&byte_backed, &heap] {
+        assert_surface_leading_single(translator, "oni", "\u{6211}", "ngo", 1);
+        assert_surface_leading_single(translator, "lani", "\u{90a3}", "na", 2);
+    }
+}
+
+#[test]
+fn transformed_alias_collision_preserves_full_source_order_across_storage_paths() {
+    let formulas = ["derive/^ha.$/hx/".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("hai", "\u{6d77}", 100.0),
+        TableEntry::new("hao", "\u{597d}", 100.0),
+        TableEntry::new("ni", "\u{4f60}", 80.0),
+    ]);
+    let syllabary = ["hai", "hao", "ni"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("collision prism should parse");
+    let compact = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_leading_syllable_reachability(true)
+        .with_spelling_algebra(&formulas)
+        .with_sentence(false);
+    let heap =
+        StaticTableTranslator::new([("hai", "\u{6d77}"), ("hao", "\u{597d}"), ("ni", "\u{4f60}")])
+            .with_leading_syllable_reachability(true)
+            .with_spelling_algebra(&formulas)
+            .with_sentence(false);
+
+    for (storage, translator) in [("compact", &compact), ("heap/source", &heap)] {
+        assert_eq!(
+            translator
+                .translate("hxni")
+                .into_iter()
+                .map(|candidate| candidate.text)
+                .collect::<Vec<_>>(),
+            ["\u{6d77}", "\u{597d}"],
+            "{storage}: colliding surface aliases must retain canonical source order"
+        );
+    }
+}
+
+#[test]
+fn mixed_normal_and_correction_surface_keeps_normal_reachability_across_storage_paths() {
+    let formulas = [
+        "derive/^ha$/hx/".to_owned(),
+        "derive/^hao$/hx/correction".to_owned(),
+    ];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ha", "\u{54c8}", 100.0),
+        TableEntry::new("hao", "\u{597d}", 90.0),
+        TableEntry::new("ni", "\u{4f60}", 80.0),
+    ]);
+    let syllabary = ["ha", "hao", "ni"].map(str::to_owned);
+
+    let compact_leading = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+                .expect("mixed-surface compact prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_leading_syllable_reachability(true)
+    .with_sentence(false);
+    let heap_leading = StaticTableTranslator::from_dictionary(dictionary.clone())
+        .with_spelling_algebra(&formulas)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+    for (storage, translator) in [
+        ("compact leading", &compact_leading),
+        ("heap/source leading", &heap_leading),
+    ] {
+        assert_surface_leading_single(translator, "hxni", "\u{54c8}", "ha", 2);
+        assert!(
+            !translator
+                .translate("hxni")
+                .iter()
+                .any(|candidate| candidate.text == "\u{597d}"),
+            "{storage}: a correction sibling must never become a default leading edge"
+        );
+    }
+
+    let compact_fallback = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+                .expect("mixed-surface fallback prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_leading_syllable_reachability(true)
+    .with_prefix_fallback(true)
+    .with_sentence(false);
+    let heap_fallback = StaticTableTranslator::from_dictionary(dictionary)
+        .with_spelling_algebra(&formulas)
+        .with_leading_syllable_reachability(true)
+        .with_prefix_fallback(true)
+        .with_sentence(false);
+    for (storage, translator) in [
+        ("compact prefix fallback", &compact_fallback),
+        ("heap/source prefix fallback", &heap_fallback),
+    ] {
+        let candidates = translator.translate("hxni");
+        let normal = candidates
+            .iter()
+            .find(|candidate| candidate.text == "\u{54c8}")
+            .unwrap_or_else(|| panic!("{storage}: mapped surface hx must admit canonical ha"));
+        assert_eq!(
+            normal.source,
+            CandidateSource::PartialTable {
+                consumed: 2,
+                recompose_on_default: true,
+            },
+            "{storage}: prefix fallback must consume the deployed surface span"
+        );
+        assert!(
+            !candidates
+                .iter()
+                .any(|candidate| candidate.text == "\u{597d}"),
+            "{storage}: prefix fallback must filter the correction-only hao sibling"
+        );
+    }
+}
+
+#[test]
+fn exact_normal_surface_with_correction_sibling_keeps_only_normal_reachability() {
+    let formulas = ["derive/^hao$/ha/correction".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ha", "\u{54c8}", 100.0),
+        TableEntry::new("hao", "\u{597d}", 90.0),
+        TableEntry::new("ni", "\u{4f60}", 80.0),
+    ]);
+    let syllabary = ["ha", "hao", "ni"].map(str::to_owned);
+
+    for prefix_fallback in [false, true] {
+        let compact = StaticTableTranslator::from_compact_dictionary(
+            dictionary.clone(),
+            Some(
+                parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+                    .expect("exact-normal mixed compact prism should parse"),
+            ),
+        )
+        .with_spelling_algebra(&formulas)
+        .with_leading_syllable_reachability(true)
+        .with_prefix_fallback(prefix_fallback)
+        .with_sentence(false);
+        let heap = StaticTableTranslator::from_dictionary(dictionary.clone())
+            .with_spelling_algebra(&formulas)
+            .with_leading_syllable_reachability(true)
+            .with_prefix_fallback(prefix_fallback)
+            .with_sentence(false);
+        for (storage, translator) in [("compact", &compact), ("heap/source", &heap)] {
+            let candidates = translator.translate("hani");
+            let normal = candidates
+                .iter()
+                .find(|candidate| candidate.text == "\u{54c8}")
+                .unwrap_or_else(|| {
+                    panic!(
+                        "{storage} fallback={prefix_fallback}: exact normal ha must stay reachable"
+                    )
+                });
+            assert_eq!(
+                normal.source,
+                CandidateSource::PartialTable {
+                    consumed: 2,
+                    recompose_on_default: true,
+                }
+            );
+            assert!(
+                !candidates
+                    .iter()
+                    .any(|candidate| candidate.text == "\u{597d}"),
+                "{storage} fallback={prefix_fallback}: correction hao must stay exact-only"
+            );
+        }
+    }
+}
+
+#[test]
+fn direct_normal_prefix_keeps_sibling_normal_algebra_edges_across_storage_paths() {
+    let formulas = ["derive/^hao$/ha/".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ha", "\u{54c8}", 100.0),
+        TableEntry::new("hao", "\u{597d}", 90.0),
+        TableEntry::new("ni", "\u{4f60}", 80.0),
+    ]);
+    let syllabary = ["ha", "hao", "ni"].map(str::to_owned);
+    let compact = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+                .expect("normal-collision compact prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_prefix_fallback(true)
+    .with_sentence(false);
+    let heap = StaticTableTranslator::from_dictionary(dictionary)
+        .with_spelling_algebra(&formulas)
+        .with_prefix_fallback(true)
+        .with_sentence(false);
+
+    for (storage, translator) in [("compact", &compact), ("heap/source", &heap)] {
+        let candidates = translator.translate("hani");
+        let normal_family = candidates
+            .iter()
+            .filter(|candidate| matches!(candidate.text.as_str(), "\u{54c8}" | "\u{597d}"))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            normal_family
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["\u{54c8}", "\u{597d}"],
+            "{storage}: the exact ha row and mapped hao sibling must each appear once in source order"
+        );
+        assert_eq!(
+            normal_family
+                .iter()
+                .map(|candidate| candidate.comment.as_str())
+                .collect::<Vec<_>>(),
+            ["ha", "hao"],
+            "{storage}: surface admission must preserve each canonical raw code"
+        );
+        assert!(normal_family.iter().all(|candidate| {
+            candidate.source
+                == CandidateSource::PartialTable {
+                    consumed: 2,
+                    recompose_on_default: true,
+                }
+        }));
+    }
+}
+
+#[test]
+fn correction_only_shorter_prefix_preserves_accumulated_longer_normal_prefix() {
+    let formulas = ["derive/^hu$/ha/correction".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("hao", "\u{597d}", 100.0),
+        TableEntry::new("hu", "\u{56de}", 90.0),
+        TableEntry::new("ni", "\u{4f60}", 80.0),
+    ]);
+    let syllabary = ["hao", "hu", "ni"].map(str::to_owned);
+    let compact = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+                .expect("correction-boundary compact prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_prefix_fallback(true)
+    .with_sentence(false);
+    let heap = StaticTableTranslator::from_dictionary(dictionary)
+        .with_spelling_algebra(&formulas)
+        .with_prefix_fallback(true)
+        .with_sentence(false);
+
+    for (storage, translator) in [("compact", &compact), ("heap/source", &heap)] {
+        let candidates = translator.translate("haoni");
+        let normal = candidates
+            .iter()
+            .find(|candidate| candidate.text == "\u{597d}")
+            .unwrap_or_else(|| panic!("{storage}: longer canonical hao prefix must survive"));
+        assert_eq!(normal.comment, "hao");
+        assert_eq!(
+            normal.source,
+            CandidateSource::PartialTable {
+                consumed: 3,
+                recompose_on_default: true,
+            }
+        );
+        assert!(
+            !candidates
+                .iter()
+                .any(|candidate| candidate.text == "\u{56de}"),
+            "{storage}: the shorter correction-only hu -> ha edge must stay excluded"
+        );
+    }
+}
+
+#[test]
+fn transformed_prefix_fallback_resolves_surfaces_without_leading_reachability() {
+    let formulas = ["derive/^hao$/hx/".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("hao", "\u{597d}", 100.0),
+        TableEntry::new("ni", "\u{4f60}", 80.0),
+    ]);
+    let syllabary = ["hao", "ni"].map(str::to_owned);
+    let compact = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+                .expect("prefix-only compact prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_prefix_fallback(true)
+    .with_leading_syllable_reachability(false)
+    .with_sentence(false);
+    let heap = StaticTableTranslator::from_dictionary(dictionary)
+        .with_prefix_fallback(true)
+        .with_leading_syllable_reachability(false)
+        .with_spelling_algebra(&formulas)
+        .with_sentence(false);
+
+    for (storage, translator) in [("compact", &compact), ("heap/source", &heap)] {
+        let seed = translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == "translator.leading_fetch_seed")
+            .expect("leading-fetch seed owner row should exist");
+        if storage == "compact" {
+            assert_eq!(
+                seed.item_count, 0,
+                "a current compact prism is the authoritative lazy surface index"
+            );
+        } else {
+            assert!(
+                seed.item_count > 0,
+                "heap/source prefix fallback alone must retain the algebra surface seed"
+            );
+        }
+        let candidates = translator.translate("hxni");
+        let normal_family = candidates
+            .iter()
+            .filter(|candidate| candidate.text == "\u{597d}")
+            .collect::<Vec<_>>();
+        assert_eq!(
+            normal_family.len(),
+            1,
+            "{storage}: mapped hao must appear exactly once"
+        );
+        assert_eq!(normal_family[0].comment, "hao");
+        assert_eq!(
+            normal_family[0].source,
+            CandidateSource::PartialTable {
+                consumed: 2,
+                recompose_on_default: true,
+            }
+        );
+    }
+}
+
+#[test]
+fn compiled_transformed_prefix_fallback_follows_full_surface_exact_family() {
+    let formulas = ["derive/\\d//".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ne1", "\u{5462}\u{500b}", 110.0),
+        TableEntry::new("nei5", "\u{4f60}", 100.0),
+        TableEntry::new("nei1", "\u{5462}", 90.0),
+    ]);
+    let table_bytes = build_table_bin(&dictionary, 1);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("toned-alias table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("toned-alias compact table should parse");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &formulas, 1, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("toned-alias byte-backed prism should parse");
+    let translator =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_spelling_algebra(&formulas)
+            .with_prefix_fallback(true)
+            .with_dynamic_correction_lookup(true)
+            .with_sentence(false);
+
+    let candidates = translator.translate("nei");
+    assert_eq!(
+        candidates
+            .iter()
+            .take(3)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["\u{4f60}", "\u{5462}", "\u{5462}\u{500b}"],
+        "full-input prism aliases must stay ahead of a shorter transformed prefix even when the prefix row has more weight"
+    );
+    assert_eq!(
+        candidates[2].source,
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: true,
+        },
+        "the transformed ne -> ne1 row remains reachable with its proper consumed span"
+    );
+
+    let bounded = translator.translate_with_context_and_request(
+        "nei",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(3),
+    );
+    assert_eq!(
+        bounded
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["\u{4f60}", "\u{5462}", "\u{5462}\u{500b}"],
+        "the product bounded path must retain ordinary prism aliases instead of falling through to a sentence"
+    );
+    assert!(bounded
+        .candidates
+        .iter()
+        .all(|candidate| candidate.source != CandidateSource::Sentence));
+}
+
+#[test]
+fn compiled_transformed_exact_completion_and_prefix_order_matches_after_uniquifier() {
+    // The raw `nei` lookup emits completions before the later prism alias emits
+    // its full exact. The eager path must apply the same exact/completion
+    // category order as the bounded path before the proper-prefix family is
+    // merged, without assuming that exacts originally formed a contiguous head.
+    let formulas = ["derive/\\d//".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ne1", "PREFIX", 110.0),
+        TableEntry::new("nei1", "EXACT", 100.0),
+        TableEntry::new("neix", "COMPLETION", 90.0),
+    ]);
+    let table_bytes = build_table_bin(&dictionary, 1);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("interleaved-order table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("interleaved-order compact table should parse");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &formulas, 1, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("interleaved-order byte-backed prism should parse");
+    let translator =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_spelling_algebra(&formulas)
+            .with_completion(true)
+            .with_prefix_fallback(true)
+            .with_dynamic_correction_lookup(true)
+            .with_sentence(false);
+
+    let mut eager = translator.translate("nei");
+    assert!(eager.iter().any(|candidate| {
+        candidate.text == "EXACT" && candidate.source == CandidateSource::Table
+    }));
+    assert!(eager.iter().any(|candidate| {
+        candidate.text == "EXACT" && candidate.source == CandidateSource::Completion
+    }));
+    let mut bounded = translator
+        .translate_with_context_and_request(
+            "nei",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(4),
+        )
+        .candidates;
+    UniquifierFilter.apply(&mut eager);
+    UniquifierFilter.apply(&mut bounded);
+
+    let signature = |candidates: &[Candidate]| {
+        candidates
+            .iter()
+            .map(|candidate| (candidate.text.clone(), candidate.source.clone()))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(signature(&bounded), signature(&eager));
+    assert_eq!(
+        eager
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["EXACT", "PREFIX", "COMPLETION"]
+    );
+    assert_eq!(eager[0].source, CandidateSource::Table);
+    assert_eq!(
+        eager[1].source,
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: true,
+        }
+    );
+}
+
+#[test]
+fn one_scalar_prefix_fallback_owns_completion_only_input_bounded_and_eager() {
+    let translator = StaticTableTranslator::new([("n", "N"), ("nxyzmore", "COMPLETION")])
+        .with_completion(true)
+        .with_prefix_fallback(true)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+
+    let eager = translator.translate("nxyz");
+    let bounded = translator
+        .translate_with_context_and_request(
+            "nxyz",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(4),
+        )
+        .candidates;
+    let exact_fill = translator.translate_with_context_and_request(
+        "nxyz",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(2),
+    );
+    let signature = |candidates: &[Candidate]| {
+        candidates
+            .iter()
+            .map(|candidate| (candidate.text.clone(), candidate.source.clone()))
+            .collect::<Vec<_>>()
+    };
+
+    assert_eq!(signature(&bounded), signature(&eager));
+    assert_eq!(exact_fill.candidates.len(), 2);
+    assert!(
+        exact_fill.is_complete,
+        "an exhaustive fallback batch that exactly fills the page has no hidden row"
+    );
+    assert_eq!(
+        eager
+            .iter()
+            .filter(|candidate| candidate.text == "N")
+            .count(),
+        1,
+        "prefix fallback must own the deployed one-scalar prefix instead of also running the leading merge"
+    );
+    let prefix = eager
+        .iter()
+        .find(|candidate| candidate.text == "N")
+        .expect("the deployed n prefix should remain reachable");
+    assert_eq!(
+        prefix.source,
+        CandidateSource::PartialTable {
+            consumed: 1,
+            recompose_on_default: false,
+        }
+    );
+    assert!(eager.iter().any(|candidate| {
+        candidate.text == "COMPLETION" && candidate.source == CandidateSource::Completion
+    }));
+    assert!(
+        eager
+            .iter()
+            .all(|candidate| candidate.source != CandidateSource::Table),
+        "nxyz intentionally has no full exact"
+    );
+}
+
+#[test]
+fn transformed_prefix_fallback_reaches_multi_character_rows_across_storage_paths() {
+    let formulas = ["xform/^hao$/hk/".to_owned()];
+    let dictionary = TableDictionary::new([TableEntry::new("hao", "\u{4f60}\u{597d}", 100.0)]);
+    let syllabary = ["hao".to_owned()];
+    let compact = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+                .expect("multi-character prefix compact prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_prefix_fallback(true)
+    .with_leading_syllable_reachability(false)
+    .with_sentence(false);
+    let heap = StaticTableTranslator::from_dictionary(dictionary)
+        .with_prefix_fallback(true)
+        .with_leading_syllable_reachability(false)
+        .with_spelling_algebra(&formulas)
+        .with_sentence(false);
+
+    let seed_items = |translator: &StaticTableTranslator| {
+        translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == "translator.leading_fetch_seed")
+            .expect("leading-fetch seed owner row should exist")
+            .item_count
+    };
+    assert_eq!(
+        seed_items(&compact),
+        0,
+        "a current compact prism must resolve phrase surfaces without cloning its syllabary into the heap seed"
+    );
+    assert!(
+        seed_items(&heap) > 0,
+        "heap/source prefix fallback needs a canonical seed for phrase-only transformed rows"
+    );
+
+    for (storage, translator) in [("compact", &compact), ("heap/source", &heap)] {
+        let candidates = translator.translate("hkfoo");
+        let phrase_family = candidates
+            .iter()
+            .filter(|candidate| candidate.text == "\u{4f60}\u{597d}")
+            .collect::<Vec<_>>();
+        assert_eq!(
+            phrase_family.len(),
+            1,
+            "{storage}: mapped phrase row must appear exactly once"
+        );
+        assert_eq!(phrase_family[0].comment, "hao");
+        assert_eq!(
+            phrase_family[0].source,
+            CandidateSource::PartialTable {
+                consumed: 2,
+                recompose_on_default: true,
+            }
+        );
+    }
+}
+
+#[test]
+fn compact_abbreviation_prefix_fallback_preserves_non_recomposing_descriptor() {
+    let formulas = ["abbrev/^hao$/hx/".to_owned()];
+    let dictionary = TableDictionary::new([TableEntry::new("hao", "\u{597d}", 100.0)]);
+    let syllabary = ["hao".to_owned()];
+    let translator = StaticTableTranslator::from_compact_dictionary(
+        dictionary,
+        Some(
+            parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+                .expect("abbreviation prefix compact prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_prefix_fallback(true)
+    .with_leading_syllable_reachability(false)
+    .with_sentence(false);
+
+    let candidates = translator.translate("hxfoo");
+    let abbreviation_family = candidates
+        .iter()
+        .filter(|candidate| candidate.text == "\u{597d}")
+        .collect::<Vec<_>>();
+    assert_eq!(
+        abbreviation_family.len(),
+        1,
+        "the compact prism descriptor must not be duplicated by a lossy alias path"
+    );
+    assert_eq!(abbreviation_family[0].comment, "hao");
+    assert_eq!(
+        abbreviation_family[0].source,
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: false,
+        },
+        "the prism abbreviation bit must suppress default recomposition"
+    );
+}
+
+#[test]
+fn empty_or_invalid_algebra_keeps_heap_prefix_fallback_identity_tone_alias() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("bei2", "\u{6bd4}", 100.0),
+        TableEntry::new("ni", "\u{4f60}", 80.0),
+    ]);
+    let cases = [
+        ("empty", Vec::<String>::new()),
+        ("invalid", vec!["not-a-formula".to_owned()]),
+    ];
+
+    for (label, formulas) in cases {
+        let translator = StaticTableTranslator::from_dictionary(dictionary.clone())
+            .with_prefix_fallback(true)
+            .with_leading_syllable_reachability(false)
+            .with_spelling_algebra(&formulas)
+            .with_sentence(false);
+        let candidates = translator.translate("beini");
+        let normal = candidates
+            .iter()
+            .find(|candidate| candidate.text == "\u{6bd4}")
+            .unwrap_or_else(|| {
+                panic!("{label} algebra must retain bounded identity tone-alias fallback")
+            });
+        assert_eq!(normal.comment, "bei2");
+        assert_eq!(
+            normal.source,
+            CandidateSource::PartialTable {
+                consumed: 3,
+                recompose_on_default: true,
+            }
+        );
+    }
+}
+
+#[test]
+fn explicit_false_spelling_algebra_keeps_surface_index_unallocated_until_enabled() {
+    let formulas = double_pinyin_shaped_algebra();
+    let syllabary = ["hao", "ha", "ni", "zhong"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("lazy-index prism should parse");
+    let disabled = StaticTableTranslator::from_compact_dictionary(
+        double_pinyin_reachability_dictionary(),
+        Some(prism),
+    )
+    .with_leading_syllable_reachability(false)
+    .with_spelling_algebra(&formulas)
+    .with_sentence(false);
+
+    let owner = |translator: &StaticTableTranslator, owner_name: &str| {
+        translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == owner_name)
+            .unwrap_or_else(|| panic!("{owner_name} owner row should exist"))
+    };
+    let before = owner(&disabled, "translator.leading_fetch_index");
+    assert_eq!((before.estimated_bytes, before.item_count), (0, 0));
+    let before_seed = owner(&disabled, "translator.leading_fetch_seed");
+    assert_eq!(
+        (before_seed.estimated_bytes, before_seed.item_count),
+        (0, 0),
+        "explicit-false construction must not scan or retain a syllabary seed"
+    );
+    assert!(disabled.translate("hknivs").is_empty());
+    let after_disabled_lookup = owner(&disabled, "translator.leading_fetch_index");
+    assert_eq!(
+        (
+            after_disabled_lookup.estimated_bytes,
+            after_disabled_lookup.item_count
+        ),
+        (0, 0),
+        "explicit-false translation must not initialize the expanded surface index"
+    );
+
+    let enabled = disabled.with_leading_syllable_reachability(true);
+    let enabled_seed = owner(&enabled, "translator.leading_fetch_seed");
+    assert!(enabled_seed.estimated_bytes > 0);
+    assert!(enabled_seed.item_count > 0);
+    let enabled_cold_index = owner(&enabled, "translator.leading_fetch_index");
+    assert_eq!(
+        (
+            enabled_cold_index.estimated_bytes,
+            enabled_cold_index.item_count
+        ),
+        (0, 0),
+        "late enabling reconstructs only the seed; the expanded index remains cold"
+    );
+    assert_surface_leading_single(&enabled, "hknivs", "\u{597d}", "hao", 2);
+    let after_enabled_lookup = owner(&enabled, "translator.leading_fetch_index");
+    assert!(after_enabled_lookup.estimated_bytes > 0);
+    assert!(after_enabled_lookup.item_count > 0);
+}
+
+#[test]
+fn no_algebra_heap_reachability_is_index_free_and_retains_bounded_tone_aliases() {
+    let mut entries = vec![
+        TableEntry::new("bei2", "\u{6bd4}", 100.0),
+        TableEntry::new("e", "\u{4fc4}", 99.0),
+    ];
+    entries.extend((0..64).map(|index| {
+        TableEntry::new(
+            format!("phrase{index}"),
+            format!("\u{8a5e}{index}"),
+            50.0 - index as f32,
+        )
+    }));
+    let dictionary = TableDictionary::new(entries);
+    let translator = StaticTableTranslator::from_dictionary(dictionary.clone())
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+    let owner = |translator: &StaticTableTranslator, owner_name: &str| {
+        translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == owner_name)
+            .unwrap_or_else(|| panic!("{owner_name} owner row should exist"))
+    };
+
+    assert_eq!(
+        owner(&translator, "translator.leading_fetch_seed").item_count,
+        0,
+        "no-algebra heap reachability must not scan or retain a global seed"
+    );
+    assert_eq!(
+        owner(&translator, "translator.leading_fetch_index").item_count,
+        0,
+        "no-algebra heap reachability must start without a global surface index"
+    );
+    assert_eq!(
+        owner(&translator, "translator.spelling_correction_entries").item_count,
+        0
+    );
+    assert_eq!(
+        owner(&translator, "translator.spelling_correction_surfaces").item_count,
+        0
+    );
+
+    assert_surface_leading_single(&translator, "beini", "\u{6bd4}", "bei2", 3);
+    assert_surface_leading_single(&translator, "etail", "\u{4fc4}", "e", 1);
+    assert!(
+        translator.translate("xxxxxxxx").is_empty(),
+        "a direct heap miss must not enumerate the dictionary"
+    );
+    assert_eq!(
+        owner(&translator, "translator.leading_fetch_index").item_count,
+        0,
+        "bounded exact/tone probes must not initialize a global index"
+    );
+
+    let invalid = StaticTableTranslator::from_dictionary(dictionary)
+        .with_leading_syllable_reachability(true)
+        .with_spelling_algebra(&["not-a-formula".to_owned()])
+        .with_sentence(false);
+    assert_eq!(
+        owner(&invalid, "translator.leading_fetch_seed").item_count,
+        0,
+        "invalid all-or-nothing algebra must remain on the index-free identity path"
+    );
+    assert_surface_leading_single(&invalid, "beini", "\u{6bd4}", "bei2", 3);
+    assert_eq!(
+        owner(&invalid, "translator.leading_fetch_index").item_count,
+        0
+    );
+}
+
+#[test]
+fn no_algebra_compact_identity_prism_retains_bounded_tone_aliases() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("bei2", "\u{6bd4}", 100.0),
+        TableEntry::new("be2", "\u{5564}", 95.0),
+        TableEntry::new("ni", "\u{4f60}", 90.0),
+    ]);
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("tone-alias table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("tone-alias compact table should parse");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &[], 0x1234_5678, 2);
+    assert_eq!(
+        i32::from_le_bytes(prism_bytes[56..60].try_into().expect("map pointer bytes")),
+        0,
+        "no-algebra control must use the upstream null-map identity prism"
+    );
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed identity prism should parse");
+    let translator =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_leading_syllable_reachability(true)
+            .with_sentence(false);
+
+    assert_surface_leading_single(&translator, "beini", "\u{6bd4}", "bei2", 3);
+    assert_surface_leading_single(&translator, "bei", "\u{5564}", "be2", 2);
+    let owner = |owner_name: &str| {
+        translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == owner_name)
+            .unwrap_or_else(|| panic!("{owner_name} owner row should exist"))
+    };
+    assert_eq!(
+        (
+            owner("translator.leading_fetch_seed").item_count,
+            owner("translator.leading_fetch_index").item_count,
+        ),
+        (0, 0),
+        "bounded Darts tone-child probes must not allocate a global surface index"
+    );
+}
+
+#[test]
+fn explicit_algebra_prism_does_not_invent_an_unexposed_tone_alias() {
+    let formulas = ["derive/^ni$/nx/".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("bei2", "\u{6bd4}", 100.0),
+        TableEntry::new("ni", "\u{4f60}", 90.0),
+    ]);
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("explicit-algebra table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("explicit-algebra compact table should parse");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &formulas, 0x1234_5678, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("explicit-algebra byte-backed prism should parse");
+    let translator =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_spelling_algebra(&formulas)
+            .with_leading_syllable_reachability(true)
+            .with_sentence(false);
+
+    assert!(
+        !translator
+            .translate("beini")
+            .iter()
+            .any(|candidate| candidate.text == "\u{6bd4}"),
+        "an unrelated explicit algebra must not synthesize an undeployed bei surface from canonical bei2"
+    );
+}
+
+#[test]
+fn real_stroke_null_map_no_algebra_index_does_not_fan_out_to_every_spelling() {
+    let schema_root =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public/schema");
+    let table_bytes = fs::read(schema_root.join("stroke.table.bin"))
+        .expect("product Stroke table fixture should be present");
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("product Stroke table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("product Stroke table should load as compact storage");
+    let spelling_count = store.syllabary_codes().len();
+    assert!(
+        spelling_count >= 157_000,
+        "control fixture should retain the large Stroke spelling inventory"
+    );
+    let boundary_37 = store
+        .syllabary_codes()
+        .iter()
+        .find(|code| code.len() == 37 && code.is_ascii())
+        .expect("tracked Stroke syllabary should retain a real 37-byte ASCII code")
+        .clone();
+    let long_stroke_code = store
+        .syllabary_codes()
+        .iter()
+        .find(|code| code.len() > 59 && code.is_ascii())
+        .expect("tracked Stroke syllabary should retain a real key extending beyond byte 59")
+        .clone();
+    let boundary_59 = long_stroke_code[..59].to_owned();
+    assert_eq!(boundary_59.chars().count(), 59);
+    let functional_code = store
+        .syllabary_codes()
+        .iter()
+        .find(|code| code.len() <= 8 && code.is_ascii() && store.exact_candidate_count(code) == 1)
+        .expect("tracked Stroke table should retain a bounded one-candidate control code")
+        .clone();
+    let prism_bytes = fs::read(schema_root.join("stroke.prism.bin"))
+        .expect("product Stroke prism fixture should be present");
+    assert_eq!(
+        i32::from_le_bytes(prism_bytes[56..60].try_into().expect("map pointer bytes")),
+        0,
+        "control fixture must exercise the upstream null-map identity optimization"
+    );
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("product Stroke identity prism should parse byte-backed");
+    assert!(prism.has_byte_backed_identity_spelling_map());
+    let boundary_37_matches =
+        prism.common_prefix_canonical_codes(&boundary_37, store.syllabary_codes(), usize::MAX);
+    assert!(
+        boundary_37_matches
+            .iter()
+            .any(|(matched_len, lookup)| *matched_len == 37 && lookup.code == boundary_37),
+        "the real byte-backed Stroke Darts must return the full 37-character deployed key"
+    );
+    let full_long_matches =
+        prism.common_prefix_canonical_codes(&long_stroke_code, store.syllabary_codes(), usize::MAX);
+    assert!(
+        full_long_matches.iter().any(|(matched_len, lookup)| {
+            *matched_len == long_stroke_code.len() && lookup.code == long_stroke_code
+        }),
+        "the deployed long key must prove that its Darts path extends beyond byte 59"
+    );
+    let expected_through_59 = full_long_matches
+        .iter()
+        .filter(|(matched_len, _)| *matched_len <= boundary_59.len())
+        .map(|(matched_len, lookup)| (*matched_len, lookup.code.to_owned()))
+        .collect::<Vec<_>>();
+    let actual_through_59 = prism
+        .common_prefix_canonical_codes(&boundary_59, store.syllabary_codes(), usize::MAX)
+        .into_iter()
+        .map(|(matched_len, lookup)| (matched_len, lookup.code.to_owned()))
+        .collect::<Vec<_>>();
+    assert!(!actual_through_59.is_empty());
+    assert_eq!(actual_through_59, expected_through_59);
+    let translator =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_leading_syllable_reachability(true)
+            .with_completion(false)
+            .with_sentence(false);
+    let owner = |owner_name: &str| {
+        translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == owner_name)
+            .unwrap_or_else(|| panic!("{owner_name} owner row should exist"))
+    };
+    assert_eq!(
+        (
+            owner("translator.leading_fetch_seed").estimated_bytes,
+            owner("translator.leading_fetch_seed").item_count
+        ),
+        (0, 0),
+        "the real {spelling_count}-spelling Stroke product must not clone a reachability seed"
+    );
+    assert_eq!(
+        (
+            owner("translator.leading_fetch_index").estimated_bytes,
+            owner("translator.leading_fetch_index").item_count
+        ),
+        (0, 0)
+    );
+    let prism_map = owner("prism.spelling_map");
+    assert_eq!(
+        (prism_map.estimated_bytes, prism_map.item_count),
+        (0, 0),
+        "the upstream null spelling-map pointer must remain a zero-allocation identity view"
+    );
+    let prism_darts = owner("prism.double_array_units");
+    assert_eq!(prism_darts.class, MemoryOwnerClass::HeapOwnedGuarded);
+    assert!(prism_darts.estimated_bytes > 0 && prism_darts.item_count > 0);
+
+    let functional = translator.translate(&functional_code);
+    assert_eq!(
+        functional.len(),
+        1,
+        "the compact translator must retain a bounded functional identity lookup"
+    );
+    assert!(!functional[0].text.is_empty());
+    let invalid = "x".repeat(84);
+    assert!(
+        translator.translate(&invalid).is_empty(),
+        "an authoritative Stroke prism miss must stay empty without a storage-prefix fallback"
+    );
+    assert_eq!(
+        (
+            owner("translator.leading_fetch_seed").estimated_bytes,
+            owner("translator.leading_fetch_seed").item_count,
+            owner("translator.leading_fetch_index").estimated_bytes,
+            owner("translator.leading_fetch_index").item_count,
+        ),
+        (0, 0, 0, 0),
+        "valid 37/59-char Darts traversals, a bounded functional lookup, and an 84-char miss must keep both owners at zero"
+    );
+}
+
+#[test]
+fn replacing_initialized_algebra_with_empty_or_invalid_formulas_resets_surface_caches() {
+    let formulas = ["xform/^long$/x/".to_owned()];
+    let syllabary = ["long".to_owned()];
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("reset-control prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(
+        TableDictionary::new([TableEntry::new("long", "\u{9577}", 100.0)]),
+        Some(prism),
+    )
+    .with_leading_syllable_reachability(true)
+    .with_spelling_algebra(&formulas)
+    .with_sentence(false);
+    let owner_stats = |translator: &StaticTableTranslator, owner_name: &str| {
+        let row = translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == owner_name)
+            .unwrap_or_else(|| panic!("{owner_name} owner row should exist"));
+        (row.estimated_bytes, row.item_count)
+    };
+
+    assert_surface_leading_single(&translator, "xy", "\u{9577}", "long", 1);
+    assert!(
+        owner_stats(&translator, "translator.leading_fetch_index").0 > 0,
+        "control lookup must initialize the transformed index and max-prefix cache"
+    );
+
+    let reset = translator.with_spelling_algebra(&[]);
+    assert_eq!(
+        owner_stats(&reset, "translator.leading_fetch_seed"),
+        (0, 0),
+        "empty algebra must drop the transformed seed"
+    );
+    assert_eq!(
+        owner_stats(&reset, "translator.leading_fetch_index"),
+        (0, 0),
+        "empty algebra must drop the initialized transformed index"
+    );
+    assert_surface_leading_single(&reset, "longy", "\u{9577}", "long", 4);
+
+    let invalid = reset.with_spelling_algebra(&["not-a-formula".to_owned()]);
+    assert_eq!(
+        owner_stats(&invalid, "translator.leading_fetch_seed"),
+        (0, 0),
+        "an invalid replacement algebra must not retain a seed"
+    );
+    assert_eq!(
+        owner_stats(&invalid, "translator.leading_fetch_index"),
+        (0, 0),
+        "an invalid replacement algebra must invalidate the prior default index"
+    );
+    assert_surface_leading_single(&invalid, "longy", "\u{9577}", "long", 4);
+}
+
+#[test]
+fn a_mixed_valid_and_invalid_algebra_has_no_transformed_runtime_edge_or_seed() {
+    let formulas = [
+        "derive/^hao$/hx/".to_owned(),
+        "this-is-not-a-valid-algebra-formula".to_owned(),
+    ];
+    let syllabary = ["hao", "ni"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &[], 1, 2))
+        .expect("identity control prism should parse");
+    let compact = StaticTableTranslator::from_compact_dictionary(
+        TableDictionary::new([
+            TableEntry::new("hao", "\u{597d}", 100.0),
+            TableEntry::new("ni", "\u{4f60}", 90.0),
+        ]),
+        Some(prism),
+    )
+    .with_leading_syllable_reachability(true)
+    .with_spelling_algebra(&formulas)
+    .with_sentence(false);
+    let heap = StaticTableTranslator::new([("hao", "\u{597d}"), ("ni", "\u{4f60}")])
+        .with_leading_syllable_reachability(true)
+        .with_spelling_algebra(&formulas)
+        .with_sentence(false);
+
+    for (storage, translator) in [("compact", &compact), ("heap/source", &heap)] {
+        let seed = translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == "translator.leading_fetch_seed")
+            .expect("leading-fetch seed owner should exist");
+        assert_eq!(
+            (seed.estimated_bytes, seed.item_count),
+            (0, 0),
+            "{storage}: an invalid sibling must clear the complete algebra before cache seeding"
+        );
+        assert!(
+            !translator
+                .translate("hxni")
+                .iter()
+                .any(|candidate| candidate.text == "\u{597d}"),
+            "{storage}: the valid sibling must not survive as a partial transformed edge"
+        );
+    }
+}
+
+#[test]
+fn replacing_heap_algebra_resets_initialized_untoned_dictionary_classification() {
+    let translator = StaticTableTranslator::new([("bei2", "\u{6bd4}")]).with_sentence(false);
+    assert!(
+        !translator.untoned_dictionary(),
+        "the control storage contains a tone digit"
+    );
+
+    let transformed = translator.with_spelling_algebra(&["xform/2$//".to_owned()]);
+    assert!(
+        transformed.untoned_dictionary(),
+        "heap algebra rewrites the storage key to `bei`; the old OnceLock classification must not survive"
+    );
+}
+
+#[test]
+fn normalized_injection_fallback_does_not_masquerade_as_a_bare_exact() {
+    let translator = StaticTableTranslator::from_compact_dictionary(
+        TableDictionary::new([
+            TableEntry::new("bei2", "\u{6bd4}", 100.0),
+            TableEntry::new("be2", "\u{5564}", 90.0),
+        ]),
+        None,
+    )
+    .with_leading_syllable_reachability(true)
+    .with_sentence(false);
+
+    // With no deployed algebra, `bei` is only the legacy normalized injection
+    // key for canonical `bei2`; the normal exact path does not serve it. It must
+    // therefore not trip the bare guard and erase the shorter `be` family.
+    assert_surface_leading_single(&translator, "bei", "\u{5564}", "be2", 2);
+}
+
+#[test]
+fn leading_single_ordered_quality_preserves_initial_quality_across_translators() {
+    let low = StaticTableTranslator::new([("ba", "低")])
+        .with_initial_quality(0.0)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+    let high = StaticTableTranslator::new([("ba", "高")])
+        .with_initial_quality(10.0)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+
+    let injected = |translator: &StaticTableTranslator, target: &str| {
+        translator
+            .translate("baba")
+            .into_iter()
+            .find(|candidate| candidate.text == target)
+            .unwrap_or_else(|| panic!("{target} should be injected from the leading `ba` family"))
+    };
+    let low_candidate = injected(&low, "低");
+    let high_candidate = injected(&high, "高");
+    assert!(matches!(
+        low_candidate.source,
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: true,
+        }
+    ));
+    assert!(matches!(
+        high_candidate.source,
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: true,
+        }
+    ));
+    assert_eq!(
+        high_candidate.quality - low_candidate.quality,
+        10.0,
+        "D-47's positional ordering must retain the namespace initial_quality offset"
+    );
+}
+
+#[test]
+fn leading_single_ordered_quality_keeps_unequal_lists_inside_their_namespace_band() {
+    let low_entries = (0..20)
+        .map(|index| {
+            let text = char::from_u32(0x4e00 + index)
+                .expect("test code point should be valid")
+                .to_string();
+            ("ba".to_owned(), text)
+        })
+        .collect::<Vec<_>>();
+    let low = StaticTableTranslator::new(low_entries)
+        .with_initial_quality(0.0)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+    let high = StaticTableTranslator::new([("ba", "\u{9ad8}")])
+        .with_initial_quality(10.0)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+
+    let low_candidates = low.translate("baba");
+    let high_candidate = high
+        .translate("baba")
+        .into_iter()
+        .find(|candidate| candidate.text == "\u{9ad8}")
+        .expect("high-priority translator should inject its leading single");
+    let low_head = low_candidates
+        .iter()
+        .map(|candidate| candidate.quality)
+        .reduce(f32::max)
+        .expect("low-priority translator should inject its family");
+
+    assert!(
+        low_head < 1.0,
+        "positional qualities must remain in the translator's bounded unit band"
+    );
+    assert!(
+        high_candidate.quality > low_head,
+        "twenty low-priority rows must not swamp a one-row translator with initial_quality=10"
     );
 }
 
@@ -2081,6 +4081,570 @@ fn bounded_request_uses_prefix_fallback_without_full_fallback() {
     assert_eq!(result.candidates[0].text, "你");
     assert_eq!(metrics.full_list_fallback_count, 0);
     assert!(metrics.prefix_fallback_calls > 0);
+}
+
+#[test]
+fn full_bounded_page_merges_a_capped_prefix_window_and_keeps_has_more() {
+    let _guard = super::m37_metrics_test_guard();
+    let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let mut entries = (0..10)
+        .map(|index| TableEntry::new("az", format!("EXACT{index}"), 200.0 - index as f32))
+        .collect::<Vec<_>>();
+    entries.extend([
+        TableEntry::new("aa", "EXACT0", 100.0),
+        TableEntry::new("aa", "EXACT1", 99.0),
+        TableEntry::new("ab", "EXACT2", 98.0),
+        TableEntry::new("ab", "EXACT3", 97.0),
+        TableEntry::new("ac", "EXACT4", 96.0),
+        TableEntry::new("ac", "EXACT5", 95.0),
+        TableEntry::new("ad", "PREFIX_UNIQUE", 94.0),
+    ]);
+    for (index, code) in (b'e'..=b'x').map(char::from).enumerate() {
+        entries.push(TableEntry::new(
+            format!("a{code}"),
+            format!("TAIL{index}"),
+            90.0 - index as f32,
+        ));
+    }
+    let dictionary = TableDictionary::new(entries);
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("existence-probe table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("existence-probe table should load byte-backed");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &formulas, 0x1234_5678, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("existence-probe prism should load byte-backed");
+    let translator =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_spelling_algebra(&formulas)
+            .with_prefix_fallback(true)
+            .with_sentence(false);
+    let context = Context::default();
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let bounded = translator.translate_with_context_and_request(
+        "az",
+        &Status::default(),
+        &HashMap::new(),
+        &context,
+        CandidateRequest::bounded(10),
+    );
+    let probe_metrics = crate::m37_metrics_snapshot();
+
+    assert_eq!(
+        bounded
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        (0..10)
+            .map(|index| format!("EXACT{index}"))
+            .collect::<Vec<_>>(),
+        "the shared fallback merge must not displace the full exact family"
+    );
+    assert!(
+        !bounded.is_complete,
+        "the unique prefix row after duplicate texts must still advertise another page"
+    );
+    assert!(
+        (1..=10).contains(&probe_metrics.prefix_fallback_candidates),
+        "the full page must materialize only its bounded merge window"
+    );
+    assert!(
+        (1..=40).contains(&probe_metrics.prefix_fallback_views_visited),
+        "the merge must stay inside the signed four-window pending cap"
+    );
+    assert!(
+        bounded.candidates[..6].iter().all(|candidate| matches!(
+            candidate.source,
+            CandidateSource::PartialTable {
+                consumed: 2,
+                recompose_on_default: false,
+            }
+        )),
+        "duplicate full-page exacts must receive the same span promotion as the eager merge"
+    );
+
+    crate::m37_metrics_reset();
+    let debug_count = translator.translate_with_context_and_request(
+        "az",
+        &Status::default(),
+        &HashMap::new(),
+        &context,
+        CandidateRequest::bounded(10).with_debug_full_count(true),
+    );
+    let debug_metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(debug_count.candidates, bounded.candidates);
+    assert!(debug_count.full_count.is_some_and(|count| count > 10));
+    assert!(
+        debug_metrics.prefix_fallback_views_visited <= probe_metrics.prefix_fallback_views_visited,
+        "the repeated debug request may reuse the bounded prefix-window cache"
+    );
+}
+
+#[test]
+fn full_bounded_page_stays_incomplete_when_unique_fallback_is_beyond_fetch_cap() {
+    let entries = [
+        TableEntry::new("abcdefgh", "EXACT0", 200.0),
+        TableEntry::new("abcdefgh", "EXACT1", 199.0),
+        TableEntry::new("ab", "EXACT0", 100.0),
+        TableEntry::new("ab", "EXACT1", 99.0),
+        TableEntry::new("ab", "UNIQUE_AFTER_CAP", 98.0),
+    ];
+    let translator = compact_prefix_fallback_test_translator(entries, &[]);
+
+    let result = translator.translate_with_context_and_request(
+        "abcdefgh",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(2).with_debug_full_count(true),
+    );
+
+    assert_eq!(
+        result
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["EXACT0", "EXACT1"]
+    );
+    assert!(!result.is_complete);
+    assert!(result
+        .full_count
+        .is_some_and(|count| count > result.candidates.len()));
+}
+
+#[test]
+fn budget_truncated_duplicate_probe_stays_incomplete() {
+    let entries = [
+        TableEntry::new("abcdefgh", "EXACT", 200.0),
+        TableEntry::new("ab", "EXACT", 100.0),
+        TableEntry::new("abcd", "EXACT", 99.0),
+        TableEntry::new("abcdef", "EXACT", 98.0),
+        TableEntry::new("abcdefg", "EXACT", 97.0),
+    ];
+    let translator = compact_prefix_fallback_test_translator(entries, &[]);
+
+    let result = translator.translate_with_context_and_request(
+        "abcdefgh",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(1),
+    );
+
+    assert_eq!(result.candidates[0].text, "EXACT");
+    assert!(
+        !result.is_complete,
+        "a global probe cap cannot prove that the duplicate-only family is exhausted"
+    );
+}
+
+#[test]
+fn exhausted_duplicate_probe_can_report_complete() {
+    let entries = [
+        TableEntry::new("abcdefgh", "EXACT", 200.0),
+        TableEntry::new("ab", "EXACT", 100.0),
+        TableEntry::new("abcd", "EXACT", 99.0),
+        TableEntry::new("abcdef", "EXACT", 98.0),
+    ];
+    let translator = compact_prefix_fallback_test_translator(entries, &[]);
+
+    let result = translator.translate_with_context_and_request(
+        "abcdefgh",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(1),
+    );
+
+    assert_eq!(result.candidates[0].text, "EXACT");
+    assert!(
+        result.is_complete,
+        "only an exhaustive duplicate-only probe may advertise completion"
+    );
+}
+
+fn compact_prefix_fallback_test_translator(
+    entries: impl IntoIterator<Item = TableEntry>,
+    formulas: &[String],
+) -> StaticTableTranslator {
+    let dictionary = TableDictionary::new(entries);
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("prefix fallback test table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("prefix fallback test table should load byte-backed");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), formulas, 0x1234_5678, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("prefix fallback test prism should load byte-backed");
+    StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+        .with_spelling_algebra(formulas)
+        .with_prefix_fallback(true)
+        .with_sentence(false)
+}
+
+fn prefix_fallback_cache_owner_snapshot(translator: &StaticTableTranslator) -> (usize, usize) {
+    translator
+        .memory_owner_rows()
+        .into_iter()
+        .find(|row| row.owner == "translator.prefix_fallback_window_cache")
+        .map(|row| (row.estimated_bytes, row.item_count))
+        .expect("prefix fallback cache owner row should exist")
+}
+
+fn candidate_shape_without_quality(
+    candidates: impl IntoIterator<Item = Candidate>,
+) -> Vec<(String, String, CandidateSource)> {
+    candidates
+        .into_iter()
+        .map(|candidate| (candidate.text, candidate.comment, candidate.source))
+        .collect()
+}
+
+#[test]
+fn bounded_prefix_fallback_cache_preserves_cold_warm_order_and_is_owner_accounted() {
+    let _guard = super::m37_metrics_test_guard();
+    let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let entries = (b'a'..=b'y')
+        .map(char::from)
+        .enumerate()
+        .map(|(index, suffix)| {
+            TableEntry::new(
+                format!("a{suffix}"),
+                format!("ROW{index:02}"),
+                200.0 - index as f32,
+            )
+        })
+        .collect::<Vec<_>>();
+    let dictionary = TableDictionary::new(entries);
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("prefix-window table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("prefix-window table should load byte-backed");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &formulas, 0x1234_5678, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("prefix-window prism should load byte-backed");
+    let translator =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_spelling_algebra(&formulas)
+            .with_prefix_fallback(true)
+            .with_sentence(false);
+    let context = Context::default();
+    let owner = |translator: &StaticTableTranslator| {
+        translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == "translator.prefix_fallback_window_cache")
+            .expect("prefix fallback cache owner row should exist")
+    };
+    assert_eq!(owner(&translator).item_count, 0);
+
+    let complete = translator.translate("az");
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let cold = translator.translate_with_context_and_request(
+        "az",
+        &Status::default(),
+        &HashMap::new(),
+        &context,
+        CandidateRequest::bounded(10),
+    );
+    let cold_metrics = crate::m37_metrics_snapshot();
+    assert!(cold_metrics.prefix_fallback_views_visited > 0);
+    let candidate_shape = |candidates: &[Candidate]| {
+        candidates
+            .iter()
+            .map(|candidate| {
+                (
+                    candidate.text.clone(),
+                    candidate.comment.clone(),
+                    candidate.source.clone(),
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        candidate_shape(&cold.candidates),
+        candidate_shape(&complete.into_iter().take(10).collect::<Vec<_>>()),
+        "the cold bounded cache fill must preserve the complete-list prefix"
+    );
+    let populated_owner = owner(&translator);
+    assert_eq!(populated_owner.item_count, 25);
+    assert!(populated_owner.estimated_bytes > 0);
+    assert!(populated_owner.item_count <= 128);
+    assert!(populated_owner.estimated_bytes <= 512 * 1024);
+
+    crate::m37_metrics_reset();
+    let warm = translator.translate_with_context_and_request(
+        "azextra",
+        &Status::default(),
+        &HashMap::new(),
+        &context,
+        CandidateRequest::bounded(10),
+    );
+    let warm_metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+    assert_eq!(warm.candidates, cold.candidates);
+    assert_eq!(warm.is_complete, cold.is_complete);
+    assert_eq!(
+        warm_metrics.prefix_fallback_views_visited, 0,
+        "a longer input with the same resolved leading family must reuse the raw window"
+    );
+
+    let reset = translator.with_spelling_algebra(&formulas);
+    assert_eq!(
+        owner(&reset).item_count,
+        0,
+        "reconfiguring deployed algebra must invalidate the raw prefix window"
+    );
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let rebuilt = reset.translate_with_context_and_request(
+        "az",
+        &Status::default(),
+        &HashMap::new(),
+        &context,
+        CandidateRequest::bounded(10),
+    );
+    let rebuilt_metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+    assert_eq!(rebuilt.candidates, cold.candidates);
+    assert!(rebuilt_metrics.prefix_fallback_views_visited > 0);
+}
+
+#[test]
+fn bounded_prefix_fallback_cache_admits_a_59_character_request() {
+    let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let entries = (b'a'..=b'y')
+        .map(char::from)
+        .enumerate()
+        .map(|(index, suffix)| {
+            TableEntry::new(
+                format!("a{suffix}"),
+                format!("ROW{index:02}"),
+                200.0 - index as f32,
+            )
+        })
+        .collect::<Vec<_>>();
+    let translator = compact_prefix_fallback_test_translator(entries, &formulas);
+    let input = "a".repeat(59);
+
+    let bounded = translator.translate_with_context_and_request(
+        &input,
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(10),
+    );
+    let (bytes, items) = prefix_fallback_cache_owner_snapshot(&translator);
+
+    assert!(!bounded.candidates.is_empty());
+    assert!((1..=128).contains(&items));
+    assert!((1..=512 * 1024).contains(&bytes));
+}
+
+#[test]
+fn oversized_prefix_fallback_request_limit_bypasses_the_cache() {
+    let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let entries = (b'a'..=b'y')
+        .map(char::from)
+        .enumerate()
+        .map(|(index, suffix)| {
+            TableEntry::new(
+                format!("a{suffix}"),
+                format!("ROW{index:02}"),
+                200.0 - index as f32,
+            )
+        })
+        .collect::<Vec<_>>();
+    let translator = compact_prefix_fallback_test_translator(entries, &formulas);
+    let complete = translator.translate("az");
+
+    let bounded = translator.translate_with_context_and_request(
+        "az",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(33),
+    );
+
+    let bounded_len = bounded.candidates.len();
+    assert_eq!(
+        candidate_shape_without_quality(bounded.candidates),
+        candidate_shape_without_quality(complete.into_iter().take(bounded_len))
+    );
+    assert_eq!(prefix_fallback_cache_owner_snapshot(&translator), (0, 0));
+}
+
+#[test]
+fn oversized_prefix_count_and_key_bytes_bypass_the_cache() {
+    for (first_len, prefix_count) in [(1usize, 65usize), (513usize, 64usize)] {
+        let entries = (0..prefix_count)
+            .map(|index| {
+                let code = "a".repeat(first_len + index);
+                TableEntry::new(code, format!("ROW{index:02}"), 200.0 - index as f32)
+            })
+            .collect::<Vec<_>>();
+        let translator = compact_prefix_fallback_test_translator(entries, &[]);
+        let input = "a".repeat(first_len + prefix_count);
+        let complete = translator.translate(&input);
+
+        let bounded = translator.translate_with_context_and_request(
+            &input,
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(4),
+        );
+
+        let bounded_len = bounded.candidates.len();
+        assert_eq!(
+            candidate_shape_without_quality(bounded.candidates),
+            candidate_shape_without_quality(complete.into_iter().take(bounded_len)),
+            "bounded uncached parity failed for first_len={first_len}, prefix_count={prefix_count}"
+        );
+        assert_eq!(prefix_fallback_cache_owner_snapshot(&translator), (0, 0));
+    }
+}
+
+#[test]
+fn oversized_prefix_fallback_payload_is_request_local() {
+    let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let entries = (b'b'..=b'u')
+        .map(char::from)
+        .enumerate()
+        .map(|(index, suffix)| {
+            TableEntry::new(
+                format!("a{suffix}"),
+                format!("ROW{index:02}{}", "x".repeat(32 * 1024)),
+                200.0 - index as f32,
+            )
+        })
+        .collect::<Vec<_>>();
+    let translator = compact_prefix_fallback_test_translator(entries, &formulas);
+    let complete = translator.translate("az");
+
+    let bounded = translator.translate_with_context_and_request(
+        "az",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(10),
+    );
+
+    let bounded_len = bounded.candidates.len();
+    assert_eq!(
+        candidate_shape_without_quality(bounded.candidates),
+        candidate_shape_without_quality(complete.into_iter().take(bounded_len))
+    );
+    assert_eq!(prefix_fallback_cache_owner_snapshot(&translator), (0, 0));
+}
+
+#[test]
+fn concurrent_prefix_fallback_cache_hits_and_replacements_preserve_results() {
+    let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let entries = [b'a', b'b']
+        .into_iter()
+        .flat_map(|initial| {
+            (b'a'..=b'y').map(move |suffix| {
+                let index = usize::from(suffix - b'a');
+                TableEntry::new(
+                    format!("{}{}", char::from(initial), char::from(suffix)),
+                    format!("{}ROW{index:02}", char::from(initial).to_ascii_uppercase()),
+                    200.0 - index as f32,
+                )
+            })
+        })
+        .collect::<Vec<_>>();
+    let translator = Arc::new(compact_prefix_fallback_test_translator(entries, &formulas));
+    let expected_a = translator
+        .translate("az")
+        .into_iter()
+        .take(10)
+        .map(|candidate| (candidate.text, candidate.comment, candidate.source))
+        .collect::<Vec<_>>();
+    let expected_b = translator
+        .translate("bz")
+        .into_iter()
+        .take(10)
+        .map(|candidate| (candidate.text, candidate.comment, candidate.source))
+        .collect::<Vec<_>>();
+
+    std::thread::scope(|scope| {
+        let handles = (0..16)
+            .map(|index| {
+                let translator = Arc::clone(&translator);
+                let (input, expected) = if index % 3 == 0 {
+                    ("bz", &expected_b)
+                } else {
+                    ("az", &expected_a)
+                };
+                scope.spawn(move || {
+                    let result = translator.translate_with_context_and_request(
+                        input,
+                        &Status::default(),
+                        &HashMap::new(),
+                        &Context::default(),
+                        CandidateRequest::bounded(10),
+                    );
+                    let shape = result
+                        .candidates
+                        .into_iter()
+                        .map(|candidate| (candidate.text, candidate.comment, candidate.source))
+                        .collect::<Vec<_>>();
+                    assert_eq!(&shape, expected);
+                })
+            })
+            .collect::<Vec<_>>();
+        for handle in handles {
+            handle
+                .join()
+                .expect("prefix fallback cache worker panicked");
+        }
+    });
+
+    let (bytes, items) = prefix_fallback_cache_owner_snapshot(&translator);
+    assert!((1..=128).contains(&items));
+    assert!((1..=512 * 1024).contains(&bytes));
+}
+
+#[test]
+fn heap_and_unbounded_prefix_fallback_leave_the_cache_empty() {
+    let heap = StaticTableTranslator::new([("aa", "A"), ("ab", "B")])
+        .with_prefix_fallback(true)
+        .with_sentence(false);
+    let _ = heap.translate_with_context_and_request(
+        "aaz",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(1),
+    );
+    assert_eq!(prefix_fallback_cache_owner_snapshot(&heap), (0, 0));
+
+    let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let compact = compact_prefix_fallback_test_translator(
+        [
+            TableEntry::new("aa", "A", 2.0),
+            TableEntry::new("ab", "B", 1.0),
+        ],
+        &formulas,
+    );
+    let _ = compact.translate("az");
+    assert_eq!(prefix_fallback_cache_owner_snapshot(&compact), (0, 0));
 }
 
 #[test]

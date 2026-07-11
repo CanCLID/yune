@@ -942,7 +942,10 @@ dadan\t大单
                 .to_owned()
         })
         .collect::<Vec<_>>();
-    assert_eq!(texts, ["cacao"]);
+    // D-47 reachability is independent of sentence construction: disabling
+    // `enable_sentence` removes a composed sentence, but the default-on leading
+    // `ca` family still makes 擦 selectable before the raw echo.
+    assert_eq!(texts, ["擦", "cacao"]);
     // SAFETY: nested pointers were allocated by `RimeGetContext` above.
     assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
 
@@ -971,7 +974,10 @@ dadan\t大单
                 .to_owned()
         })
         .collect::<Vec<_>>();
-    assert_eq!(texts, ["大大", "大单", "dada"]);
+    // `sentence_over_completion` still keeps the composed sentence and
+    // completion first; D-47 then appends the independently reachable leading
+    // `da` single before the raw echo.
+    assert_eq!(texts, ["大大", "大单", "大", "dada"]);
     // SAFETY: nested pointers were allocated by `RimeGetContext` above.
     assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
     assert_eq!(RimeDestroySession(session_id), TRUE);
@@ -1054,7 +1060,10 @@ BEI\tbei\t100
     let session_id = RimeCreateSession();
     let canonical = CString::new("jyut6ping3").expect("schema id should be valid");
     // SAFETY: schema id is a valid NUL-terminated string.
-    assert_eq!(unsafe { RimeSelectSchema(session_id, canonical.as_ptr()) }, TRUE);
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, canonical.as_ptr()) },
+        TRUE
+    );
     for ch in "beingo".chars() {
         assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
     }
@@ -1067,7 +1076,10 @@ BEI\tbei\t100
     RimeClearComposition(session_id);
     let profile = CString::new("jyut6ping3_profile").expect("schema id should be valid");
     // SAFETY: schema id is a valid NUL-terminated string.
-    assert_eq!(unsafe { RimeSelectSchema(session_id, profile.as_ptr()) }, TRUE);
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, profile.as_ptr()) },
+        TRUE
+    );
     for ch in "beingo".chars() {
         assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
     }
@@ -1109,9 +1121,11 @@ engine:
 low_table:
   dictionary: low
   enable_completion: false
+  enable_sentence: false
 high_table:
   dictionary: high
   enable_completion: false
+  enable_sentence: false
   initial_quality: 10
 ",
     )
@@ -1188,6 +1202,38 @@ ba\t高
     assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
 
     assert_eq!(texts, ["高", "低", "ba"]);
+
+    RimeClearComposition(session_id);
+    for ch in "baba".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+    let mut context = empty_context();
+    // SAFETY: context points to writable storage initialized with positive
+    // `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    let texts = candidates
+        .iter()
+        .map(|candidate| {
+            // SAFETY: candidate text pointers are populated by `RimeGetContext`.
+            unsafe { CStr::from_ptr(candidate.text) }
+                .to_str()
+                .expect("candidate text should be valid UTF-8")
+                .to_owned()
+        })
+        .collect::<Vec<_>>();
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+    assert_eq!(
+        texts,
+        ["高", "低", "baba"],
+        "active D-47 injection must retain high_table's namespace initial_quality offset"
+    );
 
     assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();

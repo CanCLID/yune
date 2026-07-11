@@ -2,7 +2,7 @@ use super::{CompactTableByteSource, RimeCorrectionEntry, RimeToleranceRule};
 use crate::dictionary::compiled::{
     parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le,
 };
-use crate::dictionary::double_array::DartsDoubleArray;
+use crate::dictionary::double_array::{DartsDoubleArray, DartsMatch};
 use crate::{MemoryOwnerClass, MemoryOwnerRow};
 use std::mem;
 use std::sync::Arc;
@@ -119,8 +119,17 @@ impl RimePrismBinPayload {
         else {
             return Vec::new();
         };
+        self.lookup_canonical_codes_for_index(spelling_index as usize, syllabary_codes, limit)
+    }
+
+    fn lookup_canonical_codes_for_index<'a>(
+        &self,
+        spelling_index: usize,
+        syllabary_codes: &'a [String],
+        limit: usize,
+    ) -> Vec<PrismLookupCode<'a>> {
         self.spelling_map
-            .get(spelling_index as usize)
+            .get(spelling_index)
             .into_iter()
             .flatten()
             .filter_map(|descriptor| {
@@ -135,6 +144,79 @@ impl RimePrismBinPayload {
             })
             .take(limit)
             .collect()
+    }
+
+    fn common_prefix_canonical_codes<'a>(
+        &self,
+        spelling: &str,
+        syllabary_codes: &'a [String],
+        limit: usize,
+    ) -> Vec<(usize, PrismLookupCode<'a>)> {
+        let Some(double_array) = self.double_array.as_ref() else {
+            return Vec::new();
+        };
+        let mut lookups = Vec::new();
+        for matched in double_array.common_prefix_search(spelling) {
+            if !spelling.is_char_boundary(matched.length) {
+                continue;
+            }
+            let remaining = limit.saturating_sub(lookups.len());
+            if remaining == 0 {
+                break;
+            }
+            lookups.extend(
+                self.lookup_canonical_codes_for_index(
+                    matched.value as usize,
+                    syllabary_codes,
+                    remaining,
+                )
+                .into_iter()
+                .map(|lookup| (matched.length, lookup)),
+            );
+        }
+        lookups
+    }
+
+    fn trailing_ascii_digit_prefix_canonical_codes<'a>(
+        &self,
+        spelling: &str,
+        syllabary_codes: &'a [String],
+        limit: usize,
+    ) -> Vec<(usize, PrismLookupCode<'a>)> {
+        let Some(double_array) = self.double_array.as_ref() else {
+            return Vec::new();
+        };
+        let mut lookups = Vec::new();
+        let mut probe = Vec::with_capacity(spelling.len().saturating_add(1));
+        for (index, byte) in spelling.bytes().enumerate() {
+            if !byte.is_ascii_alphabetic() {
+                break;
+            }
+            probe.push(byte);
+            let consumed = index + 1;
+            probe.push(b'0');
+            for tone in b'0'..=b'9' {
+                probe[consumed] = tone;
+                let Some(spelling_index) = double_array.exact_match_bytes(&probe) else {
+                    continue;
+                };
+                let remaining = limit.saturating_sub(lookups.len());
+                if remaining == 0 {
+                    return lookups;
+                }
+                lookups.extend(
+                    self.lookup_canonical_codes_for_index(
+                        spelling_index as usize,
+                        syllabary_codes,
+                        remaining,
+                    )
+                    .into_iter()
+                    .map(|lookup| (consumed, lookup)),
+                );
+            }
+            probe.pop();
+        }
+        lookups
     }
 }
 
@@ -165,13 +247,19 @@ struct ByteBackedPrismDoubleArray {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct ByteBackedPrismSpellingMap {
-    offset: usize,
-    spelling_count: usize,
-    descriptor_count: usize,
-    raw_descriptor_bytes: usize,
-    tips_payload_bytes: usize,
-    tip_count: usize,
+enum ByteBackedPrismSpellingMap {
+    Explicit {
+        offset: usize,
+        spelling_count: usize,
+        descriptor_count: usize,
+        raw_descriptor_bytes: usize,
+        tips_payload_bytes: usize,
+        tip_count: usize,
+    },
+    Identity {
+        spelling_count: usize,
+        num_syllables: usize,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -191,6 +279,17 @@ impl From<RimePrismBinPayload> for RimePrismRuntimePayload {
 }
 
 impl RimePrismRuntimePayload {
+    #[must_use]
+    pub(crate) fn has_byte_backed_identity_spelling_map(&self) -> bool {
+        matches!(
+            &self.storage,
+            RimePrismRuntimeStorage::ByteBacked(ByteBackedRimePrismPayload {
+                spelling_map: ByteBackedPrismSpellingMap::Identity { .. },
+                ..
+            })
+        )
+    }
+
     #[must_use]
     pub fn corrections(&self) -> &[RimeCorrectionEntry] {
         match &self.storage {
@@ -240,6 +339,44 @@ impl RimePrismRuntimePayload {
             }
         }
     }
+
+    /// Returns deployed spelling matches for every prism key that is a prefix
+    /// of `spelling`. The Darts traversal is linear in the input length and
+    /// avoids probing every UTF-8 boundary or materializing a global surface
+    /// index for large identity prisms such as the tracked Stroke product.
+    pub(crate) fn common_prefix_canonical_codes<'a>(
+        &self,
+        spelling: &str,
+        syllabary_codes: &'a [String],
+        limit: usize,
+    ) -> Vec<(usize, PrismLookupCode<'a>)> {
+        match &self.storage {
+            RimePrismRuntimeStorage::Owned(payload) => {
+                payload.common_prefix_canonical_codes(spelling, syllabary_codes, limit)
+            }
+            RimePrismRuntimeStorage::ByteBacked(payload) => {
+                payload.common_prefix_canonical_codes(spelling, syllabary_codes, limit)
+            }
+        }
+    }
+
+    /// Returns canonical codes whose deployed identity spelling is the consumed
+    /// input prefix plus one trailing ASCII tone digit. This preserves the
+    /// historical no-algebra `bei` -> `bei2` surface without building a global
+    /// normalized index for large identity prisms.
+    pub(crate) fn trailing_ascii_digit_prefix_canonical_codes<'a>(
+        &self,
+        spelling: &str,
+        syllabary_codes: &'a [String],
+        limit: usize,
+    ) -> Vec<(usize, PrismLookupCode<'a>)> {
+        match &self.storage {
+            RimePrismRuntimeStorage::Owned(payload) => payload
+                .trailing_ascii_digit_prefix_canonical_codes(spelling, syllabary_codes, limit),
+            RimePrismRuntimeStorage::ByteBacked(payload) => payload
+                .trailing_ascii_digit_prefix_canonical_codes(spelling, syllabary_codes, limit),
+        }
+    }
 }
 
 impl ByteBackedRimePrismPayload {
@@ -265,7 +402,7 @@ impl ByteBackedRimePrismPayload {
                 "prism.spelling_map",
                 source_class,
                 self.spelling_map.byte_len(),
-                self.spelling_map.descriptor_count,
+                self.spelling_map.descriptor_count(),
                 source_label.clone(),
                 "prism spelling descriptors are read lazily from the byte source",
             ),
@@ -287,8 +424,8 @@ impl ByteBackedRimePrismPayload {
             MemoryOwnerRow::new(
                 "prism.tips_payload",
                 source_class,
-                self.spelling_map.tips_payload_bytes,
-                self.spelling_map.tip_count,
+                self.spelling_map.tips_payload_bytes(),
+                self.spelling_map.tip_count(),
                 source_label,
                 "prism descriptor tips remain in the byte source",
             ),
@@ -311,6 +448,34 @@ impl ByteBackedRimePrismPayload {
         let Ok(spelling_index) = usize::try_from(spelling_index) else {
             return Vec::new();
         };
+        self.lookup_canonical_codes_for_index(spelling_index, syllabary_codes, limit)
+    }
+
+    fn lookup_canonical_codes_for_index<'a>(
+        &self,
+        spelling_index: usize,
+        syllabary_codes: &'a [String],
+        limit: usize,
+    ) -> Vec<PrismLookupCode<'a>> {
+        if let ByteBackedPrismSpellingMap::Identity {
+            spelling_count,
+            num_syllables,
+        } = self.spelling_map
+        {
+            if limit == 0
+                || spelling_index >= spelling_count
+                || spelling_index >= num_syllables
+                || spelling_index >= syllabary_codes.len()
+            {
+                return Vec::new();
+            }
+            return vec![PrismLookupCode {
+                code: &syllabary_codes[spelling_index],
+                abbreviation: false,
+                correction: false,
+                credibility: 0.0,
+            }];
+        }
         let Some((descriptor_offset, descriptor_count)) = self
             .spelling_map
             .descriptor_header(self.source.bytes(), spelling_index)
@@ -342,6 +507,83 @@ impl ByteBackedRimePrismPayload {
         }
         lookups
     }
+
+    fn common_prefix_canonical_codes<'a>(
+        &self,
+        spelling: &str,
+        syllabary_codes: &'a [String],
+        limit: usize,
+    ) -> Vec<(usize, PrismLookupCode<'a>)> {
+        let Some(double_array) = self.double_array else {
+            return Vec::new();
+        };
+        let mut lookups = Vec::new();
+        for matched in double_array.common_prefix_search(self.source.bytes(), spelling) {
+            if !spelling.is_char_boundary(matched.length) {
+                continue;
+            }
+            let remaining = limit.saturating_sub(lookups.len());
+            if remaining == 0 {
+                break;
+            }
+            let Ok(spelling_index) = usize::try_from(matched.value) else {
+                continue;
+            };
+            lookups.extend(
+                self.lookup_canonical_codes_for_index(spelling_index, syllabary_codes, remaining)
+                    .into_iter()
+                    .map(|lookup| (matched.length, lookup)),
+            );
+        }
+        lookups
+    }
+
+    fn trailing_ascii_digit_prefix_canonical_codes<'a>(
+        &self,
+        spelling: &str,
+        syllabary_codes: &'a [String],
+        limit: usize,
+    ) -> Vec<(usize, PrismLookupCode<'a>)> {
+        let Some(double_array) = self.double_array else {
+            return Vec::new();
+        };
+        let mut lookups = Vec::new();
+        let mut probe = Vec::with_capacity(spelling.len().saturating_add(1));
+        for (index, byte) in spelling.bytes().enumerate() {
+            if !byte.is_ascii_alphabetic() {
+                break;
+            }
+            probe.push(byte);
+            let consumed = index + 1;
+            probe.push(b'0');
+            for tone in b'0'..=b'9' {
+                probe[consumed] = tone;
+                let Some(spelling_index) =
+                    double_array.exact_match_bytes(self.source.bytes(), &probe)
+                else {
+                    continue;
+                };
+                let remaining = limit.saturating_sub(lookups.len());
+                if remaining == 0 {
+                    return lookups;
+                }
+                let Ok(spelling_index) = usize::try_from(spelling_index) else {
+                    continue;
+                };
+                lookups.extend(
+                    self.lookup_canonical_codes_for_index(
+                        spelling_index,
+                        syllabary_codes,
+                        remaining,
+                    )
+                    .into_iter()
+                    .map(|lookup| (consumed, lookup)),
+                );
+            }
+            probe.pop();
+        }
+        lookups
+    }
 }
 
 impl ByteBackedPrismDoubleArray {
@@ -363,12 +605,16 @@ impl ByteBackedPrismDoubleArray {
     }
 
     fn exact_match(self, bytes: &[u8], key: &str) -> Option<u32> {
+        self.exact_match_bytes(bytes, key.as_bytes())
+    }
+
+    fn exact_match_bytes(self, bytes: &[u8], key: &[u8]) -> Option<u32> {
         let mut node_pos = 0usize;
         let mut unit = self.unit(bytes, node_pos)?;
-        for byte in key.bytes() {
-            node_pos ^= usize::try_from(Self::offset(unit)).ok()? ^ usize::from(byte);
+        for byte in key {
+            node_pos ^= usize::try_from(Self::offset(unit)).ok()? ^ usize::from(*byte);
             unit = self.unit(bytes, node_pos)?;
-            if Self::label(unit) != u32::from(byte) {
+            if Self::label(unit) != u32::from(*byte) {
                 return None;
             }
         }
@@ -377,6 +623,42 @@ impl ByteBackedPrismDoubleArray {
         }
         let leaf_pos = node_pos ^ usize::try_from(Self::offset(unit)).ok()?;
         self.unit(bytes, leaf_pos).map(Self::value)
+    }
+
+    fn common_prefix_search(self, bytes: &[u8], key: &str) -> Vec<DartsMatch> {
+        let mut matches = Vec::new();
+        let mut node_pos = 0usize;
+        let Some(mut unit) = self.unit(bytes, node_pos) else {
+            return matches;
+        };
+        let Ok(offset) = usize::try_from(Self::offset(unit)) else {
+            return matches;
+        };
+        node_pos ^= offset;
+
+        for (index, byte) in key.bytes().enumerate() {
+            node_pos ^= usize::from(byte);
+            let Some(next_unit) = self.unit(bytes, node_pos) else {
+                return matches;
+            };
+            unit = next_unit;
+            if Self::label(unit) != u32::from(byte) {
+                return matches;
+            }
+            let Ok(offset) = usize::try_from(Self::offset(unit)) else {
+                return matches;
+            };
+            node_pos ^= offset;
+            if Self::has_leaf(unit) {
+                if let Some(leaf) = self.unit(bytes, node_pos) {
+                    matches.push(DartsMatch {
+                        value: Self::value(leaf),
+                        length: index + 1,
+                    });
+                }
+            }
+        }
+        matches
     }
 
     const fn has_leaf(unit: u32) -> bool {
@@ -401,21 +683,62 @@ impl ByteBackedPrismSpellingMap {
     const DESCRIPTOR_SIZE: usize = 16;
 
     const fn byte_len(self) -> usize {
-        4usize
-            .saturating_add(self.spelling_count.saturating_mul(Self::ITEM_SIZE))
-            .saturating_add(self.raw_descriptor_bytes)
-            .saturating_add(self.tips_payload_bytes)
+        match self {
+            Self::Explicit {
+                spelling_count,
+                raw_descriptor_bytes,
+                tips_payload_bytes,
+                ..
+            } => 4usize
+                .saturating_add(spelling_count.saturating_mul(Self::ITEM_SIZE))
+                .saturating_add(raw_descriptor_bytes)
+                .saturating_add(tips_payload_bytes),
+            Self::Identity { .. } => 0,
+        }
     }
 
     fn descriptor_header(self, bytes: &[u8], index: usize) -> Option<(usize, usize)> {
-        if index >= self.spelling_count {
+        let Self::Explicit {
+            offset,
+            spelling_count,
+            ..
+        } = self
+        else {
+            return None;
+        };
+        if index >= spelling_count {
             return None;
         }
-        let start = self.offset.checked_add(4)?;
+        let start = offset.checked_add(4)?;
         let item_offset = start.checked_add(index.checked_mul(Self::ITEM_SIZE)?)?;
         let descriptor_count = read_count(bytes, item_offset).ok()?;
         let descriptor_offset = read_offset_ptr(bytes, item_offset.checked_add(4)?).ok()??;
         Some((descriptor_offset, descriptor_count))
+    }
+
+    const fn descriptor_count(self) -> usize {
+        match self {
+            Self::Explicit {
+                descriptor_count, ..
+            } => descriptor_count,
+            Self::Identity { .. } => 0,
+        }
+    }
+
+    const fn tips_payload_bytes(self) -> usize {
+        match self {
+            Self::Explicit {
+                tips_payload_bytes, ..
+            } => tips_payload_bytes,
+            Self::Identity { .. } => 0,
+        }
+    }
+
+    const fn tip_count(self) -> usize {
+        match self {
+            Self::Explicit { tip_count, .. } => tip_count,
+            Self::Identity { .. } => 0,
+        }
     }
 }
 
@@ -530,21 +853,27 @@ pub fn parse_rime_prism_bin_payload(
         return Err(RimePrismBinParseError::UnsupportedVersion);
     }
     let double_array_offset = read_offset_ptr(bytes, 52)?;
-    let spelling_map_offset =
-        read_offset_ptr(bytes, 56)?.ok_or(RimePrismBinParseError::MissingRequiredSection)?;
+    let spelling_map_offset = read_offset_ptr(bytes, 56)?;
     let correction_offset = read_yune_payload_offset(bytes, 60, b"YUNE-CORR\0")?;
     let tolerance_offset = read_yune_payload_offset(bytes, 64, b"YUNE-TOL\0")?;
     let double_array_size = read_u32_le(bytes, 48).map_err(map_metadata_error)?;
     let double_array = read_double_array(bytes, double_array_offset, double_array_size)?;
 
+    let num_syllables = read_u32_le(bytes, 40).map_err(map_metadata_error)?;
+    let num_spellings = read_u32_le(bytes, 44).map_err(map_metadata_error)?;
+    let spelling_map = match spelling_map_offset {
+        Some(offset) => read_spelling_map(bytes, offset)?,
+        None => identity_spelling_map(num_syllables, num_spellings, double_array_size)?,
+    };
+
     Ok(RimePrismBinPayload {
         dict_file_checksum: read_u32_le(bytes, 32).map_err(map_metadata_error)?,
         schema_file_checksum: read_u32_le(bytes, 36).map_err(map_metadata_error)?,
-        num_syllables: read_u32_le(bytes, 40).map_err(map_metadata_error)?,
-        num_spellings: read_u32_le(bytes, 44).map_err(map_metadata_error)?,
+        num_syllables,
+        num_spellings,
         double_array_size,
         double_array,
-        spelling_map: read_spelling_map(bytes, spelling_map_offset)?,
+        spelling_map,
         corrections: correction_offset
             .map(|offset| read_corrections(bytes, offset))
             .transpose()?
@@ -567,14 +896,18 @@ pub fn parse_rime_prism_runtime_payload(
         return Err(RimePrismBinParseError::UnsupportedVersion);
     }
     let double_array_offset = read_offset_ptr(bytes, 52)?;
-    let spelling_map_offset =
-        read_offset_ptr(bytes, 56)?.ok_or(RimePrismBinParseError::MissingRequiredSection)?;
+    let spelling_map_offset = read_offset_ptr(bytes, 56)?;
     let correction_offset = read_yune_payload_offset(bytes, 60, b"YUNE-CORR\0")?;
     let tolerance_offset = read_yune_payload_offset(bytes, 64, b"YUNE-TOL\0")?;
     let double_array_size = read_u32_le(bytes, 48).map_err(map_metadata_error)?;
     let double_array =
         read_byte_backed_double_array(bytes, double_array_offset, double_array_size)?;
-    let spelling_map = read_byte_backed_spelling_map(bytes, spelling_map_offset)?;
+    let num_syllables = read_u32_le(bytes, 40).map_err(map_metadata_error)?;
+    let num_spellings = read_u32_le(bytes, 44).map_err(map_metadata_error)?;
+    let spelling_map = match spelling_map_offset {
+        Some(offset) => read_byte_backed_spelling_map(bytes, offset)?,
+        None => byte_backed_identity_spelling_map(num_syllables, num_spellings, double_array_size)?,
+    };
     let corrections = correction_offset
         .map(|offset| read_corrections(bytes, offset))
         .transpose()?
@@ -770,6 +1103,30 @@ fn read_spelling_map(
     Ok(map)
 }
 
+fn identity_spelling_map(
+    num_syllables: u32,
+    num_spellings: u32,
+    double_array_size: u32,
+) -> Result<Vec<Vec<RimePrismSpellingDescriptor>>, RimePrismBinParseError> {
+    if num_spellings > num_syllables
+        || num_spellings > double_array_size
+        || num_spellings > i32::MAX as u32
+    {
+        return Err(RimePrismBinParseError::InvalidCount);
+    }
+    Ok((0..num_spellings)
+        .map(|spelling_id| {
+            vec![RimePrismSpellingDescriptor {
+                syllable_id: spelling_id as i32,
+                spelling_type: 0,
+                is_correction: false,
+                credibility: 0.0,
+                tips: String::new(),
+            }]
+        })
+        .collect())
+}
+
 fn read_byte_backed_spelling_map(
     bytes: &[u8],
     offset: usize,
@@ -829,13 +1186,30 @@ fn read_byte_backed_spelling_map(
         }
     }
 
-    Ok(ByteBackedPrismSpellingMap {
+    Ok(ByteBackedPrismSpellingMap::Explicit {
         offset,
         spelling_count,
         descriptor_count,
         raw_descriptor_bytes,
         tips_payload_bytes,
         tip_count,
+    })
+}
+
+fn byte_backed_identity_spelling_map(
+    num_syllables: u32,
+    num_spellings: u32,
+    double_array_size: u32,
+) -> Result<ByteBackedPrismSpellingMap, RimePrismBinParseError> {
+    if num_spellings > num_syllables
+        || num_spellings > double_array_size
+        || num_spellings > i32::MAX as u32
+    {
+        return Err(RimePrismBinParseError::InvalidCount);
+    }
+    Ok(ByteBackedPrismSpellingMap::Identity {
+        spelling_count: num_spellings as usize,
+        num_syllables: num_syllables as usize,
     })
 }
 

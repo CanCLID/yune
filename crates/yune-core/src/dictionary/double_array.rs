@@ -30,6 +30,8 @@ impl DartsDoubleArray {
     const HAS_LEAF: u32 = 1 << 8;
     const VALUE_MASK: u32 = (1 << 31) - 1;
     const LABEL_MASK: u32 = (1 << 31) | 0xff;
+    const LARGE_OFFSET_THRESHOLD: u32 = 1 << 21;
+    const MAX_OFFSET: u32 = 1 << 29;
 
     pub fn build<K>(keys: &[(K, u32)]) -> Result<Self, DartsDoubleArrayError>
     where
@@ -199,7 +201,12 @@ impl DartsDoubleArray {
     }
 
     const fn unit(offset: u32, has_leaf: bool, label: u8) -> u32 {
-        (offset << 10) | if has_leaf { Self::HAS_LEAF } else { 0 } | label as u32
+        let encoded_offset = if offset >= Self::LARGE_OFFSET_THRESHOLD {
+            ((offset >> 8) << 10) | (1 << 9)
+        } else {
+            offset << 10
+        };
+        encoded_offset | if has_leaf { Self::HAS_LEAF } else { 0 } | label as u32
     }
 
     const fn has_leaf(unit: u32) -> bool {
@@ -279,9 +286,17 @@ impl DartsBuilder {
         array_index: usize,
         labels: &[Option<u8>],
     ) -> Result<u32, DartsDoubleArrayError> {
-        for offset in 1usize.. {
-            if offset > (u32::MAX >> 10) as usize {
+        let mut offset = 1usize;
+        loop {
+            if offset >= DartsDoubleArray::MAX_OFFSET as usize {
                 return Err(DartsDoubleArrayError::OffsetOutOfRange);
+            }
+            if offset >= DartsDoubleArray::LARGE_OFFSET_THRESHOLD as usize && offset & 0xff != 0 {
+                offset = offset
+                    .checked_add(0xff)
+                    .map(|offset| offset & !0xff)
+                    .ok_or(DartsDoubleArrayError::OffsetOutOfRange)?;
+                continue;
             }
             if labels.iter().all(|label| {
                 let target = array_index ^ offset ^ label.map_or(0usize, usize::from);
@@ -289,8 +304,10 @@ impl DartsBuilder {
             }) {
                 return u32::try_from(offset).map_err(|_| DartsDoubleArrayError::OffsetOutOfRange);
             }
+            offset = offset
+                .checked_add(1)
+                .ok_or(DartsDoubleArrayError::OffsetOutOfRange)?;
         }
-        Err(DartsDoubleArrayError::OffsetOutOfRange)
     }
 
     fn reserve(&mut self, index: usize) {
@@ -299,5 +316,28 @@ impl DartsBuilder {
             self.used.resize(index + 1, false);
         }
         self.used[index] = true;
+    }
+}
+
+#[cfg(test)]
+mod large_offset_encoding_tests {
+    use super::DartsDoubleArray;
+
+    #[test]
+    fn darts_large_offsets_round_trip_through_the_standard_shift_flag() {
+        for offset in [
+            DartsDoubleArray::LARGE_OFFSET_THRESHOLD - 1,
+            DartsDoubleArray::LARGE_OFFSET_THRESHOLD,
+            DartsDoubleArray::LARGE_OFFSET_THRESHOLD + 0x100,
+            DartsDoubleArray::MAX_OFFSET - 0x100,
+        ] {
+            let unit = DartsDoubleArray::unit(offset, true, b'z');
+            assert_eq!(DartsDoubleArray::offset(unit), offset);
+            assert!(DartsDoubleArray::has_leaf(unit));
+            assert_eq!(DartsDoubleArray::label(unit), u32::from(b'z'));
+            if offset >= DartsDoubleArray::LARGE_OFFSET_THRESHOLD {
+                assert_ne!(unit & (1 << 9), 0);
+            }
+        }
     }
 }

@@ -12,7 +12,7 @@ use crate::dictionary::{
 };
 use crate::filter::contains_extended_cjk;
 use crate::poet::{GrammarProvider, PoetByteSource, SentenceCodeSpan, UpstreamSentenceModel};
-use crate::spelling_algebra::{ExpandedSpellingEntry, SpellingAlgebra};
+use crate::spelling_algebra::{DeployedSpellingType, ExpandedSpellingEntry, SpellingAlgebra};
 use crate::{
     Candidate, CandidateRequest, CandidateSource, Context, M37SentenceCandidateMetrics,
     MemoryOwnerClass, MemoryOwnerRow, PresetVocabularyEntry, RimeCorrectionEntry,
@@ -35,18 +35,24 @@ const PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE: usize = 2;
 const PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE: usize = 3;
 const PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS: usize = 7;
 const PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER: usize = 4;
+const PREFIX_FALLBACK_CACHE_MAX_ROWS: usize = 128;
+const PREFIX_FALLBACK_CACHE_MAX_PREFIXES: usize = 64;
+const PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES: usize = 32 * 1024;
+const PREFIX_FALLBACK_CACHE_MAX_ENTRY_BYTES: usize = 512 * 1024;
 /// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture
 /// and the M28 follow-up upstream-Jyutping composition fixture; install only for the
 /// jyut6ping3 TypeDuck profile.
 pub const TYPEDUCK_SENTENCE_WORD_PENALTY: f32 = 24.0;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 struct LookupCodeSpec {
     code: String,
     lookup_code: String,
     correction_distance: Option<usize>,
     required_syllable_count: Option<usize>,
     tolerance: bool,
+    spelling_correction: bool,
+    spelling_credibility: f32,
 }
 
 impl LookupCodeSpec {
@@ -58,6 +64,8 @@ impl LookupCodeSpec {
             correction_distance: None,
             required_syllable_count: None,
             tolerance: false,
+            spelling_correction: false,
+            spelling_credibility: 0.0,
         }
     }
 
@@ -71,16 +79,25 @@ impl LookupCodeSpec {
             correction_distance: None,
             required_syllable_count: None,
             tolerance: true,
+            spelling_correction: false,
+            spelling_credibility: 0.0,
         }
     }
 
-    fn alias(code: impl Into<String>, lookup_code: impl Into<String>) -> Self {
+    fn alias(
+        code: impl Into<String>,
+        lookup_code: impl Into<String>,
+        spelling_correction: bool,
+        spelling_credibility: f32,
+    ) -> Self {
         Self {
             code: code.into(),
             lookup_code: lookup_code.into(),
             correction_distance: None,
             required_syllable_count: None,
             tolerance: false,
+            spelling_correction,
+            spelling_credibility,
         }
     }
 
@@ -92,6 +109,8 @@ impl LookupCodeSpec {
             correction_distance: Some(distance),
             required_syllable_count: None,
             tolerance: false,
+            spelling_correction: false,
+            spelling_credibility: 0.0,
         }
     }
 
@@ -107,6 +126,8 @@ impl LookupCodeSpec {
             correction_distance: Some(distance),
             required_syllable_count: Some(syllable_count),
             tolerance: false,
+            spelling_correction: false,
+            spelling_credibility: 0.0,
         }
     }
 }
@@ -121,11 +142,13 @@ struct PendingLookupCandidate {
     spelling_abbreviation: bool,
     limited_prediction: bool,
     tolerance: bool,
+    spelling_correction: bool,
+    spelling_credibility: f32,
 }
 
 impl PendingLookupCandidate {
     fn raw_quality(&self) -> f32 {
-        let mut quality = self.candidate.quality;
+        let mut quality = self.candidate.quality + self.spelling_credibility;
         if let Some(distance) = self.correction_distance {
             quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
         }
@@ -133,7 +156,8 @@ impl PendingLookupCandidate {
     }
 
     fn prediction_comparison_weight(&self) -> f32 {
-        let mut weight = self.candidate.quality.max(f32::MIN_POSITIVE).ln();
+        let mut weight =
+            self.candidate.quality.max(f32::MIN_POSITIVE).ln() + self.spelling_credibility;
         if let Some(distance) = self.correction_distance {
             weight += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
         }
@@ -160,6 +184,8 @@ struct PendingLookupCandidateRef<'a> {
     spelling_abbreviation: bool,
     limited_prediction: bool,
     emission_order: usize,
+    spelling_correction: bool,
+    spelling_credibility: f32,
 }
 
 struct OriginalMergeGroup<T> {
@@ -512,14 +538,147 @@ struct BoundedLookupRequest<'a> {
     include_full_count: bool,
 }
 
+struct BoundedPrefixFallbackCacheRequest<'input, 'request> {
+    input: &'input str,
+    lookup_code: &'input str,
+    filter_by_charset: bool,
+    existing_candidates: &'request [Candidate],
+    admitted_span_candidates: &'request [Candidate],
+    prefixes: &'request [LookupPrefixSpec<'input>],
+    limit: usize,
+    fallback_start: Option<Instant>,
+}
+
 struct LookupPrefixSpec<'a> {
     input_prefix: &'a str,
     fetch_code: String,
     consumed_lookup_len: usize,
+    surface_fetch: Option<LeadingFetchCode>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct PrefixFallbackCachePrefix {
+    input_prefix: String,
+    fetch_code: String,
+    consumed_lookup_len: usize,
+    surface_fetch: Option<LeadingFetchCode>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct PrefixFallbackWindowCacheKey {
+    prefixes: Vec<PrefixFallbackCachePrefix>,
+    filter_by_charset: bool,
+    pending_cap: usize,
+    per_fetch_cap: usize,
+}
+
+#[derive(Clone, Debug)]
+struct CachedPrefixFallbackView {
+    fetch_code: String,
+    input_prefix: String,
+    candidate: Candidate,
+    consumed_lookup_len: usize,
+    surface_abbreviation: bool,
+    spelling_abbreviation: bool,
+    emission_order: usize,
+}
+
+#[derive(Clone, Debug)]
+struct PrefixFallbackWindowCacheEntry {
+    key: PrefixFallbackWindowCacheKey,
+    rows: Vec<CachedPrefixFallbackView>,
+    truncated: bool,
+}
+
+struct PrefixFallbackBatch {
+    candidates: Vec<Candidate>,
+    truncated: bool,
+    owns_reachability: bool,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum PrefixFallbackProbe {
+    NoPrefix,
+    Found,
+    Exhausted,
+    Truncated,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct LeadingFetchCode {
+    fetch_code: String,
+    canonical_code: String,
+    bare_exact: bool,
+    injectable: bool,
+    abbreviation: bool,
+    // A direct no-algebra edge carries local identity proof: either an upstream
+    // null-map prism descriptor or a bounded exact storage probe plus an exact
+    // one-character row. It needs no global syllabary classification and keeps
+    // Stroke's 157k inventory off the cold first-key path.
+    direct_identity: bool,
+}
+
+struct LeadingFetchIndexSeed {
+    canonical_codes: Vec<String>,
+    fetches_canonical_storage: bool,
+    max_leading_single_surface_len: usize,
 }
 
 fn sentence_piece_quality(raw_quality: f32, word_penalty: f32) -> f32 {
     raw_quality.max(1.0).ln() - word_penalty
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct SentencePathScore {
+    pub(crate) fuzzy_pieces: usize,
+    pub(crate) quality: f32,
+    pub(crate) raw_quality: f32,
+}
+
+pub(crate) fn sentence_path_score_replaces(
+    candidate: SentencePathScore,
+    existing: SentencePathScore,
+) -> bool {
+    match candidate.fuzzy_pieces.cmp(&existing.fuzzy_pieces) {
+        Ordering::Less => true,
+        Ordering::Greater => false,
+        Ordering::Equal => match candidate
+            .quality
+            .partial_cmp(&existing.quality)
+            .unwrap_or(Ordering::Equal)
+        {
+            Ordering::Greater => true,
+            Ordering::Equal => candidate.raw_quality > existing.raw_quality,
+            Ordering::Less => false,
+        },
+    }
+}
+
+fn retain_winning_sentence_path_candidate<'a>(
+    winning_candidate: &mut Option<LookupCandidate<'a>>,
+    shadow_score: &mut Option<SentencePathScore>,
+    predecessor: SentencePathScore,
+    candidate: LookupCandidate<'a>,
+    entry_code: &str,
+    word_penalty: f32,
+) {
+    let candidate_score = SentencePathScore {
+        fuzzy_pieces: predecessor.fuzzy_pieces
+            + usize::from(!raw_sentence_piece_matches_input_code(
+                candidate.raw_comment(),
+                candidate.text(),
+                entry_code,
+            )),
+        quality: predecessor.quality
+            + sentence_piece_quality(candidate.raw_quality(), word_penalty),
+        raw_quality: predecessor.raw_quality + candidate.raw_quality(),
+    };
+    if shadow_score.map_or(true, |existing| {
+        sentence_path_score_replaces(candidate_score, existing)
+    }) {
+        *shadow_score = Some(candidate_score);
+        *winning_candidate = Some(candidate);
+    }
 }
 
 #[derive(Default)]
@@ -841,14 +1000,179 @@ fn estimate_string_vec_hash_map_bytes(values: &HashMap<String, Vec<String>>) -> 
         )
 }
 
+fn estimate_leading_fetch_seed_bytes(seed: &LeadingFetchIndexSeed) -> usize {
+    mem::size_of::<LeadingFetchIndexSeed>()
+        .saturating_add(
+            seed.canonical_codes
+                .capacity()
+                .saturating_mul(mem::size_of::<String>()),
+        )
+        .saturating_add(
+            seed.canonical_codes
+                .iter()
+                .map(String::capacity)
+                .sum::<usize>(),
+        )
+}
+
+fn estimate_leading_fetch_index_bytes(index: &HashMap<String, Vec<LeadingFetchCode>>) -> usize {
+    mem::size_of::<HashMap<String, Vec<LeadingFetchCode>>>()
+        .saturating_add(
+            index
+                .capacity()
+                .saturating_mul(mem::size_of::<(String, Vec<LeadingFetchCode>)>()),
+        )
+        .saturating_add(
+            index
+                .iter()
+                .map(|(surface, edges)| {
+                    surface
+                        .capacity()
+                        .saturating_add(
+                            edges
+                                .capacity()
+                                .saturating_mul(mem::size_of::<LeadingFetchCode>()),
+                        )
+                        .saturating_add(
+                            edges
+                                .iter()
+                                .map(|edge| {
+                                    edge.fetch_code
+                                        .capacity()
+                                        .saturating_add(edge.canonical_code.capacity())
+                                })
+                                .sum::<usize>(),
+                        )
+                })
+                .sum::<usize>(),
+        )
+}
+
+fn estimate_prefix_fallback_window_cache_bytes(entry: &PrefixFallbackWindowCacheEntry) -> usize {
+    let key_bytes = entry
+        .key
+        .prefixes
+        .iter()
+        .map(|prefix| {
+            prefix
+                .input_prefix
+                .capacity()
+                .saturating_add(prefix.fetch_code.capacity())
+                .saturating_add(prefix.surface_fetch.as_ref().map_or(0, |fetch| {
+                    fetch
+                        .fetch_code
+                        .capacity()
+                        .saturating_add(fetch.canonical_code.capacity())
+                }))
+        })
+        .sum::<usize>();
+    let row_bytes = entry
+        .rows
+        .iter()
+        .map(|row| {
+            row.fetch_code
+                .capacity()
+                .saturating_add(row.input_prefix.capacity())
+                .saturating_add(row.candidate.text.capacity())
+                .saturating_add(row.candidate.comment.capacity())
+                .saturating_add(row.candidate.preedit.as_ref().map_or(0, String::capacity))
+        })
+        .sum::<usize>();
+    mem::size_of::<PrefixFallbackWindowCacheEntry>()
+        .saturating_add(
+            entry
+                .key
+                .prefixes
+                .capacity()
+                .saturating_mul(mem::size_of::<PrefixFallbackCachePrefix>()),
+        )
+        .saturating_add(key_bytes)
+        .saturating_add(
+            entry
+                .rows
+                .capacity()
+                .saturating_mul(mem::size_of::<CachedPrefixFallbackView>()),
+        )
+        .saturating_add(row_bytes)
+}
+
+fn prefix_fallback_cache_key_bytes(prefixes: &[LookupPrefixSpec<'_>]) -> usize {
+    mem::size_of::<PrefixFallbackWindowCacheKey>()
+        .saturating_add(
+            prefixes
+                .len()
+                .saturating_mul(mem::size_of::<PrefixFallbackCachePrefix>()),
+        )
+        .saturating_add(prefixes.iter().fold(0usize, |bytes, prefix| {
+            bytes
+                .saturating_add(prefix.input_prefix.len())
+                .saturating_add(prefix.fetch_code.len())
+                .saturating_add(prefix.surface_fetch.as_ref().map_or(0, |fetch| {
+                    fetch
+                        .fetch_code
+                        .len()
+                        .saturating_add(fetch.canonical_code.len())
+                }))
+        }))
+}
+
+fn estimate_prefix_fallback_window_cache_key_bytes(key: &PrefixFallbackWindowCacheKey) -> usize {
+    mem::size_of::<PrefixFallbackWindowCacheKey>()
+        .saturating_add(
+            key.prefixes
+                .capacity()
+                .saturating_mul(mem::size_of::<PrefixFallbackCachePrefix>()),
+        )
+        .saturating_add(key.prefixes.iter().fold(0usize, |bytes, prefix| {
+            bytes
+                .saturating_add(prefix.input_prefix.capacity())
+                .saturating_add(prefix.fetch_code.capacity())
+                .saturating_add(prefix.surface_fetch.as_ref().map_or(0, |fetch| {
+                    fetch
+                        .fetch_code
+                        .capacity()
+                        .saturating_add(fetch.canonical_code.capacity())
+                }))
+        }))
+}
+
+fn estimate_string_triple_hash_set_bytes(values: &HashSet<(String, String, String)>) -> usize {
+    mem::size_of::<HashSet<(String, String, String)>>()
+        .saturating_add(
+            values
+                .capacity()
+                .saturating_mul(mem::size_of::<(String, String, String)>()),
+        )
+        .saturating_add(
+            values
+                .iter()
+                .map(|(first, second, third)| {
+                    first
+                        .capacity()
+                        .saturating_add(second.capacity())
+                        .saturating_add(third.capacity())
+                })
+                .sum::<usize>(),
+        )
+}
+
 pub struct StaticTableTranslator {
     source_entries: Option<Vec<(String, Candidate)>>,
     storage: TableStorage,
     prism_payload: Option<RimePrismRuntimePayload>,
+    // The compact prism is supplied before schema algebra is installed. The
+    // first algebra configuration binds that prism to the deployed formulas;
+    // replacing the formulas later invalidates direct surface traversal while
+    // retaining the payload for its other metadata.
+    direct_prism_surface_mapping_current: bool,
+    spelling_algebra_configured: bool,
+    spelling_algebra_active: bool,
     /// RIME `sort:` policy of the backing dictionary; false (`sort: original`)
     /// disables the M59 tone-merge re-rank — source row order is the contract.
     sort_by_weight: bool,
     spelling_abbreviation_entries: HashSet<(String, String, String)>,
+    spelling_correction_entries: HashSet<(String, String, String)>,
+    spelling_correction_surfaces: HashSet<String>,
     normal_codes: NormalCodeIndex,
     enable_completion: bool,
     enable_correction: bool,
@@ -890,13 +1214,25 @@ pub struct StaticTableTranslator {
     // index for the leading-syllable fetch. Without it every prefix boundary of
     // every keystroke rescanned the whole syllabary and allocated a String per
     // entry (~15-25k allocs/keystroke on 37/59-char rows). Built once, then O(1).
-    leading_fetch_index_cache: OnceLock<HashMap<String, Vec<String>>>,
+    leading_fetch_index_cache: OnceLock<HashMap<String, Vec<LeadingFetchCode>>>,
+    // Source-ordered canonical codes retained across heap algebra expansion so
+    // the surface index itself can stay lazy. Leading-only reachability keeps
+    // just groups with a single-character candidate; heap/source prefix fallback
+    // (which has no current prism to query) keeps every canonical group, including
+    // phrase-only rows. The expanded surface map is allocated only on lookup.
+    leading_fetch_index_seed: Option<LeadingFetchIndexSeed>,
     // M59 finding #8 (range cap): the longest normalized syllabary-code byte
     // length. A leading syllable can never be longer than this, so the
     // longest-first prefix walk only needs to consider boundaries up to it —
     // bounding the per-keystroke walk to O(max_syllable_len) instead of
     // O(input_len) and collapsing the long-input O(n^2) to O(n). Cached once.
     max_leading_prefix_len_cache: OnceLock<usize>,
+    // One bounded raw prefix window is retained across incremental keystrokes.
+    // The key contains the resolved deployed-surface fetch graph, so a longer
+    // input that keeps the same leading family can reuse immutable raw rows
+    // while recomputing span promotion, ordering, and deduplication per call.
+    // A single entry bounds ownership independently of typing history.
+    prefix_fallback_window_cache: Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,
     sentence_word_penalty: f32,
     spelling_algebra_formulas: Vec<String>,
     preset_vocabulary: Vec<PresetVocabularyEntry>,
@@ -932,8 +1268,13 @@ impl StaticTableTranslator {
             source_entries: Some(entries),
             storage: TableStorage::Heap(entries_by_code),
             prism_payload: None,
+            direct_prism_surface_mapping_current: false,
+            spelling_algebra_configured: false,
+            spelling_algebra_active: false,
             sort_by_weight: true,
             spelling_abbreviation_entries: HashSet::new(),
+            spelling_correction_entries: HashSet::new(),
+            spelling_correction_surfaces: HashSet::new(),
             normal_codes,
             enable_completion: false,
             enable_correction: false,
@@ -961,7 +1302,9 @@ impl StaticTableTranslator {
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
             leading_fetch_index_cache: OnceLock::new(),
+            leading_fetch_index_seed: None,
             max_leading_prefix_len_cache: OnceLock::new(),
+            prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary: Vec::new(),
@@ -999,8 +1342,13 @@ impl StaticTableTranslator {
             source_entries: Some(entries),
             storage: TableStorage::Heap(entries_by_code),
             prism_payload: None,
+            direct_prism_surface_mapping_current: false,
+            spelling_algebra_configured: false,
+            spelling_algebra_active: false,
             sort_by_weight,
             spelling_abbreviation_entries: HashSet::new(),
+            spelling_correction_entries: HashSet::new(),
+            spelling_correction_surfaces: HashSet::new(),
             normal_codes,
             enable_completion: false,
             enable_correction: false,
@@ -1028,7 +1376,9 @@ impl StaticTableTranslator {
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
             leading_fetch_index_cache: OnceLock::new(),
+            leading_fetch_index_seed: None,
             max_leading_prefix_len_cache: OnceLock::new(),
+            prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -1044,6 +1394,7 @@ impl StaticTableTranslator {
         dictionary: TableDictionary,
         prism_payload: Option<RimePrismBinPayload>,
     ) -> Self {
+        let direct_prism_surface_mapping_current = prism_payload.is_some();
         let sort_by_weight = dictionary.sort_by_weight();
         let preset_vocabulary = dictionary.preset_vocabulary_entries().to_vec();
         let abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry> = Vec::new();
@@ -1056,8 +1407,13 @@ impl StaticTableTranslator {
                 dictionary,
             ))),
             prism_payload: prism_payload.map(RimePrismRuntimePayload::from),
+            direct_prism_surface_mapping_current,
+            spelling_algebra_configured: false,
+            spelling_algebra_active: false,
             sort_by_weight,
             spelling_abbreviation_entries: HashSet::new(),
+            spelling_correction_entries: HashSet::new(),
+            spelling_correction_surfaces: HashSet::new(),
             normal_codes,
             enable_completion: false,
             enable_correction: false,
@@ -1085,7 +1441,9 @@ impl StaticTableTranslator {
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
             leading_fetch_index_cache: OnceLock::new(),
+            leading_fetch_index_seed: None,
             max_leading_prefix_len_cache: OnceLock::new(),
+            prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -1112,6 +1470,7 @@ impl StaticTableTranslator {
         store: CompactTableStore,
         prism_payload: Option<RimePrismRuntimePayload>,
     ) -> Self {
+        let direct_prism_surface_mapping_current = prism_payload.is_some();
         let sort_by_weight = store.sort_by_weight();
         let advanced = store.advanced_data();
         let preset_vocabulary = advanced.preset_vocabulary.clone();
@@ -1126,8 +1485,13 @@ impl StaticTableTranslator {
             source_entries: None,
             storage: TableStorage::Compact(Box::new(store)),
             prism_payload,
+            direct_prism_surface_mapping_current,
+            spelling_algebra_configured: false,
+            spelling_algebra_active: false,
             sort_by_weight,
             spelling_abbreviation_entries: HashSet::new(),
+            spelling_correction_entries: HashSet::new(),
+            spelling_correction_surfaces: HashSet::new(),
             normal_codes,
             enable_completion: false,
             enable_correction: false,
@@ -1155,7 +1519,9 @@ impl StaticTableTranslator {
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
             leading_fetch_index_cache: OnceLock::new(),
+            leading_fetch_index_seed: None,
             max_leading_prefix_len_cache: OnceLock::new(),
+            prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -1250,6 +1616,7 @@ impl StaticTableTranslator {
         words: impl IntoIterator<Item = impl Into<String>>,
     ) -> Self {
         self.dictionary_exclude = words.into_iter().map(Into::into).collect();
+        self.prefix_fallback_window_cache = Mutex::new(None);
         self
     }
 
@@ -1293,6 +1660,16 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn with_prefix_fallback(mut self, prefix_fallback: bool) -> Self {
         self.prefix_fallback = prefix_fallback;
+        self.prefix_fallback_window_cache = Mutex::new(None);
+        self.leading_fetch_index_seed = None;
+        self.leading_fetch_index_cache = OnceLock::new();
+        self.max_leading_prefix_len_cache = OnceLock::new();
+        if self.requires_surface_fetch_index_seed() {
+            let fetches_canonical_storage =
+                matches!(self.storage, TableStorage::Compact(_)) && self.prism_payload.is_some();
+            self.leading_fetch_index_seed =
+                Some(self.capture_leading_fetch_index_seed(fetches_canonical_storage));
+        }
         self
     }
 
@@ -1302,6 +1679,16 @@ impl StaticTableTranslator {
         leading_syllable_reachability: bool,
     ) -> Self {
         self.leading_syllable_reachability = leading_syllable_reachability;
+        self.prefix_fallback_window_cache = Mutex::new(None);
+        self.leading_fetch_index_seed = None;
+        self.leading_fetch_index_cache = OnceLock::new();
+        self.max_leading_prefix_len_cache = OnceLock::new();
+        if self.requires_surface_fetch_index_seed() {
+            let fetches_canonical_storage =
+                matches!(self.storage, TableStorage::Compact(_)) && self.prism_payload.is_some();
+            self.leading_fetch_index_seed =
+                Some(self.capture_leading_fetch_index_seed(fetches_canonical_storage));
+        }
         self
     }
 
@@ -1409,12 +1796,219 @@ impl StaticTableTranslator {
         self
     }
 
+    fn capture_leading_fetch_index_seed(
+        &self,
+        fetches_canonical_storage: bool,
+    ) -> LeadingFetchIndexSeed {
+        // The leading-single path needs only canonical codes that own a
+        // one-character candidate. Broad prefix fallback additionally admits
+        // phrase rows; heap/source storage has no prism to resolve those
+        // transformed surfaces lazily, so retain every canonical group there.
+        // A current compact prism remains the bounded authoritative index for
+        // phrase prefixes and therefore keeps this seed single-character-only.
+        let include_all_candidates =
+            self.prefix_fallback && !self.direct_prism_surface_mapping_current;
+        let (canonical_codes, leading_single_codes) =
+            if let Some(syllabary_codes) = self.storage.syllabary_codes() {
+                let leading_single_codes = syllabary_codes
+                    .iter()
+                    .filter(|code| {
+                        self.storage
+                            .exact_candidates(code)
+                            .any(|candidate| candidate.text().chars().count() == 1)
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>();
+                let canonical_codes = if include_all_candidates {
+                    syllabary_codes.to_vec()
+                } else {
+                    leading_single_codes.clone()
+                };
+                (canonical_codes, leading_single_codes)
+            } else {
+                // Heap/source algebra rewrites storage keys. Capture the canonical
+                // code from the immutable raw comment before expansion so the
+                // resulting surface edge can still filter correction collisions and
+                // preserve tone metadata. Track single-character ownership
+                // separately so phrase groups can never widen the leading-syllable
+                // boundary cap.
+                let mut codes = Vec::new();
+                let mut has_single_candidate = Vec::new();
+                let mut index_by_code = HashMap::<String, usize>::new();
+                let mut record = |storage_code: &str, raw_comment: &str, is_single: bool| {
+                    let canonical = canonical_fetch_group(raw_comment);
+                    let canonical = if canonical.is_empty() {
+                        storage_code
+                    } else {
+                        canonical.as_ref()
+                    };
+                    if canonical.is_empty() {
+                        return;
+                    }
+                    if let Some(index) = index_by_code.get(canonical).copied() {
+                        has_single_candidate[index] |= is_single;
+                    } else {
+                        let canonical = canonical.to_owned();
+                        index_by_code.insert(canonical.clone(), codes.len());
+                        codes.push(canonical);
+                        has_single_candidate.push(is_single);
+                    }
+                };
+                if let Some(source_entries) = &self.source_entries {
+                    for (storage_code, candidate) in source_entries {
+                        record(
+                            storage_code,
+                            &candidate.comment,
+                            candidate.text.chars().count() == 1,
+                        );
+                    }
+                } else {
+                    for storage_code in self.storage.all_codes() {
+                        for candidate in self.storage.exact_candidates(storage_code.as_ref()) {
+                            record(
+                                storage_code.as_ref(),
+                                candidate.raw_comment(),
+                                candidate.text().chars().count() == 1,
+                            );
+                        }
+                    }
+                }
+                let leading_single_codes = codes
+                    .iter()
+                    .zip(&has_single_candidate)
+                    .filter(|(_, has_single)| **has_single)
+                    .map(|(code, _)| code.clone())
+                    .collect::<Vec<_>>();
+                if include_all_candidates {
+                    (codes, leading_single_codes)
+                } else {
+                    (leading_single_codes.clone(), leading_single_codes)
+                }
+            };
+        let algebra = SpellingAlgebra::parse(&self.spelling_algebra_formulas);
+        let max_leading_single_surface_len = if algebra.is_empty() {
+            leading_single_codes
+                .iter()
+                .map(|code| code.len().max(normalized_original_code(code).len()))
+                .max()
+                .unwrap_or(0)
+        } else {
+            leading_single_codes
+                .iter()
+                .flat_map(|code| algebra.expand_deployed_spelling_variants(code))
+                .map(|variant| variant.code.len())
+                .max()
+                .unwrap_or(0)
+        };
+        LeadingFetchIndexSeed {
+            canonical_codes,
+            fetches_canonical_storage,
+            max_leading_single_surface_len,
+        }
+    }
+
+    fn requires_surface_fetch_index_seed(&self) -> bool {
+        self.spelling_algebra_active
+            && (self.leading_syllable_reachability
+                || (self.prefix_fallback && !self.direct_prism_surface_mapping_current))
+    }
+
+    fn deployed_algebra_leading_fetch_index(
+        &self,
+        seed: &LeadingFetchIndexSeed,
+    ) -> HashMap<String, Vec<LeadingFetchCode>> {
+        let algebra = SpellingAlgebra::parse(&self.spelling_algebra_formulas);
+        let mut index: HashMap<String, Vec<LeadingFetchCode>> = HashMap::new();
+        for canonical_code in &seed.canonical_codes {
+            if algebra.is_empty() {
+                let edge = LeadingFetchCode {
+                    fetch_code: canonical_code.clone(),
+                    canonical_code: canonical_code.clone(),
+                    bare_exact: true,
+                    injectable: true,
+                    abbreviation: false,
+                    direct_identity: false,
+                };
+                let exact_edges = index.entry(canonical_code.clone()).or_default();
+                if !exact_edges.contains(&edge) {
+                    exact_edges.push(edge.clone());
+                }
+                let normalized = normalized_original_code(canonical_code);
+                if normalized.is_empty() {
+                    continue;
+                }
+                let normalized_edge = LeadingFetchCode {
+                    bare_exact: normalized == *canonical_code,
+                    ..edge
+                };
+                let normalized_edges = index.entry(normalized).or_default();
+                if !normalized_edges.contains(&normalized_edge) {
+                    normalized_edges.push(normalized_edge);
+                }
+                continue;
+            }
+            for variant in algebra.expand_deployed_spelling_variants(canonical_code) {
+                if variant.code.is_empty() {
+                    continue;
+                }
+                let surface = variant.code;
+                let edge = LeadingFetchCode {
+                    fetch_code: if seed.fetches_canonical_storage {
+                        canonical_code.clone()
+                    } else {
+                        surface.clone()
+                    },
+                    canonical_code: canonical_code.clone(),
+                    bare_exact: true,
+                    // A correction surface guards a complete input from a
+                    // shorter-family injection, but remains a separate opt-in
+                    // mechanism and cannot itself become a default reachability
+                    // candidate.
+                    injectable: !variant.properties.is_correction,
+                    abbreviation: variant.properties.spelling_type
+                        == DeployedSpellingType::Abbreviation,
+                    direct_identity: false,
+                };
+                let edges = index.entry(surface.clone()).or_default();
+                if !edges.contains(&edge) {
+                    edges.push(edge);
+                }
+            }
+        }
+        index
+    }
+
     #[must_use]
     pub fn with_spelling_algebra(mut self, formulas: &[String]) -> Self {
-        self.spelling_algebra_formulas = formulas.to_vec();
         let algebra = SpellingAlgebra::parse(formulas);
+        self.prefix_fallback_window_cache = Mutex::new(None);
+        if self.spelling_algebra_configured {
+            self.direct_prism_surface_mapping_current &=
+                self.spelling_algebra_formulas.as_slice() == formulas;
+        }
+        self.spelling_algebra_configured = true;
+        self.spelling_algebra_active = !algebra.is_empty();
+        self.spelling_algebra_formulas = formulas.to_vec();
+        self.spelling_abbreviation_entries.clear();
+        self.spelling_correction_entries.clear();
+        self.spelling_correction_surfaces.clear();
+        self.single_letter_sentence_guard_enabled = false;
+        // Algebra replacement invalidates every surface-derived cache even when
+        // the new formula list is empty or fails to parse. Keep the seed absent
+        // while reachability is explicitly disabled; enabling it later rebuilds
+        // from the current compact or expanded storage in source order.
+        self.leading_fetch_index_seed = None;
+        self.leading_fetch_index_cache = OnceLock::new();
+        self.max_leading_prefix_len_cache = OnceLock::new();
+        self.untoned_dictionary_cache = OnceLock::new();
+        let keeps_canonical_storage =
+            matches!(self.storage, TableStorage::Compact(_)) && self.prism_payload.is_some();
+        if self.requires_surface_fetch_index_seed() {
+            self.leading_fetch_index_seed =
+                Some(self.capture_leading_fetch_index_seed(keeps_canonical_storage));
+        }
         if !algebra.is_empty() {
-            if matches!(self.storage, TableStorage::Compact(_)) && self.prism_payload.is_some() {
+            if keeps_canonical_storage {
                 self.single_letter_sentence_guard_enabled = formulas
                     .iter()
                     .any(|formula| formula_is_abbreviation(formula));
@@ -1426,6 +2020,12 @@ impl StaticTableTranslator {
                 .unwrap_or_else(|| self.storage.owned_entries());
             let (entries, normal_codes, has_single_letter_abbreviations) =
                 algebra.expand_entries_with_normal_codes(source_entries);
+            self.spelling_correction_entries = spelling_correction_entries(&entries);
+            self.spelling_correction_surfaces = self
+                .spelling_correction_entries
+                .iter()
+                .map(|(surface, _, _)| surface.clone())
+                .collect();
             self.spelling_abbreviation_entries = spelling_abbreviation_entries(&entries);
             let entries = entries
                 .into_iter()
@@ -1470,7 +2070,9 @@ impl StaticTableTranslator {
     }
 
     fn expanded_lookup_specs(&self, lookup_code: &str) -> Vec<LookupCodeSpec> {
-        let mut specs = vec![LookupCodeSpec::exact(lookup_code)];
+        let mut exact = LookupCodeSpec::exact(lookup_code);
+        exact.spelling_correction = self.exact_surface_is_correction_only(lookup_code);
+        let mut specs = vec![exact];
         let default_off_dynamic_anchor_exists = self.dynamic_correction_lookup
             && !self.enable_correction
             && lookup_code.starts_with('m')
@@ -1489,16 +2091,23 @@ impl StaticTableTranslator {
                 }
             }
             for lookup in lookups {
-                if track_b_short_prefix && lookup.code != lookup_code {
+                // Short TypeDuck rows can expose thousands of single-letter
+                // abbreviation descriptors.  Prune that family, not ordinary
+                // deployed spellings whose canonical storage code differs from
+                // the surface (for example `nei` -> `nei1`/`nei5`).  Treating
+                // every non-identical code as an abbreviation dropped the full
+                // exact family and let sentence/prefix fallback own the input.
+                if track_b_short_prefix && (lookup.abbreviation || lookup.correction) {
                     continue;
                 }
-                if !lookup.correction
-                    && !specs.iter().any(|spec| spec.code == lookup.code)
+                if !specs.iter().any(|spec| spec.code == lookup.code)
                     && self.storage.has_code(lookup.code)
                 {
                     specs.push(LookupCodeSpec::alias(
                         lookup.code.to_owned(),
                         lookup_code.to_owned(),
+                        lookup.correction,
+                        lookup.credibility,
                     ));
                 }
             }
@@ -1604,7 +2213,9 @@ impl StaticTableTranslator {
     }
 
     fn sentence_lookup_specs(&self, lookup_code: &str) -> Vec<LookupCodeSpec> {
-        let mut specs = vec![LookupCodeSpec::exact(lookup_code)];
+        let mut exact = LookupCodeSpec::exact(lookup_code);
+        exact.spelling_correction = self.exact_surface_is_correction_only(lookup_code);
+        let mut specs = vec![exact];
         if lookup_code.len() > MAX_SENTENCE_ALIAS_LOOKUP_BYTES {
             return specs;
         }
@@ -1623,8 +2234,7 @@ impl StaticTableTranslator {
             crate::m37_record_prism_lookup(start.elapsed(), lookups.len());
         }
         for lookup in lookups {
-            if lookup.correction
-                || specs.iter().any(|spec| spec.code == lookup.code)
+            if specs.iter().any(|spec| spec.code == lookup.code)
                 || !self.storage.has_code(lookup.code)
             {
                 continue;
@@ -1632,6 +2242,8 @@ impl StaticTableTranslator {
             specs.push(LookupCodeSpec::alias(
                 lookup.code.to_owned(),
                 lookup_code.to_owned(),
+                lookup.correction,
+                lookup.credibility,
             ));
         }
         specs
@@ -1789,9 +2401,17 @@ impl StaticTableTranslator {
     /// `zhongguo`→中國) — those keep the injection so their leading single stays
     /// reachable.
     fn input_serves_single_char_exact(&self, lookup_code: &str) -> bool {
-        self.storage
-            .exact_candidates(lookup_code)
-            .any(|candidate| candidate.text().chars().count() == 1)
+        self.leading_surface_fetch_codes(lookup_code)
+            .into_iter()
+            .filter(|fetch| fetch.bare_exact)
+            .any(|fetch| {
+                self.storage
+                    .exact_candidates(&fetch.fetch_code)
+                    .any(|candidate| {
+                        candidate.text().chars().count() == 1
+                            && leading_candidate_matches_fetch(&candidate, &fetch)
+                    })
+            })
     }
 
     fn is_dictionary_text_allowed(&self, text: &str) -> bool {
@@ -1835,6 +2455,33 @@ impl StaticTableTranslator {
             candidate.text().to_owned(),
             candidate.raw_comment().to_owned(),
         ))
+    }
+
+    fn is_spelling_correction_view(&self, code: &str, candidate: &LookupCandidate<'_>) -> bool {
+        if self.spelling_correction_entries.is_empty() {
+            return false;
+        }
+        self.spelling_correction_entries.contains(&(
+            code.to_owned(),
+            candidate.text().to_owned(),
+            candidate.raw_comment().to_owned(),
+        ))
+    }
+
+    fn exact_surface_is_correction_only(&self, code: &str) -> bool {
+        if !self.spelling_correction_surfaces.contains(code) {
+            return false;
+        }
+        let mut saw_correction = false;
+        let mut saw_normal = false;
+        for candidate in self.storage.exact_candidates(code) {
+            if self.is_spelling_correction_view(code, &candidate) {
+                saw_correction = true;
+            } else {
+                saw_normal = true;
+            }
+        }
+        saw_correction && !saw_normal
     }
 
     fn lookup_candidate_order(
@@ -1935,12 +2582,14 @@ impl StaticTableTranslator {
         candidate: &Candidate,
         lookup_code: &str,
         correction_distance: Option<usize>,
+        spelling_credibility: f32,
     ) -> Candidate {
         self.format_candidate_for_lookup(
             entry_code,
             candidate.clone(),
             lookup_code,
             correction_distance,
+            spelling_credibility,
         )
     }
 
@@ -1950,6 +2599,7 @@ impl StaticTableTranslator {
         candidate: &LookupCandidate<'_>,
         lookup_code: &str,
         correction_distance: Option<usize>,
+        spelling_credibility: f32,
     ) -> Candidate {
         let materialize_start = crate::m37_metrics_enabled().then(Instant::now);
         let text = candidate.text().to_owned();
@@ -1983,6 +2633,7 @@ impl StaticTableTranslator {
         } else {
             None
         };
+        raw_quality += spelling_credibility;
         if let Some(distance) = correction_distance {
             raw_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
         }
@@ -2008,6 +2659,7 @@ impl StaticTableTranslator {
         mut candidate: Candidate,
         lookup_code: &str,
         correction_distance: Option<usize>,
+        spelling_credibility: f32,
     ) -> Candidate {
         let comment_code = if self.show_full_code {
             candidate.comment.clone()
@@ -2030,7 +2682,7 @@ impl StaticTableTranslator {
                 candidate.preedit = Some(preedit);
             }
         }
-        let mut raw_quality = candidate.quality;
+        let mut raw_quality = candidate.quality + spelling_credibility;
         if let Some(distance) = correction_distance {
             raw_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
         }
@@ -2086,7 +2738,7 @@ impl StaticTableTranslator {
     }
 
     fn lookup_candidate_ref_raw_quality(&self, candidate: &PendingLookupCandidateRef<'_>) -> f32 {
-        let mut raw_quality = candidate.candidate.raw_quality();
+        let mut raw_quality = candidate.candidate.raw_quality() + candidate.spelling_credibility;
         if let Some(distance) = candidate.correction_distance {
             raw_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
         }
@@ -2101,7 +2753,8 @@ impl StaticTableTranslator {
             .candidate
             .raw_quality()
             .max(f32::MIN_POSITIVE)
-            .ln();
+            .ln()
+            + candidate.spelling_credibility;
         if let Some(distance) = candidate.correction_distance {
             weight += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
         }
@@ -2204,8 +2857,9 @@ impl StaticTableTranslator {
         lookup_code: &str,
         candidate: &LookupCandidate<'_>,
         correction_distance: Option<usize>,
+        spelling_credibility: f32,
     ) -> f32 {
-        let mut raw_quality = candidate.raw_quality();
+        let mut raw_quality = candidate.raw_quality() + spelling_credibility;
         if let Some(distance) = correction_distance {
             raw_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
         }
@@ -2226,12 +2880,14 @@ impl StaticTableTranslator {
             right.lookup_code,
             &right.candidate,
             right.correction_distance,
+            right.spelling_credibility,
         )
         .partial_cmp(&self.materialized_quality(
             left.entry_code.as_ref(),
             left.lookup_code,
             &left.candidate,
             left.correction_distance,
+            left.spelling_credibility,
         ))
         .unwrap_or(Ordering::Equal)
         .then_with(|| left.emission_order.cmp(&right.emission_order))
@@ -2353,10 +3009,10 @@ impl StaticTableTranslator {
         let mut retained_original_groups = HashMap::new();
         let mut emission_order = 0;
         let mut full_count = 0;
-        let mut has_full_exact_candidate = false;
-        let has_correction_lookup = lookup_specs
+        let mut prefix_fallback_owned = false;
+        let mut has_correction_lookup = lookup_specs
             .iter()
-            .any(|spec| spec.correction_distance.is_some());
+            .any(|spec| spec.correction_distance.is_some() || spec.spelling_correction);
         let can_stop_after_window = !include_full_count && !ordered_mode && self.sort_by_weight;
         let mut early_stopped = false;
         for lookup_spec in lookup_specs {
@@ -2380,9 +3036,10 @@ impl StaticTableTranslator {
             {
                 exact_candidates += 1;
                 full_count += 1;
-                has_full_exact_candidate = true;
                 let spelling_abbreviation =
                     self.is_spelling_abbreviation_view(spec_lookup_code, &candidate);
+                let spelling_correction = lookup_spec.spelling_correction
+                    || self.is_spelling_correction_view(spec_lookup_code, &candidate);
                 let fetch_group = if self.sort_by_weight {
                     0
                 } else {
@@ -2397,6 +3054,8 @@ impl StaticTableTranslator {
                     spelling_abbreviation,
                     limited_prediction: false,
                     emission_order,
+                    spelling_correction,
+                    spelling_credibility: lookup_spec.spelling_credibility,
                 };
                 if !self.sort_by_weight {
                     self.push_bounded_pending_by_original_group(
@@ -2451,6 +3110,8 @@ impl StaticTableTranslator {
                         prefix_candidates += 1;
                         let spelling_abbreviation =
                             self.is_spelling_abbreviation_view(entry_code.as_ref(), &candidate);
+                        let spelling_correction = lookup_spec.spelling_correction
+                            || self.is_spelling_correction_view(spec_lookup_code, &candidate);
                         let fetch_group = if self.sort_by_weight {
                             0
                         } else {
@@ -2465,6 +3126,8 @@ impl StaticTableTranslator {
                             spelling_abbreviation,
                             limited_prediction,
                             emission_order,
+                            spelling_correction,
+                            spelling_credibility: lookup_spec.spelling_credibility,
                         };
                         if limited_prediction && ordered_mode {
                             self.push_bounded_pending_by_weight_order(
@@ -2525,6 +3188,7 @@ impl StaticTableTranslator {
             full_count += limited_predictions.len();
             selected.extend(limited_predictions);
         }
+        has_correction_lookup |= selected.iter().any(|pending| pending.spelling_correction);
         if selected.is_empty() && self.enable_sentence {
             if let Some(model) = &self.upstream_sentence_model {
                 let model_start = crate::m37_metrics_enabled().then(Instant::now);
@@ -2545,18 +3209,55 @@ impl StaticTableTranslator {
                     crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
                 }
                 if !candidates.is_empty() {
+                    let base_window_may_have_more = candidates.len() >= sentence_limit;
+                    let mut prefix_fallback_truncated = false;
+                    let mut prefix_fallback_owned = false;
                     if self.prefix_fallback && !has_correction_lookup {
-                        let mut prefix_candidates = self.prefix_fallback_candidates(
-                            input,
-                            lookup_code,
-                            filter_by_charset,
-                            &candidates,
-                            Some(limit),
-                        );
-                        prefix_candidates.truncate(limit.saturating_sub(candidates.len()));
-                        candidates.extend(prefix_candidates);
-                    } else if self.leading_syllable_reachability
+                        let room = limit.saturating_sub(candidates.len());
+                        if room > 0 {
+                            let prefix_batch = self.prefix_fallback_candidates(
+                                input,
+                                lookup_code,
+                                filter_by_charset,
+                                &candidates,
+                                &candidates,
+                                Some(room),
+                            );
+                            prefix_fallback_owned = prefix_batch.owns_reachability;
+                            prefix_fallback_truncated = prefix_batch.truncated;
+                            let inserted = merge_prefix_fallback_candidates(
+                                &mut candidates,
+                                prefix_batch.candidates,
+                                lookup_code,
+                            );
+                            if prefix_fallback_truncated && inserted == 0 {
+                                prefix_fallback_truncated = matches!(
+                                    self.prefix_fallback_has_unique_candidate(
+                                        input,
+                                        lookup_code,
+                                        filter_by_charset,
+                                        &candidates,
+                                        Some(limit),
+                                    ),
+                                    PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
+                                );
+                            }
+                        } else {
+                            prefix_fallback_owned = !matches!(
+                                self.prefix_fallback_has_unique_candidate(
+                                    input,
+                                    lookup_code,
+                                    filter_by_charset,
+                                    &candidates,
+                                    Some(limit),
+                                ),
+                                PrefixFallbackProbe::NoPrefix
+                            );
+                        }
+                    }
+                    if self.leading_syllable_reachability
                         && !has_correction_lookup
+                        && !prefix_fallback_owned
                         && has_proper_leading_prefix(lookup_code)
                         && !self.input_serves_single_char_exact(lookup_code)
                     {
@@ -2589,11 +3290,15 @@ impl StaticTableTranslator {
                             // Preserve phrase-before-single order through the engine's
                             // global quality sort (the bounded sentence return does not
                             // otherwise assign ordered qualities).
-                            Self::assign_ordered_candidate_qualities(&mut candidates);
+                            self.assign_ordered_candidate_qualities(&mut candidates);
                         }
                     }
+                    let merged_window_overflow = candidates.len() > limit;
                     candidates.truncate(limit);
-                    let result_full_count = if candidates.len() >= limit {
+                    let result_full_count = if prefix_fallback_truncated
+                        || base_window_may_have_more
+                        || merged_window_overflow
+                    {
                         limit.saturating_add(1)
                     } else {
                         candidates.len()
@@ -2617,18 +3322,55 @@ impl StaticTableTranslator {
                     crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
                 }
                 if !candidates.is_empty() {
+                    let base_window_may_have_more = candidates.len() >= abbreviation_limit;
+                    let mut prefix_fallback_truncated = false;
+                    let mut prefix_fallback_owned = false;
                     if self.prefix_fallback && !has_correction_lookup {
-                        let mut prefix_candidates = self.prefix_fallback_candidates(
-                            input,
-                            lookup_code,
-                            filter_by_charset,
-                            &candidates,
-                            Some(limit),
-                        );
-                        prefix_candidates.truncate(limit.saturating_sub(candidates.len()));
-                        candidates.extend(prefix_candidates);
-                    } else if self.leading_syllable_reachability
+                        let room = limit.saturating_sub(candidates.len());
+                        if room > 0 {
+                            let prefix_batch = self.prefix_fallback_candidates(
+                                input,
+                                lookup_code,
+                                filter_by_charset,
+                                &candidates,
+                                &candidates,
+                                Some(room),
+                            );
+                            prefix_fallback_owned = prefix_batch.owns_reachability;
+                            prefix_fallback_truncated = prefix_batch.truncated;
+                            let inserted = merge_prefix_fallback_candidates(
+                                &mut candidates,
+                                prefix_batch.candidates,
+                                lookup_code,
+                            );
+                            if prefix_fallback_truncated && inserted == 0 {
+                                prefix_fallback_truncated = matches!(
+                                    self.prefix_fallback_has_unique_candidate(
+                                        input,
+                                        lookup_code,
+                                        filter_by_charset,
+                                        &candidates,
+                                        Some(limit),
+                                    ),
+                                    PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
+                                );
+                            }
+                        } else {
+                            prefix_fallback_owned = !matches!(
+                                self.prefix_fallback_has_unique_candidate(
+                                    input,
+                                    lookup_code,
+                                    filter_by_charset,
+                                    &candidates,
+                                    Some(limit),
+                                ),
+                                PrefixFallbackProbe::NoPrefix
+                            );
+                        }
+                    }
+                    if self.leading_syllable_reachability
                         && !has_correction_lookup
+                        && !prefix_fallback_owned
                         && has_proper_leading_prefix(lookup_code)
                         && !self.input_serves_single_char_exact(lookup_code)
                     {
@@ -2661,11 +3403,15 @@ impl StaticTableTranslator {
                             // Preserve phrase-before-single order through the engine's
                             // global quality sort (the bounded sentence return does not
                             // otherwise assign ordered qualities).
-                            Self::assign_ordered_candidate_qualities(&mut candidates);
+                            self.assign_ordered_candidate_qualities(&mut candidates);
                         }
                     }
+                    let merged_window_overflow = candidates.len() > limit;
                     candidates.truncate(limit);
-                    let result_full_count = if candidates.len() >= abbreviation_limit {
+                    let result_full_count = if prefix_fallback_truncated
+                        || base_window_may_have_more
+                        || merged_window_overflow
+                    {
                         limit.saturating_add(1)
                     } else {
                         candidates.len()
@@ -2687,18 +3433,22 @@ impl StaticTableTranslator {
                         segment_tags,
                     ));
                 }
-                let candidates = self.translated_candidates_for_segment_with_prefix_fallback_limit(
+                let batch = self.translated_candidates_for_segment_with_prefix_fallback_limit(
                     input,
                     filter_by_charset,
                     segment_tags,
                     Some(limit),
                 );
-                let full_count = if candidates.len() > limit {
-                    candidates.len().saturating_add(1)
+                let full_count = if batch.truncated || batch.candidates.len() > limit {
+                    batch.candidates.len().saturating_add(1)
                 } else {
-                    candidates.len()
+                    batch.candidates.len()
                 };
-                return TranslationResult::bounded(candidates, full_count, include_full_count);
+                return TranslationResult::bounded(
+                    batch.candidates,
+                    full_count,
+                    include_full_count,
+                );
             }
             if let Some(sentence) = self.sentence_candidate(input, filter_by_charset, None) {
                 let candidates = vec![sentence];
@@ -2713,40 +3463,46 @@ impl StaticTableTranslator {
                     segment_tags,
                 ));
             }
-            let candidates = self.translated_candidates_for_segment_with_prefix_fallback_limit(
+            let batch = self.translated_candidates_for_segment_with_prefix_fallback_limit(
                 input,
                 filter_by_charset,
                 segment_tags,
                 Some(limit),
             );
-            let full_count = if candidates.len() > limit {
-                candidates.len().saturating_add(1)
+            let full_count = if batch.truncated || batch.candidates.len() > limit {
+                batch.candidates.len().saturating_add(1)
             } else {
-                candidates.len()
+                batch.candidates.len()
             };
-            return TranslationResult::bounded(candidates, full_count, include_full_count);
+            return TranslationResult::bounded(batch.candidates, full_count, include_full_count);
         }
         if selected.is_empty() && self.prefix_fallback && !has_correction_lookup {
-            let mut candidates = self.prefix_fallback_candidates(
+            let mut batch = self.prefix_fallback_candidates(
                 input,
                 lookup_code,
                 filter_by_charset,
                 &[],
+                &[],
                 Some(limit),
             );
-            let full_count = candidates.len();
-            if !candidates.is_empty() {
-                candidates.truncate(limit);
-                let result_full_count = if full_count >= limit {
-                    candidates.len().saturating_add(1)
-                } else if full_count > candidates.len() {
+            prefix_fallback_owned = batch.owns_reachability;
+            let full_count = batch.candidates.len();
+            if !batch.candidates.is_empty() {
+                batch.candidates.truncate(limit);
+                let result_full_count = if batch.truncated || full_count >= limit {
+                    batch.candidates.len().saturating_add(1)
+                } else if full_count > batch.candidates.len() {
                     full_count
                 } else {
-                    candidates.len()
+                    batch.candidates.len()
                 };
-                crate::m37_record_bounded_iterator(limit, candidates.len(), result_full_count);
+                crate::m37_record_bounded_iterator(
+                    limit,
+                    batch.candidates.len(),
+                    result_full_count,
+                );
                 return TranslationResult::bounded(
-                    candidates,
+                    batch.candidates,
                     result_full_count,
                     include_full_count,
                 );
@@ -2779,6 +3535,7 @@ impl StaticTableTranslator {
                     &candidate.candidate,
                     candidate.lookup_code,
                     candidate.correction_distance,
+                    candidate.spelling_credibility,
                 )
             })
             .collect::<Vec<_>>();
@@ -2796,7 +3553,6 @@ impl StaticTableTranslator {
                 crate::m37_record_track_b_candidate_materialized();
             }
         }
-        let has_strict_lookup_prefix = false;
         let has_multi_syllable_full_exact_candidate =
             (self.prefix_fallback && !has_correction_lookup).then(|| {
                 candidates.iter().any(|candidate| {
@@ -2808,51 +3564,77 @@ impl StaticTableTranslator {
         if self.combine_candidates {
             candidates = combine_duplicate_text_candidates(candidates);
         }
-        let prefix_fallback_applies = self.prefix_fallback
-            && !has_correction_lookup
-            && (candidates.is_empty() || has_full_exact_candidate || has_strict_lookup_prefix);
-        if prefix_fallback_applies {
+        if self.prefix_fallback && !has_correction_lookup {
             let has_multi_syllable_full_exact_candidate =
                 has_multi_syllable_full_exact_candidate.unwrap_or(false);
-            if candidates.len() < limit {
-                let mut prefix_candidates = self.prefix_fallback_candidates(
+            let full_page_without_exact = candidates.len() >= limit
+                && candidates
+                    .iter()
+                    .all(|candidate| candidate.source != CandidateSource::Table);
+            if full_page_without_exact {
+                // With no exact row, the shared fallback insertion point is the
+                // end of this already-full page and there is no span metadata
+                // to promote. Preserve the bounded existence probe here; a
+                // materialized merge cannot change any visible candidate.
+                let probe = self.prefix_fallback_has_unique_candidate(
                     input,
                     lookup_code,
                     filter_by_charset,
                     &candidates,
                     Some(limit),
                 );
-                full_count += prefix_candidates.len();
-                if has_multi_syllable_full_exact_candidate
-                    || has_strict_lookup_prefix
-                    || prefix_candidates.len() >= limit.saturating_sub(candidates.len())
-                {
-                    full_count = full_count.max(
-                        candidates
-                            .len()
-                            .saturating_add(prefix_candidates.len())
-                            .saturating_add(1),
+                prefix_fallback_owned = !matches!(probe, PrefixFallbackProbe::NoPrefix);
+                if matches!(
+                    probe,
+                    PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
+                ) {
+                    full_count = full_count.max(candidates.len().saturating_add(1));
+                }
+            } else {
+                let prefix_batch = self.prefix_fallback_candidates(
+                    input,
+                    lookup_code,
+                    filter_by_charset,
+                    &[],
+                    &candidates,
+                    Some(limit),
+                );
+                prefix_fallback_owned = prefix_batch.owns_reachability;
+                let mut prefix_fallback_truncated = prefix_batch.truncated;
+                let inserted = merge_prefix_fallback_candidates(
+                    &mut candidates,
+                    prefix_batch.candidates,
+                    lookup_code,
+                );
+                if prefix_fallback_truncated && inserted == 0 {
+                    // A bounded materialization can stop on duplicate rows even
+                    // though no distinct fallback candidate exists. Reuse the
+                    // cheap existence probe to distinguish an exhaustively
+                    // duplicate-only family from a budget-truncated one.
+                    prefix_fallback_truncated = matches!(
+                        self.prefix_fallback_has_unique_candidate(
+                            input,
+                            lookup_code,
+                            filter_by_charset,
+                            &candidates,
+                            Some(limit),
+                        ),
+                        PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
                     );
                 }
-                prefix_candidates.truncate(limit - candidates.len());
-                candidates.extend(prefix_candidates);
-            } else if include_full_count || full_count <= candidates.len() {
-                full_count += self
-                    .prefix_fallback_candidates(
-                        input,
-                        lookup_code,
-                        filter_by_charset,
-                        &candidates,
-                        Some(limit),
-                    )
-                    .len();
-                if has_multi_syllable_full_exact_candidate || has_strict_lookup_prefix {
+                full_count += inserted;
+                let merged_window_overflow = candidates.len() > limit;
+                candidates.truncate(limit);
+                if prefix_fallback_truncated
+                    || merged_window_overflow
+                    || (prefix_fallback_owned && has_multi_syllable_full_exact_candidate)
+                {
                     full_count = full_count.max(candidates.len().saturating_add(1));
                 }
             }
         }
         if ordered_mode {
-            Self::assign_ordered_candidate_qualities(&mut candidates);
+            self.assign_ordered_candidate_qualities(&mut candidates);
         }
         // M59 finding #1 (corrective): leading-syllable reachability must make
         // the leading-single family reachable on THIS (non-empty-`selected`)
@@ -2869,21 +3651,13 @@ impl StaticTableTranslator {
         // fetch is capped (no full materialisation on the typing path); the full
         // family is materialised only on the unbounded/page-turn path (:2804).
         //
-        // Precedence is SCHEMA-level (`!self.prefix_fallback`), not per-request
-        // (`!prefix_fallback_applies`). A schema that carries `prefix_fallback`
-        // (all jyutping/TypeDuck) owns reachability through that mechanism, and
-        // the M59 dual-mechanism resolution makes it authoritative: the
-        // leading-syllable injection must never run there. Keying on the
-        // per-request flag let this fire on jyutping keystrokes where
-        // `prefix_fallback` happened not to apply (candidates present, no
-        // full-exact/strict-prefix), materialising an extra leading-single family
-        // per keystroke — the default-ON flip's +24 MB Track B regression (and a
-        // latent perturbation of the byte-pinned jyutping order). Luna has no
-        // `prefix_fallback`, so `!self.prefix_fallback` is identical to the old
-        // `!prefix_fallback_applies` there — its reachability is unchanged.
+        // Prefix fallback is authoritative only when this input has an actual
+        // deployed proper prefix. If it does not, leave the independent
+        // leading-syllable mechanism available instead of creating a
+        // schema-level reachability hole.
         if self.leading_syllable_reachability
             && !has_correction_lookup
-            && !self.prefix_fallback
+            && !prefix_fallback_owned
             && has_proper_leading_prefix(lookup_code)
             && !self.input_serves_single_char_exact(lookup_code)
         {
@@ -2899,7 +3673,7 @@ impl StaticTableTranslator {
             if !leading_singles.is_empty() {
                 let overflows_page = candidates.len().saturating_add(leading_singles.len()) > limit;
                 candidates.splice(insert_at..insert_at, leading_singles);
-                Self::assign_ordered_candidate_qualities(&mut candidates);
+                self.assign_ordered_candidate_qualities(&mut candidates);
                 if candidates.len() > limit {
                     candidates.truncate(limit);
                 }
@@ -2919,14 +3693,11 @@ impl StaticTableTranslator {
             }
         }
         crate::m37_record_bounded_iterator(limit, candidates.len(), full_count);
-        let mut result_full_count = if early_stopped {
+        let result_full_count = if early_stopped {
             full_count.max(candidates.len().saturating_add(1))
         } else {
             full_count
         };
-        if has_strict_lookup_prefix {
-            result_full_count = result_full_count.max(candidates.len().saturating_add(1));
-        }
         TranslationResult::bounded(candidates, result_full_count, include_full_count)
     }
 
@@ -2977,6 +3748,9 @@ impl StaticTableTranslator {
                                 .is_spelling_abbreviation_view(lookup_code, &candidate),
                             limited_prediction: false,
                             tolerance: lookup_spec.tolerance,
+                            spelling_correction: lookup_spec.spelling_correction
+                                || self.is_spelling_correction_view(lookup_code, &candidate),
+                            spelling_credibility: lookup_spec.spelling_credibility,
                         })
                     }),
             );
@@ -3032,6 +3806,9 @@ impl StaticTableTranslator {
                         spelling_abbreviation,
                         limited_prediction,
                         tolerance: lookup_spec.tolerance,
+                        spelling_correction: lookup_spec.spelling_correction
+                            || self.is_spelling_correction_view(lookup_code, &candidate),
+                        spelling_credibility: lookup_spec.spelling_credibility,
                     });
                 }
                 let prefix_elapsed = prefix_start.elapsed();
@@ -3107,6 +3884,7 @@ impl StaticTableTranslator {
                 && !pending.limited_prediction
                 && !pending.tolerance
                 && pending.correction_distance.is_none()
+                && !pending.spelling_correction
         }
         let mut needs_reorder = false;
         let mut prev_exact_quality: Option<f32> = None;
@@ -3142,6 +3920,15 @@ impl StaticTableTranslator {
                 pooled[slot] = row;
             }
         }
+        if self.sort_by_weight && self.prefix_fallback {
+            // The bounded prefix-fallback path orders full-surface table rows
+            // ahead of completion rows through `lookup_candidate_ref_category`.
+            // Apply the same category order to the eager/page-turn pool.  Prism
+            // aliases are appended after the raw surface spec, so without this
+            // shared order a completion from the raw spec could precede a later
+            // full-surface exact alias even though the bounded list did not.
+            self.order_lookup_candidates(&mut pooled);
+        }
         let pending_count = pooled.len();
         let candidates = pooled
             .into_iter()
@@ -3151,6 +3938,7 @@ impl StaticTableTranslator {
                     &pending.candidate,
                     &pending.lookup_code,
                     pending.correction_distance,
+                    pending.spelling_credibility,
                 )
             })
             .collect::<Vec<_>>();
@@ -3162,25 +3950,433 @@ impl StaticTableTranslator {
         candidates
     }
 
-    fn prefix_fallback_candidates(
+    fn prefix_fallback_view_is_allowed(
+        &self,
+        prefix_spec: &LookupPrefixSpec<'_>,
+        candidate: &LookupCandidate<'_>,
+        filter_by_charset: bool,
+    ) -> bool {
+        let prefix = prefix_spec.input_prefix;
+        let admitted_by_surface = prefix_spec
+            .surface_fetch
+            .as_ref()
+            .is_some_and(|fetch| leading_candidate_matches_fetch(candidate, fetch));
+        let admitted_by_raw = prefix_spec.surface_fetch.is_none()
+            && original_code_allows_prefix_fallback(candidate.raw_comment(), prefix);
+        !self.is_spelling_correction_view(prefix, candidate)
+            && (admitted_by_surface || admitted_by_raw)
+            && self.is_dictionary_text_allowed(candidate.text())
+            && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
+    }
+
+    fn prefix_fallback_has_unique_candidate(
         &self,
         input: &str,
         lookup_code: &str,
         filter_by_charset: bool,
         existing_candidates: &[Candidate],
         request_limit: Option<usize>,
-    ) -> Vec<Candidate> {
+    ) -> PrefixFallbackProbe {
         let fallback_start = crate::m37_metrics_enabled().then(Instant::now);
         let prefixes = self.valid_lookup_prefixes(lookup_code);
         if prefixes.is_empty() {
             if let Some(start) = fallback_start {
                 crate::m37_record_prefix_fallback(start.elapsed(), 0, 0);
             }
-            return Vec::new();
+            return PrefixFallbackProbe::NoPrefix;
+        }
+        let seen_texts = existing_candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<HashSet<_>>();
+        let bounded_limit = if self.bounds_compact_fallback_expansion() {
+            request_limit.filter(|limit| *limit > 0)
+        } else {
+            None
         };
+        let pending_cap = bounded_limit
+            .map(|limit| {
+                limit
+                    .saturating_mul(PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER)
+                    .max(limit)
+            })
+            .unwrap_or(usize::MAX);
+        let per_fetch_cap = bounded_limit
+            .map(|_| {
+                if input.chars().count() <= PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS {
+                    PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE
+                } else {
+                    PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE
+                }
+            })
+            .unwrap_or(usize::MAX);
+        let mut views_visited = 0usize;
+        let mut truncated = false;
+        for prefix_spec in &prefixes {
+            let exact_start = LookupTimer::start();
+            let mut exact_candidates = 0usize;
+            let mut emitted_for_fetch_code = 0usize;
+            let mut found_unique = false;
+            for candidate in self
+                .storage
+                .exact_candidates(&prefix_spec.fetch_code)
+                .filter(|candidate| {
+                    self.prefix_fallback_view_is_allowed(prefix_spec, candidate, filter_by_charset)
+                })
+            {
+                views_visited += 1;
+                exact_candidates += 1;
+                emitted_for_fetch_code += 1;
+                if !seen_texts.contains(candidate.text()) {
+                    found_unique = true;
+                    break;
+                }
+                if emitted_for_fetch_code >= per_fetch_cap || views_visited >= pending_cap {
+                    truncated = true;
+                    break;
+                }
+            }
+            self.storage
+                .record_exact_lookup(exact_start.elapsed(), exact_candidates);
+            if found_unique {
+                if let Some(start) = fallback_start {
+                    crate::m37_record_prefix_fallback(start.elapsed(), views_visited, 1);
+                }
+                return PrefixFallbackProbe::Found;
+            }
+            if truncated {
+                break;
+            }
+        }
+        if let Some(start) = fallback_start {
+            crate::m37_record_prefix_fallback(start.elapsed(), views_visited, 0);
+        }
+        if truncated {
+            PrefixFallbackProbe::Truncated
+        } else {
+            PrefixFallbackProbe::Exhausted
+        }
+    }
+
+    fn build_bounded_prefix_fallback_cache_entry(
+        &self,
+        prefixes: &[LookupPrefixSpec<'_>],
+        filter_by_charset: bool,
+        pending_cap: usize,
+        per_fetch_cap: usize,
+        key: PrefixFallbackWindowCacheKey,
+    ) -> (Arc<PrefixFallbackWindowCacheEntry>, usize) {
+        let mut rows = Vec::new();
+        let mut emission_order = 0usize;
+        let mut views_visited = 0usize;
+        let mut truncated = false;
+        let mut global_truncated = false;
+        for prefix_spec in prefixes {
+            let exact_start = LookupTimer::start();
+            let mut exact_candidates = 0usize;
+            let mut emitted_for_fetch_code = 0usize;
+            for candidate in self
+                .storage
+                .exact_candidates(&prefix_spec.fetch_code)
+                .filter(|candidate| {
+                    self.prefix_fallback_view_is_allowed(prefix_spec, candidate, filter_by_charset)
+                })
+            {
+                views_visited += 1;
+                exact_candidates += 1;
+                emitted_for_fetch_code += 1;
+                let spelling_abbreviation =
+                    self.is_spelling_abbreviation_view(prefix_spec.input_prefix, &candidate);
+                rows.push(CachedPrefixFallbackView {
+                    fetch_code: prefix_spec.fetch_code.clone(),
+                    input_prefix: prefix_spec.input_prefix.to_owned(),
+                    candidate: candidate.to_candidate(),
+                    consumed_lookup_len: prefix_spec.consumed_lookup_len,
+                    surface_abbreviation: prefix_spec
+                        .surface_fetch
+                        .as_ref()
+                        .is_some_and(|fetch| fetch.abbreviation),
+                    spelling_abbreviation,
+                    emission_order,
+                });
+                emission_order += 1;
+                if rows.len() >= pending_cap {
+                    truncated = true;
+                    global_truncated = true;
+                    break;
+                }
+                if emitted_for_fetch_code >= per_fetch_cap {
+                    truncated = true;
+                    break;
+                }
+            }
+            self.storage
+                .record_exact_lookup(exact_start.elapsed(), exact_candidates);
+            if global_truncated {
+                break;
+            }
+        }
+        (
+            Arc::new(PrefixFallbackWindowCacheEntry {
+                key,
+                rows,
+                truncated,
+            }),
+            views_visited,
+        )
+    }
+
+    fn materialize_bounded_prefix_fallback_entry(
+        &self,
+        entry: &PrefixFallbackWindowCacheEntry,
+        input: &str,
+        lookup_code: &str,
+        existing_candidates: &[Candidate],
+        admitted_span_candidates: &[Candidate],
+        limit: usize,
+    ) -> PrefixFallbackBatch {
         let mut seen_texts = existing_candidates
             .iter()
             .map(|candidate| candidate.text.clone())
+            .collect::<HashSet<_>>();
+        let full_span_texts = admitted_span_candidates
+            .iter()
+            .filter(|candidate| candidate.source == CandidateSource::Table)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<HashSet<_>>();
+        struct CachedPendingPrefixCandidate<'a> {
+            view: &'a CachedPrefixFallbackView,
+            consumed_input_len: usize,
+            recompose_on_default: bool,
+        }
+        let input_base = input.len().saturating_sub(lookup_code.len());
+        let mut pending = entry
+            .rows
+            .iter()
+            .map(|view| {
+                let consumed_input_len = if full_span_texts.contains(view.candidate.text.as_str()) {
+                    input.len()
+                } else {
+                    input_base.saturating_add(view.consumed_lookup_len)
+                };
+                CachedPendingPrefixCandidate {
+                    view,
+                    consumed_input_len,
+                    recompose_on_default: consumed_input_len > 1
+                        && !view.surface_abbreviation
+                        && !view.spelling_abbreviation,
+                }
+            })
+            .collect::<Vec<_>>();
+        pending.sort_by(|left, right| {
+            right
+                .consumed_input_len
+                .cmp(&left.consumed_input_len)
+                .then_with(|| {
+                    right
+                        .view
+                        .candidate
+                        .quality
+                        .partial_cmp(&left.view.candidate.quality)
+                        .unwrap_or(Ordering::Equal)
+                })
+                .then_with(|| left.view.emission_order.cmp(&right.view.emission_order))
+        });
+        let pending_len = pending.len();
+        let mut candidates = Vec::new();
+        let mut truncated = entry.truncated;
+        for (index, pending) in pending.into_iter().enumerate() {
+            let mut candidate = self.format_candidate_for_lookup(
+                &pending.view.fetch_code,
+                pending.view.candidate.clone(),
+                &pending.view.input_prefix,
+                None,
+                0.0,
+            );
+            if !seen_texts.insert(candidate.text.clone()) {
+                continue;
+            }
+            candidate.source = CandidateSource::PartialTable {
+                consumed: pending.consumed_input_len,
+                recompose_on_default: pending.recompose_on_default,
+            };
+            candidates.push(candidate);
+            if candidates.len() >= limit {
+                truncated |= index + 1 < pending_len;
+                break;
+            }
+        }
+        PrefixFallbackBatch {
+            candidates,
+            truncated,
+            owns_reachability: true,
+        }
+    }
+
+    fn bounded_prefix_fallback_candidates_cached(
+        &self,
+        request: BoundedPrefixFallbackCacheRequest<'_, '_>,
+    ) -> Option<PrefixFallbackBatch> {
+        let BoundedPrefixFallbackCacheRequest {
+            input,
+            lookup_code,
+            filter_by_charset,
+            existing_candidates,
+            admitted_span_candidates,
+            prefixes,
+            limit,
+            fallback_start,
+        } = request;
+        let pending_cap = limit
+            .saturating_mul(PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER)
+            .max(limit);
+        let per_fetch_cap =
+            if input.chars().count() <= PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS {
+                PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE
+            } else {
+                PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE
+            };
+        let key = PrefixFallbackWindowCacheKey {
+            prefixes: prefixes
+                .iter()
+                .map(|prefix| PrefixFallbackCachePrefix {
+                    input_prefix: prefix.input_prefix.to_owned(),
+                    fetch_code: prefix.fetch_code.clone(),
+                    consumed_lookup_len: prefix.consumed_lookup_len,
+                    surface_fetch: prefix.surface_fetch.clone(),
+                })
+                .collect(),
+            filter_by_charset,
+            pending_cap,
+            per_fetch_cap,
+        };
+        let cached = {
+            let cache = self
+                .prefix_fallback_window_cache
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            cache.as_ref().filter(|entry| entry.key == key).cloned()
+        };
+        let mut views_visited = 0usize;
+        let entry = if let Some(entry) = cached {
+            entry
+        } else {
+            let (built, built_views) = self.build_bounded_prefix_fallback_cache_entry(
+                prefixes,
+                filter_by_charset,
+                pending_cap,
+                per_fetch_cap,
+                key,
+            );
+            views_visited = built_views;
+            if estimate_prefix_fallback_window_cache_key_bytes(&built.key)
+                > PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES
+                || estimate_prefix_fallback_window_cache_bytes(&built)
+                    > PREFIX_FALLBACK_CACHE_MAX_ENTRY_BYTES
+            {
+                // Keep any prior admitted entry intact. This oversized window
+                // must use the borrowed bounded collector and must never become
+                // retained translator state.
+                return None;
+            }
+            let mut cache = self
+                .prefix_fallback_window_cache
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            if let Some(existing) = cache
+                .as_ref()
+                .filter(|entry| entry.key == built.key)
+                .cloned()
+            {
+                existing
+            } else {
+                *cache = Some(Arc::clone(&built));
+                built
+            }
+        };
+        let batch = self.materialize_bounded_prefix_fallback_entry(
+            &entry,
+            input,
+            lookup_code,
+            existing_candidates,
+            admitted_span_candidates,
+            limit,
+        );
+        if let Some(start) = fallback_start {
+            crate::m37_record_prefix_fallback(
+                start.elapsed(),
+                views_visited,
+                batch.candidates.len(),
+            );
+        }
+        Some(batch)
+    }
+
+    fn prefix_fallback_candidates(
+        &self,
+        input: &str,
+        lookup_code: &str,
+        filter_by_charset: bool,
+        existing_candidates: &[Candidate],
+        admitted_span_candidates: &[Candidate],
+        request_limit: Option<usize>,
+    ) -> PrefixFallbackBatch {
+        let fallback_start = crate::m37_metrics_enabled().then(Instant::now);
+        let prefixes = self.valid_lookup_prefixes(lookup_code);
+        if prefixes.is_empty() {
+            if let Some(start) = fallback_start {
+                crate::m37_record_prefix_fallback(start.elapsed(), 0, 0);
+            }
+            return PrefixFallbackBatch {
+                candidates: Vec::new(),
+                truncated: false,
+                owns_reachability: false,
+            };
+        };
+        let bounded_limit = if self.bounds_compact_fallback_expansion() {
+            request_limit.filter(|limit| *limit > 0)
+        } else {
+            None
+        };
+        if let Some(limit) = bounded_limit {
+            let pending_cap = limit
+                .saturating_mul(PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER)
+                .max(limit);
+            let cache_admitted = pending_cap <= PREFIX_FALLBACK_CACHE_MAX_ROWS
+                && prefixes.len() <= PREFIX_FALLBACK_CACHE_MAX_PREFIXES
+                && prefix_fallback_cache_key_bytes(&prefixes)
+                    <= PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES;
+            if cache_admitted {
+                if let Some(batch) = self.bounded_prefix_fallback_candidates_cached(
+                    BoundedPrefixFallbackCacheRequest {
+                        input,
+                        lookup_code,
+                        filter_by_charset,
+                        existing_candidates,
+                        admitted_span_candidates,
+                        prefixes: &prefixes,
+                        limit,
+                        fallback_start,
+                    },
+                ) {
+                    return batch;
+                }
+            }
+        }
+        let mut seen_texts = existing_candidates
+            .iter()
+            .map(|candidate| candidate.text.clone())
+            .collect::<HashSet<_>>();
+        // The unbounded merge can insert a shorter-prefix family before full
+        // exact rows. A later uniqueness filter keeps the first duplicate text,
+        // so retain the prefix row's reachable position but promote its consumed
+        // span when this same translator has already admitted the same text as a
+        // full exact for the current lookup. Otherwise selecting `zi` -> 子 from
+        // the earlier `z` abbreviation family leaves raw `i` behind.
+        let full_span_texts = admitted_span_candidates
+            .iter()
+            .filter(|candidate| candidate.source == CandidateSource::Table)
+            .map(|candidate| candidate.text.as_str())
             .collect::<HashSet<_>>();
         let mut candidates = Vec::new();
         struct PendingPrefixCandidate<'a> {
@@ -3191,11 +4387,8 @@ impl StaticTableTranslator {
         let mut pending = Vec::new();
         let mut emission_order = 0;
         let mut views_visited = 0;
-        let bounded_limit = if self.bounds_compact_fallback_expansion() {
-            request_limit.filter(|limit| *limit > 0)
-        } else {
-            None
-        };
+        let mut truncated = false;
+        let mut global_truncated = false;
         let output_cap = bounded_limit.unwrap_or(usize::MAX);
         let pending_cap = bounded_limit
             .map(|limit| {
@@ -3216,7 +4409,7 @@ impl StaticTableTranslator {
         for prefix_spec in &prefixes {
             let prefix = prefix_spec.input_prefix;
             let fetch_code = prefix_spec.fetch_code.as_str();
-            let consumed_input_len = input
+            let prefix_consumed_input_len = input
                 .len()
                 .saturating_sub(lookup_code.len())
                 .saturating_add(prefix_spec.consumed_lookup_len);
@@ -3227,14 +4420,21 @@ impl StaticTableTranslator {
                 .storage
                 .exact_candidates(fetch_code)
                 .filter(|candidate| {
-                    self.is_dictionary_text_allowed(candidate.text())
-                        && original_code_allows_prefix_fallback(candidate.raw_comment(), prefix)
-                        && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
+                    self.prefix_fallback_view_is_allowed(prefix_spec, candidate, filter_by_charset)
                 })
             {
                 views_visited += 1;
                 exact_candidates += 1;
+                let consumed_input_len = if full_span_texts.contains(candidate.text()) {
+                    input.len()
+                } else {
+                    prefix_consumed_input_len
+                };
                 let recompose_on_default = consumed_input_len > 1
+                    && !prefix_spec
+                        .surface_fetch
+                        .as_ref()
+                        .is_some_and(|fetch| fetch.abbreviation)
                     && !self.is_spelling_abbreviation_view(prefix, &candidate);
                 pending.push(PendingPrefixCandidate {
                     pending: PendingLookupCandidateRef {
@@ -3246,22 +4446,27 @@ impl StaticTableTranslator {
                         spelling_abbreviation: false,
                         limited_prediction: false,
                         emission_order,
+                        spelling_correction: false,
+                        spelling_credibility: 0.0,
                     },
                     consumed_input_len,
                     recompose_on_default,
                 });
                 emission_order += 1;
                 emitted_for_fetch_code += 1;
-                if emitted_for_fetch_code >= per_fetch_cap {
+                if pending.len() >= pending_cap {
+                    truncated = true;
+                    global_truncated = true;
                     break;
                 }
-                if pending.len() >= pending_cap {
+                if emitted_for_fetch_code >= per_fetch_cap {
+                    truncated = true;
                     break;
                 }
             }
             self.storage
                 .record_exact_lookup(exact_start.elapsed(), exact_candidates);
-            if pending.len() >= pending_cap {
+            if global_truncated {
                 break;
             }
         }
@@ -3280,12 +4485,14 @@ impl StaticTableTranslator {
                         .cmp(&right.pending.emission_order)
                 })
         });
-        for pending in pending {
+        let pending_len = pending.len();
+        for (index, pending) in pending.into_iter().enumerate() {
             let mut candidate = self.candidate_for_lookup_view(
                 pending.pending.entry_code.as_ref(),
                 &pending.pending.candidate,
                 pending.pending.lookup_code,
                 None,
+                0.0,
             );
             if !seen_texts.insert(candidate.text.clone()) {
                 continue;
@@ -3296,13 +4503,18 @@ impl StaticTableTranslator {
             };
             candidates.push(candidate);
             if candidates.len() >= output_cap {
+                truncated |= index + 1 < pending_len;
                 break;
             }
         }
         if let Some(start) = fallback_start {
             crate::m37_record_prefix_fallback(start.elapsed(), views_visited, candidates.len());
         }
-        candidates
+        PrefixFallbackBatch {
+            candidates,
+            truncated,
+            owns_reachability: true,
+        }
     }
 
     fn leading_single_syllable_prefix_candidates(
@@ -3356,19 +4568,30 @@ impl StaticTableTranslator {
         // cut). Safe: the boundary carrying the leading single always survives the
         // cap. (A dictionary with no syllabary reports max 0 via all_codes; guard
         // against that degenerate case by leaving the walk uncapped there.)
-        let max_prefix_len = self.max_leading_prefix_len();
-        let mut prefix_ends: Vec<usize> = lookup_code
-            .char_indices()
-            .map(|(index, _)| index)
-            .filter(|index| {
-                *index > 0
-                    && *index < lookup_code.len()
-                    && (max_prefix_len == 0 || *index <= max_prefix_len)
-            })
-            .collect();
-        prefix_ends.sort_unstable_by(|left, right| right.cmp(left));
-        for end in prefix_ends {
+        for (end, fetches) in self.leading_prefix_fetch_groups(lookup_code) {
             let prefix = &lookup_code[..end];
+            // A recognized correction-only surface is an exact syllable guard,
+            // not a default injection edge. Once the longest-first walk reaches
+            // it, do not fall through and inject a shorter abbreviation family.
+            let has_matching_single = |fetch: &LeadingFetchCode| {
+                self.storage
+                    .exact_candidates(&fetch.fetch_code)
+                    .any(|candidate| {
+                        candidate.text().chars().count() == 1
+                            && leading_candidate_matches_fetch(&candidate, fetch)
+                    })
+            };
+            let has_valid_correction = fetches
+                .iter()
+                .filter(|fetch| fetch.bare_exact && !fetch.injectable)
+                .any(has_matching_single);
+            let has_valid_injectable = fetches
+                .iter()
+                .filter(|fetch| fetch.injectable)
+                .any(has_matching_single);
+            if has_valid_correction && !has_valid_injectable {
+                return Vec::new();
+            }
             // M59 finding #8 (completing the skip): this walk keeps only
             // single-char candidates, whose codes are syllabary codes.
             // `leading_syllable_fetch_codes` can surface such a code for `prefix`
@@ -3378,22 +4601,19 @@ impl StaticTableTranslator {
             // second loop reads the memoized index, whose keys are exactly the
             // normalized syllabary codes. So an absent index entry means no
             // single-char family lives at this boundary; skip the per-prefix,
-            // per-keystroke prism lookup. On an n-char input the longest-first
-            // walk probes ~n non-syllable prefixes before the leading syllable,
-            // once per keystroke — the O(n^2) prism lookups that regressed the
-            // long-input ratchet rows collapse here to O(n^2) O(1) map probes.
+            // per-keystroke prism lookup. Together with the bounded iterator
+            // above, the former O(n^2) long-input prefix work becomes a constant
+            // number of O(1) map probes per keystroke for normal dictionaries.
             // (Guarded behavior-preserving by the reachability tests, which fail
             // loudly if a reachable leading single is dropped.)
-            if self.leading_fetch_index().get(prefix).is_none() {
-                continue;
-            }
             let mut candidates = Vec::new();
-            for fetch_code in self.leading_syllable_fetch_codes(prefix) {
+            for fetch in fetches.into_iter().filter(|fetch| fetch.injectable) {
                 for candidate in
                     self.storage
-                        .exact_candidates(fetch_code.as_str())
+                        .exact_candidates(&fetch.fetch_code)
                         .filter(|candidate| {
                             candidate.text().chars().count() == 1
+                                && leading_candidate_matches_fetch(candidate, &fetch)
                                 && {
                                     // Toned codes (jyutping `bei2`) count syllables
                                     // by tone digit. Untoned codes (luna `mo`) have
@@ -3404,36 +4624,40 @@ impl StaticTableTranslator {
                                     // rows into a toned family and shift the M58
                                     // pins). The fetch code is already a single
                                     // leading syllable, so a single-char entry is
-                                    // one syllable by construction.
+                                    // one syllable by construction. A byte-backed
+                                    // null-map identity descriptor plus its exact
+                                    // one-character row is equivalent local proof;
+                                    // it avoids classifying Stroke's 157k codes on
+                                    // the cold first key. Explicit/algebra maps keep
+                                    // the dictionary-wide toned-family guard.
                                     let syllables =
                                         source_code_syllable_count(candidate.raw_comment());
                                     syllables == Some(1)
-                                        || (self.untoned_dictionary() && syllables.is_none())
+                                        || (syllables.is_none()
+                                            && (fetch.direct_identity || self.untoned_dictionary()))
                                 }
                                 && self.is_dictionary_text_allowed(candidate.text())
                                 && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
                         })
                 {
-                    let candidate_prefix = normalized_original_code(candidate.raw_comment());
-                    let candidate_prefix = if candidate_prefix.is_empty() {
-                        prefix
-                    } else {
-                        candidate_prefix.as_str()
-                    };
-                    if !candidate_prefix.starts_with(prefix)
-                        || !lookup_code.starts_with(candidate_prefix)
-                    {
-                        continue;
-                    }
+                    // `prefix` is the spelling the user actually typed. It may be
+                    // transformed by the deployed prism (`hk` -> canonical `hao`,
+                    // `cl3` -> canonical toned code), so the canonical raw comment
+                    // cannot decide admission or how much input was consumed. The
+                    // fetch index below admits only deployed surface->storage-code
+                    // edges; keep the raw comment untouched for tone/syllable
+                    // metadata, but use the surface spelling for positional state.
+                    let candidate_prefix = prefix;
                     let consumed_input_len = input
                         .len()
                         .saturating_sub(lookup_code.len())
                         .saturating_add(candidate_prefix.len());
                     let mut materialized = self.candidate_for_lookup_view(
-                        fetch_code.as_str(),
+                        &fetch.fetch_code,
                         &candidate,
                         candidate_prefix,
                         None,
+                        0.0,
                     );
                     if !seen_texts.insert(materialized.text.clone()) {
                         continue;
@@ -3467,69 +4691,220 @@ impl StaticTableTranslator {
         Vec::new()
     }
 
-    fn leading_syllable_fetch_codes(&self, prefix: &str) -> Vec<String> {
-        let mut seen = HashSet::new();
-        let mut fetch_codes = Vec::new();
-        for spec in self.sentence_lookup_specs(prefix) {
-            if normalized_original_code(&spec.code) == prefix
-                && self.storage.has_code(&spec.code)
-                && seen.insert(spec.code.clone())
+    fn leading_prefix_fetch_groups(
+        &self,
+        lookup_code: &str,
+    ) -> Vec<(usize, Vec<LeadingFetchCode>)> {
+        if self.leading_fetch_index_seed.is_none() && self.direct_prism_surface_mapping_current {
+            if let (Some(prism), Some(syllabary_codes)) =
+                (self.prism_payload.as_ref(), self.storage.syllabary_codes())
             {
-                fetch_codes.push(spec.code);
-            }
-        }
-        // M59 finding #8: O(1) lookup into the memoized normalized-code index
-        // instead of an O(syllabary) rescan with a per-entry String allocation.
-        // The index is built once by iterating `syllabary_or_storage_codes` in the
-        // same order, so the emitted fetch codes (and their order) are identical to
-        // the former scan.
-        if let Some(codes) = self.leading_fetch_index().get(prefix) {
-            for code in codes {
-                if seen.insert(code.clone()) {
-                    fetch_codes.push(code.clone());
+                let mut groups: Vec<(usize, Vec<LeadingFetchCode>)> = Vec::new();
+                let direct_identity = prism.has_byte_backed_identity_spelling_map();
+                for (length, lookup) in
+                    prism.common_prefix_canonical_codes(lookup_code, syllabary_codes, usize::MAX)
+                {
+                    if length >= lookup_code.len() {
+                        continue;
+                    }
+                    let edge = LeadingFetchCode {
+                        fetch_code: lookup.code.to_owned(),
+                        canonical_code: lookup.code.to_owned(),
+                        bare_exact: true,
+                        injectable: !lookup.correction,
+                        abbreviation: lookup.abbreviation,
+                        direct_identity,
+                    };
+                    if let Some((_, fetches)) = groups
+                        .iter_mut()
+                        .find(|(group_length, _)| *group_length == length)
+                    {
+                        if !fetches.contains(&edge) {
+                            fetches.push(edge);
+                        }
+                    } else {
+                        groups.push((length, vec![edge]));
+                    }
                 }
+                if !self.spelling_algebra_active {
+                    for (length, lookup) in prism.trailing_ascii_digit_prefix_canonical_codes(
+                        lookup_code,
+                        syllabary_codes,
+                        usize::MAX,
+                    ) {
+                        if length >= lookup_code.len() {
+                            continue;
+                        }
+                        let edge = LeadingFetchCode {
+                            fetch_code: lookup.code.to_owned(),
+                            canonical_code: lookup.code.to_owned(),
+                            bare_exact: false,
+                            injectable: !lookup.correction,
+                            abbreviation: lookup.abbreviation,
+                            direct_identity,
+                        };
+                        if let Some((_, fetches)) = groups
+                            .iter_mut()
+                            .find(|(group_length, _)| *group_length == length)
+                        {
+                            if !fetches.contains(&edge) {
+                                fetches.push(edge);
+                            }
+                        } else {
+                            groups.push((length, vec![edge]));
+                        }
+                    }
+                }
+                groups.sort_unstable_by_key(|right| std::cmp::Reverse(right.0));
+                // A checksum-validated prism miss is authoritative; do not
+                // turn it into a boundary-by-boundary storage scan.
+                return groups;
             }
         }
-        fetch_codes
+
+        // Algebra-backed paths cap by the indexed syllable inventory. Direct
+        // heap/source identity mode has no global seed by design, so it probes
+        // the finite set of boundaries in this input only.
+        let has_index_seed = self.leading_fetch_index_seed.is_some();
+        let max_prefix_len = if has_index_seed {
+            self.max_leading_prefix_len()
+        } else {
+            0
+        };
+        if has_index_seed && max_prefix_len == 0 {
+            return Vec::new();
+        }
+        let mut prefix_ends: Vec<usize> = lookup_code
+            .char_indices()
+            .map(|(index, _)| index)
+            .skip(1)
+            .take_while(|index| !has_index_seed || *index <= max_prefix_len)
+            .collect();
+        prefix_ends.sort_unstable_by(|left, right| right.cmp(left));
+        prefix_ends
+            .into_iter()
+            .filter_map(|end| {
+                let fetches = self.leading_surface_fetch_codes(&lookup_code[..end]);
+                (!fetches.is_empty()).then_some((end, fetches))
+            })
+            .collect()
     }
 
-    fn leading_fetch_index(&self) -> &HashMap<String, Vec<String>> {
-        self.leading_fetch_index_cache.get_or_init(|| {
-            let mut index: HashMap<String, Vec<String>> = HashMap::new();
-            for code in self.syllabary_or_storage_codes() {
-                let normalized = normalized_original_code(code.as_ref());
-                if normalized.is_empty() {
+    fn leading_surface_fetch_codes(&self, prefix: &str) -> Vec<LeadingFetchCode> {
+        if self.leading_fetch_index_seed.is_none() {
+            return self.direct_no_algebra_fetch_codes(prefix);
+        }
+        self.leading_fetch_index()
+            .get(prefix)
+            .into_iter()
+            .flatten()
+            .cloned()
+            .collect()
+    }
+
+    fn direct_no_algebra_fetch_codes(&self, prefix: &str) -> Vec<LeadingFetchCode> {
+        if self.direct_prism_surface_mapping_current {
+            if let (Some(prism), Some(syllabary_codes)) =
+                (self.prism_payload.as_ref(), self.storage.syllabary_codes())
+            {
+                let lookups = prism.lookup_canonical_codes(prefix, syllabary_codes);
+                let direct_identity = prism.has_byte_backed_identity_spelling_map();
+                let mut fetches = lookups
+                    .into_iter()
+                    .map(|lookup| LeadingFetchCode {
+                        fetch_code: lookup.code.to_owned(),
+                        canonical_code: lookup.code.to_owned(),
+                        bare_exact: true,
+                        injectable: !lookup.correction,
+                        abbreviation: lookup.abbreviation,
+                        direct_identity,
+                    })
+                    .collect::<Vec<_>>();
+                if !self.spelling_algebra_active {
+                    fetches.extend(
+                        prism
+                            .trailing_ascii_digit_prefix_canonical_codes(
+                                prefix,
+                                syllabary_codes,
+                                usize::MAX,
+                            )
+                            .into_iter()
+                            .filter(|(consumed, _)| *consumed == prefix.len())
+                            .map(|(_, lookup)| LeadingFetchCode {
+                                fetch_code: lookup.code.to_owned(),
+                                canonical_code: lookup.code.to_owned(),
+                                bare_exact: false,
+                                injectable: !lookup.correction,
+                                abbreviation: lookup.abbreviation,
+                                direct_identity,
+                            }),
+                    );
+                }
+                fetches.dedup();
+                return fetches;
+            }
+        }
+        self.direct_storage_identity_fetch_codes(prefix)
+    }
+
+    fn direct_storage_identity_fetch_codes(&self, prefix: &str) -> Vec<LeadingFetchCode> {
+        let mut fetches = Vec::new();
+        let mut seen = HashSet::new();
+        let mut storage_codes = Vec::with_capacity(11);
+        storage_codes.push(prefix.to_owned());
+        // The only no-algebra normalization retained by an owning regression is
+        // a trailing tone digit (`bei2` -> surface `bei`). Probe that finite
+        // family directly instead of enumerating every key beginning with an
+        // arbitrary prefix (catastrophic on Stroke misses).
+        if prefix.chars().all(|ch| ch.is_ascii_alphabetic()) {
+            storage_codes.extend((0..=9).map(|tone| format!("{prefix}{tone}")));
+        }
+        for storage_code in storage_codes {
+            for candidate in self.storage.exact_candidates(&storage_code) {
+                if candidate.text().chars().count() != 1 {
                     continue;
                 }
-                index.entry(normalized).or_default().push(code.into_owned());
+                let canonical = canonical_fetch_group(candidate.raw_comment()).into_owned();
+                let edge = LeadingFetchCode {
+                    fetch_code: storage_code.clone(),
+                    canonical_code: canonical,
+                    // A normalized tone alias is an injection edge, not an
+                    // exact spelling served by the ordinary lookup path.
+                    bare_exact: storage_code == prefix,
+                    injectable: true,
+                    abbreviation: false,
+                    direct_identity: true,
+                };
+                if seen.insert(edge.clone()) {
+                    fetches.push(edge);
+                }
             }
-            index
+        }
+        fetches
+    }
+
+    fn leading_fetch_index(&self) -> &HashMap<String, Vec<LeadingFetchCode>> {
+        self.leading_fetch_index_cache.get_or_init(|| {
+            if let Some(seed) = &self.leading_fetch_index_seed {
+                return self.deployed_algebra_leading_fetch_index(seed);
+            }
+            // Empty/invalid algebra is deliberately index-free. Compact
+            // translators traverse the prism Darts directly; heap/source
+            // translators probe only the input boundaries requested by the
+            // current lookup. This is the Stroke 157k-spelling memory boundary.
+            HashMap::new()
         })
     }
 
-    /// Longest normalized key in the leading-fetch index (the longest single
-    /// syllable's byte length). The leading-syllable prefix walk never needs to
-    /// consider a boundary longer than this — a longer prefix can never be a
-    /// single syllable. Cached once; drives the finding-#8 range cap.
+    /// Longest deployed surface that owns a single-character candidate. Broad
+    /// heap/source prefix fallback may retain much longer phrase codes in the
+    /// shared index, but those must never widen this leading-syllable cap.
     fn max_leading_prefix_len(&self) -> usize {
         *self.max_leading_prefix_len_cache.get_or_init(|| {
-            self.leading_fetch_index()
-                .keys()
-                .map(String::len)
-                .max()
-                .unwrap_or(0)
+            self.leading_fetch_index_seed
+                .as_ref()
+                .map_or(0, |seed| seed.max_leading_single_surface_len)
         })
-    }
-
-    fn syllabary_or_storage_codes(&self) -> Vec<Cow<'_, str>> {
-        if let Some(codes) = self.storage.syllabary_codes() {
-            codes
-                .iter()
-                .map(|code| Cow::Borrowed(code.as_str()))
-                .collect()
-        } else {
-            self.storage.all_codes().collect()
-        }
     }
 
     fn valid_lookup_prefixes<'a>(&self, lookup_code: &'a str) -> Vec<LookupPrefixSpec<'a>> {
@@ -3542,35 +4917,90 @@ impl StaticTableTranslator {
         let mut prefixes = Vec::new();
         for end in boundaries {
             let prefix = &lookup_code[..end];
-            let mut seen_fetch_codes = HashSet::new();
+            let mut boundary_prefixes = Vec::new();
+            let mut has_valid_normal = false;
+            let mut has_valid_correction = false;
+            let mut direct_normal_groups = HashSet::new();
+
             if self.storage.has_code(prefix) {
-                seen_fetch_codes.insert(prefix.to_owned());
-                prefixes.push(LookupPrefixSpec {
-                    input_prefix: prefix,
-                    fetch_code: prefix.to_owned(),
-                    consumed_lookup_len: end,
-                });
-                continue;
+                let mut has_direct_normal = false;
+                for candidate in self.storage.exact_candidates(prefix) {
+                    if self.is_spelling_correction_view(prefix, &candidate) {
+                        has_valid_correction = true;
+                    } else if original_code_allows_prefix_fallback(candidate.raw_comment(), prefix)
+                    {
+                        has_direct_normal = true;
+                        direct_normal_groups
+                            .insert(canonical_fetch_group(candidate.raw_comment()).into_owned());
+                    }
+                }
+                if has_direct_normal {
+                    has_valid_normal = true;
+                    boundary_prefixes.push(LookupPrefixSpec {
+                        input_prefix: prefix,
+                        fetch_code: prefix.to_owned(),
+                        consumed_lookup_len: end,
+                        surface_fetch: None,
+                    });
+                }
             }
-            for spec in self.sentence_lookup_specs(prefix) {
-                if !self.storage.has_code(&spec.code) || !seen_fetch_codes.insert(spec.code.clone())
+
+            let mapped_fetches = if self.direct_prism_surface_mapping_current {
+                self.direct_no_algebra_fetch_codes(prefix)
+            } else if !self.spelling_algebra_active || self.leading_fetch_index_seed.is_some() {
+                self.leading_surface_fetch_codes(prefix)
+            } else {
+                Vec::new()
+            };
+
+            let mut seen_mapped_fetches = HashSet::new();
+            for fetch in mapped_fetches {
+                if direct_normal_groups.contains(&fetch.canonical_code) {
+                    continue;
+                }
+                if !self.storage.has_code(&fetch.fetch_code)
+                    || !self
+                        .storage
+                        .exact_candidates(&fetch.fetch_code)
+                        .any(|candidate| leading_candidate_matches_fetch(&candidate, &fetch))
                 {
                     continue;
                 }
-                prefixes.push(LookupPrefixSpec {
-                    input_prefix: prefix,
-                    fetch_code: spec.code,
-                    consumed_lookup_len: end,
-                });
+                if !fetch.injectable {
+                    has_valid_correction = true;
+                    continue;
+                }
+                has_valid_normal = true;
+                if seen_mapped_fetches.insert(fetch.clone()) {
+                    boundary_prefixes.push(LookupPrefixSpec {
+                        input_prefix: prefix,
+                        fetch_code: fetch.fetch_code.clone(),
+                        consumed_lookup_len: end,
+                        surface_fetch: Some(fetch),
+                    });
+                }
             }
+
+            if has_valid_correction && !has_valid_normal {
+                break;
+            }
+            prefixes.extend(boundary_prefixes);
         }
         prefixes
     }
 
-    fn assign_ordered_candidate_qualities(candidates: &mut [Candidate]) {
-        let base = candidates.len() as f32 + 1.0;
+    fn assign_ordered_candidate_qualities(&self, candidates: &mut [Candidate]) {
+        // Ordered modes deliberately replace raw per-entry weights to preserve
+        // upstream list order. Keep the translator namespace's configured
+        // offset, though: librime `initial_quality` still controls interleaving
+        // across translators, including when D-47 injects a leading family.
+        // Keep positional ranks in a count-independent unit band so a long
+        // injected family cannot swamp another translator's initial_quality.
+        let candidate_count = candidates.len();
+        let denominator = candidate_count as f32 + 1.0;
         for (index, candidate) in candidates.iter_mut().enumerate() {
-            candidate.quality = base - index as f32;
+            let rank = (candidate_count - index) as f32 / denominator;
+            candidate.quality = self.initial_quality + rank;
         }
     }
 
@@ -3590,6 +5020,7 @@ impl StaticTableTranslator {
             segment_tags,
             None,
         )
+        .candidates
     }
 
     fn translated_candidates_for_segment_with_prefix_fallback_limit(
@@ -3598,32 +5029,36 @@ impl StaticTableTranslator {
         filter_by_charset: bool,
         segment_tags: Option<&[String]>,
         prefix_fallback_limit: Option<usize>,
-    ) -> Vec<Candidate> {
+    ) -> PrefixFallbackBatch {
         let accepts_segment = segment_tags
             .map(|tags| self.accepts_segment_tags(tags))
             .unwrap_or_else(|| self.accepts_default_segment());
         if !accepts_segment {
-            return Vec::new();
+            return PrefixFallbackBatch {
+                candidates: Vec::new(),
+                truncated: false,
+                owns_reachability: false,
+            };
         }
 
         let Some(lookup_code) = self.lookup_code(input) else {
-            return Vec::new();
+            return PrefixFallbackBatch {
+                candidates: Vec::new(),
+                truncated: false,
+                owns_reachability: false,
+            };
         };
         let expanded_lookup_codes = self.expanded_lookup_specs(lookup_code);
         let mut candidates =
             self.candidates_for_lookup_codes(&expanded_lookup_codes, filter_by_charset);
         let has_correction_lookup = expanded_lookup_codes
             .iter()
-            .any(|spec| spec.correction_distance.is_some());
-        let has_full_exact_candidate = candidates
-            .iter()
-            .any(|candidate| candidate.source == CandidateSource::Table);
+            .any(|spec| spec.correction_distance.is_some() || spec.spelling_correction);
         if self.combine_candidates {
             candidates = combine_duplicate_text_candidates(candidates);
         }
         self.enforce_prediction_never_first(&mut candidates);
 
-        let mut used_sentence = false;
         if candidates.is_empty() {
             if let Some(model) = &self.upstream_sentence_model {
                 let model_start = crate::m37_metrics_enabled().then(Instant::now);
@@ -3637,7 +5072,6 @@ impl StaticTableTranslator {
                 if let Some(start) = model_start {
                     crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
                 }
-                used_sentence = !candidates.is_empty();
                 if candidates.is_empty() {
                     let abbreviation_start = crate::m37_metrics_enabled().then(Instant::now);
                     candidates = self.abbreviation_sentence_candidates(
@@ -3652,7 +5086,6 @@ impl StaticTableTranslator {
                             candidates.len(),
                         );
                     }
-                    used_sentence = !candidates.is_empty();
                 }
             }
         }
@@ -3660,7 +5093,6 @@ impl StaticTableTranslator {
         if candidates.is_empty() && self.enable_sentence {
             if let Some(sentence) = self.sentence_candidate(input, filter_by_charset, None) {
                 candidates.push(sentence);
-                used_sentence = true;
             }
         } else if self.sentence_over_completion
             && candidates
@@ -3679,53 +5111,107 @@ impl StaticTableTranslator {
             }
         }
 
+        let mut prefix_fallback_truncated = false;
+        let mut prefix_fallback_owned = false;
         if self.prefix_fallback && !has_correction_lookup {
-            let has_strict_lookup_prefix = !candidates.is_empty()
-                && !used_sentence
-                && !has_full_exact_candidate
-                && self
-                    .valid_lookup_prefixes(lookup_code)
-                    .iter()
-                    .any(|prefix| {
-                        prefix.consumed_lookup_len < lookup_code.len()
-                            && prefix.input_prefix.len() > 1
-                    });
-            // Full exact rows may coexist with a valid leading prefix; prefix lookup plus
-            // the existing candidate set keeps the fallback benign for normal full matches.
-            let should_add_prefix_fallback = candidates.is_empty()
-                || used_sentence
-                || has_full_exact_candidate
-                || has_strict_lookup_prefix;
-            if should_add_prefix_fallback {
-                let insert_at = prefix_fallback_insert_index(&candidates, lookup_code);
-                let prefix_candidates = self.prefix_fallback_candidates(
+            let fallback_room =
+                prefix_fallback_limit.map(|limit| limit.saturating_sub(candidates.len()));
+            let prefix_batch = if fallback_room == Some(0) {
+                let probe = self.prefix_fallback_has_unique_candidate(
                     input,
                     lookup_code,
                     filter_by_charset,
-                    &candidates[..insert_at],
+                    &candidates,
                     prefix_fallback_limit,
                 );
-                candidates.splice(insert_at..insert_at, prefix_candidates);
+                PrefixFallbackBatch {
+                    candidates: Vec::new(),
+                    truncated: matches!(
+                        probe,
+                        PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
+                    ),
+                    owns_reachability: !matches!(probe, PrefixFallbackProbe::NoPrefix),
+                }
+            } else {
+                let needs_span_promotion = candidates
+                    .iter()
+                    .any(|candidate| candidate.source == CandidateSource::Table);
+                let existing_candidates = if needs_span_promotion {
+                    &[][..]
+                } else {
+                    candidates.as_slice()
+                };
+                self.prefix_fallback_candidates(
+                    input,
+                    lookup_code,
+                    filter_by_charset,
+                    existing_candidates,
+                    &candidates,
+                    if needs_span_promotion {
+                        prefix_fallback_limit
+                    } else {
+                        fallback_room
+                    },
+                )
+            };
+            prefix_fallback_owned = prefix_batch.owns_reachability;
+            prefix_fallback_truncated |= prefix_batch.truncated;
+            let inserted = merge_prefix_fallback_candidates(
+                &mut candidates,
+                prefix_batch.candidates,
+                lookup_code,
+            );
+            if prefix_fallback_truncated && inserted == 0 {
+                if let Some(limit) = prefix_fallback_limit {
+                    prefix_fallback_truncated = matches!(
+                        self.prefix_fallback_has_unique_candidate(
+                            input,
+                            lookup_code,
+                            filter_by_charset,
+                            &candidates,
+                            Some(limit),
+                        ),
+                        PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
+                    );
+                }
+            }
+            if let Some(limit) = prefix_fallback_limit {
+                if candidates.len() > limit {
+                    prefix_fallback_truncated = true;
+                    candidates.truncate(limit);
+                }
             }
         }
-        if (self.prefix_fallback || self.leading_syllable_reachability)
-            && prefix_fallback_limit.is_none()
-        {
+        let mut leading_singles_inserted = false;
+        // A deployed proper prefix makes prefix fallback authoritative for this
+        // input. Otherwise keep the independent leading-single mechanism
+        // available even when the schema enables prefix fallback; suppressing
+        // it from the schema flag alone creates a bounded reachability hole.
+        if self.leading_syllable_reachability && !prefix_fallback_owned {
             let insert_at = leading_single_insert_index(&candidates);
+            let fetch_limit = prefix_fallback_limit
+                .map(|limit| limit.saturating_sub(insert_at).saturating_add(1));
             let leading_singles = self.leading_single_syllable_prefix_candidates(
                 input,
                 lookup_code,
                 filter_by_charset,
                 &candidates,
-                None,
+                fetch_limit,
             );
+            leading_singles_inserted = !leading_singles.is_empty();
             candidates.splice(insert_at..insert_at, leading_singles);
+            if let Some(limit) = prefix_fallback_limit {
+                if candidates.len() > limit {
+                    prefix_fallback_truncated = true;
+                    candidates.truncate(limit);
+                }
+            }
         }
         if self.prefix_fallback
             || self.prediction_candidate_limit.is_some()
-            || self.leading_syllable_reachability
+            || leading_singles_inserted
         {
-            Self::assign_ordered_candidate_qualities(&mut candidates);
+            self.assign_ordered_candidate_qualities(&mut candidates);
             // M59 finding #10: the positional overwrite above ranks by list index,
             // which clobbers the `sentence_over_completion` priority floor — the
             // floored sentence sits at the tail (pushed after the completions), so
@@ -3749,7 +5235,11 @@ impl StaticTableTranslator {
             }
         }
 
-        candidates
+        PrefixFallbackBatch {
+            candidates,
+            truncated: prefix_fallback_truncated,
+            owns_reachability: prefix_fallback_owned,
+        }
     }
 
     fn translated_candidates_for_segment_with_request(
@@ -3787,19 +5277,19 @@ impl StaticTableTranslator {
                     segment_tags,
                 ));
             }
-            let candidates = self.translated_candidates_for_segment_with_prefix_fallback_limit(
+            let batch = self.translated_candidates_for_segment_with_prefix_fallback_limit(
                 input,
                 filter_by_charset,
                 segment_tags,
                 Some(limit),
             );
-            let full_count = if candidates.len() > limit {
-                candidates.len().saturating_add(1)
+            let full_count = if batch.truncated || batch.candidates.len() > limit {
+                batch.candidates.len().saturating_add(1)
             } else {
-                candidates.len()
+                batch.candidates.len()
             };
             return TranslationResult::bounded(
-                candidates,
+                batch.candidates,
                 full_count,
                 request.include_debug_full_count,
             );
@@ -3858,19 +5348,19 @@ impl StaticTableTranslator {
                     segment_tags,
                 ));
             }
-            let candidates = self.translated_candidates_for_segment_with_prefix_fallback_limit(
+            let batch = self.translated_candidates_for_segment_with_prefix_fallback_limit(
                 input,
                 filter_by_charset,
                 segment_tags,
                 Some(limit),
             );
-            let full_count = if candidates.len() > limit {
-                candidates.len().saturating_add(1)
+            let full_count = if batch.truncated || batch.candidates.len() > limit {
+                batch.candidates.len().saturating_add(1)
             } else {
-                candidates.len()
+                batch.candidates.len()
             };
             return TranslationResult::bounded(
-                candidates,
+                batch.candidates,
                 full_count,
                 request.include_debug_full_count,
             );
@@ -3949,54 +5439,6 @@ impl StaticTableTranslator {
                 {
                     continue;
                 }
-                let exact_start = crate::m37_metrics_enabled().then(Instant::now);
-                let sentence_specs = self.sentence_lookup_specs(entry_code);
-                let mut entry_matches = Vec::new();
-                'specs: for spec in &sentence_specs {
-                    for candidate in self.storage.exact_candidates(&spec.code) {
-                        if !self.is_dictionary_text_allowed(candidate.text())
-                            || (filter_by_charset && contains_extended_cjk(candidate.text()))
-                        {
-                            continue;
-                        }
-                        entry_matches.push(candidate);
-                        if entry_matches.len() >= max_candidates_per_span {
-                            break 'specs;
-                        }
-                    }
-                }
-                if let Some(start) = exact_start {
-                    sentence_metrics.exact_lookup_calls += 1;
-                    sentence_metrics.exact_lookup_ns += start.elapsed();
-                    sentence_metrics.exact_lookup_candidates += entry_matches.len();
-                }
-                if is_final_segment && self.enable_completion && !entry_code.is_empty() {
-                    let prefix_start = crate::m37_metrics_enabled().then(Instant::now);
-                    let mut prefix_candidates = 0usize;
-                    for entry in self.storage.prefix_candidates(entry_code) {
-                        if entry_matches.len() >= max_candidates_per_span {
-                            break;
-                        }
-                        let (completion_code, candidate) = entry.into_parts();
-                        if !completion_code.starts_with(entry_code) {
-                            break;
-                        }
-                        if completion_code == entry_code {
-                            continue;
-                        }
-                        prefix_candidates += 1;
-                        entry_matches.push(candidate);
-                    }
-                    if let Some(start) = prefix_start {
-                        sentence_metrics.prefix_lookup_calls += 1;
-                        sentence_metrics.prefix_lookup_ns += start.elapsed();
-                        sentence_metrics.prefix_lookup_candidates += prefix_candidates;
-                    }
-                }
-                sentence_metrics.entry_matches_collected += entry_matches.len();
-                if entry_matches.is_empty() {
-                    continue;
-                }
                 let mut end_pos = pos + entry_code.len();
                 while end_pos < input.len() {
                     let Some(ch) = input[end_pos..].chars().next() else {
@@ -4007,50 +5449,100 @@ impl StaticTableTranslator {
                     }
                     end_pos += ch.len_utf8();
                 }
-                for candidate in entry_matches {
-                    let mut next_path = path.clone();
-                    sentence_metrics.path_clones += 1;
-                    if !raw_sentence_piece_matches_input_code(
-                        candidate.raw_comment(),
-                        candidate.text(),
-                        entry_code,
-                    ) {
-                        next_path.fuzzy_pieces += 1;
-                    }
-                    next_path.quality +=
-                        sentence_piece_quality(candidate.raw_quality(), self.sentence_word_penalty);
-                    next_path.raw_quality += candidate.raw_quality();
-                    next_path.pieces.push(candidate.text().to_owned());
-                    if is_final_segment && next_path.pieces.len() <= 1 {
-                        continue;
-                    }
-                    let replace = match paths[end_pos].as_ref() {
-                        Some(existing) => {
-                            match next_path.fuzzy_pieces.cmp(&existing.fuzzy_pieces) {
-                                Ordering::Less => true,
-                                Ordering::Greater => false,
-                                Ordering::Equal => match next_path
-                                    .quality
-                                    .partial_cmp(&existing.quality)
-                                    .unwrap_or(Ordering::Equal)
-                                {
-                                    Ordering::Greater => true,
-                                    Ordering::Equal => next_path.raw_quality > existing.raw_quality,
-                                    Ordering::Less => false,
-                                },
-                            }
+                let mut shadow_score = paths[end_pos].as_ref().map(|existing| SentencePathScore {
+                    fuzzy_pieces: existing.fuzzy_pieces,
+                    quality: existing.quality,
+                    raw_quality: existing.raw_quality,
+                });
+                let exact_start = crate::m37_metrics_enabled().then(Instant::now);
+                let sentence_specs = self.sentence_lookup_specs(entry_code);
+                let mut winning_candidate = None;
+                let mut entry_matches_examined = 0usize;
+                let mut exact_candidates = 0usize;
+                let predecessor_score = SentencePathScore {
+                    fuzzy_pieces: path.fuzzy_pieces,
+                    quality: path.quality,
+                    raw_quality: path.raw_quality,
+                };
+                'specs: for spec in &sentence_specs {
+                    for candidate in self.storage.exact_candidates(&spec.code) {
+                        if !self.is_dictionary_text_allowed(candidate.text())
+                            || (filter_by_charset && contains_extended_cjk(candidate.text()))
+                        {
+                            continue;
                         }
-                        None => true,
-                    };
-                    if replace {
-                        let replacing_empty = paths[end_pos].is_none();
-                        paths[end_pos] = Some(next_path);
-                        sentence_metrics.path_replacements += 1;
-                        if replacing_empty {
-                            live_paths += 1;
-                            max_live_paths = max_live_paths.max(live_paths);
+                        exact_candidates += 1;
+                        entry_matches_examined += 1;
+                        retain_winning_sentence_path_candidate(
+                            &mut winning_candidate,
+                            &mut shadow_score,
+                            predecessor_score,
+                            candidate,
+                            entry_code,
+                            self.sentence_word_penalty,
+                        );
+                        if entry_matches_examined >= max_candidates_per_span {
+                            break 'specs;
                         }
                     }
+                }
+                if let Some(start) = exact_start {
+                    sentence_metrics.exact_lookup_calls += 1;
+                    sentence_metrics.exact_lookup_ns += start.elapsed();
+                    sentence_metrics.exact_lookup_candidates += exact_candidates;
+                }
+                if is_final_segment && self.enable_completion && !entry_code.is_empty() {
+                    let prefix_start = crate::m37_metrics_enabled().then(Instant::now);
+                    let mut prefix_candidates = 0usize;
+                    for entry in self.storage.prefix_candidates(entry_code) {
+                        if entry_matches_examined >= max_candidates_per_span {
+                            break;
+                        }
+                        let (completion_code, candidate) = entry.into_parts();
+                        if !completion_code.starts_with(entry_code) {
+                            break;
+                        }
+                        if completion_code == entry_code {
+                            continue;
+                        }
+                        prefix_candidates += 1;
+                        entry_matches_examined += 1;
+                        retain_winning_sentence_path_candidate(
+                            &mut winning_candidate,
+                            &mut shadow_score,
+                            predecessor_score,
+                            candidate,
+                            entry_code,
+                            self.sentence_word_penalty,
+                        );
+                    }
+                    if let Some(start) = prefix_start {
+                        sentence_metrics.prefix_lookup_calls += 1;
+                        sentence_metrics.prefix_lookup_ns += start.elapsed();
+                        sentence_metrics.prefix_lookup_candidates += prefix_candidates;
+                    }
+                }
+                sentence_metrics.entry_matches_collected +=
+                    usize::from(winning_candidate.is_some());
+                let Some(candidate) = winning_candidate else {
+                    continue;
+                };
+                if is_final_segment && path.pieces.is_empty() {
+                    continue;
+                }
+                let winning_score = shadow_score.expect("winning candidate installs a score");
+                let mut next_path = path.clone();
+                sentence_metrics.path_clones += 1;
+                next_path.fuzzy_pieces = winning_score.fuzzy_pieces;
+                next_path.quality = winning_score.quality;
+                next_path.raw_quality = winning_score.raw_quality;
+                next_path.pieces.push(candidate.text().to_owned());
+                let replacing_empty = paths[end_pos].is_none();
+                paths[end_pos] = Some(next_path);
+                sentence_metrics.path_replacements += 1;
+                if replacing_empty {
+                    live_paths += 1;
+                    max_live_paths = max_live_paths.max(live_paths);
                 }
             }
         }
@@ -4175,6 +5667,22 @@ fn spelling_abbreviation_entries(
         .collect()
 }
 
+fn spelling_correction_entries(
+    entries: &[ExpandedSpellingEntry],
+) -> HashSet<(String, String, String)> {
+    entries
+        .iter()
+        .filter(|entry| entry.correction)
+        .map(|entry| {
+            (
+                entry.code.clone(),
+                entry.candidate.text.clone(),
+                entry.candidate.comment.clone(),
+            )
+        })
+        .collect()
+}
+
 fn normal_codes(entries: &[(String, Candidate)]) -> HashSet<String> {
     entries.iter().map(|(code, _)| code.clone()).collect()
 }
@@ -4193,6 +5701,49 @@ fn prefix_fallback_insert_index(candidates: &[Candidate], lookup_code: &str) -> 
                         .is_some_and(|count| count <= 1))
         })
         .unwrap_or(candidates.len())
+}
+
+fn merge_prefix_fallback_candidates(
+    candidates: &mut Vec<Candidate>,
+    mut prefix_candidates: Vec<Candidate>,
+    lookup_code: &str,
+) -> usize {
+    // Snapshot exact positions before promoting duplicate span metadata.  The
+    // eager pool historically allowed completions to interleave with later
+    // prism-alias exacts, so neither duplicate detection nor the insertion
+    // point may assume the exact family is a contiguous head.
+    let exact_positions = candidates
+        .iter()
+        .enumerate()
+        .filter_map(|(index, candidate)| {
+            (candidate.source == CandidateSource::Table).then_some(index)
+        })
+        .collect::<Vec<_>>();
+    let insert_at = exact_positions.last().map_or_else(
+        || prefix_fallback_insert_index(candidates, lookup_code),
+        |index| index + 1,
+    );
+
+    prefix_candidates.retain(|prefix_candidate| {
+        if let Some(exact_index) = exact_positions
+            .iter()
+            .copied()
+            .find(|index| candidates[*index].text == prefix_candidate.text)
+        {
+            // Preserve the exact row's order, display payload, and quality, but
+            // selection must consume the longest deployed surface represented
+            // by the matching fallback view.
+            candidates[exact_index].source = prefix_candidate.source.clone();
+            return false;
+        }
+        !candidates
+            .iter()
+            .any(|candidate| candidate.text == prefix_candidate.text)
+    });
+
+    let inserted = prefix_candidates.len();
+    candidates.splice(insert_at..insert_at, prefix_candidates);
+    inserted
 }
 
 fn leading_single_insert_index(candidates: &[Candidate]) -> usize {
@@ -4214,6 +5765,7 @@ fn has_proper_leading_prefix(lookup_code: &str) -> bool {
 #[cfg(test)]
 mod lookup_guard_tests {
     use super::{has_proper_leading_prefix, StaticTableTranslator};
+    use crate::{TableDictionary, TableEntry};
 
     #[test]
     fn proper_leading_prefix_uses_unicode_scalar_boundaries() {
@@ -4269,6 +5821,74 @@ mod lookup_guard_tests {
                 .map(|spec| (spec.code.as_str(), spec.correction_distance))
                 .collect::<Vec<_>>(),
             [("ngoi", None), ("ngo", Some(2))]
+        );
+    }
+
+    #[test]
+    fn empty_or_invalid_replacement_clears_abbreviation_metadata_and_sentence_guard() {
+        let formulas = ["abbrev/^hao$/h/".to_owned()];
+        let translator =
+            StaticTableTranslator::new([("hao", "\u{597d}")]).with_spelling_algebra(&formulas);
+        assert!(translator.single_letter_sentence_guard_enabled);
+        assert!(!translator.spelling_abbreviation_entries.is_empty());
+
+        let empty = translator.with_spelling_algebra(&[]);
+        assert!(!empty.single_letter_sentence_guard_enabled);
+        assert!(empty.spelling_abbreviation_entries.is_empty());
+
+        let invalid = empty.with_spelling_algebra(&["not-a-formula".to_owned()]);
+        assert!(!invalid.single_letter_sentence_guard_enabled);
+        assert!(invalid.spelling_abbreviation_entries.is_empty());
+    }
+
+    #[test]
+    fn phrase_prefix_seed_does_not_widen_the_leading_single_surface_bound() {
+        let long_phrase_code = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx";
+        let dictionary = TableDictionary::new([
+            TableEntry::new("hao", "\u{597d}", 100.0),
+            TableEntry::new(long_phrase_code, "\u{9577}\u{8a5e}", 90.0),
+        ]);
+        let formulas = ["derive/^hao$/hx/".to_owned()];
+        let translator = StaticTableTranslator::from_dictionary(dictionary)
+            .with_prefix_fallback(true)
+            .with_leading_syllable_reachability(true)
+            .with_spelling_algebra(&formulas)
+            .with_sentence(false);
+
+        assert!(
+            translator
+                .leading_fetch_index()
+                .contains_key(long_phrase_code),
+            "heap/source prefix fallback must retain the transformed phrase inventory"
+        );
+        assert_eq!(
+            translator.max_leading_prefix_len(),
+            3,
+            "the long phrase surface must not widen the hao/hx leading-single bound"
+        );
+        assert!(
+            translator
+                .leading_prefix_fetch_groups(&format!("hx{long_phrase_code}"))
+                .iter()
+                .all(|(end, _)| *end <= 3),
+            "the actual leading-prefix walk must stay inside the single-character surface bound"
+        );
+
+        let phrase_only =
+            StaticTableTranslator::from_dictionary(TableDictionary::new([TableEntry::new(
+                long_phrase_code,
+                "\u{9577}\u{8a5e}",
+                90.0,
+            )]))
+            .with_prefix_fallback(true)
+            .with_leading_syllable_reachability(true)
+            .with_spelling_algebra(&formulas)
+            .with_sentence(false);
+        assert!(
+            phrase_only
+                .leading_prefix_fetch_groups(long_phrase_code)
+                .is_empty(),
+            "a phrase-only algebra seed has no leading-single boundary to scan"
         );
     }
 }
@@ -4365,6 +5985,13 @@ fn canonical_fetch_group(raw_code: &str) -> Cow<'_, str> {
     } else {
         Cow::Borrowed(code)
     }
+}
+
+fn leading_candidate_matches_fetch(
+    candidate: &LookupCandidate<'_>,
+    fetch: &LeadingFetchCode,
+) -> bool {
+    canonical_fetch_group(candidate.raw_comment()).as_ref() == fetch.canonical_code
 }
 
 fn intern_fetch_group(groups: &mut HashMap<String, usize>, raw_code: &str) -> usize {
@@ -4663,6 +6290,82 @@ impl Translator for StaticTableTranslator {
     fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
         let mut rows = self.storage.memory_owner_rows();
         rows.push(self.normal_codes.memory_owner_row(&self.storage));
+        let seed_bytes = self
+            .leading_fetch_index_seed
+            .as_ref()
+            .map_or(0, estimate_leading_fetch_seed_bytes);
+        let seed_items = self
+            .leading_fetch_index_seed
+            .as_ref()
+            .map_or(0, |seed| seed.canonical_codes.len());
+        rows.push(MemoryOwnerRow::new(
+            "translator.leading_fetch_seed",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            seed_bytes,
+            seed_items,
+            "Vec<String>",
+            "source-ordered canonical groups retained for lazy algebra-backed reachability: single-character groups for leading-only use, or every heap/source group when prefix fallback has no current prism; no-algebra paths probe directly",
+        ));
+        rows.push(MemoryOwnerRow::new(
+            "translator.spelling_correction_entries",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            estimate_string_triple_hash_set_bytes(&self.spelling_correction_entries),
+            self.spelling_correction_entries.len(),
+            "HashSet<(String, String, String)>",
+            "heap/source correction provenance retained per expanded candidate row",
+        ));
+        rows.push(MemoryOwnerRow::new(
+            "translator.spelling_abbreviation_entries",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            estimate_string_triple_hash_set_bytes(&self.spelling_abbreviation_entries),
+            self.spelling_abbreviation_entries.len(),
+            "HashSet<(String, String, String)>",
+            "heap/source abbreviation provenance retained per expanded candidate row",
+        ));
+        rows.push(MemoryOwnerRow::new(
+            "translator.spelling_correction_surfaces",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            estimate_string_hash_set_bytes(&self.spelling_correction_surfaces),
+            self.spelling_correction_surfaces.len(),
+            "HashSet<String>",
+            "heap/source correction surfaces retained for exact and prefix guards",
+        ));
+        let (index_bytes, index_items) =
+            self.leading_fetch_index_cache
+                .get()
+                .map_or((0, 0), |index| {
+                    (
+                        estimate_leading_fetch_index_bytes(index),
+                        index.values().map(Vec::len).sum(),
+                    )
+                });
+        rows.push(MemoryOwnerRow::new(
+            "translator.leading_fetch_index",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            index_bytes,
+            index_items,
+            "OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",
+            "algebra surface spelling to canonical fetch edges, allocated lazily on first indexed reachability lookup; no-algebra paths remain direct",
+        ));
+        let cache = self
+            .prefix_fallback_window_cache
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        let (cache_bytes, cache_items) = cache.as_ref().map_or((0, 0), |entry| {
+            (
+                estimate_prefix_fallback_window_cache_bytes(entry),
+                entry.rows.len(),
+            )
+        });
+        rows.push(MemoryOwnerRow::new(
+            "translator.prefix_fallback_window_cache",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            cache_bytes,
+            cache_items,
+            "Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>",
+            "single bounded raw prefix window reused across incremental keystrokes; per-call span promotion, ordering, and deduplication remain live",
+        ));
         if let Some(prism_payload) = &self.prism_payload {
             rows.extend(prism_payload.memory_owner_rows());
         }

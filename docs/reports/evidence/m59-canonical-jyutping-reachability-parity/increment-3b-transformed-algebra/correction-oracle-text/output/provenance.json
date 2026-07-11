@@ -1,0 +1,64 @@
+{
+    "capture_kind":  "M59 deployed correction-spelling oracle",
+    "oracle_repository":  "rime/librime",
+    "oracle_commit":  "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "oracle_release":  "1.17.0",
+    "copied_from_repo_evidence_root":  "target/upstream-oracle/1.17.0/extract",
+    "schema_id":  "correction_oracle",
+    "input":  "cu",
+    "modules":  [
+                    "default"
+                ],
+    "runtime_options_source":  "RimeProbe.Capture/CaptureRuntimeOptionPolicy",
+    "expected_runtime_options":  {
+                                     "ascii_mode":  false,
+                                     "full_shape":  false,
+                                     "ascii_punct":  false,
+                                     "zh_hans":  false
+                                 },
+    "translator_config":  {
+                              "enable_correction":  false,
+                              "enable_completion":  false,
+                              "enable_sentence":  false,
+                              "spelling_hints":  9,
+                              "always_show_comments":  true
+                          },
+    "page_size":  5,
+    "deploy":  {
+                   "started_utc":  "2026-07-10T17:30:25.3547293+00:00",
+                   "finished_utc":  "2026-07-10T17:30:26.1727499+00:00",
+                   "exit_code":  0
+               },
+    "capture":  {
+                    "started_utc":  "2026-07-10T17:30:26.1767498+00:00",
+                    "finished_utc":  "2026-07-10T17:30:27.5542834+00:00"
+                },
+    "environment":  {
+                        "machine":  "DESKTOP-OHT2K15",
+                        "os":  "Microsoft Windows NT 10.0.26200.0",
+                        "powershell":  "5.1.26100.8655",
+                        "process_architecture":  "X64",
+                        "current_directory":  "C:\\y59-correction-oracle"
+                    },
+    "binaries":  {
+                     "rime_dll":  {
+                                      "path":  "C:\\y59-correction-oracle\\binaries\\rime.dll",
+                                      "bytes":  3739136,
+                                      "sha256":  "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+                                      "file_version":  "",
+                                      "product_version":  ""
+                                  },
+                     "rime_deployer":  {
+                                           "path":  "C:\\y59-correction-oracle\\binaries\\rime_deployer.exe",
+                                           "bytes":  459776,
+                                           "sha256":  "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
+                                           "file_version":  null,
+                                           "product_version":  null
+                                       }
+                 },
+    "probe":  {
+                  "path":  "C:\\y59-correction-oracle\\probe\\oracle-rime-probe.cs",
+                  "bytes":  44846,
+                  "sha256":  "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7"
+              }
+}

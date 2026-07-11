@@ -1,0 +1,60 @@
+{
+  "capture": {
+    "purpose": "Independent standard-library decode of the deployed correction spelling descriptor",
+    "decoder": "probe/decode-prism.py"
+  },
+  "cases": [
+    {
+      "artifact": {
+        "path": "source/user/build/correction_oracle.prism.bin",
+        "bytes": 1408,
+        "sha256": "d563af9c88e983728107cc15e472f1f1fac41571463416c2668a08d7bfc18c8e",
+        "dict_file_checksum": 2726620771,
+        "schema_file_checksum": 1031236548,
+        "num_syllables": 2,
+        "num_spellings": 2,
+        "double_array_size": 256,
+        "spelling_map_offset_raw": 1284,
+        "spelling_map_offset_is_null": false
+      },
+      "surfaces": {
+        "cu": {
+          "present": true,
+          "spelling_index": 0,
+          "descriptors": [
+            {
+              "syllable_id": 0,
+              "spelling_type": 0,
+              "is_correction": false,
+              "credibility": 0.0,
+              "credibility_f32_bits": "0x00000000",
+              "tips": ""
+            },
+            {
+              "syllable_id": 1,
+              "spelling_type": 0,
+              "is_correction": true,
+              "credibility": -4.605170249938965,
+              "credibility_f32_bits": "0xC0935D8E",
+              "tips": ""
+            }
+          ]
+        },
+        "cuo": {
+          "present": true,
+          "spelling_index": 1,
+          "descriptors": [
+            {
+              "syllable_id": 1,
+              "spelling_type": 0,
+              "is_correction": false,
+              "credibility": 0.0,
+              "credibility_f32_bits": "0x00000000",
+              "tips": ""
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

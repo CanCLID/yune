@@ -18,8 +18,37 @@ impl CandidateFilter for UniquifierFilter {
     }
 
     fn apply(&self, candidates: &mut Vec<Candidate>) {
-        let mut seen = HashSet::new();
-        candidates.retain(|candidate| seen.insert(candidate.text.clone()));
+        let mut index_by_text = HashMap::<String, usize>::new();
+        let mut unique = Vec::<Candidate>::with_capacity(candidates.len());
+        for candidate in candidates.drain(..) {
+            if let Some(index) = index_by_text.get(&candidate.text).copied() {
+                let existing = &mut unique[index];
+                if matches!(
+                    (&existing.source, &candidate.source),
+                    (
+                        CandidateSource::PartialTable {
+                            consumed: existing_consumed,
+                            ..
+                        },
+                        CandidateSource::PartialTable {
+                            consumed: candidate_consumed,
+                            recompose_on_default: true,
+                        }
+                    ) if *candidate_consumed > *existing_consumed
+                ) {
+                    // Preserve the first candidate's position, display fields,
+                    // and quality, but selection must consume the longest
+                    // deployed surface spelling that produced this same text.
+                    // This is generic across translator merges (including
+                    // toneless exact vs initial-abbreviation families).
+                    existing.source = candidate.source;
+                }
+                continue;
+            }
+            index_by_text.insert(candidate.text.clone(), unique.len());
+            unique.push(candidate);
+        }
+        *candidates = unique;
     }
 }
 

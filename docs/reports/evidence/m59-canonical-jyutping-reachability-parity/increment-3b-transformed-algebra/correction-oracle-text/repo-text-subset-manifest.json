@@ -1,0 +1,258 @@
+{
+  "packet": "M59 Increment 3b correction-spelling oracle text subset",
+  "oracle": {
+    "repository": "rime/librime",
+    "release": "1.17.0",
+    "commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
+  },
+  "external_full_manifest": {
+    "origin_path": "C:/y59-correction-oracle/hashes/artifact-sha256.csv",
+    "sha256": "4cb688f0624a7c19dd7a35b506aec0f30419f62a4eee0f93911d8caf7c6dcf48",
+    "verified_artifact_count": 36,
+    "verdict": "PASS"
+  },
+  "normalization": {
+    "policy": "Repository text follows .gitattributes LF normalization. byte_identical marks files whose original bytes already matched that policy.",
+    "external_manifest_copy": "hashes/external-artifact-sha256.normalized.csv",
+    "external_manifest_original_sha_record": "hashes/external-artifact-sha256.original.sha256",
+    "external_verification_record": "hashes/external-manifest-verification.json"
+  },
+  "files": [
+    {
+      "path": "commands.txt",
+      "origin_path": "C:/y59-correction-oracle/commands.txt",
+      "origin_bytes": 1106,
+      "origin_sha256": "3fc61b083a5e7ffd8cf4737609e4fef5f67b231fc3ebfee562fad2b5fd4e0281",
+      "repo_bytes": 1106,
+      "repo_sha256": "3fc61b083a5e7ffd8cf4737609e4fef5f67b231fc3ebfee562fad2b5fd4e0281",
+      "byte_identical": true
+    },
+    {
+      "path": "finalize-evidence.ps1",
+      "origin_path": "C:/y59-correction-oracle/finalize-evidence.ps1",
+      "origin_bytes": 2374,
+      "origin_sha256": "6d7eb4918e30aeb70e868897f79e216b98f95d2c1debcd091e5dc4f3f943274e",
+      "repo_bytes": 2374,
+      "repo_sha256": "6d7eb4918e30aeb70e868897f79e216b98f95d2c1debcd091e5dc4f3f943274e",
+      "byte_identical": true
+    },
+    {
+      "path": "hashes/external-artifact-sha256.normalized.csv",
+      "origin_path": "C:/y59-correction-oracle/hashes/artifact-sha256.csv",
+      "origin_bytes": 3932,
+      "origin_sha256": "4cb688f0624a7c19dd7a35b506aec0f30419f62a4eee0f93911d8caf7c6dcf48",
+      "repo_bytes": 3892,
+      "repo_sha256": "2cd6d672cdc7af1530957b91d5609401f74f2fb46276dcb50d995b99bbac41a9",
+      "byte_identical": false
+    },
+    {
+      "path": "hashes/external-artifact-sha256.original.sha256",
+      "origin_path": "C:/y59-correction-oracle/hashes/artifact-sha256.csv.sha256",
+      "origin_bytes": 86,
+      "origin_sha256": "de496fda119d00d9a9667dd76ad65bc475580300c52ed4b3579ad0dbd554d48c",
+      "repo_bytes": 86,
+      "repo_sha256": "de496fda119d00d9a9667dd76ad65bc475580300c52ed4b3579ad0dbd554d48c",
+      "byte_identical": true
+    },
+    {
+      "path": "hashes/external-manifest-verification.json",
+      "origin_path": "C:/y59-correction-oracle/hashes/manifest-verification.json",
+      "origin_bytes": 291,
+      "origin_sha256": "0c1b1ff49e789d3f456b6ba919b82835340d6254a51aaaadabe44fe535467a53",
+      "repo_bytes": 291,
+      "repo_sha256": "0c1b1ff49e789d3f456b6ba919b82835340d6254a51aaaadabe44fe535467a53",
+      "byte_identical": true
+    },
+    {
+      "path": "logs/capture.stdout.log",
+      "origin_path": "C:/y59-correction-oracle/logs/capture.stdout.log",
+      "origin_bytes": 31,
+      "origin_sha256": "e606f421ae43344ad0eb6a754aef1ea12b9cae6118acc1e6a0907e158abaaf82",
+      "repo_bytes": 31,
+      "repo_sha256": "e606f421ae43344ad0eb6a754aef1ea12b9cae6118acc1e6a0907e158abaaf82",
+      "byte_identical": true
+    },
+    {
+      "path": "logs/decode-prism.log",
+      "origin_path": "C:/y59-correction-oracle/logs/decode-prism.log",
+      "origin_bytes": 116,
+      "origin_sha256": "1f83a71607e20d75ccda073555523b22ff47a601e8d4ed22f6f645c629b2ff9c",
+      "repo_bytes": 56,
+      "repo_sha256": "2c2f1690afbad29fd7eb39e5dc436e2136ae483f2c229a8ec4a181d945702d29",
+      "byte_identical": false
+    },
+    {
+      "path": "logs/decode-prism-verify.log",
+      "origin_path": "C:/y59-correction-oracle/logs/decode-prism-verify.log",
+      "origin_bytes": 118,
+      "origin_sha256": "2218984bd33a1ae53e80145926f878fc4420653d36cfbb9f73a40c1460316250",
+      "repo_bytes": 57,
+      "repo_sha256": "437926d48a20ba8273aaaf30bcc1c6bf38bc7a6f82e065ea5257bcb1a8c22b57",
+      "byte_identical": false
+    },
+    {
+      "path": "logs/decoder-self-test.log",
+      "origin_path": "C:/y59-correction-oracle/logs/decoder-self-test.log",
+      "origin_bytes": 88,
+      "origin_sha256": "54ceda1c3135fdf9e236eac2d9e46991ce4f0b6edbd03d607df87f22be89f5d0",
+      "repo_bytes": 42,
+      "repo_sha256": "310abe75be6a1429673f2020f445e0b9fd230ca1152b3e4f360115dfaacf13c6",
+      "byte_identical": false
+    },
+    {
+      "path": "output/capture.json",
+      "origin_path": "C:/y59-correction-oracle/output/capture.json",
+      "origin_bytes": 2724,
+      "origin_sha256": "f5e1cf58cca162c03eadf71473b80376e440c044958ead3ca25e27e36565eee9",
+      "repo_bytes": 2724,
+      "repo_sha256": "f5e1cf58cca162c03eadf71473b80376e440c044958ead3ca25e27e36565eee9",
+      "byte_identical": true
+    },
+    {
+      "path": "output/provenance.json",
+      "origin_path": "C:/y59-correction-oracle/output/provenance.json",
+      "origin_bytes": 3175,
+      "origin_sha256": "fb54978be7ec16b541d0143aceaf179ea7cb2169a961bd63ae20c449d46e0918",
+      "repo_bytes": 3175,
+      "repo_sha256": "fb54978be7ec16b541d0143aceaf179ea7cb2169a961bd63ae20c449d46e0918",
+      "byte_identical": true
+    },
+    {
+      "path": "prism-observation.json",
+      "origin_path": "C:/y59-correction-oracle/prism-observation.json",
+      "origin_bytes": 1678,
+      "origin_sha256": "dbc875f023140847413e9b7b21b33378f2fae988f6061e047d4625d2143f2e1a",
+      "repo_bytes": 1678,
+      "repo_sha256": "dbc875f023140847413e9b7b21b33378f2fae988f6061e047d4625d2143f2e1a",
+      "byte_identical": true
+    },
+    {
+      "path": "probe/decode-prism.py",
+      "origin_path": "C:/y59-correction-oracle/probe/decode-prism.py",
+      "origin_bytes": 13491,
+      "origin_sha256": "3cc69624efe65d6ab518768d8556fb2d331ea2b2405d6e4120c051757300bdb7",
+      "repo_bytes": 13491,
+      "repo_sha256": "3cc69624efe65d6ab518768d8556fb2d331ea2b2405d6e4120c051757300bdb7",
+      "byte_identical": true
+    },
+    {
+      "path": "probe/oracle-rime-probe.cs",
+      "origin_path": "C:/y59-correction-oracle/probe/oracle-rime-probe.cs",
+      "origin_bytes": 44846,
+      "origin_sha256": "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7",
+      "repo_bytes": 44846,
+      "repo_sha256": "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7",
+      "byte_identical": true
+    },
+    {
+      "path": "provenance/m58-phase0-binary-provenance.README.md",
+      "origin_path": "C:/y59-correction-oracle/provenance/m58-phase0-binary-provenance.README.md",
+      "origin_bytes": 2171,
+      "origin_sha256": "639668b170046bb3ef5b79bac5d6828774047858580e413e721e6a31e6f66dda",
+      "repo_bytes": 2171,
+      "repo_sha256": "639668b170046bb3ef5b79bac5d6828774047858580e413e721e6a31e6f66dda",
+      "byte_identical": true
+    },
+    {
+      "path": "run-capture.ps1",
+      "origin_path": "C:/y59-correction-oracle/run-capture.ps1",
+      "origin_bytes": 5892,
+      "origin_sha256": "01f532a1d2c1d471cfab113e752db24cee4a0bbcb770b7da87cbd9b5eb9454eb",
+      "repo_bytes": 5892,
+      "repo_sha256": "01f532a1d2c1d471cfab113e752db24cee4a0bbcb770b7da87cbd9b5eb9454eb",
+      "byte_identical": true
+    },
+    {
+      "path": "source/shared/correction_oracle.dict.yaml",
+      "origin_path": "C:/y59-correction-oracle/source/shared/correction_oracle.dict.yaml",
+      "origin_bytes": 113,
+      "origin_sha256": "b9cbf568a907d9044208ddc40b105ba941d274ed1ae9da34eff89dee3b086cab",
+      "repo_bytes": 113,
+      "repo_sha256": "b9cbf568a907d9044208ddc40b105ba941d274ed1ae9da34eff89dee3b086cab",
+      "byte_identical": true
+    },
+    {
+      "path": "source/shared/correction_oracle.schema.yaml",
+      "origin_path": "C:/y59-correction-oracle/source/shared/correction_oracle.schema.yaml",
+      "origin_bytes": 684,
+      "origin_sha256": "2da970f1b255b5dae8796e95a6707bb83109b08178b8fdd3f851e583b4107e3d",
+      "repo_bytes": 684,
+      "repo_sha256": "2da970f1b255b5dae8796e95a6707bb83109b08178b8fdd3f851e583b4107e3d",
+      "byte_identical": true
+    },
+    {
+      "path": "source/shared/default.custom.yaml",
+      "origin_path": "C:/y59-correction-oracle/source/shared/default.custom.yaml",
+      "origin_bytes": 54,
+      "origin_sha256": "b2ba676d5a84c069c62b0a5e0d52a6f5ca77dd7d3656fb550e1a5fe823c83a97",
+      "repo_bytes": 54,
+      "repo_sha256": "b2ba676d5a84c069c62b0a5e0d52a6f5ca77dd7d3656fb550e1a5fe823c83a97",
+      "byte_identical": true
+    },
+    {
+      "path": "source/shared/default.yaml",
+      "origin_path": "C:/y59-correction-oracle/source/shared/default.yaml",
+      "origin_bytes": 43,
+      "origin_sha256": "727cc21d5e32e5019f53822c27300ca0722c5a2ecf78c0c41f20be1b52263745",
+      "repo_bytes": 43,
+      "repo_sha256": "727cc21d5e32e5019f53822c27300ca0722c5a2ecf78c0c41f20be1b52263745",
+      "byte_identical": true
+    },
+    {
+      "path": "source/user/user.yaml",
+      "origin_path": "C:/y59-correction-oracle/source/user/user.yaml",
+      "origin_bytes": 142,
+      "origin_sha256": "f7efe4a0af48af95322f7978183bbb875cf608365ff6b26fd1315e54b7186474",
+      "repo_bytes": 139,
+      "repo_sha256": "d09ce5cc7457b4a56edd1a01f992c8220033fef3696b87efbef173d233ba83b1",
+      "byte_identical": false
+    }
+  ],
+  "omitted": [
+    {
+      "path": "binaries/rime.dll",
+      "reason": "binary oracle payload; hash remains in external manifest and provenance"
+    },
+    {
+      "path": "binaries/rime_deployer.exe",
+      "reason": "binary oracle payload; hash remains in external manifest and provenance"
+    },
+    {
+      "path": "source/user/build/correction_oracle.prism.bin",
+      "reason": "generated prism binary; hash and decoded text observation are preserved"
+    },
+    {
+      "path": "source/user/build/correction_oracle.reverse.bin",
+      "reason": "generated reverse binary"
+    },
+    {
+      "path": "source/user/build/correction_oracle.table.bin",
+      "reason": "generated table binary; source rows are preserved"
+    },
+    {
+      "path": "source/user/build/correction_oracle.schema.yaml",
+      "reason": "generated deployed schema; source schema and provenance config are preserved"
+    },
+    {
+      "path": "source/user/build/default.yaml",
+      "reason": "generated deployed config; source config is preserved"
+    },
+    {
+      "path": "source/user/correction_oracle.userdb/**",
+      "reason": "generated database state"
+    },
+    {
+      "path": "logs/capture.stderr.log",
+      "reason": "zero-byte external log; absence is recorded here"
+    },
+    {
+      "path": "logs/deploy.stdout.log",
+      "reason": "zero-byte external log; absence is recorded here"
+    },
+    {
+      "path": "logs/deploy.stderr.log",
+      "reason": "zero-byte external log; absence is recorded here"
+    }
+  ],
+  "verification_command": "powershell -NoProfile -ExecutionPolicy Bypass -File docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/correction-oracle-text/verify-repo-text-subset.ps1"
+}

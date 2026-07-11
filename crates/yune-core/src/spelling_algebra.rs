@@ -11,19 +11,26 @@ pub(crate) struct ExpandedSpellingEntry {
     pub(crate) code: String,
     pub(crate) candidate: Candidate,
     pub(crate) abbreviation: bool,
+    pub(crate) correction: bool,
 }
 
 const SPELLING_ALGEBRA_FUZZY_PENALTY: f32 = -std::f32::consts::LN_2;
 const SPELLING_ALGEBRA_ABBREVIATION_PENALTY: f32 = -std::f32::consts::LN_2;
 const SPELLING_ALGEBRA_CORRECTION_PENALTY: f32 = -std::f32::consts::LN_10 * 2.0;
+const DEPLOYED_FUZZY_PENALTY: f64 = -std::f64::consts::LN_2;
+const DEPLOYED_ABBREVIATION_PENALTY: f64 = -std::f64::consts::LN_2;
+const DEPLOYED_CORRECTION_PENALTY: f64 = -4.605_170_185_988_091;
 
 impl SpellingAlgebra {
     pub(crate) fn parse(formulas: &[String]) -> Self {
         let mut parsed = Vec::new();
         for formula in formulas {
-            if let Some(parsed_formula) = SpellingAlgebraFormula::parse(formula) {
-                parsed.push(parsed_formula);
-            }
+            let Some(parsed_formula) = SpellingAlgebraFormula::parse(formula) else {
+                // Pinned librime `Projection::Load` clears the complete
+                // calculation list when any sibling definition is invalid.
+                return Self::default();
+            };
+            parsed.push(parsed_formula);
         }
         Self { formulas: parsed }
     }
@@ -32,16 +39,57 @@ impl SpellingAlgebra {
         self.formulas.is_empty()
     }
 
+    pub(crate) fn expand_deployed_spelling_variants(
+        &self,
+        code: &str,
+    ) -> Vec<DeployedSpellingVariant> {
+        let mut entries = vec![DeployedSpellingVariant {
+            code: code.to_owned(),
+            properties: DeployedSpellingProperties::default(),
+        }];
+        for formula in &self.formulas {
+            let mut next = Vec::new();
+            for entry in entries {
+                let Some(transformed) = formula.deployed_transform(&entry.code) else {
+                    next.push(entry);
+                    continue;
+                };
+                if formula.keep_original() {
+                    next.push(entry.clone());
+                }
+                if formula.add_transformed() && !transformed.is_empty() {
+                    let mut properties = entry.properties;
+                    properties.compose(formula.deployed_properties_delta());
+                    next.push(DeployedSpellingVariant {
+                        code: transformed,
+                        properties,
+                    });
+                }
+            }
+            entries = merge_deployed_spelling_variants(next);
+        }
+        entries
+    }
+
     pub(crate) fn expand_entries_with_normal_codes(
         &self,
         entries: Vec<(String, Candidate)>,
     ) -> (Vec<ExpandedSpellingEntry>, HashSet<String>, bool) {
         let mut variant_cache = HashMap::<String, Vec<ExpandedSpellingCode>>::new();
+        let mut deployed_correction_cache = HashMap::<String, HashMap<String, bool>>::new();
         let mut expanded_entries = Vec::new();
         for (code, candidate) in entries {
             let variants = variant_cache
                 .entry(code.clone())
                 .or_insert_with(|| self.expand_code_variants(&code));
+            let deployed_corrections = deployed_correction_cache
+                .entry(code.clone())
+                .or_insert_with(|| {
+                    self.expand_deployed_spelling_variants(&code)
+                        .into_iter()
+                        .map(|variant| (variant.code, variant.properties.is_correction))
+                        .collect()
+                });
             expanded_entries.reserve(variants.len());
             for variant in variants {
                 let mut candidate = candidate.clone();
@@ -51,6 +99,10 @@ impl SpellingAlgebra {
                     candidate,
                     normal: variant.normal,
                     abbreviation: variant.abbreviation,
+                    correction: deployed_corrections
+                        .get(&variant.code)
+                        .copied()
+                        .unwrap_or(variant.correction),
                 });
             }
         }
@@ -77,17 +129,19 @@ impl SpellingAlgebra {
                 code: entry.code,
                 candidate: entry.candidate,
                 abbreviation: entry.abbreviation && !entry.normal,
+                correction: entry.correction,
             })
             .collect();
         (entries, normal_codes, has_single_letter_abbreviations)
     }
 
-    fn expand_code_variants(&self, code: &str) -> Vec<ExpandedSpellingCode> {
+    pub(crate) fn expand_code_variants(&self, code: &str) -> Vec<ExpandedSpellingCode> {
         let mut entries = vec![ExpandedSpellingCode {
             code: code.to_owned(),
             quality_penalty: 0.0,
             normal: true,
             abbreviation: false,
+            correction: false,
         }];
         for formula in &self.formulas {
             let mut next = Vec::new();
@@ -104,6 +158,7 @@ impl SpellingAlgebra {
                             quality_penalty: entry.quality_penalty + formula.quality_penalty(),
                             normal: entry.normal && formula.transformed_is_normal(),
                             abbreviation: entry.abbreviation || formula.is_abbreviation(),
+                            correction: entry.correction || formula.is_correction(),
                         });
                     }
                 } else {
@@ -117,11 +172,58 @@ impl SpellingAlgebra {
 }
 
 #[derive(Clone)]
-struct ExpandedSpellingCode {
-    code: String,
-    quality_penalty: f32,
-    normal: bool,
-    abbreviation: bool,
+pub(crate) struct ExpandedSpellingCode {
+    pub(crate) code: String,
+    pub(crate) quality_penalty: f32,
+    pub(crate) normal: bool,
+    pub(crate) abbreviation: bool,
+    pub(crate) correction: bool,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+#[repr(i32)]
+pub(crate) enum DeployedSpellingType {
+    #[default]
+    Normal,
+    Fuzzy,
+    Abbreviation,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct DeployedSpellingProperties {
+    pub(crate) spelling_type: DeployedSpellingType,
+    pub(crate) is_correction: bool,
+    pub(crate) credibility: f64,
+}
+
+impl DeployedSpellingProperties {
+    /// Mirrors pinned librime `SpellingProperties::Compose`: algebra deltas
+    /// accumulate on the spelling provenance inherited from earlier rounds.
+    fn compose(&mut self, delta: Self) {
+        self.spelling_type = self.spelling_type.max(delta.spelling_type);
+        self.credibility += delta.credibility;
+        self.is_correction |= delta.is_correction;
+    }
+
+    /// Mirrors pinned librime `SpellingProperties::Update`: two paths to the
+    /// same surface and underlying syllable collapse to the best descriptor.
+    fn update(&mut self, other: Self) {
+        if self.spelling_type == other.spelling_type {
+            self.is_correction &= other.is_correction;
+        } else if other.spelling_type < self.spelling_type {
+            self.spelling_type = other.spelling_type;
+            self.is_correction = other.is_correction;
+        }
+        if other.credibility > self.credibility {
+            self.credibility = other.credibility;
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct DeployedSpellingVariant {
+    pub(crate) code: String,
+    pub(crate) properties: DeployedSpellingProperties,
 }
 
 #[derive(Clone)]
@@ -130,6 +232,7 @@ struct SpellingAlgebraEntry {
     candidate: Candidate,
     normal: bool,
     abbreviation: bool,
+    correction: bool,
 }
 
 #[derive(Clone)]
@@ -143,6 +246,7 @@ enum SpellingAlgebraFormula {
         add_transformed: bool,
         quality_penalty: f32,
         abbreviation: bool,
+        correction: bool,
     },
     LookAheadTransform {
         prefix: Regex,
@@ -154,6 +258,7 @@ enum SpellingAlgebraFormula {
         add_transformed: bool,
         quality_penalty: f32,
         abbreviation: bool,
+        correction: bool,
     },
     Erase(Regex),
 }
@@ -164,13 +269,14 @@ impl SpellingAlgebraFormula {
         let args = definition.split(separator).collect::<Vec<_>>();
         match args.first().copied()? {
             "xlit" => Self::parse_xlit(&args),
-            "xform" => Self::parse_transform(&args, false, true, 0.0, false, false),
+            "xform" => Self::parse_transform(&args, false, true, 0.0, false, false, false),
             "derive" => Self::parse_derivation(&args),
             "fuzz" => Self::parse_transform(
                 &args,
                 true,
                 true,
                 SPELLING_ALGEBRA_FUZZY_PENALTY,
+                false,
                 false,
                 true,
             ),
@@ -180,6 +286,7 @@ impl SpellingAlgebraFormula {
                 true,
                 SPELLING_ALGEBRA_ABBREVIATION_PENALTY,
                 true,
+                false,
                 false,
             ),
             "erase" => Self::parse_erase(&args),
@@ -205,6 +312,7 @@ impl SpellingAlgebraFormula {
         add_transformed: bool,
         quality_penalty: f32,
         abbreviation: bool,
+        correction: bool,
         syllable_scope_anchor: bool,
     ) -> Option<Self> {
         if args.len() < 3 || args[1].is_empty() {
@@ -221,6 +329,7 @@ impl SpellingAlgebraFormula {
                 add_transformed,
                 quality_penalty,
                 abbreviation,
+                correction,
             });
         }
         Some(Self::Transform {
@@ -231,17 +340,26 @@ impl SpellingAlgebraFormula {
             add_transformed,
             quality_penalty,
             abbreviation,
+            correction,
         })
     }
 
     fn parse_derivation(args: &[&str]) -> Option<Self> {
-        let (quality_penalty, abbreviation) = match args.get(3).copied() {
-            Some("abbrev") => (SPELLING_ALGEBRA_ABBREVIATION_PENALTY, true),
-            Some("fuzz") => (SPELLING_ALGEBRA_FUZZY_PENALTY, false),
-            Some("correction") => (SPELLING_ALGEBRA_CORRECTION_PENALTY, false),
-            _ => (0.0, false),
+        let (quality_penalty, abbreviation, correction) = match args.get(3).copied() {
+            Some("abbrev") => (SPELLING_ALGEBRA_ABBREVIATION_PENALTY, true, false),
+            Some("fuzz") => (SPELLING_ALGEBRA_FUZZY_PENALTY, false, false),
+            Some("correction") => (SPELLING_ALGEBRA_CORRECTION_PENALTY, false, true),
+            _ => (0.0, false, false),
         };
-        Self::parse_transform(args, true, true, quality_penalty, abbreviation, true)
+        Self::parse_transform(
+            args,
+            true,
+            true,
+            quality_penalty,
+            abbreviation,
+            correction,
+            true,
+        )
     }
 
     fn parse_erase(args: &[&str]) -> Option<Self> {
@@ -276,6 +394,99 @@ impl SpellingAlgebraFormula {
             Self::Transform { abbreviation, .. }
             | Self::LookAheadTransform { abbreviation, .. } => *abbreviation,
             _ => false,
+        }
+    }
+
+    fn is_correction(&self) -> bool {
+        match self {
+            Self::Transform { correction, .. } | Self::LookAheadTransform { correction, .. } => {
+                *correction
+            }
+            _ => false,
+        }
+    }
+
+    fn deployed_properties_delta(&self) -> DeployedSpellingProperties {
+        match self {
+            Self::Transliterate(_) | Self::Erase(_) => DeployedSpellingProperties::default(),
+            Self::Transform {
+                quality_penalty,
+                abbreviation,
+                correction,
+                ..
+            }
+            | Self::LookAheadTransform {
+                quality_penalty,
+                abbreviation,
+                correction,
+                ..
+            } => {
+                let (spelling_type, credibility) = if *abbreviation {
+                    (
+                        DeployedSpellingType::Abbreviation,
+                        DEPLOYED_ABBREVIATION_PENALTY,
+                    )
+                } else if *quality_penalty == SPELLING_ALGEBRA_FUZZY_PENALTY {
+                    (DeployedSpellingType::Fuzzy, DEPLOYED_FUZZY_PENALTY)
+                } else if *correction {
+                    (DeployedSpellingType::Normal, DEPLOYED_CORRECTION_PENALTY)
+                } else {
+                    (DeployedSpellingType::Normal, 0.0)
+                };
+                DeployedSpellingProperties {
+                    spelling_type,
+                    is_correction: *correction,
+                    credibility,
+                }
+            }
+        }
+    }
+
+    fn deployed_transform(&self, value: &str) -> Option<String> {
+        match self {
+            Self::Transliterate(char_map) => {
+                let transformed = value
+                    .chars()
+                    .map(|ch| {
+                        char_map
+                            .iter()
+                            .find(|(source, _)| *source == ch)
+                            .map_or(ch, |(_, replacement)| *replacement)
+                    })
+                    .collect::<String>();
+                (transformed != value).then_some(transformed)
+            }
+            Self::Transform {
+                pattern,
+                replacement,
+                ..
+            } => {
+                // Prism inputs are already individual syllabary entries. Apply
+                // anchored rules to that whole spelling, matching the historical
+                // prism builder; runtime dictionary-code expansion remains
+                // syllable-scoped in `apply` below.
+                if pattern.is_match(value) {
+                    let transformed = pattern
+                        .replace_all(value, replacement.as_str())
+                        .into_owned();
+                    (transformed != value).then_some(transformed)
+                } else {
+                    None
+                }
+            }
+            Self::LookAheadTransform {
+                prefix,
+                lookahead,
+                positive,
+                replacement,
+                ..
+            } => replace_lookahead_matches(value, prefix, lookahead, *positive, replacement),
+            Self::Erase(pattern) => {
+                let should_erase = pattern
+                    .find(value)
+                    .is_some_and(|matched| matched.start() == 0 && matched.end() == value.len());
+                should_erase.then(String::new)
+            }
         }
     }
 
@@ -490,6 +701,7 @@ fn leading_syllable_abbreviations(entries: &[SpellingAlgebraEntry]) -> Vec<Spell
                 candidate,
                 normal: false,
                 abbreviation: true,
+                correction: entry.correction,
             })
         })
         .collect()
@@ -569,6 +781,22 @@ fn replace_lookahead_matches(
     }
 }
 
+fn merge_deployed_spelling_variants(
+    entries: Vec<DeployedSpellingVariant>,
+) -> Vec<DeployedSpellingVariant> {
+    let mut merged: Vec<DeployedSpellingVariant> = Vec::new();
+    let mut indexes = HashMap::<String, usize>::new();
+    for entry in entries {
+        if let Some(index) = indexes.get(&entry.code).copied() {
+            merged[index].properties.update(entry.properties);
+        } else {
+            indexes.insert(entry.code.clone(), merged.len());
+            merged.push(entry);
+        }
+    }
+    merged
+}
+
 fn dedupe_spelling_algebra_entries(
     entries: Vec<SpellingAlgebraEntry>,
 ) -> Vec<SpellingAlgebraEntry> {
@@ -584,6 +812,7 @@ fn dedupe_spelling_algebra_entries(
             let existing_entry = &mut deduped[index];
             existing_entry.normal |= entry.normal;
             existing_entry.abbreviation |= entry.abbreviation;
+            existing_entry.correction &= entry.correction;
             if entry.candidate.quality > existing_entry.candidate.quality {
                 existing_entry.candidate = entry.candidate;
             }
@@ -603,6 +832,7 @@ fn dedupe_spelling_algebra_codes(entries: Vec<ExpandedSpellingCode>) -> Vec<Expa
             let existing_entry = &mut deduped[index];
             existing_entry.normal |= entry.normal;
             existing_entry.abbreviation |= entry.abbreviation;
+            existing_entry.correction &= entry.correction;
             if entry.quality_penalty > existing_entry.quality_penalty {
                 existing_entry.quality_penalty = entry.quality_penalty;
             }

@@ -110,6 +110,129 @@ translator:
 }
 
 #[test]
+fn dictionary_data_standard_schema_selects_compatible_compiled_byte_backed_storage() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("dictionary-data-standard-byte-backed");
+    let fixture = DictionaryDataFixture::new(&root, false);
+    fixture.write_schema_for_dictionary("standard_compiled", "standard_compiled");
+
+    let source =
+        "---\nname: standard_compiled\nversion: '0.1'\nsort: by_weight\n...\n\nsource-row\tna\t1\n";
+    fs::write(fixture.shared.join("standard_compiled.dict.yaml"), source)
+        .expect("standard source dictionary should be written");
+    let compiled_dictionary = yune_core::TableDictionary::parse_rime_dict_yaml(
+        "---\nname: standard_compiled\nversion: '0.1'\nsort: by_weight\n...\n\ncompiled-row\tna\t9\n",
+    )
+    .expect("standard compiled dictionary fixture should parse");
+    let checksum = yune_core::rime_dict_source_checksum(0, [source.as_bytes()], None);
+    fs::write(
+        fixture.shared.join("standard_compiled.table.bin"),
+        yune_core::build_table_bin(&compiled_dictionary, checksum),
+    )
+    .expect("standard compiled table should be written");
+    fs::write(
+        fixture.shared.join("standard_compiled.prism.bin"),
+        compiled_prism_fixture(),
+    )
+    .expect("standard compiled prism should be written");
+    fs::write(
+        fixture.shared.join("standard_compiled.reverse.bin"),
+        compiled_reverse_fixture(),
+    )
+    .expect("standard compiled reverse should be written");
+
+    fixture.setup_runtime();
+    let candidates = fixture.candidates_for_schema("standard_compiled", "na");
+    assert_eq!(
+        candidates.first(),
+        Some(&("compiled-row".to_owned(), "na".to_owned())),
+        "distinct compiled text proves the Standard schema used validated compiled artifacts"
+    );
+    let diagnostics = session_web_diagnostics_snapshot(fixture.last_session_id())
+        .expect("session diagnostics should exist");
+    let compact_storage = diagnostics
+        .storage
+        .iter()
+        .find(|row| row.owner == "compact_table.storage")
+        .expect("compatible compiled artifacts should select compact storage without a profile or schema-id gate");
+    assert_eq!(compact_storage.selected_storage, "byte_backed");
+    assert_eq!(compact_storage.mapping_mode, "mmap");
+    assert_eq!(compact_storage.stored_entry_count, 1);
+    assert!(
+        remaining_gear_deferrals_snapshot(fixture.last_session_id())
+            .expect("session should exist")
+            .is_empty(),
+        "valid compatible compiled artifacts should not record a fallback"
+    );
+    fixture.cleanup();
+}
+
+#[test]
+fn dictionary_data_standard_schema_retries_unsupported_compact_as_compiled_owned_heap() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("dictionary-data-standard-compiled-owned-heap");
+    let fixture = DictionaryDataFixture::new(&root, false);
+    fixture.write_schema_for_dictionary("standard_compiled_heap", "standard_compiled_heap");
+
+    let source = "---\nname: standard_compiled_heap\nversion: '0.1'\nsort: by_weight\n...\n\nsource-row\tax\t1\n";
+    fs::write(
+        fixture.shared.join("standard_compiled_heap.dict.yaml"),
+        source,
+    )
+    .expect("standard source dictionary should be written");
+    let checksum = yune_core::rime_dict_source_checksum(0, [source.as_bytes()], None);
+    fs::write(
+        fixture.shared.join("standard_compiled_heap.table.bin"),
+        compiled_advanced_table_fixture(checksum),
+    )
+    .expect("advanced compiled table should be written");
+    fs::write(
+        fixture.shared.join("standard_compiled_heap.prism.bin"),
+        compiled_prism_fixture(),
+    )
+    .expect("compiled prism should be written");
+    fs::write(
+        fixture.shared.join("standard_compiled_heap.reverse.bin"),
+        compiled_reverse_fixture(),
+    )
+    .expect("compiled reverse should be written");
+
+    fixture.setup_runtime();
+    let candidates = fixture.candidates_for_schema("standard_compiled_heap", "ax");
+    assert_eq!(
+        candidates.first(),
+        Some(&("明月".to_owned(), "ax".to_owned())),
+        "the legacy compiled retry must expose the advanced compiled candidate, not the distinct source row"
+    );
+
+    let diagnostics = session_web_diagnostics_snapshot(fixture.last_session_id())
+        .expect("session diagnostics should exist");
+    let table_storage = diagnostics
+        .storage
+        .iter()
+        .find(|row| row.owner == "translator.entries_by_code")
+        .expect("the legacy compiled retry should install owned heap storage");
+    assert_eq!(table_storage.selected_storage, "owned_heap");
+    assert_eq!(table_storage.mapping_mode, "owned_heap");
+    assert!(
+        diagnostics
+            .storage
+            .iter()
+            .all(|row| row.owner != "compact_table.storage"),
+        "an unsupported compact layout must not be reported as compact storage"
+    );
+    assert!(
+        remaining_gear_deferrals_snapshot(fixture.last_session_id())
+            .expect("session should exist")
+            .is_empty(),
+        "a successful compiled heap retry must not defer failure or record source fallback"
+    );
+    fixture.cleanup();
+}
+
+#[test]
 fn dictionary_data_ignores_compiled_poet_artifact_until_explicitly_enabled() {
     let _guard = test_guard();
     let _env_guard = EnvVarGuard::unset("YUNE_POET_BYTE_BACKED");

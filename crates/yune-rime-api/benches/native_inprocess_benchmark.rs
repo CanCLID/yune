@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap, HashSet},
     ffi::{CStr, CString},
     fmt, fs, mem,
     os::raw::{c_char, c_int, c_void},
@@ -2490,6 +2490,50 @@ impl CompactMarisaStringTable for BenchMappedMarisaStringTable {
 
     fn num_keys(&self) -> usize {
         self.num_keys
+    }
+
+    fn keys_for_ids(&self, ids: &[u32]) -> Result<Vec<String>, RimeTableBinParseError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut positions = HashMap::<usize, Vec<usize>>::new();
+        for (output_index, id) in ids.iter().copied().enumerate() {
+            let id = usize::try_from(id).map_err(|_| RimeTableBinParseError::InvalidCount)?;
+            if id >= self.num_keys {
+                return Err(RimeTableBinParseError::InvalidCount);
+            }
+            positions.entry(id).or_default().push(output_index);
+        }
+        let mut output = vec![None; ids.len()];
+        let requested_ids = positions.keys().copied().collect::<HashSet<_>>();
+        let mut resolved_ids = HashSet::new();
+        let mut agent = rsmarisa::Agent::new();
+        agent.set_query_str("");
+        while self.trie.predictive_search(&mut agent) {
+            let id = agent.key().id();
+            if requested_ids.contains(&id) && !resolved_ids.insert(id) {
+                return Err(RimeTableBinParseError::InvalidCount);
+            }
+            let Some(output_indices) = positions.remove(&id) else {
+                continue;
+            };
+            let key = std::str::from_utf8(agent.key().as_bytes())
+                .map_err(|_| RimeTableBinParseError::InvalidUtf8)?
+                .to_owned();
+            for output_index in output_indices {
+                output[output_index] = Some(key.clone());
+            }
+            if positions.is_empty() {
+                break;
+            }
+        }
+        if !positions.is_empty() {
+            return Err(RimeTableBinParseError::InvalidCount);
+        }
+        output
+            .into_iter()
+            .map(|key| key.ok_or(RimeTableBinParseError::InvalidCount))
+            .collect()
     }
 
     fn mapping_mode(&self) -> &'static str {

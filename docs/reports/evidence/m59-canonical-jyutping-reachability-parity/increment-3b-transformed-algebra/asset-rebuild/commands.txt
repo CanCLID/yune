@@ -1,0 +1,17 @@
+git write-tree
+git commit-tree d5121383ad51d12c0c84b0f0504e0ee4919edf9f -p d55b203ebd9552f5af6b0f34a525cf9e3852bd70
+git worktree add --detach C:\y59r-3b-final4-a 89847158444b2ae6d1e77c48b853b103c5e267ec
+git worktree add --detach C:\y59r-3b-final4-b 89847158444b2ae6d1e77c48b853b103c5e267ec
+
+# Run once in each clean worktree with a distinct evidence path.
+$env:YUNE_WEB03_EVIDENCE_DIR='C:\y59r-3b-final4-evidence-a'
+$env:YUNE_WEB03_APPLY_ASSETS='1'
+cargo test -p yune-rime-api --test yune_web web03_regenerates_public_schema_compiled_assets_from_clean_rebuild -- --ignored --exact --nocapture
+
+$env:YUNE_WEB03_EVIDENCE_DIR='C:\y59r-3b-final4-evidence-b'
+$env:YUNE_WEB03_APPLY_ASSETS='1'
+cargo test -p yune-rime-api --test yune_web web03_regenerates_public_schema_compiled_assets_from_clean_rebuild -- --ignored --exact --nocapture
+
+node apps/yune-web/scripts/update-schema-asset-manifest.mjs
+npm.cmd --prefix apps/yune-web run check:schema-manifest
+npm.cmd --prefix apps/yune-web run build:public

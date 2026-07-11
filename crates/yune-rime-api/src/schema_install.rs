@@ -221,8 +221,6 @@ fn install_schema_dictionary_translator_from_config(
         is_typeduck_jyut6ping3_profile(schema_config, user_dict_name.as_deref());
     let is_upstream_luna_pinyin_profile =
         is_upstream_luna_pinyin_profile(schema_config, user_dict_name.as_deref(), component_name);
-    let is_yune_web_launch_byte_backed_profile =
-        is_yune_web_launch_byte_backed_profile(schema_config, user_dict_name.as_deref());
     let cache_key =
         schema_dictionary_translator_cache_key(schema_config, component_name, name_space);
     let enable_charset_filter = find_config_value(
@@ -338,8 +336,8 @@ fn install_schema_dictionary_translator_from_config(
             .and_then(config_scalar_bool)
             .unwrap_or(is_typeduck_jyut6ping3_profile);
     // M59: narrow complete-list leading-syllable single reachability, distinct
-    // from the broad TypeDuck `prefix_fallback`. Enabled by schema config only
-    // (no input allowlist, no baked data).
+    // from the broad TypeDuck `prefix_fallback`. This is an engine-level default
+    // with an explicit per-schema opt-out (no input allowlist, no baked data).
     let leading_syllable_reachability = find_config_value(
         schema_config,
         &format!("{name_space}/leading_syllable_reachability"),
@@ -386,9 +384,6 @@ fn install_schema_dictionary_translator_from_config(
         return;
     }
 
-    let prefer_compact_storage = is_upstream_luna_pinyin_profile
-        || is_typeduck_jyut6ping3_profile
-        || is_yune_web_launch_byte_backed_profile;
     let probe_dictionary_name = user_dict_name
         .clone()
         .unwrap_or_else(|| "<none>".to_owned());
@@ -396,11 +391,7 @@ fn install_schema_dictionary_translator_from_config(
         "m47:translator:{component_name}@{name_space}:dictionary:{probe_dictionary_name}:before_dictionary_load"
     ));
     let (dictionary, compact_store, prism_payload, poet_source, loaded_from_compiled) =
-        match load_schema_table_dictionary_with_compact_preference(
-            schema_config,
-            name_space,
-            prefer_compact_storage,
-        ) {
+        match load_schema_table_dictionary_preferring_compact(schema_config, name_space) {
             DictionaryLoadOutcome::Compiled(compiled) => (
                 compiled.dictionary,
                 compiled.compact_store,
@@ -423,10 +414,12 @@ fn install_schema_dictionary_translator_from_config(
     memory_probe_mark(format!(
         "m47:translator:{component_name}@{name_space}:dictionary:{probe_dictionary_name}:after_dictionary_load"
     ));
-    let use_compact_storage = prism_payload.is_some()
-        && (is_upstream_luna_pinyin_profile
-            || (loaded_from_compiled
-                && (is_typeduck_jyut6ping3_profile || is_yune_web_launch_byte_backed_profile)));
+    // Storage selection is an artifact capability, not a schema identity. Any
+    // dictionary translator whose validated compiled load produced both a
+    // byte-backed compact table and its prism can use that path. Profile checks
+    // below remain responsible only for profile-specific behavior.
+    let use_compact_storage =
+        loaded_from_compiled && prism_payload.is_some() && compact_store.is_some();
     let mut translator = {
         let _trace = startup_trace::span("translator_index_build");
         match (use_compact_storage, compact_store, dictionary) {
@@ -436,10 +429,7 @@ fn install_schema_dictionary_translator_from_config(
                     prism_payload,
                 )
             }
-            (true, None, Some(dictionary)) => {
-                StaticTableTranslator::from_compact_dictionary(dictionary, None)
-            }
-            (false, _, Some(dictionary)) => StaticTableTranslator::from_dictionary(dictionary),
+            (_, _, Some(dictionary)) => StaticTableTranslator::from_dictionary(dictionary),
             (_, _, None) => {
                 record_dictionary_load_failure(
                     session,
@@ -680,14 +670,17 @@ fn append_source_dictionary_cache_signature(
         stable_hash_bytes(&bytes)
     ));
     let yaml = String::from_utf8_lossy(&bytes);
-    let (imports, vocabularies) = source_dictionary_header_dependencies(&yaml);
-    for import in imports {
+    let Some(dependencies) = source_dictionary_header_dependencies(&yaml) else {
+        parts.push(format!("source:{resource_id}:invalid-header"));
+        return;
+    };
+    for import in dependencies.import_tables {
         append_source_dictionary_cache_signature(parts, &import, visited);
     }
-    for vocabulary in vocabularies {
+    if let Some(vocabulary) = dependencies.preset_vocabulary {
         let Some(vocabulary) = validate_data_resource_id(&vocabulary) else {
             parts.push(format!("vocabulary:{vocabulary}:invalid"));
-            continue;
+            return;
         };
         append_runtime_file_content_signature(parts, "vocabulary", &format!("{vocabulary}.txt"));
     }
@@ -765,79 +758,124 @@ fn file_prefix_hash(path: &Path, limit: usize) -> Option<u64> {
     Some(stable_hash_bytes(&bytes[..read]))
 }
 
-fn source_dictionary_header_dependencies(input: &str) -> (Vec<String>, Vec<String>) {
-    let mut imports = Vec::new();
-    let mut vocabularies = Vec::new();
-    let mut active_list: Option<&str> = None;
-    for raw_line in input.lines() {
-        let trimmed = raw_line.trim();
-        if trimmed == "..." {
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct SourceDictionaryHeaderDependencies {
+    name: Option<String>,
+    import_tables: Vec<String>,
+    preset_vocabulary: Option<String>,
+}
+
+fn source_dictionary_header_dependencies(
+    input: &str,
+) -> Option<SourceDictionaryHeaderDependencies> {
+    let mut header_end = None;
+    let mut consumed = 0usize;
+    for line in input.split_inclusive('\n') {
+        consumed = consumed.checked_add(line.len())?;
+        if line.trim() == "..." {
+            header_end = Some(consumed);
             break;
         }
-        if trimmed.is_empty() || trimmed.starts_with('#') || trimmed == "---" {
-            continue;
-        }
-        if !raw_line.chars().next().is_some_and(char::is_whitespace) {
-            active_list = None;
-        }
-        if let Some(value) = header_value(trimmed, "import_tables") {
-            collect_yaml_values(value, &mut imports);
-            if value.trim().is_empty() {
-                active_list = Some("import_tables");
-            }
-            continue;
-        }
-        if let Some(value) = header_value(trimmed, "vocabulary") {
-            collect_yaml_values(value, &mut vocabularies);
-            continue;
-        }
-        if let Some(value) = header_value(trimmed, "use_preset_vocabulary") {
-            if yaml_bool(value) == Some(true) {
-                vocabularies.push("essay".to_owned());
-            }
-            continue;
-        }
-        if let Some(target) = active_list {
-            if let Some(value) = trimmed.strip_prefix('-') {
-                if target == "import_tables" {
-                    collect_yaml_values(value, &mut imports);
-                }
-            }
-        }
     }
-    imports.sort();
-    imports.dedup();
-    vocabularies.sort();
-    vocabularies.dedup();
-    (imports, vocabularies)
+    let header = input.get(..header_end?)?;
+    let root = serde_yaml::from_str::<Value>(header).ok()?;
+    let mapping = root.as_mapping()?;
+    let value = |key: &str| mapping.get(Value::String(key.to_owned()));
+    let name = value("name")
+        .and_then(yaml_header_scalar)
+        .filter(|name| !name.is_empty());
+    let imports = match value("import_tables") {
+        None | Some(Value::Null) => Vec::new(),
+        Some(Value::Sequence(imports)) => imports
+            .iter()
+            .filter_map(yaml_header_scalar)
+            .filter(|import| !import.is_empty())
+            .collect::<Vec<_>>(),
+        Some(import) => yaml_header_scalar(import)
+            .filter(|import| !import.is_empty())
+            .into_iter()
+            .collect(),
+    };
+    let vocabulary = match value("vocabulary") {
+        None | Some(Value::Null) => None,
+        Some(vocabulary) => Some(yaml_header_scalar(vocabulary)?),
+    };
+    let use_preset_vocabulary = match value("use_preset_vocabulary") {
+        None | Some(Value::Null) => false,
+        Some(Value::Bool(value)) => *value,
+        Some(Value::String(value)) => yaml_bool(value)?,
+        Some(_) => return None,
+    };
+    let preset_vocabulary = if use_preset_vocabulary || vocabulary.is_some() {
+        Some(
+            vocabulary
+                .filter(|vocabulary| !vocabulary.is_empty())
+                .unwrap_or_else(|| "essay".to_owned()),
+        )
+    } else {
+        None
+    };
+    Some(SourceDictionaryHeaderDependencies {
+        name,
+        import_tables: imports,
+        preset_vocabulary,
+    })
 }
 
-fn header_value<'a>(line: &'a str, key: &str) -> Option<&'a str> {
-    line.strip_prefix(key)?.strip_prefix(':')
-}
-
-fn collect_yaml_values(value: &str, output: &mut Vec<String>) {
-    let value = value.trim();
-    if value.is_empty() {
-        return;
-    }
-    if let Some(list) = value
-        .strip_prefix('[')
-        .and_then(|value| value.strip_suffix(']'))
-    {
-        for item in list.split(',') {
-            if let Some(value) = yaml_scalar(item) {
-                output.push(value);
-            }
-        }
-    } else if let Some(value) = yaml_scalar(value) {
-        output.push(value);
+fn yaml_header_scalar(value: &Value) -> Option<String> {
+    match value {
+        Value::String(value) => Some(value.clone()),
+        Value::Number(value) => Some(value.to_string()),
+        Value::Bool(value) => Some(value.to_string()),
+        _ => None,
     }
 }
 
-fn yaml_scalar(value: &str) -> Option<String> {
-    let value = value.trim().trim_matches('"').trim_matches('\'').trim();
-    (!value.is_empty()).then(|| value.to_owned())
+pub(crate) fn dictionary_source_checksum_with_dependencies(
+    initial_checksum: u32,
+    source_yaml: &str,
+    mut dictionary_loader: impl FnMut(&str) -> Option<String>,
+    mut vocabulary_loader: impl FnMut(&str) -> Option<String>,
+) -> Option<u32> {
+    let dependencies = source_dictionary_header_dependencies(source_yaml)?;
+    let mut sources = vec![source_yaml.to_owned()];
+    for import_table in dependencies.import_tables {
+        if dependencies.name.as_deref() == Some(import_table.as_str()) {
+            continue;
+        }
+        sources.push(dictionary_loader(&import_table)?);
+    }
+    let vocabulary = dependencies
+        .preset_vocabulary
+        .and_then(|vocabulary| vocabulary_loader(&vocabulary));
+    Some(rime_dict_source_checksum(
+        initial_checksum,
+        sources.iter().map(String::as_bytes),
+        vocabulary.as_ref().map(String::as_bytes),
+    ))
+}
+
+fn runtime_dictionary_source_checksum(source_yaml: &str) -> Result<u32, CompiledRejectReason> {
+    dictionary_source_checksum_with_dependencies(
+        0,
+        source_yaml,
+        |dictionary| {
+            let dictionary = validate_data_resource_id(dictionary)?;
+            selected_runtime_data_path(&format!("{dictionary}.dict.yaml"))
+                .and_then(|path| fs::read_to_string(path).ok())
+        },
+        |vocabulary| {
+            let vocabulary = validate_data_resource_id(vocabulary)?;
+            selected_runtime_data_path(&format!("{vocabulary}.txt"))
+                .and_then(|path| fs::read_to_string(path).ok())
+        },
+    )
+    .ok_or_else(|| {
+        CompiledRejectReason::Invalid(
+            "dictionary checksum header or required import is missing, invalid, or unreadable"
+                .to_owned(),
+        )
+    })
 }
 
 fn yaml_bool(value: &str) -> Option<bool> {
@@ -868,22 +906,6 @@ fn schema_yune_profile(schema_config: &Value) -> Option<String> {
     find_config_value(schema_config, "yune/profile")
         .or_else(|| find_config_value(schema_config, "yune_profile"))
         .and_then(config_scalar_string)
-}
-
-fn is_yune_web_launch_byte_backed_profile(
-    schema_config: &Value,
-    dictionary_name: Option<&str>,
-) -> bool {
-    let Some(dictionary_name) = dictionary_name else {
-        return false;
-    };
-    find_config_value(schema_config, "schema/schema_id")
-        .and_then(config_scalar_string)
-        .is_some_and(|schema_id| match schema_id.as_str() {
-            "jyut6ping3_mobile" => dictionary_name == "luna_pinyin_yune_reverse",
-            "cangjie5" => dictionary_name == "cangjie5",
-            _ => false,
-        })
 }
 
 fn is_upstream_luna_pinyin_profile(
@@ -1379,7 +1401,7 @@ fn load_schema_dictionary_lookup_records_byte_backed(
     };
     let table_source = load_compiled_table_byte_source(&table_path)?;
     if let Some(source_yaml) = source_yaml {
-        let source_checksum = rime_dict_source_checksum(0, [source_yaml.as_bytes()], None);
+        let source_checksum = runtime_dictionary_source_checksum(source_yaml)?;
         let table_checksum = rime_table_bin_dict_file_checksum(table_source.bytes());
         if table_checksum != Some(source_checksum) {
             return Err(CompiledRejectReason::Stale);
@@ -1661,6 +1683,50 @@ impl CompactMarisaStringTable for MappedMarisaStringTable {
         self.num_keys
     }
 
+    fn keys_for_ids(&self, ids: &[u32]) -> Result<Vec<String>, RimeTableBinParseError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut positions = HashMap::<usize, Vec<usize>>::new();
+        for (output_index, id) in ids.iter().copied().enumerate() {
+            let id = usize::try_from(id).map_err(|_| RimeTableBinParseError::InvalidCount)?;
+            if id >= self.num_keys {
+                return Err(RimeTableBinParseError::InvalidCount);
+            }
+            positions.entry(id).or_default().push(output_index);
+        }
+        let mut output = vec![None; ids.len()];
+        let requested_ids = positions.keys().copied().collect::<HashSet<_>>();
+        let mut resolved_ids = HashSet::new();
+        let mut agent = rsmarisa::Agent::new();
+        agent.set_query_str("");
+        while self.trie.predictive_search(&mut agent) {
+            let id = agent.key().id();
+            if requested_ids.contains(&id) && !resolved_ids.insert(id) {
+                return Err(RimeTableBinParseError::InvalidCount);
+            }
+            let Some(output_indices) = positions.remove(&id) else {
+                continue;
+            };
+            let key = std::str::from_utf8(agent.key().as_bytes())
+                .map_err(|_| RimeTableBinParseError::InvalidUtf8)?
+                .to_owned();
+            for output_index in output_indices {
+                output[output_index] = Some(key.clone());
+            }
+            if positions.is_empty() {
+                break;
+            }
+        }
+        if !positions.is_empty() {
+            return Err(RimeTableBinParseError::InvalidCount);
+        }
+        output
+            .into_iter()
+            .map(|key| key.ok_or(RimeTableBinParseError::InvalidCount))
+            .collect()
+    }
+
     fn mapping_mode(&self) -> &'static str {
         "mmap_embedded_payload"
     }
@@ -1705,6 +1771,26 @@ enum OctagramGrammarLoadFailure {
 
 fn load_schema_table_dictionary(schema_config: &Value, name_space: &str) -> DictionaryLoadOutcome {
     load_schema_table_dictionary_with_compact_preference(schema_config, name_space, false)
+}
+
+fn load_schema_table_dictionary_preferring_compact(
+    schema_config: &Value,
+    name_space: &str,
+) -> DictionaryLoadOutcome {
+    match load_schema_table_dictionary_with_compact_preference(schema_config, name_space, true) {
+        DictionaryLoadOutcome::NoUsablePath {
+            reason: DictionaryLoadFailure::CompiledRejected(CompiledRejectReason::Unsupported(_)),
+            ..
+        } => {
+            // An otherwise valid compiled layout may lack a compact reader (for
+            // example, an unsupported embedded string-table representation).
+            // Preserve the pre-existing compiled heap path for that capability
+            // boundary. Missing, stale, and invalid artifacts do not take this
+            // retry and retain their existing source/fail-closed dispositions.
+            load_schema_table_dictionary_with_compact_preference(schema_config, name_space, false)
+        }
+        outcome => outcome,
+    }
 }
 
 fn load_schema_table_dictionary_with_compact_preference(
@@ -1894,21 +1980,24 @@ fn load_schema_compiled_dictionary(
     let table_metadata = parse_rime_table_bin_metadata(table_source.bytes()).map_err(|error| {
         CompiledRejectReason::Invalid(format!("table metadata parse failed: {error:?}"))
     })?;
-    let source_checksum =
+    let source_checksum = source_yaml
+        .map(|source| runtime_dictionary_source_checksum(source))
+        .transpose()?;
+    let raw_source_checksum =
         source_yaml.map(|source| rime_dict_source_checksum(0, [source.as_bytes()], None));
     let table_checksum = rime_table_bin_dict_file_checksum(table_source.bytes());
     let known_upstream_marisa_luna_compact = is_known_upstream_luna_marisa_compact_table(
         dictionary_name,
         prefer_compact,
         table_metadata.string_table_size,
-        source_checksum,
+        raw_source_checksum,
         table_checksum,
     );
     let poet_dictionary_checksum = compiled_poet_expected_dictionary_checksum(
         dictionary_name,
         prefer_compact,
         table_metadata.string_table_size,
-        source_checksum,
+        raw_source_checksum,
         table_checksum,
         table_metadata.dict_file_checksum,
     );
@@ -2147,7 +2236,7 @@ fn compiled_poet_expected_dictionary_checksum(
     dictionary_name: &str,
     prefer_compact: bool,
     string_table_size: u32,
-    source_checksum: Option<u32>,
+    raw_source_checksum: Option<u32>,
     table_checksum: Option<u32>,
     table_metadata_checksum: u32,
 ) -> u32 {
@@ -2155,10 +2244,10 @@ fn compiled_poet_expected_dictionary_checksum(
         dictionary_name,
         prefer_compact,
         string_table_size,
-        source_checksum,
+        raw_source_checksum,
         table_checksum,
     ) {
-        source_checksum.unwrap_or(table_metadata_checksum)
+        raw_source_checksum.unwrap_or(table_metadata_checksum)
     } else {
         table_metadata_checksum
     }
@@ -2764,8 +2853,156 @@ fn config_scalar_f32(value: &Value) -> Option<f32> {
 }
 
 #[cfg(test)]
+mod dictionary_source_checksum_tests {
+    use super::{
+        dictionary_source_checksum_with_dependencies, rime_dict_source_checksum,
+        source_dictionary_header_dependencies,
+    };
+    use std::collections::HashMap;
+
+    fn checksum(
+        source: &str,
+        dictionaries: &[(&str, &str)],
+        vocabularies: &[(&str, &str)],
+    ) -> Option<u32> {
+        let dictionaries = dictionaries.iter().copied().collect::<HashMap<_, _>>();
+        let vocabularies = vocabularies.iter().copied().collect::<HashMap<_, _>>();
+        dictionary_source_checksum_with_dependencies(
+            0,
+            source,
+            |name| dictionaries.get(name).map(|source| (*source).to_owned()),
+            |name| vocabularies.get(name).map(|source| (*source).to_owned()),
+        )
+    }
+
+    #[test]
+    fn plain_source_checksum_has_no_implicit_dependency() {
+        let source = "---\nname: plain\nversion: '1'\n...\n字\tzi\n";
+        assert_eq!(
+            checksum(source, &[], &[]),
+            Some(rime_dict_source_checksum(0, [source.as_bytes()], None))
+        );
+    }
+
+    #[test]
+    fn imports_are_hashed_in_declared_order_and_self_import_is_skipped() {
+        let source = "---\nname: primary\nversion: '1'\nimport_tables: [\"second\", primary, 'first'] # declared checksum order\n...\n";
+        let first = "---\nname: first\nversion: '1'\n...\n一\tyi\n";
+        let second = "---\nname: second\nversion: '1'\n...\n二\ter\n";
+        assert_eq!(
+            checksum(source, &[("first", first), ("second", second)], &[]),
+            Some(rime_dict_source_checksum(
+                0,
+                [source.as_bytes(), second.as_bytes(), first.as_bytes()],
+                None
+            ))
+        );
+    }
+
+    #[test]
+    fn non_scalar_import_items_are_skipped_without_reordering_scalars() {
+        let source = "---\nname: primary\nversion: '1'\nimport_tables: [null, ~, [nested], {bad: map}, second, 'null', first]\n...\n";
+        let first = "---\nname: first\nversion: '1'\n...\n一\tyi\n";
+        let second = "---\nname: second\nversion: '1'\n...\n二\ter\n";
+        let named_null = "---\nname: null\nversion: '1'\n...\n空\tkong\n";
+        assert_eq!(
+            checksum(
+                source,
+                &[("first", first), ("second", second), ("null", named_null)],
+                &[]
+            ),
+            Some(rime_dict_source_checksum(
+                0,
+                [
+                    source.as_bytes(),
+                    second.as_bytes(),
+                    named_null.as_bytes(),
+                    first.as_bytes()
+                ],
+                None
+            ))
+        );
+    }
+
+    #[test]
+    fn preset_true_uses_default_essay_after_dictionary_sources() {
+        let source = "---\nname: preset\nversion: '1'\nuse_preset_vocabulary: true  # identical shape to tracked Stroke\n...\n";
+        let essay = "詞\t100\n";
+        assert_eq!(
+            checksum(source, &[], &[("essay", essay)]),
+            Some(rime_dict_source_checksum(
+                0,
+                [source.as_bytes()],
+                Some(essay.as_bytes())
+            ))
+        );
+    }
+
+    #[test]
+    fn explicit_vocabulary_name_is_used_even_when_boolean_is_false() {
+        let source = "---\nname: explicit\nversion: '1'\nuse_preset_vocabulary: false\nvocabulary: \"custom_vocab\" # quoted scalar plus comment\n...\n";
+        let vocabulary = "詞\t200\n";
+        assert_eq!(
+            checksum(source, &[], &[("custom_vocab", vocabulary)]),
+            Some(rime_dict_source_checksum(
+                0,
+                [source.as_bytes()],
+                Some(vocabulary.as_bytes())
+            ))
+        );
+    }
+
+    #[test]
+    fn explicit_empty_vocabulary_falls_back_to_essay() {
+        let source = "---\nname: explicit_empty\nversion: '1'\nuse_preset_vocabulary: false\nvocabulary: \"\" # explicit ConfigValue\n...\n";
+        let essay = "詞\t300\n";
+        assert_eq!(
+            checksum(source, &[], &[("essay", essay)]),
+            Some(rime_dict_source_checksum(
+                0,
+                [source.as_bytes()],
+                Some(essay.as_bytes())
+            ))
+        );
+    }
+
+    #[test]
+    fn required_import_missing_fails_closed_but_missing_vocabulary_hashes_no_bytes() {
+        let import_source =
+            "---\nname: missing_import\nversion: '1'\nimport_tables: [absent]\n...\n";
+        assert_eq!(checksum(import_source, &[], &[]), None);
+
+        let vocabulary_source = "---\nname: missing_vocab\nversion: '1'\nvocabulary: absent\n...\n";
+        assert_eq!(
+            checksum(vocabulary_source, &[], &[]),
+            Some(rime_dict_source_checksum(
+                0,
+                [vocabulary_source.as_bytes()],
+                None
+            ))
+        );
+    }
+
+    #[test]
+    fn tracked_stroke_inline_comment_activates_default_essay() {
+        let source = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../apps/yune-web/public/schema/stroke.dict.yaml"
+        ));
+        let dependencies = source_dictionary_header_dependencies(source)
+            .expect("tracked Stroke header should parse as YAML");
+        assert_eq!(dependencies.preset_vocabulary.as_deref(), Some("essay"));
+        assert_eq!(dependencies.name.as_deref(), Some("stroke"));
+    }
+}
+
+#[cfg(test)]
 mod compiled_poet_checksum_tests {
-    use super::compiled_poet_expected_dictionary_checksum;
+    use super::{
+        compiled_poet_expected_dictionary_checksum, dictionary_source_checksum_with_dependencies,
+        rime_dict_source_checksum,
+    };
+    use std::{fs, path::Path};
 
     #[test]
     fn upstream_luna_marisa_poet_uses_source_checksum() {
@@ -2794,6 +3031,35 @@ mod compiled_poet_checksum_tests {
                 0x29d5_6c89,
             ),
             0xb3d4_e98e
+        );
+    }
+
+    #[test]
+    fn dependency_aware_luna_freshness_keeps_raw_source_poet_exception() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public/schema");
+        let source = fs::read_to_string(root.join("luna_pinyin.dict.yaml"))
+            .expect("tracked Luna source should read");
+        let essay = fs::read_to_string(root.join("essay.txt")).expect("tracked essay should read");
+        let raw = rime_dict_source_checksum(0, [source.as_bytes()], None);
+        let dependency_aware = dictionary_source_checksum_with_dependencies(
+            0,
+            &source,
+            |_| None,
+            |name| (name == "essay").then(|| essay.clone()),
+        )
+        .expect("tracked Luna dependency checksum should resolve");
+        assert_eq!((raw, dependency_aware), (0xb3d4_e98e, 0x29d5_6c89));
+        assert_eq!(
+            compiled_poet_expected_dictionary_checksum(
+                "luna_pinyin",
+                true,
+                1_574_520,
+                Some(raw),
+                Some(dependency_aware),
+                dependency_aware,
+            ),
+            raw,
+            "freshness uses source+essay, while the pinned upstream poet remains keyed to raw source"
         );
     }
 

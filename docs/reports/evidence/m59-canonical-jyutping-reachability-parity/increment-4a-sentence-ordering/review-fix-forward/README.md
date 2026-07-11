@@ -2,9 +2,9 @@
 
 Status: the owner-provided Claude Opus blocking review (used because Fable was
 temporarily unavailable) has been resolved by fix-forward commit
-`2257fbbe1e8de5ad0e3ac25e45e2e3b07e11878c`. Increment 4b remains blocked only
-on the owner's explicit D-48 re-disposition of the expanded equal-weight
-surface. This record does not close Lane A, D-48, or M59.
+`2257fbbe1e8de5ad0e3ac25e45e2e3b07e11878c`. The owner signed the required D-48
+re-disposition on 2026-07-11, so Increment 4b is permitted to start. This record
+does not close Lane A, D-48, or M59.
 
 ## Blocking finding and reproduction
 
@@ -105,16 +105,21 @@ evidence is under [`performance-ratchet/`](./performance-ratchet/); binaries,
 deploy trees, raw samples, and `.marisa` payloads are excluded. This single run
 is a fix-forward guard, not M59-REACH-04's final five-round acceptance.
 
-## Disposition still requiring the owner
+## Owner-signed D-48 class-3 disposition
 
-The recommended renewed D-48 class-3 exception is limited to the complete
-captured equal-weight residual: after the already declared OpenCC normalization,
-`6,086` inversions, zero cross-weight inversions, and no beyond-oracle-depth
-use. The cause is librime's equal-weight import/traversal tie-break. Increment 4c
-still owns the two OpenCC one-to-many rows. Revisit is mandatory for any
-cross-weight inversion, incomplete capture/provenance, or a tie residual moving
-onto page 1 for a common input. Signing this exception does not close Lane A or
-waive 4b/4c/4d/4e.
+On 2026-07-11 the owner signed this disposition verbatim:
+
+> I approve the renewed D-48 class-3 exception for M59 Increment 4a, limited to
+> the complete captured equal-weight residual after declared OpenCC
+> normalization: 6,086 inversions, zero cross-weight inversions, and no
+> beyond-oracle-depth use. The cause is librime’s equal-weight import/traversal
+> tie-break. Revisit is mandatory for any cross-weight inversion, incomplete
+> capture/provenance, or a tie residual moving onto page 1 for a common input.
+> This does not waive 4b, 4c, 4d, or 4e. Proceed to Increment 4b.
+
+Increment 4c still owns the two OpenCC one-to-many rows. The signature permits
+4b to start but does not close Lane A, D-48, or M59 and does not weaken any
+later exact-order gate.
 
 ## Nonblocking findings retained
 

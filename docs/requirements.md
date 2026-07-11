@@ -1504,13 +1504,15 @@ and every D-48 ordering lane remain open. Increment 4a (`ca52ec42`) implements
 the sentence/phrase mechanism. Its owner-provided Opus blocking review found an
 explicit-false reachability bypass; fix `2257fbbe` now passes the exact owning
 deployment matrix, full workspace clippy, focused parity, and a fresh 32/32
-signed ratchet guard. Required owner re-disposition of the expanded equal-weight
-class remains unresolved.
+signed ratchet guard. On 2026-07-11 the owner renewed the narrowly scoped D-48
+class-3 exception for the complete captured equal-weight residual (`6,086`
+inversions, zero cross-weight inversions, no beyond-oracle-depth use) with the
+recorded revisit triggers; 4b is permitted to start.
 The raw five-row comparator is deliberately still red (`2/5` exact, no new
 exception): deterministic classification assigns the remaining surface to the
-predeclared 4c OpenCC rows and the already owner-signed equal-weight class. Full
-Lane A acceptance still requires explicit owner re-disposition, 4b
-abbreviation/segmentation, 4c OpenCC, and final 13-input reconciliation.
+predeclared 4c OpenCC rows and the owner-signed equal-weight class. Full Lane A
+acceptance still requires 4b abbreviation/segmentation, 4c OpenCC, and final
+13-input reconciliation.
 
 - [x] **M59-REACH-01**: The reachability mechanism is general — keyed on
   syllable/dictionary structure, never per-input `match`/allowlists or baked
@@ -1805,7 +1807,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M59-REACH-02 | M59 | Complete - Increment 3b (`2cb7e411`) makes deployed-algebra reachability default-on and schema-general without schema-id/per-input gates; seven required default-on/explicit-false deploy rows plus Stroke control and the 32-row five-run aggregate gate are green |
 | M59-REACH-03 | M59 | In progress - the seven-schema 3b default-on/explicit-false deploy matrix is complete; canonical manifest-to-acceptance one-to-one reconciliation, remaining manifest-derived real-path coverage, and the documented dual-mechanism relationship remain required for M59 closeout |
 | M59-REACH-04 | M59 | In progress - the expanded multi-run Track A/Track B aggregate gate and five-round final acceptance remain required for M59 closeout |
-| M59-PARITY-01 | M59 | In progress - Increment 4a (`ca52ec42`) implements the sentence/phrase mechanism and review fix `2257fbbe` resolves the explicit-false blocker; explicit owner re-disposition of the grown equal-weight surface and the 4b/4c residues remain open; Lane A exact parity across the committed 13-input capture is still required, with only owner-signed exceptions permitted |
+| M59-PARITY-01 | M59 | In progress - Increment 4a (`ca52ec42`) implements the sentence/phrase mechanism, review fix `2257fbbe` resolves the explicit-false blocker, and the owner renewed the narrowly scoped class-3 equal-weight exception on 2026-07-11; 4b/4c and final 13-input reconciliation remain open, with only owner-signed exceptions permitted |
 | M59-PARITY-02 | M59 | In progress - Lane B complete captured text, order, and position parity remains required with no new exceptions or promotion/input/oracle hacks |
 | M59-PARITY-03 | M59 | In progress - Cangjie exact-order onboarding and CJ-1 acceptance at 3 passed / 0 ignored remain required with no new exceptions or promotion/input/oracle hacks |
 | M59-NAV-01 | M59 | Complete - `e37ee011` centralizes profile-driven forward navigation in Engine, explicitly activates the TypeDuck product marker in both direct harnesses, passes Cantonese 41/41 and TypeDuck-Windows 4/4, keeps physical/API and Luna controls stable, and proves source-current browser WASM reaches `zi -> 諮` in four PageDown operations |
@@ -2123,4 +2125,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-11 - M59 full Path A remains locked and not closeable. Increment 4a's sentence/phrase mechanism is implemented at `ca52ec42`; owner-provided blocking review fix `2257fbbe` passes the exact explicit-false matrix, full workspace clippy, focused parity, and a fresh 32/32 signed ratchet guard. Explicit owner re-disposition of the grown equal-weight surface is the sole remaining 4a stop; 4b has not started. The strict five-row comparator remains red with no new exception, and the Lane A, Lane B, and Cangjie D-48 exact-order lanes remain open. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; schema-general transformed algebra completed at `2cb7e411`; 7 M59 requirements remain in progress._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-11 - M59 full Path A remains locked and not closeable. Increment 4a's sentence/phrase mechanism is implemented at `ca52ec42`; owner-provided blocking review fix `2257fbbe` passes the exact explicit-false matrix, full workspace clippy, focused parity, and a fresh 32/32 signed ratchet guard. The owner renewed the narrowly scoped class-3 equal-weight exception on 2026-07-11, so 4b is permitted to start. The strict five-row comparator remains visibly red under that signed disposition, and the Lane A, Lane B, and Cangjie D-48 exact-order lanes remain open. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; schema-general transformed algebra completed at `2cb7e411`; 7 M59 requirements remain in progress._

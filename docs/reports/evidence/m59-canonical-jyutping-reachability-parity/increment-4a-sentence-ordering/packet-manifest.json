@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "packet": "m59-increment-4a-sentence-ordering",
-  "status": "blocking-review-resolved-pending-owner-redisposition",
+  "status": "blocking-review-and-owner-redisposition-complete-4b-permitted",
   "acceptance": {
     "strict_exact_all_accepted": false,
     "strict_exact_passes": 2,
@@ -12,9 +12,9 @@
     "closes_d48": false,
     "closes_m59_reach_04": false,
     "closes_m59": false,
-    "next_engine_increment_permitted": false,
+    "next_engine_increment_permitted": true,
     "owner_redisposition_required": true,
-    "owner_redisposition_complete": false,
+    "owner_redisposition_complete": true,
     "classification_status": "complete",
     "blocking_review_complete": true,
     "blocking_review_findings_resolved": true
@@ -177,8 +177,8 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 9777,
-      "sha256": "b52ce3facd3b36b9429df0351cd60a516b5eef3746e469ad1db8c835fd482628",
+      "bytes": 9960,
+      "sha256": "75d26de3a62abb9c5ef2316fcef5f6b84430f69d497d93a2fa2cb3e7aa471196",
       "role": "packet narrative and acceptance boundary"
     },
     {
@@ -615,9 +615,9 @@
     },
     {
       "path": "review-fix-forward/README.md",
-      "bytes": 6600,
-      "sha256": "2e873020a5c1ccba2377491bb6b62494305e960bbe1b54543a4e61ace2ecd27e",
-      "role": "owner-provided blocking-review diagnosis, fix, verification, and remaining owner boundary"
+      "bytes": 6785,
+      "sha256": "5ebf736fd0cce997725426958ef8542c0efea8ec288f5c145a36ab777236006f",
+      "role": "owner-provided blocking-review diagnosis, fix, verification, and signed owner disposition"
     },
     {
       "path": "review-fix-forward/performance-ratchet/README.md",
@@ -700,7 +700,26 @@
     "blocking_finding": "UpstreamScript bypassed explicit-false leading_syllable_reachability",
     "fix_commit": "2257fbbe1e8de5ad0e3ac25e45e2e3b07e11878c",
     "resolved": true,
-    "owner_redisposition_pending": true
+    "owner_redisposition_pending": false,
+    "owner_redisposition_signed_on": "2026-07-11",
+    "owner_redisposition_class": "D-48 class-3 equal-weight residual",
+    "owner_redisposition_scope": {
+      "normalized_inversions": 6086,
+      "cross_weight_inversions": 0,
+      "beyond_oracle_depth_used": false,
+      "cause": "librime equal-weight import/traversal tie-break",
+      "revisit_on": [
+        "any cross-weight inversion",
+        "incomplete capture or provenance",
+        "tie residual moving onto page 1 for a common input"
+      ],
+      "does_not_waive": [
+        "4b",
+        "4c",
+        "4d",
+        "4e"
+      ]
+    }
   },
   "review_fix_release_dll": {
     "included": false,

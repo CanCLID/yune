@@ -4,9 +4,10 @@ Status: mechanism commit `ca52ec427111e2ec36b2a80dfe7b25b6f2d3c456`
 and blocking-review fix `2257fbbe1e8de5ad0e3ac25e45e2e3b07e11878c`
 have passed the exact owning deployment matrix and focused review gates. The
 owner-provided Opus review substituted for unavailable Fable and its blocking
-finding is fixed forward. Explicit owner re-disposition of the expanded
-equal-weight class is still required, so Increment 4b remains blocked. This
-packet does **not** close Lane A, D-48, or M59. See
+finding is fixed forward. On 2026-07-11 the owner signed the renewed, narrowly
+scoped D-48 class-3 exception for the complete captured equal-weight residual,
+so Increment 4b is permitted to start. This packet does **not** close Lane A,
+D-48, or M59. See
 [`review-fix-forward/`](./review-fix-forward/).
 
 The implementation derives a Standard script-sentence policy from translator
@@ -41,8 +42,10 @@ relative-order inversion has equal effective weight: `315/315` for `being`,
 weight boundary. The prior equal-weight class disposition is owner-signed, but
 its record says to revisit if the diff grows. The blocking review accepted the
 classifier mechanism and recommended a renewed, narrowly scoped class-3
-exception. A fresh owner re-disposition is still required; the packet does not
-infer or carry forward an exception itself.
+exception. The owner explicitly signed that renewed exception on 2026-07-11;
+the exact scope and revisit triggers are recorded in
+[`review-fix-forward/`](./review-fix-forward/). The packet does not infer or
+broaden the exception beyond that signature.
 
 All compared lists are complete (`captured_all_pages=true`, `last_page`), so no
 beyond-oracle-depth disposition is used. `beixngoxx` and `mgoi` prove that the

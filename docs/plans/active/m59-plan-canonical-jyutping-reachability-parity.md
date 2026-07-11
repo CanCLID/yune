@@ -25,17 +25,19 @@
 > owner-signed equal-weight class. The blocking review accepted that
 > classification and found one explicit-false bypass; the bypass is repaired,
 > the exact deployment matrix and a fresh 32/32 signed ratchet guard are green.
-> Because the prior class-3 disposition says to revisit if the diff grows, an
-> explicit owner re-disposition under D-48 is the sole remaining 4a stop before
-> 4b may start.
+> Because the prior class-3 disposition says to revisit if the diff grows, the
+> owner explicitly renewed the narrowly scoped D-48 exception on 2026-07-11:
+> `6,086` equal-weight inversions, zero cross-weight inversions, no
+> beyond-oracle-depth use, with the declared revisit triggers. Increment 4b is
+> now permitted to start.
 > No D-48 lane, REACH-03/04, or final-gate row is implied complete here.
 >
 > Nothing remaining moves to M60 or another milestone. After 4a lands, **no
 > subsequent engine-behavior increment** (including 4b) starts until the
 > blocking review returns, all findings are fixed forward and reverified, and
-> the owner explicitly re-disposes the expanded equal-weight class. The review
-> and fix-forward conditions are now satisfied; the owner re-disposition is
-> pending. Non-overlapping
+> the owner explicitly re-disposes the expanded equal-weight class. The review,
+> fix-forward, and owner re-disposition conditions are now satisfied.
+> Non-overlapping
 > evidence/docs work may continue during that wait; reviews for all other
 > increments remain nonblocking. Symmetrically, after 4b lands, no later
 > engine-behavior increment starts until its Fable review is resolved. Before 4b
@@ -78,10 +80,9 @@
   Cangjie CJ-1, Lane B exact order, final performance, and native/WASM/browser
   gates all remain in M59. Lane B's landed item is its reachability mechanism,
   not completion of its exact-order lane.
-- **Blocking review/performance protocol:** after 4a lands, every subsequent
-  engine-behavior increment pauses for blocking-review resolution **and explicit
-  owner re-disposition of the expanded equal-weight class under D-48**; only
-  non-overlapping evidence/docs work may continue. After 4b lands, every later engine-behavior
+- **Blocking review/performance protocol:** 4a's blocking review, fix-forward,
+  and explicit owner re-disposition under D-48 are complete as of 2026-07-11,
+  so 4b may start. After 4b lands, every later engine-behavior
   increment likewise pauses for its designated blocking review. Other reviews remain
   nonblocking. A red `n`/`ni`/`hao` 4b ratchet is an owner stop before landing,
   not permission to re-baseline, revert, or weaken exact-order acceptance.
@@ -118,8 +119,9 @@
   M59-REACH-04 acceptance. The owner-provided Opus blocking review found an
   explicit-false reachability bypass; `2257fbbe` repairs it and passes the exact
   deployment matrix, full workspace clippy, focused parity, and a fresh 32/32
-  signed ratchet guard. The owner must still explicitly re-dispose the grown
-  class-3 surface before any 4b engine work starts.
+  signed ratchet guard. The owner renewed the narrowly scoped class-3 exception
+  on 2026-07-11 with the recorded cross-weight/provenance/page-1 revisit
+  triggers; 4b is permitted to start.
 - **Increment 4b checklist residual from 3b:** close the pre-existing
   fuzzy-versus-abbreviation collision on the heap/source
   `ExpandedSpellingCode` path with full pinned spelling-type precedence and

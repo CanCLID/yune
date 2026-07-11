@@ -623,10 +623,13 @@ which order parity is the stricter sibling for the three named lanes). _Outcome:
 Pending — the Lane A diff/disposition exists and Increment 4a's sentence/phrase
 mechanism is implemented at `ca52ec42`. The owner-provided Opus blocking review
 found an explicit-false reachability bypass, which is fixed and reverified at
-`2257fbbe`; explicit owner re-disposition of the grown equal-weight class is the
-sole remaining 4a stop before 4b. The strict five-row comparator remains red with no new exception;
-the remaining surface is classified as the predeclared 4c OpenCC rows plus the
-already owner-signed equal-weight class. Remaining closure is 4b
+`2257fbbe`. On 2026-07-11 the owner renewed the narrowly scoped D-48 class-3
+exception for the complete captured equal-weight residual (`6,086` inversions,
+zero cross-weight inversions, no beyond-oracle-depth use), retaining mandatory
+cross-weight, provenance, and common-input page-1 revisit triggers. Increment 4b
+is permitted to start. The strict five-row comparator remains visibly red; the
+remaining surface is classified as the predeclared 4c OpenCC rows plus the
+owner-signed equal-weight class. Remaining closure is 4b
 abbreviation/segmentation, 4c OpenCC variants, 4d Cangjie CJ-1, and 4e Lane B
 exact order._
 

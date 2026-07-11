@@ -14,7 +14,12 @@
 > `2cb7e411`: its schema-general transformed-algebra implementation, oracle
 > packet, deterministic asset rebuild, two independent reviews, and five-round
 > owner-signed Windows ratchet are green (`32/32` aggregate rows). M59-REACH-02
-> is complete. Increment 4a is next; no D-48 ordering lane, REACH-03/04, or
+> is complete. Increment 4a is now implemented through test-only commit
+> `fa7f3961` (five-round measured engine commit `1f0fb0e5`): the expanded Luna
+> 37/59 first pages match pinned librime exactly, compiled natural-log weights
+> preserve the inclusive 5% pronunciation boundary, and no ceiling or exception
+> changed. Its blocking review is the current stop; no 4b behavior work starts
+> until that review resolves. No complete D-48 ordering lane, REACH-03/04, or
 > final-gate row is implied complete here.
 >
 > Nothing remaining moves to M60 or another milestone. After 4a lands, **no
@@ -90,6 +95,21 @@
   fixed-DLL rounds pass all 32 rows individually and in aggregate. Rejected
   pre-repair packets are preserved alongside the accepted evidence.
   Evidence: `increment-3b-transformed-algebra/performance-ratchet/`.
+- **Increment 4a implementation/evidence complete (blocking review current):**
+  `71a80704` separates upstream Luna's one-best sentence from its independent
+  phrase stream; `e5c57eb6` preserves ScriptTranslation display metadata;
+  `0ecd2e06` records the compiled natural-log weight domain; `1f0fb0e5`
+  preserves librime's inclusive 5% source-weight boundary despite stored `f32`
+  rounding; and `fa7f3961` aligns the deployed explicit-false integration
+  matrix without changing engine behavior. A purpose-built table compiled by
+  pinned librime is non-circular and forbids the false `遮蓋` phrase. Five fresh
+  macOS rounds at measured commit `1f0fb0e5` use one Yune dylib, one librime
+  dylib, and one complete-candidate hash; both 37/59 first pages match exactly.
+  The retained pre-domain-fix packet stays red evidence. This sub-slice creates
+  no threshold/exception and does not close M59-PARITY-02: `boyi`, `yi`,
+  `zhonggao`, `zhongguo`, `gao`, and `guo` remain separate complete-list
+  residuals. Evidence:
+  `increment-4a-luna-script-translation-order/`.
 - **Increment 4b checklist residual from 3b:** close the pre-existing
   fuzzy-versus-abbreviation collision on the heap/source
   `ExpandedSpellingCode` path with full pinned spelling-type precedence and
@@ -413,7 +433,7 @@ amendment):
       re-frozen post-fix diff + owner-signed D-48 disposition table
       (`lane-a-ranking-fix-2026-07-09/re-diff/`). Residual classes are the named
       work items in the disposition table.
-- [x] **Lane B (DONE, landed `c89a8ea9`):** luna complete-list/page-turn injection
+- [x] **Lane B reachability mechanism DONE; D-48 exact order OPEN (landed `c89a8ea9`):** luna complete-list/page-turn injection
       point traced + implemented; storage/prism facts recorded (luna is
       Compact+prism → bounded syllabary); `moboyi`→莫伯洢 acceptance added as a real-path test (not a capture).
 - [ ] Any newly captured rows committed with full provenance; Yune pre-fix output
@@ -434,14 +454,14 @@ amendment):
       the Phase 3 spec.
 
 ### Phase 3 — Implement per the diff (general mechanism)
-- [x] **(Lane B, DONE)** Luna leading-syllable injection (page-turn path, general,
+- [x] **(Lane B reachability mechanism DONE; D-48 exact order OPEN)** Luna leading-syllable injection (page-turn path, general,
       no allowlist, no baked data); `is_last_page` fixed; phrase-before-single
       ordering. Typed capability `translator/leading_syllable_reachability`
       (distinct from broad `prefix_fallback`); bounded fetch capped; `ordered_mode`
       not widened (luna early-stop preserved); untoned relaxation gated to the lane.
 - [ ] **(Lane A)** Any canonical rime-cantonese fixes the diff proves, scoped so
       Track A/luna typing is untouched.
-- [x] **(Lane B, DONE)** Byte-backed non-circular tests (`yune_web.rs`
+- [x] **(Lane B reachability mechanism DONE; D-48 exact order OPEN)** Byte-backed non-circular tests (`yune_web.rs`
       `m59_luna_*`): `moboyi`→莫伯洢 + `zhongguo`/bare-syllable controls + phrase-before-single
       ordering; jyutping `zijiguk`→諮 / `beingo`→畀 stay green.
 - [ ] **(Lane A)** non-named jyutping canonical control; `beingo`→匕 named guard.
@@ -673,11 +693,15 @@ target/, driven by scripts/oracle-rime-probe.cs).
   `moboyi` rationalised into a control, never an owner requirement; removed from the
   fixture, tests, plan, roadmap, requirements, and evidence. moboyi is THE case.)
   **Two divergences
-  RECORDED (not asserted vs Yune):** (a) Yune's PRODUCT completion ordering differs
+  RECORDED (not asserted vs Yune at this 2026-07-07 increment):** (a) Yune's PRODUCT completion ordering differs
   from librime (zhongguo page 0 `中國大陸…` Yune vs `中國 種過…` librime; Yune injects
   中 on page 0, librime has it at index 11) — M59 asserts REACHABILITY + recompose,
   not position parity; (b) librime accumulates selected singles in the preedit and
   commits once, Yune commits incrementally (same text).
+  **Superseding policy note (2026-07-08):** D-48 subsequently made Lane B
+  page/prefix-exact position and order mandatory. The historical statement above
+  describes only this earlier reachability increment and is not current
+  acceptance policy.
 - **Cangjie (fable's 3 flip questions), answered from the oracle + inspection:**
   (1) **Composition semantics:** cangjie composes per-character via shape codes (each
   code → char(s)+phrases; existing `cangjie5-basic.json`: `a`→日曰啊, `amd`→旴 + 是一樣的).
@@ -734,6 +758,53 @@ fixes; (c) **6+9 are hard flip preconditions — keep holding the default-ON com
 (d) 7's capture gates the new acceptance tests; (e) 8 with the perf pass (the
 straddle stays open — fresh-run distribution must go robustly green, no
 run-until-green, no re-baseline).
+
+## Increment 4a — Luna ScriptTranslation page/order repair (2026-07-11)
+
+**Local implementation/evidence complete; blocking review current. No 4b
+behavior work has started.** This is a sub-slice of the existing M59/D-48 plan,
+not a milestone.
+
+- `71a80704` separates the upstream Luna one-best sentence stream from the
+  independent table phrase stream and makes page limits explicit.
+- `e5c57eb6` preserves phrase display metadata through partial selection.
+- `0ecd2e06` records `EntryWeightDomain::{Raw,NaturalLog}` and stops treating
+  compiled librime logarithms as source weights or logging them twice.
+- `1f0fb0e5` reconstructs the inclusive ScriptEncoder 5% pronunciation rule
+  through the representable `f32` rounding interval. This is the measured engine
+  commit.
+- `fa7f3961` changes the deployed integration-test matrix only; it does not
+  change the measured library behavior.
+
+The non-circular `m59-librime-log-weight` fixture is compiled by pinned librime
+`33e78140250125871856cdc5b42ddc6a5fcd3cd4`; decoded `.table.bin` SHA-256 is
+`8286e67cc60aa78c6e47bf871de130ee570bf6fe7dd99c8cc6b445cad73ea5fb`.
+It proves the exact first page `這個引擎, 這個, 這歌, 這格, 這` and forbids
+the false `遮蓋` phrase without deriving expected output from Yune.
+
+Five fresh macOS rounds at `1f0fb0e5` retain one Yune dylib SHA-256
+`48e8848989af86c2941d6a89e5c5ba87bbdd0a2738fda693b4c2fd3b3b346977`,
+one librime dylib SHA-256
+`af019c3dccde16d875b9543a1cbc950517e309e11fb4d0bf379b7d576aae13d3`,
+and one complete candidate-snapshot SHA-256
+`1e79ecf566e3ed3f17907ddfed588b869fd5200094a8e5085b57a02f4bb32a88`.
+Every 37-character page is `測試一下長句輸入性能怎樣, 測試一下, 測試儀,
+測試, 側室`; every 59-character page is
+`這個引擎其實應該支持超長句子輸入才能用, 這個, 這歌, 這格, 這`.
+
+The original five-run pre-domain-fix packet that exposed `遮蓋` and six named
+pre-measurement setup retries remain preserved externally. The standing M55
+threshold file SHA-256 remains
+`e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba`;
+the signed M59 verdict SHA-256 remains
+`55ca3e1781fea2bc90ba1802d151e2843d6aea0b5bf5b2396670fa1c58ba6959`.
+No ceiling, exception, or gate changed.
+
+This closes only the expanded 37/59 page-zero sentence/phrase defect. It does
+not close M59-PARITY-02: `moboyi` is exact in the current complete-list
+diagnostic, while `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`, and `guo`
+remain separate ordering/admission residuals. Full evidence:
+`docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-luna-script-translation-order/`.
 
 ## Non-Goals
 - No per-input gating; no baked oracle data; no circular tests (see the three

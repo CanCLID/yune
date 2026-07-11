@@ -1490,8 +1490,9 @@ residual, not a candidate-behavior blocker.
 
 ### M59 Schema-General Single-Character Reachability + Canonical Parity
 
-**Status: in progress — Lane B reachability mechanism landed; Lane B exact-order
-parity remains open; NOT closeable.** M59 delivers the owner requirement that
+**Status: in progress — Lane B reachability mechanism landed; Increment 4a
+repairs the expanded Luna 37/59 page-zero sentence/phrase slice; Lane B
+complete-list exact-order parity remains open; NOT closeable.** M59 delivers the owner requirement that
 composing an arbitrary non-lexicon phrase one character at a time works on
 **every** schema. GPT's first execution was gamed (per-input
 `match` arms replaying oracle candidates baked into engine source + circular
@@ -1500,7 +1501,9 @@ mechanism and landed (`c89a8ea9`). Owner amendment (2026-07-07) made the behavio
 a **default-ON, schema-general guarantee** delivered in M59, not M60.
 Increment 3b (`2cb7e411`) completes that default-on transformed-algebra
 guarantee and M59-REACH-02; manifest-derived REACH-03, final-commit REACH-04,
-and every D-48 ordering lane remain open.
+and every complete D-48 ordering lane remain open. Increment 4a is measured at
+engine commit `1f0fb0e5` with test-only head `fa7f3961`; it changes no signed
+ceiling or exception.
 
 - [x] **M59-REACH-01**: The reachability mechanism is general — keyed on
   syllable/dictionary structure, never per-input `match`/allowlists or baked
@@ -1556,7 +1559,11 @@ and every D-48 ordering lane remain open.
   ranges for `moboyi`, `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`, and `guo`.
   Comparison is page/prefix-exact through the captured range under mirrored
   options, per D-48; no ordered-subsequence allowance or unsigned exception is
-  accepted.
+  accepted. Increment 4a separately repairs the expanded 37- and 59-character
+  page-zero `ScriptTranslation` oracle shape. Those benchmark rows do not amend
+  this seven-input acceptance list or close the requirement: `moboyi` is exact
+  in the current diagnostic, while `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`,
+  and `guo` retain complete-list ordering/admission residuals.
 - [ ] **M59-PARITY-03 (Cangjie exact order)**: The marked `cangjie5`
   oracle-validation lane has a pinned upstream capture and matches candidate
   text and order page/prefix-exact through the librime-comparable range,
@@ -1588,7 +1595,12 @@ oracle candidates, and circular oracle-derived fixtures are prohibited.
   page settings/options, source repositories and commits, oracle and Yune binary
   hashes, Yune commit, exact commands, and classifier version. Re-running the
   tools over the frozen raw inputs reproduces the comparator and gate artifacts;
-  expected oracle output is never derived from Yune.
+  expected oracle output is never derived from Yune. Increment 4a contributes a
+  non-circular table compiled by pinned librime that proves natural-log
+  `.table.bin` weight interpretation and the inclusive 5% ScriptEncoder
+  boundary; its decoded fixture SHA-256 is
+  `8286e67cc60aa78c6e47bf871de130ee570bf6fe7dd99c8cc6b445cad73ea5fb`.
+  The broader multi-lane tooling/provenance requirement remains open.
 - [x] **M59-DEPLOY-01 (workspace fidelity)**: Workspace deployment matches the
   pinned librime `WorkspaceUpdate` behavior: a missing top-level schema allows
   valid siblings to deploy but produces aggregate failure; a malformed present
@@ -1796,10 +1808,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M59-REACH-03 | M59 | In progress - the seven-schema 3b default-on/explicit-false deploy matrix is complete; canonical manifest-to-acceptance one-to-one reconciliation, remaining manifest-derived real-path coverage, and the documented dual-mechanism relationship remain required for M59 closeout |
 | M59-REACH-04 | M59 | In progress - the expanded multi-run Track A/Track B aggregate gate and five-round final acceptance remain required for M59 closeout |
 | M59-PARITY-01 | M59 | In progress - Lane A exact parity across the committed 13-input canonical capture remains required; only the already signed equal-weight/beyond-depth classes are excepted |
-| M59-PARITY-02 | M59 | In progress - Lane B complete captured text, order, and position parity remains required with no new exceptions or promotion/input/oracle hacks |
+| M59-PARITY-02 | M59 | In progress - Increment 4a repairs the supplemental 37/59 page-zero sentence/phrase slice with no new exception; `moboyi` is exact in the current diagnostic, but `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`, and `guo` retain complete-list residuals |
 | M59-PARITY-03 | M59 | In progress - Cangjie exact-order onboarding and CJ-1 acceptance at 3 passed / 0 ignored remain required with no new exceptions or promotion/input/oracle hacks |
 | M59-NAV-01 | M59 | Complete - `e37ee011` centralizes profile-driven forward navigation in Engine, explicitly activates the TypeDuck product marker in both direct harnesses, passes Cantonese 41/41 and TypeDuck-Windows 4/4, keeps physical/API and Luna controls stable, and proves source-current browser WASM reaches `zi -> 諮` in four PageDown operations |
-| M59-EVIDENCE-01 | M59 | In progress - deterministic capture/comparison tooling and reproducible raw provenance remain required for M59 closeout |
+| M59-EVIDENCE-01 | M59 | In progress - Increment 4a adds a pinned-librime, non-circular compiled-log/5% boundary fixture; deterministic capture/comparison tooling and reproducible raw provenance across every M59 lane remain required for closeout |
 | M59-DEPLOY-01 | M59 | Complete - `2ee0805f` matches pinned librime missing/malformed top-level schema and dependency semantics with real-path regression coverage |
 | M59-GATES-01 | M59 | In progress - exact native release, source-current WASM, runtime/app, manifest, Playwright, browser, and packaging gates remain required for M59 closeout |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
@@ -2113,4 +2125,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-11 - M59 full Path A remains locked and not closeable. Increment 3b completed the schema-general transformed-algebra guarantee at `2cb7e411`; the Lane A, Lane B, and Cangjie D-48 exact-order lanes remain open, with only the already signed equal-weight and beyond-oracle-depth classes excepted and no new promotion/input/oracle hacks. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; 7 M59 requirements remain in progress._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-11 - M59 full Path A remains locked and not closeable. Increment 3b completed the schema-general transformed-algebra guarantee at `2cb7e411`. Increment 4a repairs the expanded Luna 37/59 page-zero sentence/phrase slice at measured engine commit `1f0fb0e5`, with a non-circular compiled-weight fixture and no threshold/exception change; the broader Lane A, Lane B, and Cangjie D-48 exact-order lanes remain open. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; 7 M59 requirements remain in progress._

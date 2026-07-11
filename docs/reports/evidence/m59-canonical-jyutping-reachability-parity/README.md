@@ -1,6 +1,6 @@
 # M59 Canonical Jyutping Reachability Parity — Evidence Ledger
 
-> **Status (2026-07-06):** the M59 "fix" was gamed and reverted (`c70774ce`
+> **Historical packet classification (2026-07-06):** the prior M59 "fix" was gamed and reverted (`c70774ce`
 > reverts `77a9540a`). This bundle mixes retained-legitimate evidence with
 > now-void artifacts. The classification below is authoritative; treat any
 > claim not reaffirmed here as void.
@@ -11,6 +11,17 @@ Yune `luna_pinyin` vs `librime 1.17.0` + upstream luna. TypeDuck profile is a
 regression guard, not an acceptance oracle.
 
 > **Current update (2026-07-11):**
+> [`increment-4a-luna-script-translation-order/`](./increment-4a-luna-script-translation-order/)
+> records the Luna long-input `ScriptTranslation` repair through test-only
+> commit `fa7f3961` and the five-round macOS diagnostic measured at engine
+> commit `1f0fb0e5`. Both 37- and 59-character first pages now match pinned
+> librime exactly in all five runs; Yune and librime dylib hashes and the full
+> candidate snapshots remain single-valued. The repair separates librime's
+> one-best sentence from its phrase stream and honors the natural-log weight
+> domain plus inclusive 5% pronunciation boundary of compiled tables. The
+> packet creates no threshold or exception and does not close M59-PARITY-02:
+> six of the seven complete-list rows remain residuals.
+>
 > [`increment-3b-transformed-algebra/`](./increment-3b-transformed-algebra/) is
 > the accepted 3b packet for implementation commit `2cb7e411`. Its
 > schema-general mechanism, seven
@@ -18,7 +29,7 @@ regression guard, not an acceptance oracle.
 > deterministic product rebuild, focused release gates, and owner-signed
 > five-round Windows ratchet are green (`32/32` aggregate rows). M59-REACH-02 is
 > complete. The packet does not close M59, M59-REACH-03/04, or a D-48 ordering
-> lane; Increment 4a is next.
+> lane; Increment 4a follows as the separate Luna sentence/phrase repair above.
 >
 > [`increment-2-profile-paging/`](./increment-2-profile-paging/) is the green
 > M59-NAV-01 acceptance packet for implementation commit `e37ee011`. It records
@@ -51,7 +62,17 @@ regression guard, not an acceptance oracle.
 
 ## Artifact classification
 
-### VALID — current Increment 1 executable diagnostics (not acceptance)
+### VALID — Increment 4a macOS repair evidence (supplemental acceptance)
+
+- `increment-4a-luna-script-translation-order/README.md` — authored repair and
+  five-run diagnostic report. It closes only the expanded 37/59 page-zero
+  sentence/phrase sub-slice, records all five external run paths and stable
+  binary/candidate hashes, preserves the superseded red packet and setup
+  retries, and leaves the broader Lane B complete-list requirement open.
+- Raw benchmark outputs and portable HTML remain external by protocol; only the
+  authored report and non-circular pinned-librime fixture are tracked.
+
+### VALID — retained Increment 1 executable diagnostics (not acceptance)
 
 - `increment-1-executable-evidence/lane-a-oracle.json` — fresh pinned upstream
   oracle raw capture with source/schema cleanliness, binary/tool, option,

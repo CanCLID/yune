@@ -659,7 +659,6 @@ fn retain_bounded_prefix_row<T>(
 struct LookupCandidateBatch {
     candidates: Vec<Candidate>,
     full_input_anchor: Option<usize>,
-    full_input_texts: HashSet<String>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -3587,17 +3586,21 @@ impl StaticTableTranslator {
                 crate::m37_record_short_key_sort_rank(start.elapsed());
             }
         }
-        let mut full_input_anchor = selected
-            .iter()
-            .rposition(PendingLookupCandidateRef::owns_full_input_span);
-        let full_input_texts = if self.combine_candidates {
+        let full_input_indices = if self.combine_candidates {
             selected
                 .iter()
-                .filter(|candidate| candidate.owns_full_input_span())
-                .map(|candidate| candidate.candidate.text().to_owned())
-                .collect::<HashSet<_>>()
+                .enumerate()
+                .filter_map(|(index, candidate)| candidate.owns_full_input_span().then_some(index))
+                .collect::<Vec<_>>()
         } else {
-            HashSet::new()
+            Vec::new()
+        };
+        let mut full_input_anchor = if self.combine_candidates {
+            full_input_indices.last().copied()
+        } else {
+            selected
+                .iter()
+                .rposition(PendingLookupCandidateRef::owns_full_input_span)
         };
         let materialized_count = selected.len();
         let materialize_start = ((record_short_key || record_track_b)
@@ -3640,10 +3643,11 @@ impl StaticTableTranslator {
                 })
             });
         if self.combine_candidates {
-            candidates = combine_duplicate_text_candidates(candidates);
-            full_input_anchor = candidates
-                .iter()
-                .rposition(|candidate| full_input_texts.contains(&candidate.text));
+            (candidates, full_input_anchor) =
+                combine_duplicate_text_candidates_with_full_input_anchor(
+                    candidates,
+                    &full_input_indices,
+                );
         }
         if self.prefix_fallback && !has_correction_lookup {
             let has_multi_syllable_full_exact_candidate =
@@ -4012,19 +4016,23 @@ impl StaticTableTranslator {
             self.order_lookup_candidates(&mut pooled);
         }
         let pending_count = pooled.len();
-        let full_input_anchor = pooled
-            .iter()
-            .rposition(PendingLookupCandidate::owns_full_input_span);
-        let full_input_texts = if self.combine_candidates {
+        let full_input_indices = if self.combine_candidates {
             pooled
                 .iter()
-                .filter(|candidate| candidate.owns_full_input_span())
-                .map(|candidate| candidate.candidate.text.clone())
-                .collect::<HashSet<_>>()
+                .enumerate()
+                .filter_map(|(index, candidate)| candidate.owns_full_input_span().then_some(index))
+                .collect::<Vec<_>>()
         } else {
-            HashSet::new()
+            Vec::new()
         };
-        let candidates = pooled
+        let mut full_input_anchor = if self.combine_candidates {
+            full_input_indices.last().copied()
+        } else {
+            pooled
+                .iter()
+                .rposition(PendingLookupCandidate::owns_full_input_span)
+        };
+        let mut candidates = pooled
             .into_iter()
             .map(|pending| {
                 self.candidate_for_lookup(
@@ -4036,6 +4044,13 @@ impl StaticTableTranslator {
                 )
             })
             .collect::<Vec<_>>();
+        if self.combine_candidates {
+            (candidates, full_input_anchor) =
+                combine_duplicate_text_candidates_with_full_input_anchor(
+                    candidates,
+                    &full_input_indices,
+                );
+        }
         if record_track_b {
             for _ in 0..pending_count {
                 crate::m37_record_track_b_candidate_materialized();
@@ -4044,7 +4059,6 @@ impl StaticTableTranslator {
         LookupCandidateBatch {
             candidates,
             full_input_anchor,
-            full_input_texts,
         }
     }
 
@@ -5544,18 +5558,11 @@ impl StaticTableTranslator {
         let expanded_lookup_codes = self.expanded_lookup_specs(lookup_code);
         let LookupCandidateBatch {
             mut candidates,
-            mut full_input_anchor,
-            full_input_texts,
+            full_input_anchor,
         } = self.candidates_for_lookup_codes(&expanded_lookup_codes, filter_by_charset);
         let has_correction_lookup = expanded_lookup_codes
             .iter()
             .any(|spec| spec.correction_distance.is_some() || spec.spelling_correction);
-        if self.combine_candidates {
-            candidates = combine_duplicate_text_candidates(candidates);
-            full_input_anchor = candidates
-                .iter()
-                .rposition(|candidate| full_input_texts.contains(&candidate.text));
-        }
         self.enforce_prediction_never_first(&mut candidates);
 
         if candidates.is_empty() {
@@ -6646,22 +6653,39 @@ fn typeduck_keyboard_neighbors(left: u8, right: u8) -> bool {
     }
 }
 
-fn combine_duplicate_text_candidates(candidates: Vec<Candidate>) -> Vec<Candidate> {
+fn combine_duplicate_text_candidates_with_full_input_anchor(
+    candidates: Vec<Candidate>,
+    full_input_indices: &[usize],
+) -> (Vec<Candidate>, Option<usize>) {
     let mut index_by_text = HashMap::<String, usize>::new();
     let mut combined = Vec::<Candidate>::new();
-    for candidate in candidates {
-        if let Some(index) = index_by_text.get(&candidate.text).copied() {
+    let mut full_input_indices = full_input_indices.iter().copied().peekable();
+    let mut full_input_anchor: Option<usize> = None;
+    for (source_index, candidate) in candidates.into_iter().enumerate() {
+        let owns_full_input = full_input_indices.peek().copied() == Some(source_index);
+        if owns_full_input {
+            full_input_indices.next();
+        }
+        let combined_index = if let Some(index) = index_by_text.get(&candidate.text).copied() {
             let existing = &mut combined[index];
             existing.comment = combine_lookup_comments(&existing.comment, &candidate.comment);
             if candidate.quality > existing.quality {
                 existing.quality = candidate.quality;
             }
+            index
         } else {
-            index_by_text.insert(candidate.text.clone(), combined.len());
+            let index = combined.len();
+            index_by_text.insert(candidate.text.clone(), index);
             combined.push(candidate);
+            index
+        };
+        if owns_full_input {
+            full_input_anchor =
+                Some(full_input_anchor.map_or(combined_index, |anchor| anchor.max(combined_index)));
         }
     }
-    combined
+    debug_assert!(full_input_indices.next().is_none());
+    (combined, full_input_anchor)
 }
 
 fn combine_lookup_comments(existing: &str, next: &str) -> String {

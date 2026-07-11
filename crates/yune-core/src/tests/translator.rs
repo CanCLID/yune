@@ -2986,6 +2986,204 @@ fn compiled_transformed_prefix_fallback_follows_full_surface_exact_family() {
 }
 
 #[test]
+fn transformed_only_phrases_follow_canonical_prefix_reachability() {
+    let formulas = ["derive/aa(?=\\d)/a/".to_owned(), "derive/\\d//".to_owned()];
+    let entries = || {
+        [
+            TableEntry::new("zou2hap6ci3", "組合次", 300.0),
+            TableEntry::new("zou2hap6", "組合", 200.0),
+            // These rows are intentionally heavier than the canonical singles.
+            // The admission class, not synthetic test weights, owns page order.
+            TableEntry::new("zou6haa5", "做下", 190.0),
+            TableEntry::new("zou3haa1", "灶蝦", 180.0),
+            TableEntry::new("zou6", "做", 100.0),
+            TableEntry::new("zou2", "早", 90.0),
+            TableEntry::new("zou2", "組", 80.0),
+            TableEntry::new("zou1", "租", 70.0),
+        ]
+    };
+    let translator = compact_prefix_fallback_test_translator(entries(), &formulas)
+        .with_completion(true)
+        .with_combine_candidates(true);
+
+    for pass in ["cold", "warm"] {
+        let first_page = translator.translate_with_context_and_request(
+            "zouhapci",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(6),
+        );
+        assert_eq!(
+            first_page
+                .candidates
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["組合次", "組合", "做", "早", "組", "租"],
+            "{pass} byte-backed path must keep the canonical family on page one"
+        );
+        assert!(
+            !first_page.is_complete,
+            "{pass} byte-backed path must retain the deferred phrase family after page one"
+        );
+    }
+
+    let expanded = translator.translate_with_context_and_request(
+        "zouhapci",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(8),
+    );
+    assert_eq!(
+        expanded
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["組合次", "組合", "做", "早", "組", "租", "做下", "灶蝦"],
+        "transformed-only phrase rows must remain reachable after the canonical page"
+    );
+    for candidate in &expanded.candidates[6..] {
+        assert_eq!(
+            candidate.source,
+            CandidateSource::PartialTable {
+                consumed: 5,
+                recompose_on_default: true,
+            }
+        );
+    }
+
+    let streaming = translator.translate_with_context_and_request(
+        "zouhapci",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(33),
+    );
+    assert_eq!(
+        streaming
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["組合次", "組合", "做", "早", "組", "租", "做下", "灶蝦"],
+        "the cache-bypass streaming path must preserve the same transformed-phrase tiers"
+    );
+
+    let heap = StaticTableTranslator::from_dictionary(TableDictionary::new(entries()))
+        .with_spelling_algebra(&formulas)
+        .with_completion(true)
+        .with_prefix_fallback(true)
+        .with_combine_candidates(true)
+        .with_sentence(false);
+    for (storage, translator) in [("byte-backed compact", &translator), ("heap/source", &heap)] {
+        assert_eq!(
+            translator
+                .translate("zouhapci")
+                .iter()
+                .take(8)
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["組合次", "組合", "做", "早", "組", "租", "做下", "灶蝦"],
+            "{storage} eager order must match the bounded transformed-phrase tiers"
+        );
+    }
+}
+
+#[test]
+fn bounded_transformed_phrase_tier_reserves_later_single_reachability() {
+    let formulas = ["derive/^.+$/x/".to_owned()];
+    for (path, deferred_rows, expect_cached) in
+        [("cached", 4usize, true), ("streaming", 65usize, false)]
+    {
+        let mut entries = (0..deferred_rows)
+            .map(|index| {
+                TableEntry::new(
+                    format!("a{index:03}"),
+                    format!("PHRASE-{index:03}"),
+                    (deferred_rows - index) as f32 + 10.0,
+                )
+            })
+            .collect::<Vec<_>>();
+        if path == "streaming" {
+            entries.extend([
+                TableEntry::new("zlast", "LATE-PHRASE-A", 9.0),
+                TableEntry::new("zlast", "LATE-PHRASE-B", 8.0),
+                TableEntry::new("zlast", "LATE-PHRASE-C", 7.0),
+            ]);
+        }
+        entries.push(TableEntry::new("zlast", "S", 1.0));
+        let translator = compact_prefix_fallback_test_translator(entries, &formulas);
+
+        let bounded = translator.translate_with_context_and_request(
+            "xy",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(1),
+        );
+        assert_eq!(
+            bounded
+                .candidates
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["S"],
+            "{path}: a full deferred pending window must reserve the later transformed single"
+        );
+        assert!(
+            !bounded.is_complete,
+            "{path}: deferred phrases remain reachable"
+        );
+        assert_eq!(
+            prefix_fallback_cache_owner_snapshot(&translator).1 > 0,
+            expect_cached,
+            "{path}: the fixture must exercise its declared collector"
+        );
+        assert_eq!(
+            translator.translate("xy")[0].text,
+            "S",
+            "{path}: bounded and eager ranking must agree"
+        );
+    }
+}
+
+#[test]
+fn bounded_transformed_phrase_tier_reserves_later_single_within_fetch() {
+    let formulas = ["derive/^same$/x/".to_owned()];
+    let translator = compact_prefix_fallback_test_translator(
+        [
+            TableEntry::new("same", "PHRASE-A", 40.0),
+            TableEntry::new("same", "PHRASE-B", 30.0),
+            TableEntry::new("same", "PHRASE-C", 20.0),
+            TableEntry::new("same", "S", 1.0),
+        ],
+        &formulas,
+    );
+
+    let bounded = translator.translate_with_context_and_request(
+        "xy",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(1),
+    );
+    assert_eq!(
+        bounded
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["S"],
+        "a full per-fetch deferred window must reserve a later transformed single"
+    );
+    assert!(!bounded.is_complete, "deferred phrases remain reachable");
+    assert_eq!(translator.translate("xy")[0].text, "S");
+}
+
+#[test]
 fn compiled_transformed_exact_completion_and_prefix_order_matches_after_uniquifier() {
     // The raw `nei` lookup emits completions before the later prism alias emits
     // its full exact. The eager path must apply the same exact/completion
@@ -3056,6 +3254,104 @@ fn compiled_transformed_exact_completion_and_prefix_order_matches_after_uniquifi
             recompose_on_default: true,
         }
     );
+}
+
+#[test]
+fn full_prediction_stays_ahead_of_prefix_family_independent_of_comment_display() {
+    let build = |show_full_code, combine_candidates| {
+        StaticTableTranslator::from_dictionary(TableDictionary::new([
+            TableEntry::new("si6gin2", "EVENT", 200.0),
+            TableEntry::new("si5gin3guk2", "PRED", 141.0),
+            TableEntry::new("si4", "PREFIX", 100.0),
+        ]))
+        .with_completion(true)
+        .with_prediction_candidate_limit(1)
+        .with_prefix_fallback(true)
+        .with_spelling_algebra(&["derive/\\d//".to_owned()])
+        .with_combine_candidates(combine_candidates)
+        .with_show_full_code(show_full_code)
+        .with_sentence(false)
+    };
+
+    for (show_full_code, combine_candidates) in
+        [(true, false), (false, false), (true, true), (false, true)]
+    {
+        let translator = build(show_full_code, combine_candidates);
+        let eager = translator.translate("sigin");
+        assert_eq!(
+            eager
+                .iter()
+                .take(3)
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["EVENT", "PRED", "PREFIX"],
+            "eager order must not depend on show_full_code={show_full_code} or combine_candidates={combine_candidates}"
+        );
+
+        let bounded = translator.translate_with_context_and_request(
+            "sigin",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(3),
+        );
+        assert_eq!(
+            bounded
+                .candidates
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["EVENT", "PRED", "PREFIX"],
+            "bounded order must not depend on show_full_code={show_full_code} or combine_candidates={combine_candidates}"
+        );
+    }
+}
+
+#[test]
+fn combined_duplicate_full_rows_remap_the_prefix_insertion_anchor() {
+    for show_full_code in [true, false] {
+        let translator = StaticTableTranslator::from_dictionary(TableDictionary::new([
+            TableEntry::new("si6gin2", "EVENT", 200.0),
+            TableEntry::new("si5gin3", "EVENT", 190.0),
+            TableEntry::new("si5gin3guk2", "PRED", 141.0),
+            TableEntry::new("si4", "PREFIX", 100.0),
+        ]))
+        .with_completion(true)
+        .with_prediction_candidate_limit(1)
+        .with_prefix_fallback(true)
+        .with_spelling_algebra(&["derive/\\d//".to_owned()])
+        .with_combine_candidates(true)
+        .with_show_full_code(show_full_code)
+        .with_sentence(false);
+
+        let eager = translator.translate("sigin");
+        assert_eq!(
+            eager
+                .iter()
+                .take(3)
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["EVENT", "PRED", "PREFIX"],
+            "eager duplicate collapse must remap the full-input anchor with show_full_code={show_full_code}"
+        );
+
+        let bounded = translator.translate_with_context_and_request(
+            "sigin",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(3),
+        );
+        assert_eq!(
+            bounded
+                .candidates
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["EVENT", "PRED", "PREFIX"],
+            "bounded duplicate collapse must remap the full-input anchor with show_full_code={show_full_code}"
+        );
+    }
 }
 
 #[test]

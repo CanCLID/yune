@@ -9639,7 +9639,16 @@
     ],
     "source_row_counts": {
       "dictionary": 9644,
-      "essay": 4999
+      "essay": 4999,
+      "essay_sentence_support": 11
+    },
+    "sentence_support_row_capture": {
+      "source_repository": "rime/rime-essay",
+      "source_commit": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+      "source_file": "essay.txt",
+      "selection_policy": "exact source-file rows required to reconstruct the pinned 37/59-character null-grammar sentence paths",
+      "serialization": "UTF-8 rows in source-file order, joined by LF with a terminal LF",
+      "rows_sha256": "8ec5edd55d33d389b8d07ae99bc726fc17bdf0a7c8eeec685d60d9f188eac8b4"
     },
     "source_dictionary_rows_for_tested_codes": [
       "ㄓ\tzhi",
@@ -24287,6 +24296,19 @@
       "𫚕\t0",
       "𫛛\t0",
       "𫛶\t0"
+    ],
+    "essay_vocabulary_rows_for_sentence_support": [
+      "其實\t245931",
+      "句子\t15751",
+      "引擎\t9316",
+      "性能\t29108",
+      "應該\t98472",
+      "才能\t89512",
+      "支持\t71344",
+      "能用\t6869",
+      "超長\t937",
+      "輸入\t16895",
+      "長句\t513"
     ]
   },
   "snapshots": [

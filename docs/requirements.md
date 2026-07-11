@@ -1490,8 +1490,10 @@ residual, not a candidate-behavior blocker.
 
 ### M59 Schema-General Single-Character Reachability + Canonical Parity
 
-**Status: in progress — Lane B reachability mechanism landed; Lane B exact-order
-parity remains open; NOT closeable.** M59 delivers the owner requirement that
+**Status: in progress — Lane B reachability mechanism landed; Windows Increment
+4a remains on its strict `2/5` Lane A result pending owner re-disposition; the
+supplemental macOS source `89875ee2` repairs only the expanded Luna 37/59
+page-zero sentence/phrase slice; NOT closeable.** M59 delivers the owner requirement that
 composing an arbitrary non-lexicon phrase one character at a time works on
 **every** schema. GPT's first execution was gamed (per-input
 `match` arms replaying oracle candidates baked into engine source + circular
@@ -1511,6 +1513,11 @@ exception): deterministic classification assigns the remaining surface to the
 predeclared 4c OpenCC rows and the already owner-signed equal-weight class. Full
 Lane A acceptance still requires explicit owner re-disposition, 4b
 abbreviation/segmentation, 4c OpenCC, and final 13-input reconciliation.
+Separately, the macOS long-page follow-up is reviewed and measured only at
+source commit `89875ee2`; its exact 37/59 pages and compiled
+NaturalLog/stored-`f32` inclusive-5% fixture change no signed ceiling,
+exception, milestone, or Windows 4a disposition. No combined/reconciled commit
+is claimed measured.
 
 - [x] **M59-REACH-01**: The reachability mechanism is general — keyed on
   syllable/dictionary structure, never per-input `match`/allowlists or baked
@@ -1566,7 +1573,11 @@ abbreviation/segmentation, 4c OpenCC, and final 13-input reconciliation.
   ranges for `moboyi`, `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`, and `guo`.
   Comparison is page/prefix-exact through the captured range under mirrored
   options, per D-48; no ordered-subsequence allowance or unsigned exception is
-  accepted.
+  accepted. The supplemental macOS follow-up repairs the expanded 37- and
+  59-character page-zero `ScriptTranslation` oracle shape at measured source
+  `89875ee2`. Those benchmark rows do not amend this seven-input acceptance
+  list or close the requirement, and that source-scoped diagnostic makes no
+  claim about the seven-row state at a later Windows or reconciled commit.
 - [ ] **M59-PARITY-03 (Cangjie exact order)**: The marked `cangjie5`
   oracle-validation lane has a pinned upstream capture and matches candidate
   text and order page/prefix-exact through the librime-comparable range,
@@ -1598,7 +1609,13 @@ oracle candidates, and circular oracle-derived fixtures are prohibited.
   page settings/options, source repositories and commits, oracle and Yune binary
   hashes, Yune commit, exact commands, and classifier version. Re-running the
   tools over the frozen raw inputs reproduces the comparator and gate artifacts;
-  expected oracle output is never derived from Yune.
+  expected oracle output is never derived from Yune. The supplemental macOS
+  follow-up at source `89875ee2` contributes a non-circular table compiled by
+  pinned librime that proves natural-log
+  `.table.bin` weight interpretation and the inclusive 5% ScriptEncoder
+  boundary; its decoded fixture SHA-256 is
+  `34784ffd5af9bdc79926a00057cbf8c201a64473a2334acd748685e2d1fd6405`.
+  The broader multi-lane tooling/provenance requirement remains open.
 - [x] **M59-DEPLOY-01 (workspace fidelity)**: Workspace deployment matches the
   pinned librime `WorkspaceUpdate` behavior: a missing top-level schema allows
   valid siblings to deploy but produces aggregate failure; a malformed present
@@ -1806,10 +1823,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M59-REACH-03 | M59 | In progress - the seven-schema 3b default-on/explicit-false deploy matrix is complete; canonical manifest-to-acceptance one-to-one reconciliation, remaining manifest-derived real-path coverage, and the documented dual-mechanism relationship remain required for M59 closeout |
 | M59-REACH-04 | M59 | In progress - the expanded multi-run Track A/Track B aggregate gate and five-round final acceptance remain required for M59 closeout |
 | M59-PARITY-01 | M59 | In progress - Increment 4a (`ca52ec42`) implements the sentence/phrase mechanism and review fix `2257fbbe` resolves the explicit-false blocker; explicit owner re-disposition of the grown equal-weight surface and the 4b/4c residues remain open; Lane A exact parity across the committed 13-input capture is still required, with only owner-signed exceptions permitted |
-| M59-PARITY-02 | M59 | In progress - Lane B complete captured text, order, and position parity remains required with no new exceptions or promotion/input/oracle hacks |
+| M59-PARITY-02 | M59 | In progress - Lane B complete captured text, order, and position parity remains required with no new exceptions or promotion/input/oracle hacks; supplemental source `89875ee2` repairs only the exact 37/59 page-zero sentence/phrase slice and makes no claim about a later reconciled seven-row state |
 | M59-PARITY-03 | M59 | In progress - Cangjie exact-order onboarding and CJ-1 acceptance at 3 passed / 0 ignored remain required with no new exceptions or promotion/input/oracle hacks |
 | M59-NAV-01 | M59 | Complete - `e37ee011` centralizes profile-driven forward navigation in Engine, explicitly activates the TypeDuck product marker in both direct harnesses, passes Cantonese 41/41 and TypeDuck-Windows 4/4, keeps physical/API and Luna controls stable, and proves source-current browser WASM reaches `zi -> 諮` in four PageDown operations |
-| M59-EVIDENCE-01 | M59 | In progress - deterministic capture/comparison tooling and reproducible raw provenance remain required for M59 closeout |
+| M59-EVIDENCE-01 | M59 | In progress - the supplemental macOS follow-up at source `89875ee2` adds a pinned-librime, non-circular compiled-log/5% boundary fixture; deterministic capture/comparison tooling and reproducible raw provenance across every M59 lane remain required for closeout |
 | M59-DEPLOY-01 | M59 | Complete - `2ee0805f` matches pinned librime missing/malformed top-level schema and dependency semantics with real-path regression coverage |
 | M59-GATES-01 | M59 | In progress - exact native release, source-current WASM, runtime/app, manifest, Playwright, browser, and packaging gates remain required for M59 closeout |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
@@ -2123,4 +2140,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-11 - M59 full Path A remains locked and not closeable. Increment 4a's sentence/phrase mechanism is implemented at `ca52ec42`; owner-provided blocking review fix `2257fbbe` passes the exact explicit-false matrix, full workspace clippy, focused parity, and a fresh 32/32 signed ratchet guard. Explicit owner re-disposition of the grown equal-weight surface is the sole remaining 4a stop; 4b has not started. The strict five-row comparator remains red with no new exception, and the Lane A, Lane B, and Cangjie D-48 exact-order lanes remain open. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; schema-general transformed algebra completed at `2cb7e411`; 7 M59 requirements remain in progress._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-11 - M59 full Path A remains locked and not closeable. Windows Increment 4a's sentence/phrase mechanism is implemented at `ca52ec42`; owner-provided blocking review fix `2257fbbe` passes the exact explicit-false matrix, full workspace clippy, focused parity, and a fresh 32/32 signed ratchet guard. Explicit owner re-disposition of the grown equal-weight surface is the sole remaining 4a stop; 4b has not started. The strict five-row comparator remains red with no new exception, and the Lane A, Lane B, and Cangjie D-48 exact-order lanes remain open. Supplemental macOS source `89875ee2` proves only the exact 37/59 page-zero repair and its non-circular compiled NaturalLog/stored-`f32` 5% boundary, with no threshold, exception, milestone, combined-source measurement, or Windows-status change. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; schema-general transformed algebra completed at `2cb7e411`; 7 M59 requirements remain in progress._

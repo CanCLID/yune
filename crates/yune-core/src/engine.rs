@@ -54,6 +54,92 @@ const M44_SHORT_KEY_REFRESH_SURPLUS: usize = 2;
 const TYPEDUCK_E_SQUARED: f32 = 7.389_056;
 const TYPEDUCK_EXP_E_SQUARED: f32 = 1618.178;
 
+struct ProducedCandidate {
+    candidate: Candidate,
+    upstream_script_translation: bool,
+    producer_index: usize,
+}
+
+impl ProducedCandidate {
+    fn new(candidate: Candidate, upstream_script_translation: bool, producer_index: usize) -> Self {
+        Self {
+            candidate,
+            upstream_script_translation,
+            producer_index,
+        }
+    }
+}
+
+enum CandidateBatch {
+    Plain(Vec<Candidate>),
+    ProducerAware(Vec<ProducedCandidate>),
+}
+
+impl CandidateBatch {
+    fn new(producer_aware: bool) -> Self {
+        if producer_aware {
+            Self::ProducerAware(Vec::new())
+        } else {
+            Self::Plain(Vec::new())
+        }
+    }
+
+    fn extend(
+        &mut self,
+        candidates: Vec<Candidate>,
+        upstream_script_translation: bool,
+        producer_index: usize,
+    ) {
+        match self {
+            Self::Plain(batch) => batch.extend(candidates),
+            Self::ProducerAware(batch) => {
+                batch.extend(candidates.into_iter().map(|candidate| {
+                    ProducedCandidate::new(candidate, upstream_script_translation, producer_index)
+                }));
+            }
+        }
+    }
+
+    fn len(&self) -> usize {
+        match self {
+            Self::Plain(batch) => batch.len(),
+            Self::ProducerAware(batch) => batch.len(),
+        }
+    }
+
+    fn sort_by_quality(&mut self) {
+        match self {
+            Self::Plain(batch) => batch.sort_by(candidate_quality_order),
+            Self::ProducerAware(batch) => batch
+                .sort_by(|left, right| candidate_quality_order(&left.candidate, &right.candidate)),
+        }
+    }
+
+    fn producer_aware_mut(&mut self) -> Option<&mut Vec<ProducedCandidate>> {
+        match self {
+            Self::Plain(_) => None,
+            Self::ProducerAware(batch) => Some(batch),
+        }
+    }
+
+    fn into_candidates(self) -> Vec<Candidate> {
+        match self {
+            Self::Plain(batch) => batch,
+            Self::ProducerAware(batch) => batch
+                .into_iter()
+                .map(|produced| produced.candidate)
+                .collect(),
+        }
+    }
+}
+
+fn candidate_quality_order(left: &Candidate, right: &Candidate) -> Ordering {
+    right
+        .quality
+        .partial_cmp(&left.quality)
+        .unwrap_or(Ordering::Equal)
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum CommitIntent {
     DefaultConfirm,
@@ -1405,6 +1491,24 @@ impl Engine {
 
     fn refresh_candidates_with_request(&mut self, request: CandidateRequest) {
         let input = self.context.composition.input.clone();
+        let producer_aware = !self.userdb.entries().is_empty();
+        let active_upstream_script_translation = if producer_aware {
+            let mut active =
+                self.translators
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, translator)| {
+                        translator
+                            .active_upstream_script_translation(&self.context)
+                            .then_some(index)
+                    });
+            match (active.next(), active.next()) {
+                (Some(index), None) => Some(index),
+                _ => None,
+            }
+        } else {
+            None
+        };
         if request.limit.is_some() {
             crate::m37_record_candidate_request_bounded(
                 DEFAULT_PAGE_SIZE,
@@ -1417,12 +1521,14 @@ impl Engine {
             crate::m37_record_candidate_request_unbounded();
         }
         let (mut candidates, candidate_list_complete) = if request.limit.is_some() {
-            let mut candidates = Vec::new();
+            let mut candidates = CandidateBatch::new(producer_aware);
             let mut candidate_list_complete = true;
             if self.any_translator_uses_scratch {
                 self.sync_translator_scratch_state();
                 for index in 0..self.translators.len() {
                     let translator = &self.translators[index];
+                    let upstream_script_translation =
+                        active_upstream_script_translation == Some(index);
                     let scratch = &mut self.translator_scratch[index];
                     let translator_start = Instant::now();
                     let result = if self.translator_uses_scratch[index] {
@@ -1445,10 +1551,12 @@ impl Engine {
                     };
                     crate::m37_record_translator(translator_start.elapsed());
                     candidate_list_complete &= result.is_complete;
-                    candidates.extend(result.candidates);
+                    candidates.extend(result.candidates, upstream_script_translation, index);
                 }
             } else {
-                for translator in &self.translators {
+                for (index, translator) in self.translators.iter().enumerate() {
+                    let upstream_script_translation =
+                        active_upstream_script_translation == Some(index);
                     let translator_start = Instant::now();
                     let result = translator.translate_with_context_and_request(
                         &input,
@@ -1459,7 +1567,7 @@ impl Engine {
                     );
                     crate::m37_record_translator(translator_start.elapsed());
                     candidate_list_complete &= result.is_complete;
-                    candidates.extend(result.candidates);
+                    candidates.extend(result.candidates, upstream_script_translation, index);
                 }
             }
             if self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping
@@ -1482,42 +1590,38 @@ impl Engine {
                 }
             }
             crate::m37_record_full_list_translation();
-            (
-                self.translators
-                    .iter()
-                    .flat_map(|translator| {
-                        let translator_start = Instant::now();
-                        let candidates = translator.translate_with_context(
-                            &input,
-                            &self.status,
-                            &self.options,
-                            &self.context,
-                        );
-                        crate::m37_record_translator(translator_start.elapsed());
-                        candidates
-                    })
-                    .collect::<Vec<_>>(),
-                true,
-            )
+            let mut candidates = CandidateBatch::new(producer_aware);
+            for (index, translator) in self.translators.iter().enumerate() {
+                let upstream_script_translation = active_upstream_script_translation == Some(index);
+                let translator_start = Instant::now();
+                let translated = translator.translate_with_context(
+                    &input,
+                    &self.status,
+                    &self.options,
+                    &self.context,
+                );
+                crate::m37_record_translator(translator_start.elapsed());
+                candidates.extend(translated, upstream_script_translation, index);
+            }
+            (candidates, true)
         };
         let sort_start = Instant::now();
-        candidates.sort_by(|left, right| {
-            right
-                .quality
-                .partial_cmp(&left.quality)
-                .unwrap_or(Ordering::Equal)
-        });
+        candidates.sort_by_quality();
         crate::m37_record_candidates_sorted(candidates.len());
         crate::m37_record_candidate_sort(sort_start.elapsed());
         let userdb_start = Instant::now();
-        merge_userdb_candidates(
-            &input,
-            &mut candidates,
-            self.userdb
-                .lookup(&UserDbLookupRequest::new(input.as_str()).with_predictive(true)),
-            self.prediction_never_first,
-        );
+        if let Some(produced) = candidates.producer_aware_mut() {
+            merge_userdb_candidates(
+                &input,
+                produced,
+                self.userdb
+                    .lookup(&UserDbLookupRequest::new(input.as_str()).with_predictive(true)),
+                self.prediction_never_first,
+                active_upstream_script_translation,
+            );
+        }
         crate::m37_record_userdb_merge(userdb_start.elapsed());
+        let mut candidates = candidates.into_candidates();
         let filter_start = Instant::now();
         let mut filter_audit = Vec::with_capacity(self.filters.len());
         for filter in &self.filters {
@@ -1560,40 +1664,164 @@ impl Engine {
 
 fn merge_userdb_candidates(
     input: &str,
-    candidates: &mut Vec<Candidate>,
+    candidates: &mut Vec<ProducedCandidate>,
     userdb_results: Vec<UserDbLookupResult>,
     prediction_never_first: bool,
+    active_upstream_script_translation: Option<usize>,
 ) {
     let input_code_len = comparable_userdb_code_len(input);
+    let has_active_upstream_script_translation = active_upstream_script_translation.is_some();
+    // Increment 4a owns only the exact-user rule for one explicitly active,
+    // default-quality Luna ScriptTranslation stream. Predictive userdb ordering
+    // stays on the legacy engine path until its completion/depth/quality model
+    // has separate oracle evidence. Producer identity keeps this exact rule
+    // from suppressing or reordering another translator's stream.
+    let mut script_stream_changed = false;
     for result in userdb_results {
         let user_code_len = result.comparable_code_len();
+        let exact_user_phrase = comparable_userdb_codes_equal(&result.code, input);
         let user_candidate = result.candidate();
-        let mut insertion_index = if user_code_len > input_code_len {
-            let mut index = candidates
-                .iter()
-                .position(|candidate| candidate.source != CandidateSource::UserTable)
-                .unwrap_or(candidates.len());
-            if prediction_never_first && index == 0 && !candidates.is_empty() {
-                index = 1;
-            }
-            index
-        } else if result.is_multi_segment_code() && user_code_len == input_code_len {
-            candidates
-                .iter()
-                .position(|candidate| {
-                    candidate_comparable_code_len(candidate, input_code_len) < user_code_len
-                })
-                .unwrap_or(candidates.len())
-        } else {
-            equal_code_user_phrase_insert_index(user_candidate.quality, candidates.len())
-        };
+        let script_stream_anchor = candidates
+            .iter()
+            .position(|produced| produced.upstream_script_translation)
+            .unwrap_or_else(|| {
+                if has_active_upstream_script_translation {
+                    // A user-only ScriptTranslation stream still participates
+                    // in the global translation merge. The input is already
+                    // quality-sorted; insert before the first strictly lower
+                    // quality and retain stable order across equal qualities.
+                    candidates
+                        .iter()
+                        .position(|produced| {
+                            let ordering =
+                                candidate_quality_order(&user_candidate, &produced.candidate);
+                            ordering == Ordering::Less
+                                || (ordering == Ordering::Equal
+                                    && active_upstream_script_translation
+                                        .is_some_and(|index| index < produced.producer_index))
+                        })
+                        .unwrap_or(candidates.len())
+                } else {
+                    candidates.len()
+                }
+            });
+        if exact_user_phrase && has_active_upstream_script_translation {
+            // Upstream ScriptTranslation merges the user dictionary after Poet.
+            // A reliable exact user phrase suppresses the composed sentence, but
+            // does not erase another translator's sentence or the independent
+            // system phrase/completion stream.
+            candidates.retain(|produced| {
+                !produced.upstream_script_translation
+                    || produced.candidate.source != CandidateSource::Sentence
+            });
+        }
+        let (mut insertion_index, script_stream_user) =
+            if has_active_upstream_script_translation && exact_user_phrase {
+                // With equal consumed length, pinned ScriptTranslation prefers a
+                // reliable non-correction user phrase over that producer's system
+                // phrase. Retain the producer's pre-merge/post-sort anchor so unrelated
+                // streams before it keep their order even when every script sentence
+                // vanished.
+                (script_stream_anchor.min(candidates.len()), true)
+            } else if user_code_len > input_code_len {
+                let mut index = candidates
+                    .iter()
+                    .position(|produced| produced.candidate.source != CandidateSource::UserTable)
+                    .unwrap_or(candidates.len());
+                if prediction_never_first && index == 0 && !candidates.is_empty() {
+                    index = 1;
+                }
+                (index, false)
+            } else if result.is_multi_segment_code() && user_code_len == input_code_len {
+                (
+                    candidates
+                        .iter()
+                        .position(|produced| {
+                            candidate_comparable_code_len(&produced.candidate, input_code_len)
+                                < user_code_len
+                        })
+                        .unwrap_or(candidates.len()),
+                    false,
+                )
+            } else {
+                (
+                    equal_code_user_phrase_insert_index(user_candidate.quality, candidates.len()),
+                    false,
+                )
+            };
         while insertion_index < candidates.len()
-            && candidates[insertion_index].source == CandidateSource::UserTable
+            && candidates[insertion_index].candidate.source == CandidateSource::UserTable
+            && (!script_stream_user || candidates[insertion_index].upstream_script_translation)
         {
             insertion_index += 1;
         }
-        candidates.insert(insertion_index, user_candidate);
+        candidates.insert(
+            insertion_index,
+            ProducedCandidate::new(
+                user_candidate,
+                script_stream_user,
+                if script_stream_user {
+                    active_upstream_script_translation
+                        .expect("active ScriptTranslation should own its user row")
+                } else {
+                    usize::MAX
+                },
+            ),
+        );
+        script_stream_changed |= script_stream_user;
     }
+    if script_stream_changed {
+        remerge_upstream_script_translation_stream(candidates);
+    }
+}
+
+fn remerge_upstream_script_translation_stream(candidates: &mut Vec<ProducedCandidate>) {
+    let has_script = candidates
+        .iter()
+        .any(|produced| produced.upstream_script_translation);
+    let has_other = candidates
+        .iter()
+        .any(|produced| !produced.upstream_script_translation);
+    if !has_script || !has_other {
+        return;
+    }
+
+    // ScriptTranslation owns its sentence/user/system precedence internally.
+    // Other translators form the already-sorted competing stream. Re-elect
+    // from the two current heads, as librime's MergedTranslation does, instead
+    // of letting a Script-local user insertion drag lower-quality rows ahead of
+    // an unrelated translator. Producer registration order resolves quality
+    // ties just like MergedTranslation's ordered translation list.
+    let original = std::mem::take(candidates);
+    let mut script_rows = Vec::new();
+    let mut other_rows = Vec::new();
+    for produced in original {
+        if produced.upstream_script_translation {
+            script_rows.push(produced);
+        } else {
+            other_rows.push(produced);
+        }
+    }
+    let capacity = script_rows.len() + other_rows.len();
+    let mut script_rows = script_rows.into_iter().peekable();
+    let mut other_rows = other_rows.into_iter().peekable();
+    let mut merged = Vec::with_capacity(capacity);
+    while script_rows.peek().is_some() && other_rows.peek().is_some() {
+        let script = script_rows.peek().expect("script head should exist");
+        let other = other_rows.peek().expect("other head should exist");
+        let ordering = candidate_quality_order(&script.candidate, &other.candidate);
+        let take_script = ordering == Ordering::Less
+            || (ordering == Ordering::Equal && script.producer_index < other.producer_index);
+        let produced = if take_script {
+            script_rows.next().expect("script head should remain")
+        } else {
+            other_rows.next().expect("other head should remain")
+        };
+        merged.push(produced);
+    }
+    merged.extend(script_rows);
+    merged.extend(other_rows);
+    *candidates = merged;
 }
 
 fn equal_code_user_phrase_insert_index(user_quality: f32, candidates_len: usize) -> usize {
@@ -1616,6 +1844,14 @@ fn comparable_userdb_code_len(code: &str) -> usize {
     code.chars()
         .filter(|ch| !ch.is_ascii_digit() && !ch.is_whitespace())
         .count()
+}
+
+fn comparable_userdb_codes_equal(left: &str, right: &str) -> bool {
+    left.chars()
+        .filter(|ch| !ch.is_ascii_digit() && !ch.is_whitespace())
+        .eq(right
+            .chars()
+            .filter(|ch| !ch.is_ascii_digit() && !ch.is_whitespace()))
 }
 
 fn merge_classic_and_staged_ai(

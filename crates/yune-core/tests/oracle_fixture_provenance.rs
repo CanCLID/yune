@@ -1,6 +1,7 @@
 use std::{fs, path::Path};
 
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 
 fn fixture_root(name: &str) -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -217,6 +218,117 @@ fn upstream_luna_pinyin_fixtures_have_non_circular_source_provenance() {
         assert_no_local_absolute_paths(&path, &fixture);
         assert_policy_specific_provenance(&path, &fixture);
     }
+}
+
+#[test]
+fn m59_librime_log_weight_table_fixture_has_non_circular_provenance() {
+    let root = fixture_root("upstream-1.17.0").join("m59-librime-log-weight");
+    let path = root.join("oracle.json");
+    let fixture = read_json(&path);
+    assert_eq!(fixture["oracle"]["engine"], "rime/librime", "{path:?}");
+    assert_eq!(fixture["oracle"]["engine_tag"], "1.17.0", "{path:?}");
+    assert_eq!(
+        fixture["oracle"]["engine_commit"], "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["oracle"]["librime_dylib_sha256"],
+        "af019c3dccde16d875b9543a1cbc950517e309e11fb4d0bf379b7d576aae13d3",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["source_row_policy"],
+        "m59_librime_compiled_log_weight_and_script_encoder_boundary",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["dependency_repositories"]["rime/rime-luna-pinyin"],
+        "18a80335c37522311f7cff02886cd81cec3b460a",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["dependency_repositories"]["rime/rime-essay"],
+        "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+        "{path:?}"
+    );
+    for name in [
+        "default.yaml",
+        "luna_pinyin.schema.yaml",
+        "luna_pinyin.dict.yaml",
+        "essay.txt",
+    ] {
+        let bytes = fs::read(root.join(name))
+            .unwrap_or_else(|error| panic!("failed to read captured source {name}: {error}"));
+        assert_eq!(
+            format!("{:x}", Sha256::digest(&bytes)),
+            fixture["capture"]["source_files"][name]
+                .as_str()
+                .unwrap_or_else(|| panic!("{path:?} must pin {name}")),
+            "{path:?} source hash must match {name}"
+        );
+    }
+    let table_hex = fs::read_to_string(root.join("luna_pinyin.table.bin.hex"))
+        .expect("captured table hex should be readable");
+    let table_bytes = decode_hex_fixture(&table_hex);
+    assert_eq!(
+        table_bytes.len() as u64,
+        fixture["capture"]["compiled_table"]["decoded_bytes"]
+            .as_u64()
+            .expect("decoded byte count should be numeric"),
+        "{path:?}"
+    );
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&table_bytes)),
+        fixture["capture"]["compiled_table"]["decoded_sha256"]
+            .as_str()
+            .expect("decoded table SHA-256 should be pinned"),
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["external_capture"]["candidate_snapshots_sha256"],
+        "98a9eebcc0b286a9cf6b5691dfd2d5080fedea1c0f170de9e00fa7b5a7e65f7c",
+        "{path:?}"
+    );
+    let dictionary = fs::read_to_string(root.join("luna_pinyin.dict.yaml"))
+        .expect("captured dictionary rows should be readable");
+    for row in [
+        "蓋\tgai\t99.91%",
+        "蓋\tge\t0.09%",
+        "蓋\the\t0.09%",
+        "足\tzu\t94%",
+        "足\tju\t5%",
+        "足\tzhu\t1%",
+    ] {
+        assert!(
+            dictionary.lines().any(|line| line == row),
+            "{path:?}: {row}"
+        );
+    }
+    assert_eq!(
+        fixture["snapshot"]["selected_candidates"][0]["text"], "這個引擎",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["snapshot"]["forbidden_false_phrase"], "遮蓋",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["boundary_snapshots"][0]["input"], "changju",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["boundary_snapshots"][0]["selected_candidates"][0]["text"], "長足",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["boundary_snapshots"][1]["input"], "changzhu",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["boundary_snapshots"][1]["forbidden_below_boundary_phrase"], "長足",
+        "{path:?}"
+    );
+    assert_no_local_absolute_paths(&path, &fixture);
 }
 
 #[test]
@@ -1543,6 +1655,64 @@ fn assert_policy_specific_provenance(path: &Path, fixture: &Value) {
                 assert_snapshot(path, fixture, "sentence_lattice_zhongguo", "page_2");
             }
             if fixture["capture"]["source_row_policy"] == "m55_phase3r_luna_sentence_expansion" {
+                let support_rows = fixture["capture"]["essay_vocabulary_rows_for_sentence_support"]
+                    .as_array()
+                    .expect("M55 expanded sentence support rows should be an array");
+                let expected_support_rows = [
+                    "其實\t245931",
+                    "句子\t15751",
+                    "引擎\t9316",
+                    "性能\t29108",
+                    "應該\t98472",
+                    "才能\t89512",
+                    "支持\t71344",
+                    "能用\t6869",
+                    "超長\t937",
+                    "輸入\t16895",
+                    "長句\t513",
+                ];
+                assert_eq!(
+                    support_rows,
+                    &expected_support_rows.map(Value::from),
+                    "{path:?} must preserve the exact pinned rime-essay source rows"
+                );
+                assert_eq!(
+                    fixture["capture"]["source_row_counts"]["essay_sentence_support"],
+                    serde_json::json!(support_rows.len()),
+                    "{path:?} sentence-support row count must match fixture bytes"
+                );
+                assert_eq!(
+                    fixture["capture"]["sentence_support_row_capture"]["source_repository"],
+                    "rime/rime-essay",
+                    "{path:?}"
+                );
+                assert_eq!(
+                    fixture["capture"]["sentence_support_row_capture"]["source_commit"],
+                    fixture["capture"]["dependency_repositories"]["rime/rime-essay"],
+                    "{path:?} sentence-support rows must name the pinned dependency commit"
+                );
+                assert_eq!(
+                    fixture["capture"]["sentence_support_row_capture"]["source_commit"],
+                    "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+                    "{path:?}"
+                );
+                assert_eq!(
+                    fixture["capture"]["sentence_support_row_capture"]["source_file"], "essay.txt",
+                    "{path:?}"
+                );
+                let serialized_support_rows = support_rows
+                    .iter()
+                    .map(|row| row.as_str().expect("support row should be a string"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+                    + "\n";
+                assert_eq!(
+                    format!("{:x}", Sha256::digest(serialized_support_rows.as_bytes())),
+                    fixture["capture"]["sentence_support_row_capture"]["rows_sha256"]
+                        .as_str()
+                        .expect("M55 expanded support rows should pin a SHA-256"),
+                    "{path:?} sentence-support checksum must match fixture bytes"
+                );
                 assert_snapshot(path, fixture, "sentence_completion_shijian", "page_1");
                 assert_snapshot(path, fixture, "sentence_completion_beijing", "page_1");
                 assert_snapshot(path, fixture, "sentence_benchmark_37", "page_1");
@@ -1639,6 +1809,21 @@ fn assert_policy_specific_provenance(path: &Path, fixture: &Value) {
         }
         policy => panic!("{path:?} has unknown source row policy {policy}"),
     }
+}
+
+fn decode_hex_fixture(input: &str) -> Vec<u8> {
+    let digits = input
+        .bytes()
+        .filter(|byte| !byte.is_ascii_whitespace())
+        .collect::<Vec<_>>();
+    assert_eq!(digits.len() % 2, 0, "fixture hex must contain full bytes");
+    digits
+        .chunks_exact(2)
+        .map(|pair| {
+            let text = std::str::from_utf8(pair).expect("fixture hex should be ASCII");
+            u8::from_str_radix(text, 16).expect("fixture should use hexadecimal bytes")
+        })
+        .collect()
 }
 
 fn assert_non_empty_array(path: &Path, fixture: &Value, fields: &[&str]) {

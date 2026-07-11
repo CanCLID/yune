@@ -920,7 +920,7 @@ fn workspace_update_dictionary_artifact(
 
     let table_dict_file_checksum = table_dict_file_checksum_from_path(&table_path);
     let table_exists = table_dict_file_checksum.is_some();
-    let poet_dict_file_checksum = poet_dict_file_checksum_from_path(&poet_path);
+    let mut poet_dict_file_checksum = poet_dict_file_checksum_from_path(&poet_path);
     let poet_exists = poet_dict_file_checksum.is_some();
     let prism_metadata = prism_checksum_metadata_from_path(&prism_path);
     let reverse_dict_file_checksum = reverse_dict_file_checksum_from_path(&reverse_path);
@@ -952,6 +952,27 @@ fn workspace_update_dictionary_artifact(
         file_size_bytes(&prebuilt_prism_path).unwrap_or(0),
         file_size_bytes(&prebuilt_reverse_path).unwrap_or(0)
     ));
+    let poet_required = crate::schema_install::compiled_poet_consumption_enabled();
+    if poet_required
+        && poet_dict_file_checksum.is_none()
+        && table_dict_file_checksum.is_some()
+        && prebuilt_poet_dict_file_checksum == table_dict_file_checksum
+    {
+        // A valid prebuilt Poet header must not stand in for missing or legacy
+        // bytes in the staged artifact set. Install the checksum-compatible
+        // prebuilt next to the selected staged table before crediting it to the
+        // rebuild planner. If the copy or validation fails, leave the checksum
+        // absent so a source-backed deployment rebuilds the set (and a
+        // source-less deployment rejects it).
+        if copy_if_present(&prebuilt_poet_path, &poet_path).is_some() {
+            poet_dict_file_checksum = poet_dict_file_checksum_from_path(&poet_path);
+        }
+        memory_probe_mark(format!(
+            "m47:deploy:{dictionary_id}:after_prebuilt_poet_copy:poet_bytes={}:valid={}",
+            file_size_bytes(&poet_path).unwrap_or(0),
+            poet_dict_file_checksum.is_some()
+        ));
+    }
     let typeduck_lookup_table_missing = request.typeduck_lookup_filter
         && if table_exists {
             !table_has_typeduck_lookup_records(&table_path, source_yaml.as_deref())
@@ -969,8 +990,12 @@ fn workspace_update_dictionary_artifact(
         pack_source_checksums: pack_checksums,
         schema_file_checksum: schema_checksum,
         table_dict_file_checksum: table_dict_file_checksum.or(prebuilt_table_dict_file_checksum),
-        poet_dict_file_checksum: poet_dict_file_checksum.or(prebuilt_poet_dict_file_checksum),
-        poet_required: crate::schema_install::compiled_poet_consumption_enabled(),
+        poet_dict_file_checksum: if table_exists {
+            poet_dict_file_checksum
+        } else {
+            poet_dict_file_checksum.or(prebuilt_poet_dict_file_checksum)
+        },
+        poet_required,
         prism: prism_metadata.or(prebuilt_prism_metadata),
         reverse_dict_file_checksum: reverse_dict_file_checksum
             .or(prebuilt_reverse_dict_file_checksum),

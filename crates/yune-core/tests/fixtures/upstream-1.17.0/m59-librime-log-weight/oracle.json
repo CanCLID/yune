@@ -1,0 +1,106 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "canonical_repository": "https://github.com/rime/librime",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "librime_dylib_sha256": "af019c3dccde16d875b9543a1cbc950517e309e11fb4d0bf379b7d576aae13d3",
+    "rime_deployer_sha256": "3e2b25feda7f3c5d0ed4a1fe3385605b199fa08f5331f8709bb4a3c117409c83",
+    "capture_date": "2026-07-11",
+    "capture_command": "rime_deployer --build <user> <shared> <user>/build; native_inprocess_benchmark --engine librime-1.17.0 --track log-weight-fixture --schema luna_pinyin --inputs zhegeyinqing,changju,changzhu --iterations 1 --session-iterations 1 --key-iterations 1"
+  },
+  "schema": "luna_pinyin",
+  "module_list": ["default"],
+  "capture": {
+    "source_row_policy": "m59_librime_compiled_log_weight_and_script_encoder_boundary",
+    "schema_data": "purpose-built Luna subset from pinned upstream rows plus an exact 94/5/1 ScriptEncoder boundary control",
+    "dependency_repositories": {
+      "rime/rime-luna-pinyin": "18a80335c37522311f7cff02886cd81cec3b460a",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed"
+    },
+    "source_files": {
+      "default.yaml": "d1d670f0638236a8f12669a3628e4179be8cb08a1c27b9118e9b4b1a0c147f2c",
+      "luna_pinyin.schema.yaml": "65d7787e6bffa4fcc7d8c661f9c18f8acbae509292160f65f397d39c3e03f185",
+      "luna_pinyin.dict.yaml": "e7d3b6fddc95b78ba236796c26d69e8d724595c71a9ab41da9521e97979c57ee",
+      "essay.txt": "7b2d3e5b016af62cb4c99db1c3777ef924ccc70fe88a1152258d375edca8df3d"
+    },
+    "compiled_table": {
+      "file": "luna_pinyin.table.bin.hex",
+      "encoding": "lowercase hexadecimal of exact binary bytes",
+      "decoded_bytes": 4744,
+      "decoded_sha256": "34784ffd5af9bdc79926a00057cbf8c201a64473a2334acd748685e2d1fd6405"
+    },
+    "external_capture": {
+      "candidate_snapshots_sha256": "98a9eebcc0b286a9cf6b5691dfd2d5080fedea1c0f170de9e00fa7b5a7e65f7c",
+      "metadata_sha256": "7ac342d4cdd2fb68304a4cd9da0c4ff230f80e9a8d55f39b352d756c56e0775d",
+      "retention": "external setup and raw output preserved outside the tracked repository"
+    },
+    "weight_fact": {
+      "text": "蓋",
+      "total_weight": 5104,
+      "readings": [
+        { "code": "gai", "percentage": "99.91%" },
+        { "code": "ge", "percentage": "0.09%" },
+        { "code": "he", "percentage": "0.09%" }
+      ],
+      "oracle_rule": "EntryCollector::TranslateWord excludes readings below 5% from ScriptEncoder phrase expansion; DictCompiler separately serializes all collected word entries with natural-log weights"
+    },
+    "boundary_fact": {
+      "text": "足",
+      "readings": [
+        { "code": "zu", "percentage": "94%", "phrase_expansion": "included" },
+        { "code": "ju", "percentage": "5%", "phrase_expansion": "included" },
+        { "code": "zhu", "percentage": "1%", "phrase_expansion": "excluded" }
+      ],
+      "visible_oracle_effect": "長足 is present for changju and absent for changzhu"
+    }
+  },
+  "snapshot": {
+    "schema_id": "luna_pinyin",
+    "input": "zhegeyinqing",
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "highlighted_candidate_index": 0,
+    "preedit": "zhe ge yin qing",
+    "selected_candidates": [
+      { "text": "這個引擎", "comment": "" },
+      { "text": "這個", "comment": "" },
+      { "text": "這歌", "comment": "" },
+      { "text": "這格", "comment": "" },
+      { "text": "這", "comment": "" }
+    ],
+    "forbidden_false_phrase": "遮蓋"
+  },
+  "boundary_snapshots": [
+    {
+      "schema_id": "luna_pinyin",
+      "input": "changju",
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": true,
+      "highlighted_candidate_index": 0,
+      "preedit": "chang ju",
+      "selected_candidates": [
+        { "text": "長足", "comment": "" },
+        { "text": "長", "comment": "" }
+      ],
+      "required_boundary_phrase": "長足"
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "input": "changzhu",
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": true,
+      "highlighted_candidate_index": 0,
+      "preedit": "chang zhu",
+      "selected_candidates": [
+        { "text": "長朱", "comment": "" },
+        { "text": "長", "comment": "" }
+      ],
+      "forbidden_below_boundary_phrase": "長足"
+    }
+  ]
+}

@@ -622,6 +622,17 @@ struct BoundedLookupRequest<'a> {
     include_full_count: bool,
 }
 
+struct LegacyBoundedSentenceFallbackRequest<'a> {
+    model: &'a UpstreamSentenceModel,
+    input: &'a str,
+    lookup_code: &'a str,
+    filter_by_charset: bool,
+    limit: usize,
+    include_full_count: bool,
+    has_correction_lookup: bool,
+    scratch: Option<&'a mut TranslatorScratch>,
+}
+
 struct BoundedPrefixFallbackCacheRequest<'input, 'request> {
     input: &'input str,
     lookup_code: &'input str,
@@ -732,6 +743,7 @@ fn retain_bounded_prefix_row<T>(
 struct LookupCandidateBatch {
     candidates: Vec<Candidate>,
     full_input_anchor: Option<usize>,
+    has_reliable_exact_system_phrase: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1378,6 +1390,8 @@ pub struct StaticTableTranslator {
     abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry>,
     upstream_sentence_grammar: GrammarProvider,
     upstream_sentence_poet_source: Option<(Arc<dyn PoetByteSource>, u32)>,
+    upstream_sentence_cutoff_threshold: f64,
+    upstream_script_translation_limits: Option<(usize, usize)>,
     upstream_sentence_model: Option<UpstreamSentenceModel>,
 }
 
@@ -1451,6 +1465,8 @@ impl StaticTableTranslator {
             abbreviation_preset_vocabulary: Vec::new(),
             upstream_sentence_grammar: GrammarProvider::default(),
             upstream_sentence_poet_source: None,
+            upstream_sentence_cutoff_threshold: 0.1,
+            upstream_script_translation_limits: None,
             upstream_sentence_model: None,
         }
     }
@@ -1526,6 +1542,8 @@ impl StaticTableTranslator {
             abbreviation_preset_vocabulary,
             upstream_sentence_grammar: GrammarProvider::default(),
             upstream_sentence_poet_source: None,
+            upstream_sentence_cutoff_threshold: 0.1,
+            upstream_script_translation_limits: None,
             upstream_sentence_model: None,
         }
     }
@@ -1592,6 +1610,8 @@ impl StaticTableTranslator {
             abbreviation_preset_vocabulary,
             upstream_sentence_grammar: GrammarProvider::default(),
             upstream_sentence_poet_source: None,
+            upstream_sentence_cutoff_threshold: 0.1,
+            upstream_script_translation_limits: None,
             upstream_sentence_model: None,
         }
     }
@@ -1671,6 +1691,8 @@ impl StaticTableTranslator {
             abbreviation_preset_vocabulary,
             upstream_sentence_grammar: GrammarProvider::default(),
             upstream_sentence_poet_source: None,
+            upstream_sentence_cutoff_threshold: 0.1,
+            upstream_script_translation_limits: None,
             upstream_sentence_model: None,
         }
     }
@@ -1765,6 +1787,10 @@ impl StaticTableTranslator {
         words: impl IntoIterator<Item = impl Into<String>>,
     ) -> Self {
         self.dictionary_exclude = words.into_iter().map(Into::into).collect();
+        if let Some(model) = self.upstream_sentence_model.take() {
+            self.upstream_sentence_model =
+                Some(model.with_excluded_texts(self.dictionary_exclude.iter().cloned()));
+        }
         self.prefix_fallback_window_cache = Mutex::new(None);
         self
     }
@@ -1880,6 +1906,14 @@ impl StaticTableTranslator {
             && self.prism_payload.is_some()
             && self.single_letter_sentence_guard_enabled
             && !abbreviation_vocabulary.is_empty();
+        // Upstream librime's Marisa-backed `.table.bin` stores natural-log
+        // weights. Source dictionaries, Yune-authored compact tables, and
+        // poet-v3 artifacts retain raw weights. Keep that distinction local to
+        // the owned model reconstructed from the pinned upstream table.
+        let natural_log_table_weights = matches!(
+            &self.storage,
+            TableStorage::Compact(store) if store.is_marisa_backed()
+        );
         let model = if let Some((source, dictionary_checksum)) =
             self.upstream_sentence_poet_source.take()
         {
@@ -1897,11 +1931,24 @@ impl StaticTableTranslator {
             )
         } else {
             let full_pinyin_vocabulary = self.preset_vocabulary.as_slice();
-            if build_abbreviation_model {
+            if build_abbreviation_model && natural_log_table_weights {
+                UpstreamSentenceModel::from_natural_log_table_entries_with_abbreviation_vocabulary(
+                    self.storage.table_entry_iter(),
+                    full_pinyin_vocabulary,
+                    abbreviation_vocabulary,
+                    max_candidates,
+                )
+            } else if build_abbreviation_model {
                 UpstreamSentenceModel::from_table_entries_with_abbreviation_vocabulary(
                     self.storage.table_entry_iter(),
                     full_pinyin_vocabulary,
                     abbreviation_vocabulary,
+                    max_candidates,
+                )
+            } else if natural_log_table_weights {
+                UpstreamSentenceModel::from_natural_log_table_entries(
+                    self.storage.table_entry_iter(),
+                    full_pinyin_vocabulary,
                     max_candidates,
                 )
             } else {
@@ -1912,8 +1959,14 @@ impl StaticTableTranslator {
                 )
             }
         };
-        self.upstream_sentence_model =
-            Some(model.with_grammar(self.upstream_sentence_grammar.clone()));
+        let mut model = model
+            .with_grammar(self.upstream_sentence_grammar.clone())
+            .with_sentence_cutoff_threshold(self.upstream_sentence_cutoff_threshold)
+            .with_excluded_texts(self.dictionary_exclude.iter().cloned());
+        if let Some((max_sentences, max_homophones)) = self.upstream_script_translation_limits {
+            model = model.with_script_translation_limits(max_sentences, max_homophones);
+        }
+        self.upstream_sentence_model = Some(model);
         self
     }
 
@@ -1923,6 +1976,29 @@ impl StaticTableTranslator {
         self.upstream_sentence_grammar = grammar.clone();
         if let Some(model) = self.upstream_sentence_model.take() {
             self.upstream_sentence_model = Some(model.with_grammar(grammar));
+        }
+        self
+    }
+
+    #[must_use]
+    pub fn with_upstream_script_translation_limits(
+        mut self,
+        max_sentences: usize,
+        max_homophones: usize,
+    ) -> Self {
+        self.upstream_script_translation_limits = Some((max_sentences, max_homophones));
+        if let Some(model) = self.upstream_sentence_model.take() {
+            self.upstream_sentence_model =
+                Some(model.with_script_translation_limits(max_sentences, max_homophones));
+        }
+        self
+    }
+
+    #[must_use]
+    pub fn with_upstream_sentence_cutoff_threshold(mut self, threshold: f64) -> Self {
+        self.upstream_sentence_cutoff_threshold = threshold;
+        if let Some(model) = self.upstream_sentence_model.take() {
+            self.upstream_sentence_model = Some(model.with_sentence_cutoff_threshold(threshold));
         }
         self
     }
@@ -2840,7 +2916,10 @@ impl StaticTableTranslator {
         let mut candidates = model
             .candidates_for_code_spans_with_limit(input, &spans, limit)
             .into_iter()
-            .filter(|candidate| !filter_by_charset || !contains_extended_cjk(&candidate.text))
+            .filter(|candidate| {
+                self.is_dictionary_text_allowed(&candidate.text)
+                    && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
+            })
             .collect::<Vec<_>>();
         for candidate in &mut candidates {
             candidate.preedit = Some(preedit.clone());
@@ -3059,6 +3138,18 @@ impl StaticTableTranslator {
             }
         }
         saw_correction && !saw_normal
+    }
+
+    fn is_reliable_exact_system_phrase(
+        &self,
+        lookup_spec: &LookupCodeSpec,
+        candidate: &LookupCandidate<'_>,
+    ) -> bool {
+        lookup_spec.correction_distance.is_none()
+            && !lookup_spec.tolerance
+            && !lookup_spec.spelling_correction
+            && !self.is_spelling_abbreviation_view(&lookup_spec.lookup_code, candidate)
+            && !self.is_spelling_correction_view(&lookup_spec.lookup_code, candidate)
     }
 
     fn lookup_candidate_order(
@@ -3553,10 +3644,143 @@ impl StaticTableTranslator {
         }
     }
 
+    fn legacy_bounded_upstream_sentence_fallback(
+        &self,
+        request: LegacyBoundedSentenceFallbackRequest<'_>,
+    ) -> Option<TranslationResult> {
+        let LegacyBoundedSentenceFallbackRequest {
+            model,
+            input,
+            lookup_code,
+            filter_by_charset,
+            limit,
+            include_full_count,
+            has_correction_lookup,
+            scratch,
+        } = request;
+        let sentence_limit = limit.min(BOUNDED_SENTENCE_MODEL_PAGE_LIMIT);
+        let model_start = crate::m37_metrics_enabled().then(Instant::now);
+        let mut candidates = if let Some(scratch) = scratch {
+            model.candidates_for_input_with_limit_and_scratch(
+                input,
+                sentence_limit,
+                &mut scratch.upstream_sentence,
+            )
+        } else {
+            model.candidates_for_input_with_limit(input, sentence_limit)
+        }
+        .into_iter()
+        .filter(|candidate| {
+            self.is_dictionary_text_allowed(&candidate.text)
+                && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
+        })
+        .collect::<Vec<_>>();
+        if let Some(start) = model_start {
+            crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
+        }
+        if candidates.is_empty() {
+            let abbreviation_start = crate::m37_metrics_enabled().then(Instant::now);
+            candidates = self.abbreviation_sentence_candidates(
+                model,
+                input,
+                sentence_limit,
+                filter_by_charset,
+            );
+            if let Some(start) = abbreviation_start {
+                crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
+            }
+        }
+        if candidates.is_empty() {
+            return None;
+        }
+
+        let base_window_may_have_more = candidates.len() >= sentence_limit;
+        let mut prefix_fallback_truncated = false;
+        let mut prefix_fallback_owned = false;
+        if self.prefix_fallback && !has_correction_lookup {
+            let room = limit.saturating_sub(candidates.len());
+            if room > 0 {
+                let prefix_batch = self.prefix_fallback_candidates(
+                    input,
+                    lookup_code,
+                    filter_by_charset,
+                    &candidates,
+                    &candidates,
+                    Some(room),
+                );
+                prefix_fallback_owned = prefix_batch.owns_reachability;
+                prefix_fallback_truncated = prefix_batch.truncated;
+                let inserted = merge_prefix_fallback_candidates_with_full_input_anchor(
+                    &mut candidates,
+                    prefix_batch.candidates,
+                    lookup_code,
+                    None,
+                );
+                if prefix_fallback_truncated && inserted == 0 {
+                    prefix_fallback_truncated = matches!(
+                        self.prefix_fallback_has_unique_candidate(
+                            input,
+                            lookup_code,
+                            filter_by_charset,
+                            &candidates,
+                            Some(limit),
+                        ),
+                        PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
+                    );
+                }
+            } else {
+                prefix_fallback_owned = !matches!(
+                    self.prefix_fallback_has_unique_candidate(
+                        input,
+                        lookup_code,
+                        filter_by_charset,
+                        &candidates,
+                        Some(limit),
+                    ),
+                    PrefixFallbackProbe::NoPrefix
+                );
+            }
+        }
+        if self.leading_syllable_reachability
+            && !has_correction_lookup
+            && !prefix_fallback_owned
+            && has_proper_leading_prefix(lookup_code)
+            && !self.input_serves_single_char_exact(lookup_code)
+        {
+            let insert_at = leading_single_insert_index(&candidates);
+            let want = limit.saturating_sub(insert_at).saturating_add(1);
+            let leading_singles = self.leading_single_syllable_prefix_candidates(
+                input,
+                lookup_code,
+                filter_by_charset,
+                &candidates[..insert_at],
+                Some(want),
+            );
+            if !leading_singles.is_empty() {
+                candidates.splice(insert_at..insert_at, leading_singles);
+                self.assign_ordered_candidate_qualities(&mut candidates);
+            }
+        }
+        let merged_window_overflow = candidates.len() > limit;
+        candidates.truncate(limit);
+        let full_count =
+            if prefix_fallback_truncated || base_window_may_have_more || merged_window_overflow {
+                limit.saturating_add(1)
+            } else {
+                candidates.len()
+            };
+        crate::m37_record_bounded_iterator(limit, candidates.len(), full_count);
+        Some(TranslationResult::bounded(
+            candidates,
+            full_count,
+            include_full_count,
+        ))
+    }
+
     fn bounded_candidates_for_lookup_codes(
         &self,
         request: BoundedLookupRequest<'_>,
-        scratch: Option<&mut TranslatorScratch>,
+        mut scratch: Option<&mut TranslatorScratch>,
     ) -> TranslationResult {
         let BoundedLookupRequest {
             input,
@@ -3597,6 +3821,7 @@ impl StaticTableTranslator {
         let mut emission_order = 0;
         let mut full_count = 0;
         let mut prefix_fallback_owned = false;
+        let mut has_reliable_exact_system_phrase = false;
         let mut has_correction_lookup = lookup_specs
             .iter()
             .any(|spec| spec.correction_distance.is_some() || spec.spelling_correction);
@@ -3623,6 +3848,10 @@ impl StaticTableTranslator {
             {
                 exact_candidates += 1;
                 full_count += 1;
+                if self.upstream_sentence_model.is_some() {
+                    has_reliable_exact_system_phrase |=
+                        self.is_reliable_exact_system_phrase(lookup_spec, &candidate);
+                }
                 let spelling_abbreviation =
                     self.is_spelling_abbreviation_view(spec_lookup_code, &candidate);
                 let spelling_correction = lookup_spec.spelling_correction
@@ -3776,241 +4005,28 @@ impl StaticTableTranslator {
             selected.extend(limited_predictions);
         }
         has_correction_lookup |= selected.iter().any(|pending| pending.spelling_correction);
-        if selected.is_empty() && self.enable_sentence {
+        if self.sentence_policy == SentencePolicy::LegacyFallback
+            && self.enable_sentence
+            && selected.is_empty()
+        {
             if let Some(model) = &self.upstream_sentence_model {
-                let model_start = crate::m37_metrics_enabled().then(Instant::now);
-                let sentence_limit = limit.min(BOUNDED_SENTENCE_MODEL_PAGE_LIMIT);
-                let mut candidates = if let Some(scratch) = scratch {
-                    model.candidates_for_input_with_limit_and_scratch(
+                if let Some(result) = self.legacy_bounded_upstream_sentence_fallback(
+                    LegacyBoundedSentenceFallbackRequest {
+                        model,
                         input,
-                        sentence_limit,
-                        &mut scratch.upstream_sentence,
-                    )
-                } else {
-                    model.candidates_for_input_with_limit(input, sentence_limit)
-                }
-                .into_iter()
-                .filter(|candidate| !filter_by_charset || !contains_extended_cjk(&candidate.text))
-                .collect::<Vec<_>>();
-                if let Some(start) = model_start {
-                    crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
-                }
-                if !candidates.is_empty() {
-                    let base_window_may_have_more = candidates.len() >= sentence_limit;
-                    let mut prefix_fallback_truncated = false;
-                    let mut prefix_fallback_owned = false;
-                    if self.prefix_fallback && !has_correction_lookup {
-                        let room = limit.saturating_sub(candidates.len());
-                        if room > 0 {
-                            let prefix_batch = self.prefix_fallback_candidates(
-                                input,
-                                lookup_code,
-                                filter_by_charset,
-                                &candidates,
-                                &candidates,
-                                Some(room),
-                            );
-                            prefix_fallback_owned = prefix_batch.owns_reachability;
-                            prefix_fallback_truncated = prefix_batch.truncated;
-                            let inserted = merge_prefix_fallback_candidates(
-                                &mut candidates,
-                                prefix_batch.candidates,
-                                lookup_code,
-                            );
-                            if prefix_fallback_truncated && inserted == 0 {
-                                prefix_fallback_truncated = matches!(
-                                    self.prefix_fallback_has_unique_candidate(
-                                        input,
-                                        lookup_code,
-                                        filter_by_charset,
-                                        &candidates,
-                                        Some(limit),
-                                    ),
-                                    PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
-                                );
-                            }
-                        } else {
-                            prefix_fallback_owned = !matches!(
-                                self.prefix_fallback_has_unique_candidate(
-                                    input,
-                                    lookup_code,
-                                    filter_by_charset,
-                                    &candidates,
-                                    Some(limit),
-                                ),
-                                PrefixFallbackProbe::NoPrefix
-                            );
-                        }
-                    }
-                    if self.leading_syllable_reachability
-                        && !has_correction_lookup
-                        && !prefix_fallback_owned
-                        && has_proper_leading_prefix(lookup_code)
-                        && !self.input_serves_single_char_exact(lookup_code)
-                    {
-                        // Keep phrase candidates in place; append only a bounded
-                        // slice of the leading-syllable family after them — enough
-                        // to fill the page and signal the rest is reachable by
-                        // paging. The fetch is capped (no full materialization on
-                        // the typing path); the full family comes on the page-turn.
-                        let insert_at = leading_single_insert_index(&candidates);
-                        let want = limit.saturating_sub(insert_at).saturating_add(1);
-                        let leading_singles = self.leading_single_syllable_prefix_candidates(
-                            input,
-                            lookup_code,
-                            filter_by_charset,
-                            &candidates[..insert_at],
-                            Some(want),
-                        );
-                        // M59: only re-rank when singles were actually injected. On a
-                        // bare-syllable input (`hao`, `mai`) the bare-syllable guard
-                        // returns an empty family, so pre-flip this branch never ran
-                        // and the phrases returned in their natural order. Post-flip
-                        // the branch runs, and an unconditional
-                        // `assign_ordered_candidate_qualities` was re-ranking the whole
-                        // page every keystroke for nothing — the dominant `hao` flip
-                        // cost (short_key_first_page_materialize +181k ns). Guarding on
-                        // non-empty restores the exact pre-flip behaviour for the empty
-                        // case while leaving the real-injection path untouched.
-                        if !leading_singles.is_empty() {
-                            candidates.splice(insert_at..insert_at, leading_singles);
-                            // Preserve phrase-before-single order through the engine's
-                            // global quality sort (the bounded sentence return does not
-                            // otherwise assign ordered qualities).
-                            self.assign_ordered_candidate_qualities(&mut candidates);
-                        }
-                    }
-                    let merged_window_overflow = candidates.len() > limit;
-                    candidates.truncate(limit);
-                    let result_full_count = if prefix_fallback_truncated
-                        || base_window_may_have_more
-                        || merged_window_overflow
-                    {
-                        limit.saturating_add(1)
-                    } else {
-                        candidates.len()
-                    };
-                    crate::m37_record_bounded_iterator(limit, candidates.len(), result_full_count);
-                    return TranslationResult::bounded(
-                        candidates,
-                        result_full_count,
+                        lookup_code,
+                        filter_by_charset,
+                        limit,
                         include_full_count,
-                    );
-                }
-                let abbreviation_start = crate::m37_metrics_enabled().then(Instant::now);
-                let abbreviation_limit = limit.min(BOUNDED_SENTENCE_MODEL_PAGE_LIMIT);
-                let mut candidates = self.abbreviation_sentence_candidates(
-                    model,
-                    input,
-                    abbreviation_limit,
-                    filter_by_charset,
-                );
-                if let Some(start) = abbreviation_start {
-                    crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
-                }
-                if !candidates.is_empty() {
-                    let base_window_may_have_more = candidates.len() >= abbreviation_limit;
-                    let mut prefix_fallback_truncated = false;
-                    let mut prefix_fallback_owned = false;
-                    if self.prefix_fallback && !has_correction_lookup {
-                        let room = limit.saturating_sub(candidates.len());
-                        if room > 0 {
-                            let prefix_batch = self.prefix_fallback_candidates(
-                                input,
-                                lookup_code,
-                                filter_by_charset,
-                                &candidates,
-                                &candidates,
-                                Some(room),
-                            );
-                            prefix_fallback_owned = prefix_batch.owns_reachability;
-                            prefix_fallback_truncated = prefix_batch.truncated;
-                            let inserted = merge_prefix_fallback_candidates(
-                                &mut candidates,
-                                prefix_batch.candidates,
-                                lookup_code,
-                            );
-                            if prefix_fallback_truncated && inserted == 0 {
-                                prefix_fallback_truncated = matches!(
-                                    self.prefix_fallback_has_unique_candidate(
-                                        input,
-                                        lookup_code,
-                                        filter_by_charset,
-                                        &candidates,
-                                        Some(limit),
-                                    ),
-                                    PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
-                                );
-                            }
-                        } else {
-                            prefix_fallback_owned = !matches!(
-                                self.prefix_fallback_has_unique_candidate(
-                                    input,
-                                    lookup_code,
-                                    filter_by_charset,
-                                    &candidates,
-                                    Some(limit),
-                                ),
-                                PrefixFallbackProbe::NoPrefix
-                            );
-                        }
-                    }
-                    if self.leading_syllable_reachability
-                        && !has_correction_lookup
-                        && !prefix_fallback_owned
-                        && has_proper_leading_prefix(lookup_code)
-                        && !self.input_serves_single_char_exact(lookup_code)
-                    {
-                        // Keep phrase candidates in place; append only a bounded
-                        // slice of the leading-syllable family after them — enough
-                        // to fill the page and signal the rest is reachable by
-                        // paging. The fetch is capped (no full materialization on
-                        // the typing path); the full family comes on the page-turn.
-                        let insert_at = leading_single_insert_index(&candidates);
-                        let want = limit.saturating_sub(insert_at).saturating_add(1);
-                        let leading_singles = self.leading_single_syllable_prefix_candidates(
-                            input,
-                            lookup_code,
-                            filter_by_charset,
-                            &candidates[..insert_at],
-                            Some(want),
-                        );
-                        // M59: only re-rank when singles were actually injected. On a
-                        // bare-syllable input (`hao`, `mai`) the bare-syllable guard
-                        // returns an empty family, so pre-flip this branch never ran
-                        // and the phrases returned in their natural order. Post-flip
-                        // the branch runs, and an unconditional
-                        // `assign_ordered_candidate_qualities` was re-ranking the whole
-                        // page every keystroke for nothing — the dominant `hao` flip
-                        // cost (short_key_first_page_materialize +181k ns). Guarding on
-                        // non-empty restores the exact pre-flip behaviour for the empty
-                        // case while leaving the real-injection path untouched.
-                        if !leading_singles.is_empty() {
-                            candidates.splice(insert_at..insert_at, leading_singles);
-                            // Preserve phrase-before-single order through the engine's
-                            // global quality sort (the bounded sentence return does not
-                            // otherwise assign ordered qualities).
-                            self.assign_ordered_candidate_qualities(&mut candidates);
-                        }
-                    }
-                    let merged_window_overflow = candidates.len() > limit;
-                    candidates.truncate(limit);
-                    let result_full_count = if prefix_fallback_truncated
-                        || base_window_may_have_more
-                        || merged_window_overflow
-                    {
-                        limit.saturating_add(1)
-                    } else {
-                        candidates.len()
-                    };
-                    crate::m37_record_bounded_iterator(limit, candidates.len(), result_full_count);
-                    return TranslationResult::bounded(
-                        candidates,
-                        result_full_count,
-                        include_full_count,
-                    );
+                        has_correction_lookup,
+                        scratch: scratch.as_deref_mut(),
+                    },
+                ) {
+                    return result;
                 }
             }
+        }
+        if selected.is_empty() && self.enable_sentence && self.upstream_sentence_model.is_none() {
             if self.prefix_fallback && !has_correction_lookup {
                 crate::m37_record_full_list_fallback();
                 if !self.bounds_compact_fallback_expansion() {
@@ -4063,7 +4079,11 @@ impl StaticTableTranslator {
             };
             return TranslationResult::bounded(batch.candidates, full_count, include_full_count);
         }
-        if selected.is_empty() && self.prefix_fallback && !has_correction_lookup {
+        if selected.is_empty()
+            && self.prefix_fallback
+            && !has_correction_lookup
+            && self.upstream_sentence_model.is_none()
+        {
             let mut batch = self.prefix_fallback_candidates(
                 input,
                 lookup_code,
@@ -4292,6 +4312,76 @@ impl StaticTableTranslator {
                 }
             }
         }
+        if self.sentence_policy == SentencePolicy::UpstreamScript
+            && self.enable_sentence
+            && !has_reliable_exact_system_phrase
+        {
+            if let Some(model) = &self.upstream_sentence_model {
+                let sentence_limit = limit.min(BOUNDED_SENTENCE_MODEL_PAGE_LIMIT);
+                let model_start = crate::m37_metrics_enabled().then(Instant::now);
+                let mut upstream_candidates = if let Some(scratch) = scratch.as_mut() {
+                    model.candidates_for_input_with_limit_and_scratch(
+                        input,
+                        sentence_limit,
+                        &mut scratch.upstream_sentence,
+                    )
+                } else {
+                    model.candidates_for_input_with_limit(input, sentence_limit)
+                }
+                .into_iter()
+                .filter(|candidate| {
+                    self.is_dictionary_text_allowed(&candidate.text)
+                        && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
+                })
+                .collect::<Vec<_>>();
+                if let Some(start) = model_start {
+                    crate::m37_record_upstream_sentence_model(
+                        start.elapsed(),
+                        upstream_candidates.len(),
+                    );
+                }
+                if upstream_candidates.is_empty() {
+                    let abbreviation_start = crate::m37_metrics_enabled().then(Instant::now);
+                    upstream_candidates = self.abbreviation_sentence_candidates(
+                        model,
+                        input,
+                        sentence_limit,
+                        filter_by_charset,
+                    );
+                    if let Some(start) = abbreviation_start {
+                        crate::m37_record_upstream_sentence_model(
+                            start.elapsed(),
+                            upstream_candidates.len(),
+                        );
+                    }
+                }
+                if !upstream_candidates.is_empty() {
+                    let upstream_window_may_have_more = upstream_candidates.len() >= sentence_limit;
+                    candidates = merge_upstream_script_translation_candidates(
+                        input,
+                        upstream_candidates,
+                        candidates,
+                        usize::MAX,
+                        self.initial_quality,
+                        !self.comment_format.is_empty(),
+                        !self.preedit_format.is_empty(),
+                    );
+                    let merged_window_overflow = candidates.len() > limit;
+                    candidates.truncate(limit);
+                    if upstream_window_may_have_more || merged_window_overflow {
+                        full_count = full_count.max(limit.saturating_add(1));
+                    } else {
+                        full_count = full_count.max(candidates.len());
+                    }
+                }
+            }
+        }
+        if candidates.is_empty() && self.enable_sentence {
+            if let Some(sentence) = self.sentence_candidate(input, filter_by_charset, None) {
+                candidates.push(sentence);
+                full_count = full_count.max(1);
+            }
+        }
         if let Some(start) = materialize_start {
             if record_short_key {
                 crate::m37_record_short_key_first_page_materialize(start.elapsed());
@@ -4326,6 +4416,7 @@ impl StaticTableTranslator {
         let mut pooled: Vec<PendingLookupCandidate> = Vec::new();
         let mut exact_scan_ranges: Vec<(usize, usize)> = Vec::new();
         let mut fetch_groups = HashMap::new();
+        let mut has_reliable_exact_system_phrase = false;
         let record_track_b = self.uses_m44_track_b_metrics();
         for lookup_spec in lookup_specs {
             let fetch_code = lookup_spec.code.as_str();
@@ -4350,6 +4441,8 @@ impl StaticTableTranslator {
                             return None;
                         }
                         exact_candidates += 1;
+                        has_reliable_exact_system_phrase |=
+                            self.is_reliable_exact_system_phrase(lookup_spec, &candidate);
                         let fetch_group = if self.sort_by_weight {
                             0
                         } else {
@@ -4591,6 +4684,7 @@ impl StaticTableTranslator {
         LookupCandidateBatch {
             candidates,
             full_input_anchor,
+            has_reliable_exact_system_phrase,
         }
     }
 
@@ -6096,28 +6190,40 @@ impl StaticTableTranslator {
         let LookupCandidateBatch {
             mut candidates,
             full_input_anchor,
+            has_reliable_exact_system_phrase,
         } = self.candidates_for_lookup_codes(&expanded_lookup_codes, filter_by_charset);
         let has_correction_lookup = expanded_lookup_codes
             .iter()
             .any(|spec| spec.correction_distance.is_some() || spec.spelling_correction);
         self.enforce_prediction_never_first(&mut candidates);
 
-        if candidates.is_empty() {
+        let independent_upstream_script =
+            self.sentence_policy == SentencePolicy::UpstreamScript && self.enable_sentence;
+        let mut upstream_script_candidates = Vec::<Candidate>::new();
+        if !has_reliable_exact_system_phrase
+            && (independent_upstream_script
+                || (self.sentence_policy == SentencePolicy::LegacyFallback
+                    && candidates.is_empty()))
+        {
             if let Some(model) = &self.upstream_sentence_model {
                 let model_start = crate::m37_metrics_enabled().then(Instant::now);
-                candidates = model
+                let mut upstream_candidates = model
                     .candidates_for_input(input)
                     .into_iter()
                     .filter(|candidate| {
-                        !filter_by_charset || !contains_extended_cjk(&candidate.text)
+                        self.is_dictionary_text_allowed(&candidate.text)
+                            && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
                     })
-                    .collect();
+                    .collect::<Vec<_>>();
                 if let Some(start) = model_start {
-                    crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
+                    crate::m37_record_upstream_sentence_model(
+                        start.elapsed(),
+                        upstream_candidates.len(),
+                    );
                 }
-                if candidates.is_empty() {
+                if upstream_candidates.is_empty() {
                     let abbreviation_start = crate::m37_metrics_enabled().then(Instant::now);
-                    candidates = self.abbreviation_sentence_candidates(
+                    upstream_candidates = self.abbreviation_sentence_candidates(
                         model,
                         input,
                         usize::MAX,
@@ -6126,14 +6232,23 @@ impl StaticTableTranslator {
                     if let Some(start) = abbreviation_start {
                         crate::m37_record_upstream_sentence_model(
                             start.elapsed(),
-                            candidates.len(),
+                            upstream_candidates.len(),
                         );
                     }
+                }
+                if independent_upstream_script {
+                    upstream_script_candidates = upstream_candidates;
+                } else {
+                    // LegacyFallback retains the historical fallback-only
+                    // contract: consult Poet only when the ordinary lookup
+                    // stream is empty, and do not merge it into an existing
+                    // completion/correction stream.
+                    candidates = upstream_candidates;
                 }
             }
         }
         let mut sentence_over_completion_floored = false;
-        if candidates.is_empty() && self.enable_sentence {
+        if candidates.is_empty() && upstream_script_candidates.is_empty() && self.enable_sentence {
             if let Some(sentence) = self.sentence_candidate(input, filter_by_charset, None) {
                 candidates.push(sentence);
             }
@@ -6277,6 +6392,17 @@ impl StaticTableTranslator {
                     sentence.quality = top + 1.0;
                 }
             }
+        }
+        if independent_upstream_script && !upstream_script_candidates.is_empty() {
+            candidates = merge_upstream_script_translation_candidates(
+                input,
+                upstream_script_candidates,
+                candidates,
+                usize::MAX,
+                self.initial_quality,
+                !self.comment_format.is_empty(),
+                !self.preedit_format.is_empty(),
+            );
         }
 
         PrefixFallbackBatch {
@@ -6747,19 +6873,6 @@ fn prefix_fallback_insert_index(candidates: &[Candidate], lookup_code: &str) -> 
         .unwrap_or(candidates.len())
 }
 
-fn merge_prefix_fallback_candidates(
-    candidates: &mut Vec<Candidate>,
-    prefix_candidates: Vec<Candidate>,
-    lookup_code: &str,
-) -> usize {
-    merge_prefix_fallback_candidates_with_full_input_anchor(
-        candidates,
-        prefix_candidates,
-        lookup_code,
-        None,
-    )
-}
-
 fn merge_prefix_fallback_candidates_with_full_input_anchor(
     candidates: &mut Vec<Candidate>,
     mut prefix_candidates: Vec<Candidate>,
@@ -6808,6 +6921,82 @@ fn merge_prefix_fallback_candidates_with_full_input_anchor(
     let inserted = prefix_candidates.len();
     candidates.splice(insert_at..insert_at, prefix_candidates);
     inserted
+}
+
+fn merge_upstream_script_translation_candidates(
+    input: &str,
+    upstream_candidates: Vec<Candidate>,
+    outer_candidates: Vec<Candidate>,
+    limit: usize,
+    initial_quality: f32,
+    preserve_formatted_comment: bool,
+    preserve_formatted_preedit: bool,
+) -> Vec<Candidate> {
+    let mut sentences = Vec::new();
+    let mut phrase_stream = Vec::new();
+    for candidate in upstream_candidates {
+        if candidate.source == CandidateSource::Sentence {
+            sentences.push(candidate);
+        } else {
+            phrase_stream.push(candidate);
+        }
+    }
+    for candidate in &mut phrase_stream {
+        let CandidateSource::PartialTable { consumed, .. } = candidate.source else {
+            continue;
+        };
+        let Some(outer) = outer_candidates.iter().find(|outer| {
+            outer.text == candidate.text
+                && matches!(
+                    outer.source,
+                    CandidateSource::PartialTable {
+                        consumed: outer_consumed,
+                        ..
+                    } if outer_consumed == consumed
+                )
+        }) else {
+            continue;
+        };
+        // Keep the model row's oracle span/order, but retain schema formatting
+        // already applied by the ordinary translator path.
+        if preserve_formatted_comment {
+            candidate.comment.clone_from(&outer.comment);
+        }
+        if preserve_formatted_preedit {
+            candidate.preedit.clone_from(&outer.preedit);
+        }
+    }
+    phrase_stream.extend(outer_candidates);
+    phrase_stream.sort_by(|left, right| {
+        script_translation_consumed_len(right, input.len())
+            .cmp(&script_translation_consumed_len(left, input.len()))
+    });
+
+    let mut seen = HashSet::new();
+    let mut candidates = Vec::new();
+    for candidate in sentences.into_iter().chain(phrase_stream) {
+        if !seen.insert(candidate.text.clone()) {
+            continue;
+        }
+        candidates.push(candidate);
+        if candidates.len() >= limit {
+            break;
+        }
+    }
+    let candidate_count = candidates.len();
+    for (index, candidate) in candidates.iter_mut().enumerate() {
+        candidate.quality = initial_quality + (candidate_count - index) as f32;
+    }
+    candidates
+}
+
+fn script_translation_consumed_len(candidate: &Candidate, input_len: usize) -> usize {
+    match &candidate.source {
+        CandidateSource::PartialTable { consumed, .. } => *consumed,
+        CandidateSource::Sentence => usize::MAX,
+        CandidateSource::Table | CandidateSource::Completion => input_len,
+        _ => 0,
+    }
 }
 
 fn leading_single_insert_index(candidates: &[Candidate]) -> usize {
@@ -7267,6 +7456,14 @@ impl Translator for StaticTableTranslator {
 
     fn uses_translate_scratch(&self) -> bool {
         self.upstream_sentence_model.is_some()
+    }
+
+    fn active_upstream_script_translation(&self, context: &Context) -> bool {
+        self.sentence_policy == SentencePolicy::UpstreamScript
+            && self.enable_sentence
+            && self.upstream_sentence_model.is_some()
+            && self.initial_quality == 0.0
+            && self.accepts_segment_tags(&context.segment_tags)
     }
 
     fn translate(&self, input: &str) -> Vec<Candidate> {

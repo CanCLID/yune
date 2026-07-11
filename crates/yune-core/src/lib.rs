@@ -162,6 +162,17 @@ pub trait Translator: Send + Sync {
         false
     }
 
+    /// Whether this translator owns the bounded exact-user ScriptTranslation
+    /// rule for the current segment, including when it emits no system rows.
+    /// Implementations must account for segment tags and the default-quality
+    /// scope required by the engine's producer-local merge.
+    /// The default is deliberately false: the engine's bounded exact-user
+    /// merge is target-scoped and must be explicitly opted into by a translator
+    /// that satisfies its one-owner/default-quality contract.
+    fn active_upstream_script_translation(&self, _context: &Context) -> bool {
+        false
+    }
+
     fn translate_with_context_and_request_with_scratch(
         &self,
         input: &str,

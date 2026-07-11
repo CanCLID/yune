@@ -1,0 +1,26 @@
+schema:
+  schema_id: luna_pinyin
+  name: M59 Log Weight Fixture
+  version: "1"
+
+engine:
+  processors:
+    - speller
+    - express_editor
+  segmentors:
+    - abc_segmentor
+    - fallback_segmentor
+  translators:
+    - script_translator
+
+speller:
+  alphabet: zyxwvutsrqponmlkjihgfedcba
+  delimiter: " '"
+
+translator:
+  dictionary: luna_pinyin
+  enable_completion: true
+  enable_sentence: true
+
+menu:
+  page_size: 5

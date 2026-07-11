@@ -33,7 +33,7 @@ fn upstream_sentence_model_scales_raw_weights_like_librime_entries_before_null_g
     let candidates = model.candidates_for_input("ab");
 
     assert_eq!(candidates[0].text, "AB");
-    assert_eq!(candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(candidates[0].source, CandidateSource::Table);
 
     let entries = [
         TableEntry::new("a", "A", 78_069.0),
@@ -45,22 +45,482 @@ fn upstream_sentence_model_scales_raw_weights_like_librime_entries_before_null_g
     let candidates = model.candidates_for_input("abc");
 
     assert_eq!(candidates[0].text, "ABC");
+    assert_eq!(candidates[0].source, CandidateSource::Table);
+}
+
+#[test]
+fn upstream_script_translation_emits_one_sentence_then_the_independent_phrase_stream() {
+    let entries = [
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("a", "X", 90.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+    ];
+    let vocabulary = [
+        PresetVocabularyEntry::new("AB", 1_000.0),
+        PresetVocabularyEntry::new("XB", 900.0),
+    ];
+    let model = UpstreamSentenceModel::from_table_entries(entries, &vocabulary, 10)
+        .with_script_translation_limits(1, 1);
+
+    let candidates = model.candidates_for_input("abc");
+    let actual = candidates
+        .iter()
+        .map(|candidate| (candidate.text.as_str(), candidate.source.clone()))
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        actual,
+        [
+            ("ABC", CandidateSource::Sentence),
+            (
+                "AB",
+                CandidateSource::PartialTable {
+                    consumed: 2,
+                    recompose_on_default: false,
+                },
+            ),
+            (
+                "XB",
+                CandidateSource::PartialTable {
+                    consumed: 2,
+                    recompose_on_default: false,
+                },
+            ),
+            (
+                "A",
+                CandidateSource::PartialTable {
+                    consumed: 1,
+                    recompose_on_default: false,
+                },
+            ),
+            (
+                "X",
+                CandidateSource::PartialTable {
+                    consumed: 1,
+                    recompose_on_default: false,
+                },
+            ),
+        ]
+    );
+}
+
+#[test]
+fn upstream_script_translation_reliable_full_phrase_suppresses_sentence_generation() {
+    let entries = [
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("a", "X", 90.0),
+        TableEntry::new("b", "B", 100.0),
+    ];
+    let vocabulary = [
+        PresetVocabularyEntry::new("AB", 1_000.0),
+        PresetVocabularyEntry::new("XB", 900.0),
+    ];
+    let model = UpstreamSentenceModel::from_table_entries(entries, &vocabulary, 10)
+        .with_script_translation_limits(1, 1);
+
+    let candidates = model.candidates_for_input("ab");
+
+    assert_eq!(
+        candidates
+            .iter()
+            .take(2)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["AB", "XB"]
+    );
+    assert!(
+        candidates
+            .iter()
+            .all(|candidate| candidate.source != CandidateSource::Sentence),
+        "a reliable full exact phrase belongs to the phrase stream and suppresses Poet"
+    );
+}
+
+#[test]
+fn upstream_script_translation_applies_phrase_limit_after_text_deduplication() {
+    let entries = [
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("a", "A", 90.0),
+        TableEntry::new("a", "A", 80.0),
+        TableEntry::new("a", "A", 70.0),
+        TableEntry::new("a", "A", 60.0),
+        TableEntry::new("a", "A", 50.0),
+        TableEntry::new("a", "A", 40.0),
+        TableEntry::new("a", "A", 30.0),
+        TableEntry::new("a", "X", 20.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+    ];
+    let model = UpstreamSentenceModel::from_table_entries(entries, &[], 3)
+        .with_script_translation_limits(1, 1);
+    let cold = model.candidates_for_input("abc");
+    let mut scratch = UpstreamSentenceScratch::default();
+    let incremental = model.candidates_for_input_with_limit_and_scratch("abc", 3, &mut scratch);
+
+    for (path, candidates) in [("cold", cold), ("incremental", incremental)] {
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["ABC", "A", "X"],
+            "{path} extraction must continue past duplicate rows to fill the visible page"
+        );
+    }
+}
+
+#[test]
+fn singular_null_poet_keeps_first_traversed_equal_weight_path() {
+    let mut graph = WordGraph::new();
+    graph
+        .entry(0)
+        .or_default()
+        .entry(1)
+        .or_default()
+        .push(WordGraphEntry::new("Z", 1.0));
+    graph
+        .entry(0)
+        .or_default()
+        .entry(2)
+        .or_default()
+        .push(WordGraphEntry::new("A", 1.0));
+    graph
+        .entry(1)
+        .or_default()
+        .entry(3)
+        .or_default()
+        .push(WordGraphEntry::new("Z", 1.0));
+    graph
+        .entry(2)
+        .or_default()
+        .entry(3)
+        .or_default()
+        .push(WordGraphEntry::new("A", 1.0));
+
+    let sentences = crate::make_sentences(&graph, 3, 1);
+
+    assert_eq!(sentences[0].text, "ZZ");
+}
+
+#[test]
+fn owned_and_byte_backed_sentence_graphs_preserve_equal_weight_source_order() {
+    let entries = vec![
+        TableEntry::new("a", "Z", 100.0),
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("b", "X", 100.0),
+    ];
+    let owned = UpstreamSentenceModel::from_table_entries(entries.clone(), &[], 5);
+    let checksum = 0x4551_5449;
+    let byte_backed = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(build_poet_bin(
+            entries,
+            &[],
+            &[],
+            checksum,
+        ))) as Arc<dyn PoetByteSource>,
+        checksum,
+        5,
+    )
+    .expect("byte-backed tie fixture should parse");
+
+    for (storage, model) in [("owned", &owned), ("byte-backed", &byte_backed)] {
+        let candidates = model.candidates_for_input("ab");
+        assert_eq!(candidates[0].text, "ZX", "{storage}");
+        assert_eq!(candidates[0].source, CandidateSource::Sentence, "{storage}");
+    }
+}
+
+#[test]
+fn singular_grammar_poet_retains_up_to_seven_last_word_states() {
+    let mut graph = WordGraph::new();
+    graph.entry(0).or_default().entry(1).or_default().extend([
+        WordGraphEntry::new("A", 4.0),
+        WordGraphEntry::new("B", 3.0),
+        WordGraphEntry::new("C", 2.0),
+        WordGraphEntry::new("D", 1.0),
+    ]);
+    graph
+        .entry(1)
+        .or_default()
+        .entry(2)
+        .or_default()
+        .push(WordGraphEntry::new("X", 0.0));
+    let grammar = ContextBoostGrammar {
+        context: "D",
+        word: "X",
+        score: 100.0,
+    };
+
+    let sentences = crate::make_sentences_with_grammar(&graph, 2, 1, &grammar);
+
+    assert_eq!(sentences[0].text, "DX");
+}
+
+#[test]
+fn plural_poet_applies_default_and_accelerated_sentence_cutoff() {
+    let grammar = RecordingGrammar::default();
+    let graph_for = |weights: [f64; 3]| {
+        let mut graph = WordGraph::new();
+        graph.entry(0).or_default().entry(1).or_default().extend([
+            WordGraphEntry::new("A", weights[0]),
+            WordGraphEntry::new("B", weights[1]),
+            WordGraphEntry::new("C", weights[2]),
+        ]);
+        graph
+            .entry(1)
+            .or_default()
+            .entry(2)
+            .or_default()
+            .push(WordGraphEntry::new("X", 0.0));
+        graph
+    };
+
+    let default_cutoff =
+        crate::make_sentences_with_grammar(&graph_for([100.0, 80.0, 70.0]), 2, 3, &grammar);
+    assert_eq!(
+        default_cutoff
+            .iter()
+            .map(|sentence| sentence.text.as_str())
+            .collect::<Vec<_>>(),
+        ["AX"]
+    );
+
+    let accelerated =
+        crate::make_sentences_with_grammar(&graph_for([100.0, 95.0, 88.0]), 2, 3, &grammar);
+    assert_eq!(
+        accelerated
+            .iter()
+            .map(|sentence| sentence.text.as_str())
+            .collect::<Vec<_>>(),
+        ["AX", "BX"],
+        "the third row is within 10% of the second but outside the accelerated 6.67% cutoff"
+    );
+}
+
+#[test]
+fn script_encoder_uses_exact_five_percent_boundary_and_ignores_duplicate_codes() {
+    let entries = vec![
+        TableEntry::new("chang", "長", 100.0),
+        TableEntry::new("ju", "句", 100.0),
+        TableEntry::new("ju", "足", 5.0),
+        TableEntry::new("zhu", "朱", 100.0),
+        TableEntry::new("zhu", "足", 1.0),
+        TableEntry::new("zu", "足", 94.0),
+        TableEntry::new("zu", "足", 1_000.0),
+    ];
+    let vocabulary = vec![PresetVocabularyEntry::new("長足", 989.0)];
+    let owned = UpstreamSentenceModel::from_table_entries(entries.clone(), &vocabulary, 10);
+    let checksum = 0x5350_3543;
+    let bytes = build_poet_bin(entries, &vocabulary, &vocabulary, checksum);
+    let byte_backed = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(bytes)) as Arc<dyn PoetByteSource>,
+        checksum,
+        10,
+    )
+    .expect("byte-backed ScriptEncoder model should parse");
+    let octagram = || {
+        OctagramGrammar::from_bytes(
+            &synthetic_octagram_gram(&[("長足", 1)]),
+            OctagramGrammarConfig::default(),
+        )
+        .expect("synthetic octagram should parse")
+    };
+    let owned_octagram = owned.clone().with_grammar(octagram());
+    let byte_backed_octagram = byte_backed.clone().with_grammar(octagram());
+
+    for (storage, model) in [
+        ("owned-null", &owned),
+        ("byte-backed-null", &byte_backed),
+        ("owned-octagram", &owned_octagram),
+        ("byte-backed-octagram", &byte_backed_octagram),
+    ] {
+        let boundary = model.candidates_for_input("changju");
+        assert_eq!(boundary[0].text, "長足", "{storage}");
+        assert!(
+            boundary.iter().any(|candidate| candidate.text == "長足"),
+            "{storage} must admit 足/ju at exactly 5% of unique-code total weight"
+        );
+
+        let below = model.candidates_for_input("changzhu");
+        assert!(
+            below.iter().all(|candidate| candidate.text != "長足"),
+            "{storage} must exclude 足/zhu below 5%; the duplicate 足/zu row must not inflate the total"
+        );
+    }
+}
+
+#[test]
+fn natural_log_table_weights_apply_script_encoder_filter_in_the_raw_domain() {
+    // Pinned Luna source facts behind the M59 59-character residual:
+    // essay.txt gives 蓋 weight 5104 and luna_pinyin.dict.yaml assigns
+    // gai=99.91%, ge/he=0.09%. librime applies ScriptEncoder's 5% filter to
+    // those raw weights, then stores their natural logarithms in table.bin.
+    let raw_entries = vec![
+        TableEntry::new("zhe", "這", 179_212.95),
+        TableEntry::new("zhe", "遮", 1_437.0),
+        TableEntry::new("ge", "個", 100_000.0),
+        TableEntry::new("ge", "歌", 100_000.0),
+        TableEntry::new("ge", "格", 100_000.0),
+        TableEntry::new("gai", "蓋", 5_099.406_3),
+        TableEntry::new("ge", "蓋", 4.5936),
+        TableEntry::new("he", "蓋", 4.5936),
+    ];
+    let natural_log_entries = raw_entries
+        .iter()
+        .map(|entry| TableEntry::new(&entry.code, &entry.text, entry.weight.ln()))
+        .collect::<Vec<_>>();
+    let vocabulary = vec![
+        PresetVocabularyEntry::new("這個", 559_659.0),
+        PresetVocabularyEntry::new("遮蓋", 937.0),
+        PresetVocabularyEntry::new("這歌", 905.0),
+        PresetVocabularyEntry::new("這格", 323.0),
+    ];
+    let raw = UpstreamSentenceModel::from_table_entries(raw_entries, &vocabulary, 10);
+    let natural_log =
+        UpstreamSentenceModel::from_natural_log_table_entries(natural_log_entries, &vocabulary, 10);
+
+    let raw_texts = raw
+        .candidates_for_input("zhege")
+        .into_iter()
+        .map(|candidate| candidate.text)
+        .collect::<Vec<_>>();
+    let natural_log_texts = natural_log
+        .candidates_for_input("zhege")
+        .into_iter()
+        .map(|candidate| candidate.text)
+        .collect::<Vec<_>>();
+
+    assert_eq!(natural_log_texts, raw_texts);
+    assert_eq!(&natural_log_texts[..4], ["這個", "這歌", "這格", "這"]);
+    assert!(
+        !natural_log_texts.iter().any(|text| text == "遮蓋"),
+        "蓋/ge at 0.09% must not create the false zhege phrase"
+    );
+
+    let boundary_entries = vec![
+        TableEntry::new("chang", "長", 100.0),
+        TableEntry::new("ju", "句", 100.0),
+        TableEntry::new("ju", "足", 5.0),
+        TableEntry::new("zhu", "朱", 100.0),
+        TableEntry::new("zhu", "足", 1.0),
+        TableEntry::new("zu", "足", 94.0),
+    ];
+    let boundary_log_entries = boundary_entries
+        .into_iter()
+        .map(|entry| TableEntry::new(&entry.code, &entry.text, entry.weight.ln()))
+        .collect::<Vec<_>>();
+    let boundary_vocabulary = [PresetVocabularyEntry::new("長足", 989.0)];
+    let boundary_model = UpstreamSentenceModel::from_natural_log_table_entries(
+        boundary_log_entries,
+        &boundary_vocabulary,
+        10,
+    );
+
+    assert!(
+        boundary_model
+            .candidates_for_input("changju")
+            .iter()
+            .any(|candidate| candidate.text == "長足"),
+        "f32 log rounding must not exclude 足/ju at the source's exact 5% boundary"
+    );
+    assert!(
+        boundary_model
+            .candidates_for_input("changzhu")
+            .iter()
+            .all(|candidate| candidate.text != "長足"),
+        "the compiled-log reconstruction must still exclude 足/zhu below 5%"
+    );
+}
+
+#[test]
+fn natural_log_table_weights_are_not_logged_twice_for_sentence_ranking() {
+    // Correct raw-product ranking prefers A+BC (1_000_000 * 2) over
+    // X+Y (100 * 100). Applying ln() to table.bin's already-logged weights
+    // reverses those paths, so this locks the entry-weight domain separately
+    // from the ScriptEncoder pronunciation filter above.
+    let raw_entries = vec![
+        TableEntry::new("a", "A", 1_000_000.0),
+        TableEntry::new("bc", "BC", 2.0),
+        TableEntry::new("ab", "X", 100.0),
+        TableEntry::new("c", "Y", 100.0),
+    ];
+    let natural_log_entries = raw_entries
+        .iter()
+        .map(|entry| TableEntry::new(&entry.code, &entry.text, entry.weight.ln()))
+        .collect::<Vec<_>>();
+    let raw = UpstreamSentenceModel::from_table_entries(raw_entries, &[], 10);
+    let natural_log =
+        UpstreamSentenceModel::from_natural_log_table_entries(natural_log_entries, &[], 10);
+
+    let raw_candidates = raw.candidates_for_input("abc");
+    let natural_log_candidates = natural_log.candidates_for_input("abc");
+
+    assert_eq!(raw_candidates[0].text, "ABC");
+    assert_eq!(raw_candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(natural_log_candidates, raw_candidates);
+}
+
+#[test]
+fn upstream_script_translation_limits_sentence_homophones_independently_from_phrase_rows() {
+    let entries = [
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("a", "X", 90.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+    ];
+    let model = UpstreamSentenceModel::from_table_entries(entries, &[], 10)
+        .with_script_translation_limits(2, 1);
+
+    let candidates = model.candidates_for_input("abc");
+
+    assert_eq!(candidates[0].text, "ABC");
     assert_eq!(candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(candidates[1].text, "A");
+    assert_eq!(candidates[2].text, "X");
+    assert_eq!(
+        candidates
+            .iter()
+            .filter(|candidate| candidate.source == CandidateSource::Sentence)
+            .count(),
+        1,
+        "max_homophones=1 excludes X from the sentence graph without hiding it from phrases"
+    );
+
+    let model = UpstreamSentenceModel::from_table_entries(
+        [
+            TableEntry::new("a", "A", 100.0),
+            TableEntry::new("a", "X", 90.0),
+            TableEntry::new("b", "B", 100.0),
+            TableEntry::new("c", "C", 100.0),
+        ],
+        &[],
+        10,
+    )
+    .with_script_translation_limits(2, 2);
+    let candidates = model.candidates_for_input("abc");
+    assert_eq!(
+        candidates
+            .iter()
+            .filter(|candidate| candidate.source == CandidateSource::Sentence)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["ABC", "XBC"],
+        "an explicit plural sentence configuration preserves the upstream beam surface"
+    );
 }
 
 #[test]
 fn make_sentences_keeps_weight_ordered_beam() {
     let mut graph = WordGraph::new();
     graph.entry(0).or_default().entry(2).or_default().extend([
-        WordGraphEntry::new("A", 10.0),
-        WordGraphEntry::new("X", 9.0),
+        WordGraphEntry::new("A", 100.0),
+        WordGraphEntry::new("X", 99.0),
     ]);
-    graph
-        .entry(2)
-        .or_default()
-        .entry(4)
-        .or_default()
-        .extend([WordGraphEntry::new("B", 9.0), WordGraphEntry::new("Y", 7.0)]);
+    graph.entry(2).or_default().entry(4).or_default().extend([
+        WordGraphEntry::new("B", 99.0),
+        WordGraphEntry::new("Y", 97.0),
+    ]);
 
     let sentences = make_sentences(&graph, 4, 3)
         .into_iter()
@@ -68,6 +528,33 @@ fn make_sentences_keeps_weight_ordered_beam() {
         .collect::<Vec<_>>();
 
     assert_eq!(sentences, ["AB", "XB", "AY"]);
+}
+
+#[test]
+fn make_sentence_excludes_the_direct_whole_input_word() {
+    let mut graph = WordGraph::new();
+    graph
+        .entry(0)
+        .or_default()
+        .entry(2)
+        .or_default()
+        .push(WordGraphEntry::new("WHOLE", 1_000.0));
+    graph
+        .entry(0)
+        .or_default()
+        .entry(1)
+        .or_default()
+        .push(WordGraphEntry::new("A", 10.0));
+    graph
+        .entry(1)
+        .or_default()
+        .entry(2)
+        .or_default()
+        .push(WordGraphEntry::new("B", 10.0));
+
+    let sentence = crate::make_sentence(&graph, 2).expect("composed path should exist");
+
+    assert_eq!(sentence.text, "AB");
 }
 
 #[test]
@@ -569,7 +1056,7 @@ Alt\tab\t900
     let reset_metrics = crate::m37_metrics_snapshot();
     crate::m37_metrics_enable(false);
 
-    assert_eq!(candidates[0].text, "ABC");
+    assert_eq!(candidates[0].text, "A");
     assert!(metrics.upstream_sentence_model_exact_range_index_hits >= 3);
     assert!(metrics.upstream_sentence_model_exact_range_index_misses >= 1);
     assert!(metrics.upstream_sentence_model_prefix_filter_hits >= 3);
@@ -645,6 +1132,65 @@ fn upstream_sentence_scratch_reuses_prefix_walk_state_for_single_key_extensions(
     assert!(
         metrics.upstream_sentence_model_phrase_index_nodes_visited <= 4,
         "only newly advanced prefix hits should be visited during cached extension: {metrics:?}"
+    );
+}
+
+#[test]
+fn upstream_sentence_scratch_matches_cold_sentence_then_phrase_stream_order() {
+    let entries = [
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("a", "X", 90.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+    ];
+    let vocabulary = [
+        PresetVocabularyEntry::new("AB", 1_000.0),
+        PresetVocabularyEntry::new("XB", 900.0),
+    ];
+    let model = UpstreamSentenceModel::from_table_entries(entries, &vocabulary, 10)
+        .with_script_translation_limits(1, 1);
+    let mut scratch = UpstreamSentenceScratch::default();
+
+    for input in ["ab", "abc"] {
+        let warm = model.candidates_for_input_with_limit_and_scratch(input, 5, &mut scratch);
+        let cold = model.candidates_for_input_with_limit(input, 5);
+        assert_eq!(
+            warm, cold,
+            "incremental stream order must match cold for {input}"
+        );
+    }
+
+    let actual = model
+        .candidates_for_input_with_limit_and_scratch("abc", 5, &mut scratch)
+        .into_iter()
+        .map(|candidate| candidate.text)
+        .collect::<Vec<_>>();
+    assert_eq!(actual, ["ABC", "AB", "XB", "A", "X"]);
+}
+
+#[test]
+fn upstream_sentence_scratch_preserves_close_f64_phrase_weight_order() {
+    let previous = "é".repeat(2_047);
+    let input = "é".repeat(2_048);
+    let entries = [
+        TableEntry::new("é", "P", 1.0),
+        TableEntry::new(&input, "Z", 100.125),
+        TableEntry::new(&input, "A", 100.0),
+    ];
+    let model = UpstreamSentenceModel::from_table_entries(entries, &[], 2);
+    let mut scratch = UpstreamSentenceScratch::default();
+
+    let _ = model.candidates_for_input_with_limit_and_scratch(&previous, 2, &mut scratch);
+    let warm = model.candidates_for_input_with_limit_and_scratch(&input, 2, &mut scratch);
+    let cold = model.candidates_for_input_with_limit(&input, 2);
+
+    assert_eq!(warm, cold, "warm extraction must retain graph f64 order");
+    assert_eq!(
+        warm.iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["Z", "A"],
+        "close weights must not collapse into a lexical f32 tie at long byte offsets"
     );
 }
 
@@ -728,7 +1274,7 @@ fn upstream_sentence_model_prefers_long_abbreviation_phrase_over_short_phrase_pa
 
 #[test]
 fn upstream_sentence_model_ignores_zero_weight_character_codes_for_phrase_derivation() {
-    let entries = [
+    let entries = vec![
         crate::TableEntry::new("a", "A", 100.0),
         crate::TableEntry::new("b", "B", 100.0),
         crate::TableEntry::new("x", "X", 0.0),
@@ -737,19 +1283,98 @@ fn upstream_sentence_model_ignores_zero_weight_character_codes_for_phrase_deriva
         crate::PresetVocabularyEntry::new("AX", 1_000_000.0),
         crate::PresetVocabularyEntry::new("AB", 1.0),
     ];
-    let model = UpstreamSentenceModel::from_table_entries(entries, &vocabulary, 10);
+    let compiled_entries = entries
+        .iter()
+        .map(|entry| {
+            let compiled_weight = if entry.weight > 0.0 {
+                entry.weight.ln()
+            } else {
+                f64::EPSILON.ln() as f32
+            };
+            crate::TableEntry::new(&entry.code, &entry.text, compiled_weight)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        compiled_entries[2].weight.to_bits(),
+        0xc210_2cb3,
+        "the control must use librime DictCompiler's narrowed ln(DBL_EPSILON) sentinel"
+    );
+    let models = [
+        (
+            "raw",
+            UpstreamSentenceModel::from_table_entries(entries, &vocabulary, 10),
+        ),
+        (
+            "compiled-natural-log",
+            UpstreamSentenceModel::from_natural_log_table_entries(
+                compiled_entries,
+                &vocabulary,
+                10,
+            ),
+        ),
+    ];
 
-    let candidates = model.candidates_for_code_spans_with_limit(
-        "ab",
-        &[
+    for (storage, model) in models {
+        let candidates = model.candidates_for_code_spans_with_limit(
+            "ab",
+            &[
+                SentenceCodeSpan::new(0, 1, "a"),
+                SentenceCodeSpan::new(1, 2, "b"),
+                SentenceCodeSpan::new(1, 2, "x"),
+            ],
+            5,
+        );
+
+        assert_eq!(candidates[0].text, "AB", "{storage}");
+        assert!(
+            candidates.iter().all(|candidate| candidate.text != "AX"),
+            "{storage}: zero-weight X must not enter abbreviation phrase derivation"
+        );
+    }
+}
+
+#[test]
+fn natural_log_abbreviation_codes_preserve_one_and_sub_one_raw_weights() {
+    for (case, low_positive_weight) in [("ln-one", 1.0_f32), ("negative-log", 0.5_f32)] {
+        let raw_entries = vec![
+            crate::TableEntry::new("a", "A", 100.0),
+            crate::TableEntry::new("b", "B", 100.0),
+            crate::TableEntry::new("x", "X", low_positive_weight),
+        ];
+        let natural_log_entries = raw_entries
+            .iter()
+            .map(|entry| crate::TableEntry::new(&entry.code, &entry.text, entry.weight.ln()))
+            .collect::<Vec<_>>();
+        let abbreviation_vocabulary = [
+            crate::PresetVocabularyEntry::new("AX", 1_000_000.0),
+            crate::PresetVocabularyEntry::new("AB", 1.0),
+        ];
+        let raw = UpstreamSentenceModel::from_table_entries_with_abbreviation_vocabulary(
+            raw_entries,
+            &[],
+            &abbreviation_vocabulary,
+            10,
+        );
+        let natural_log =
+            UpstreamSentenceModel::from_natural_log_table_entries_with_abbreviation_vocabulary(
+                natural_log_entries,
+                &[],
+                &abbreviation_vocabulary,
+                10,
+            );
+        let spans = [
             SentenceCodeSpan::new(0, 1, "a"),
             SentenceCodeSpan::new(1, 2, "b"),
             SentenceCodeSpan::new(1, 2, "x"),
-        ],
-        5,
-    );
+        ];
 
-    assert_eq!(candidates[0].text, "AB");
+        let raw_candidates = raw.candidates_for_code_spans_with_limit("ab", &spans, 5);
+        let natural_log_candidates =
+            natural_log.candidates_for_code_spans_with_limit("ab", &spans, 5);
+
+        assert_eq!(raw_candidates[0].text, "AX", "{case}");
+        assert_eq!(natural_log_candidates, raw_candidates, "{case}");
+    }
 }
 
 #[test]
@@ -840,14 +1465,20 @@ fn make_sentences_does_not_apply_octagram_rear_boundary_to_initial_word() {
         .entry(1)
         .or_default()
         .push(WordGraphEntry::new("A", 0.0));
+    graph
+        .entry(1)
+        .or_default()
+        .entry(2)
+        .or_default()
+        .push(WordGraphEntry::new("B", 0.0));
 
-    let sentence = make_sentences_with_grammar(&graph, 1, 1, &grammar)
+    let sentence = make_sentences_with_grammar(&graph, 2, 1, &grammar)
         .into_iter()
         .next()
-        .expect("single-word sentence should be produced");
+        .expect("composed sentence should be produced");
 
-    assert_eq!(sentence.text, "A");
-    assert_eq!(sentence.weight, -12.0);
+    assert_eq!(sentence.text, "AB");
+    assert_eq!(sentence.weight, -24.0);
 }
 
 #[test]
@@ -988,7 +1619,11 @@ fn make_sentences_uses_octagram_grammar_to_rank_sentence_paths() {
         .map(|sentence| sentence.text)
         .collect::<Vec<_>>();
 
-    assert_eq!(texts, ["今天會議", "今天優惠"]);
+    assert_eq!(
+        texts,
+        ["今天會議"],
+        "the lower octagram path falls outside pinned Poet's default plural cutoff"
+    );
 }
 
 #[test]
@@ -1091,7 +1726,11 @@ fn octagram_sentence_lattice_keeps_same_text_paths_with_distinct_context() {
         .expect("sentence should be produced");
 
     assert_eq!(sentence.text, "ABCDE");
-    assert_eq!(sentence.word_lengths, [1, 1, 2, 1]);
+    assert_eq!(
+        sentence.word_lengths,
+        [2, 2, 1],
+        "singular grammar keeps only the best line per last word before the next edge"
+    );
 }
 
 #[test]
@@ -1099,6 +1738,7 @@ fn octagram_sentence_model_ignores_zero_weight_character_codes_for_normal_phrase
     let entries = [
         crate::TableEntry::new("a", "A", 100.0),
         crate::TableEntry::new("b", "B", 0.0),
+        crate::TableEntry::new("x", "B", 100.0),
         crate::TableEntry::new("b", "C", 100.0),
     ];
     let vocabulary = [
@@ -1114,7 +1754,7 @@ fn octagram_sentence_model_ignores_zero_weight_character_codes_for_normal_phrase
     let octagram_model =
         UpstreamSentenceModel::from_table_entries(entries, &vocabulary, 10).with_grammar(grammar);
 
-    assert_eq!(null_model.candidates_for_input("ab")[0].text, "AB");
+    assert_eq!(null_model.candidates_for_input("ab")[0].text, "AC");
     assert_eq!(octagram_model.candidates_for_input("ab")[0].text, "AC");
 }
 

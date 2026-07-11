@@ -1,6 +1,6 @@
 # Engine Support Contract
 
-Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI; updated by M56 to add productization hardening policies for compiled-artifact staleness, user-data lifecycle, ABI crash behavior, threading, poison recovery, and release panic strategy without widening the ABI.
+Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI; updated by M56 to add productization hardening policies for compiled-artifact staleness, user-data lifecycle, ABI crash behavior, threading, poison recovery, and release panic strategy without widening the ABI; clarified by M59 Increment 4a for upstream Luna ScriptTranslation page shape and compiled-weight domains, again without ABI widening.
 
 This contract defines Yune's launch-facing engine support boundary. It is a
 contract for engine behavior, storage, ABI shape, and evidence lanes; it is not
@@ -43,6 +43,27 @@ What "parity" requires differs by lane:
   fixture-backed candidate guards (e.g. `beingo` vs v1.1.2) are frozen regression
   pins — not extended, not deleted; multilingual comments stay oracle-backed
   against TypeDuck `v1.1.2`.
+
+For the captured 37- and 59-character upstream Luna page-zero rows, the required
+shape is one best full-span sentence followed by the independent oracle phrase
+stream. That is a target-specific capture, not a claim that every Luna input
+always has exactly one full-span candidate. It does not close M59's separate
+seven-input Lane B complete-list requirement.
+
+### Upstream Luna Compiled-Weight Semantics
+
+The owned/default Luna sentence model may be reconstructed from source weights
+or compiled librime tables, but those domains remain explicit:
+
+- source dictionary/essay weights are raw weights;
+- compiled `.table.bin` entry weights are natural logarithms of the source
+  weights and are consumed directly by log-domain graph scoring;
+- a compiled log value must not be summed as a raw weight or logged again;
+- ScriptEncoder's pronunciation-share cutoff is inclusive at 5%, including
+  when the source value is represented by a rounded compiled `f32` log.
+
+These are internal target-behavior constraints. They change neither the public
+C ABI nor any signed performance threshold.
 
 ## Native Octagram Grammar Support
 

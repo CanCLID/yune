@@ -558,11 +558,12 @@ fn run_explicit_false(case: &ReachabilityCase) {
             current = selected;
         }
         assert_eq!(committed, case.expected_final);
-    } else if case.schema_id == "luna_pinyin" {
+    } else if case.dictionary_id == "luna_pinyin" {
         // The corrected ScriptTranslation phrase iterator independently emits
-        // the first-syllable rows even when M59's supplemental injection is
-        // disabled. Lock the explicit-false output to the pinned librime page
-        // instead of treating the oracle-owned `莫` row as injected behavior.
+        // first-syllable rows for both plain Luna and its octagram profile even
+        // when M59's supplemental injection is disabled. The deployed false
+        // flag above proves the mechanism boundary; candidate absence cannot,
+        // because `莫` is independently owned by the librime phrase stream.
         let all_candidates = all_candidate_texts(state, page);
         let oracle: Value = serde_json::from_str(LUNA_COMPOSITION)
             .expect("pinned Luna composition fixture should parse");
@@ -580,7 +581,8 @@ fn run_explicit_false(case: &ReachabilityCase) {
         assert_eq!(
             &all_candidates[..expected_page.len()],
             expected_page,
-            "Luna explicit-false must retain the independently oracle-owned phrase stream"
+            "{} explicit-false must retain the independently oracle-owned Luna phrase stream",
+            case.label
         );
     } else {
         let standalone_target = case

@@ -3515,10 +3515,10 @@ fn m59_luna_moboyi_leading_singles_reachable_after_phrases() {
     // candidates precede the leading single 莫, and 莫 is reachable by paging —
     // WITHOUT re-pinning the wrong "莫 not on page 1".
     //
-    // RECORDED DIVERGENCE (not asserted as required behavior): Yune's sentence
-    // scorer emits different page-1 phrases (脈搏一…) than the oracle's (莫博弈…),
-    // so Yune's 莫 currently lands later than the oracle's index 2. Exact page-1
-    // order parity is deferred to the sentence-scoring work, not asserted here.
+    // Increment 4a corrected the ScriptTranslation sentence/phrase split; the
+    // schema-general deployment matrix now locks its independently oracle-owned
+    // page-zero stream even with supplemental injection disabled. This focused
+    // test keeps the selection/recomposition behavior independently guarded.
     let _guard = test_guard();
     let runtime = YuneWebRuntime::create_with_schema("m59-luna-moboyi-order", "luna_pinyin");
     stage_and_deploy_tracked_luna(&runtime);

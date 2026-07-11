@@ -10,6 +10,17 @@ so Increment 4b is permitted to start. This packet does **not** close Lane A,
 D-48, or M59. See
 [`review-fix-forward/`](./review-fix-forward/).
 
+Later macOS follow-up exposed an additional Luna long-input defect that this
+packet's committed 37- and 59-character snapshots still preserve: Yune emits
+five full-span sentence alternatives where pinned librime emits one best
+sentence followed by phrase candidates. The supplemental
+[`increment-4a-luna-script-translation-order`](../increment-4a-luna-script-translation-order/)
+packet repairs those two pages at measured Yune commit `89875ee2`. That packet
+does not alter this Windows performance verdict, the strict Lane A comparator,
+or the renewed class-3 owner disposition and 4b permission; it did not cause or
+supersede that independently recorded disposition. Neither packet is a
+performance measurement of the later combined source tree.
+
 The implementation derives a Standard script-sentence policy from translator
 configuration and `SchemaBehaviorProfile`, never schema id or input text. It
 makes the upstream sentence model authoritative for the applicable Standard

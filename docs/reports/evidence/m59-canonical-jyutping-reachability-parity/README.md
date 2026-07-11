@@ -1,6 +1,6 @@
 # M59 Canonical Jyutping Reachability Parity — Evidence Ledger
 
-> **Status (2026-07-06):** the M59 "fix" was gamed and reverted (`c70774ce`
+> **Historical packet classification (2026-07-06):** the prior M59 "fix" was gamed and reverted (`c70774ce`
 > reverts `77a9540a`). This bundle mixes retained-legitimate evidence with
 > now-void artifacts. The classification below is authoritative; treat any
 > claim not reaffirmed here as void.
@@ -31,6 +31,21 @@ regression guard, not an acceptance oracle.
 > permitted to start; no D-48 lane is closed, and this packet is not final
 > M59-REACH-04 evidence.
 >
+> [`increment-4a-luna-script-translation-order/`](./increment-4a-luna-script-translation-order/)
+> is a supplemental Luna long-input `ScriptTranslation` repair and fresh
+> final-binary five-round macOS diagnostic measured only at source commit
+> `89875ee2`. Both 37- and 59-character first pages now match pinned
+> librime exactly in all five runs; Yune and librime dylib hashes and the full
+> candidate snapshots remain single-valued. The repair separates librime's
+> one-best sentence from its phrase stream and honors the natural-log weight
+> domain plus inclusive 5% pronunciation boundary across compiled stored-`f32`
+> weights. The packet creates no threshold, exception, or milestone. It does
+> not supersede the Windows packet, change its strict Lane A `2/5` result or
+> renewed class-3 owner disposition and 4b permission, claim a
+> combined/reconciled commit was measured, or establish the later state of the
+> seven-row Lane B requirement. The macOS evidence did not cause or supersede
+> the independently recorded owner disposition.
+>
 > [`increment-3b-transformed-algebra/`](./increment-3b-transformed-algebra/) is
 > the accepted 3b packet for implementation commit `2cb7e411`. Its
 > schema-general mechanism, seven
@@ -38,8 +53,8 @@ regression guard, not an acceptance oracle.
 > deterministic product rebuild, focused release gates, and owner-signed
 > five-round Windows ratchet are green (`32/32` aggregate rows). M59-REACH-02 is
 > complete. The packet does not close M59, M59-REACH-03/04, or a D-48 ordering
-> lane; that statement is the frozen 3b boundary superseded by the 4a update
-> above.
+> lane; that statement is the frozen 3b boundary followed by the authoritative
+> Windows 4a update and supplemental macOS follow-up above.
 >
 > [`increment-2-profile-paging/`](./increment-2-profile-paging/) is the green
 > M59-NAV-01 acceptance packet for implementation commit `e37ee011`. It records
@@ -72,7 +87,19 @@ regression guard, not an acceptance oracle.
 
 ## Artifact classification
 
-### VALID — current Increment 1 executable diagnostics (not acceptance)
+### VALID — supplemental macOS repair evidence (source-scoped, not Windows acceptance)
+
+- `increment-4a-luna-script-translation-order/README.md` — authored repair and
+  five-run diagnostic report. It closes only the expanded 37/59 page-zero
+  sentence/phrase sub-slice at source `89875ee2`, records all five external run
+  paths and stable binary/candidate hashes, preserves the earlier macOS red
+  packet and setup retries, and leaves the authoritative Windows packet,
+  renewed class-3 owner disposition and 4b permission, and broader Lane B
+  requirement unchanged. It did not cause or supersede that disposition.
+- Raw benchmark outputs and portable HTML remain external by protocol; only the
+  authored report and non-circular pinned-librime fixture are tracked.
+
+### VALID — retained Increment 1 executable diagnostics (not acceptance)
 
 - `increment-1-executable-evidence/lane-a-oracle.json` — fresh pinned upstream
   oracle raw capture with source/schema cleanliness, binary/tool, option,

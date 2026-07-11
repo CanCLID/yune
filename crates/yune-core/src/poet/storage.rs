@@ -8,11 +8,16 @@ use std::sync::Arc;
 use crate::{PresetVocabularyEntry, TableEntry};
 
 use super::{
-    build_model_vocabulary_index, compare_model_entry_by_code, pack_owned_model_entries,
-    script_encoder_character_codes, script_encoder_phrase_vocabulary, ModelEntry, ModelStringPool,
-    ModelStringRange, ModelVocabularyEntry, OwnedModelEntry,
+    build_model_vocabulary_index, build_script_encoder_character_codes,
+    compare_model_entry_by_code, pack_owned_model_entries, script_encoder_phrase_vocabulary,
+    EntryWeightDomain, ModelEntry, ModelStringPool, ModelStringRange, ModelVocabularyEntry,
+    OwnedModelEntry,
 };
 
+// Version 3 changes the compiled ScriptEncoder character-code map: readings
+// below five percent of a character's total weight are no longer admitted.
+// Keep this in the artifact identity so an otherwise checksum-fresh v2 file
+// cannot preserve the pre-M59 false phrase surface after an upgrade.
 const MAGIC: &[u8; 12] = b"YUNE-POET/3\0";
 const HEADER_LEN: usize = 24;
 const SECTION_DIR_ENTRY_LEN: usize = 20;
@@ -946,6 +951,9 @@ fn compile_poet_inputs(
     vocabulary: &[PresetVocabularyEntry],
     abbreviation_vocabulary: &[PresetVocabularyEntry],
 ) -> CompiledPoetInputs {
+    // YUNE-POET/3 is compiled from source/Yune-owned raw weights. Unlike a
+    // librime `.table.bin` reconstructed into an owned runtime model, this
+    // byte-backed sidecar must therefore remain in the Raw weight domain.
     let entries = entries
         .into_iter()
         .map(|entry| OwnedModelEntry {
@@ -956,7 +964,7 @@ fn compile_poet_inputs(
         .collect::<Vec<_>>();
     let script_vocabulary = script_encoder_phrase_vocabulary(&entries, vocabulary);
     let mut owned_entries = Vec::new();
-    let mut character_readings: HashMap<char, Vec<(String, f32)>> = HashMap::new();
+    let mut script_encoder_codes = Vec::new();
     let mut abbreviation_character_codes: HashMap<char, Vec<String>> = HashMap::new();
     for owned in entries {
         if owned.code.is_empty() {
@@ -965,11 +973,8 @@ fn compile_poet_inputs(
         let mut chars = owned.text.chars();
         if let Some(ch) = chars.next() {
             if chars.next().is_none() {
-                character_readings
-                    .entry(ch)
-                    .or_default()
-                    .push((owned.code.clone(), owned.weight));
-                if owned.weight > 0.0 {
+                script_encoder_codes.push((ch, owned.code.clone(), owned.weight));
+                if EntryWeightDomain::Raw.has_positive_raw_weight(owned.weight) {
                     abbreviation_character_codes
                         .entry(ch)
                         .or_default()
@@ -979,7 +984,8 @@ fn compile_poet_inputs(
         }
         owned_entries.push(owned);
     }
-    let character_codes = script_encoder_character_codes(character_readings);
+    let character_codes =
+        build_script_encoder_character_codes(script_encoder_codes, EntryWeightDomain::Raw);
     for codes in abbreviation_character_codes.values_mut() {
         codes.sort();
         codes.dedup();
@@ -1729,14 +1735,16 @@ mod tests {
     }
 
     #[test]
-    fn poet_bin_rejects_legacy_v1_artifact() {
-        let mut bytes = sample_poet_bin();
-        bytes[..12].copy_from_slice(b"YUNE-POET/1\0");
+    fn poet_bin_rejects_legacy_artifacts() {
+        for magic in [b"YUNE-POET/1\0", b"YUNE-POET/2\0"] {
+            let mut bytes = sample_poet_bin();
+            bytes[..12].copy_from_slice(magic);
 
-        assert_eq!(
-            parse_poet_bin_summary(&bytes, 0xAABBCCDD),
-            Err(PoetBinParseError::UnsupportedVersion),
-        );
+            assert_eq!(
+                parse_poet_bin_summary(&bytes, 0xAABBCCDD),
+                Err(PoetBinParseError::UnsupportedVersion),
+            );
+        }
     }
 
     #[test]

@@ -46,6 +46,16 @@
 > with a lazy/page-bounded exact-order strategy and signing freshly derived
 > ceilings; it is never a quiet re-baseline, silent revert, or weakened parity
 > target.
+>
+> A separate macOS follow-up is measured only at source commit `89875ee2`.
+> Its exact 37/59 first pages match pinned librime, and its non-circular fixture
+> covers compiled natural-log weights plus the inclusive 5% boundary across
+> stored-`f32` rounding. This supplemental packet has its own evidence directory
+> and changes no threshold, exception, or milestone. It neither claims that the
+> combined/reconciled source was measured nor causes or supersedes the recorded
+> Windows owner disposition: the strict Lane A comparator remains `2/5`, the
+> narrowly scoped class-3 exception and its revisit triggers remain in force,
+> and 4b remains permitted to start.
 
 > **For agentic workers:** this plan was RESET on 2026-07-06 after the prior
 > execution was found to be gamed and reverted, then re-scoped per owner
@@ -122,6 +132,24 @@
   signed ratchet guard. The owner renewed the narrowly scoped class-3 exception
   on 2026-07-11 with the recorded cross-weight/provenance/page-1 revisit
   triggers; 4b is permitted to start.
+- **Supplemental macOS 37/59 repair measured at source `89875ee2`:**
+  `71a80704` separates upstream Luna's one-best sentence from its independent
+  phrase stream; `e5c57eb6` preserves ScriptTranslation display metadata;
+  `0ecd2e06` records the compiled natural-log weight domain; `1f0fb0e5`
+  preserves librime's inclusive 5% source-weight boundary despite stored `f32`
+  rounding; `fa7f3961` aligns the deployed explicit-false integration matrix
+  without changing engine behavior; and `89875ee2` closes that branch's
+  independent review findings around compiled-zero sentinels and producer-local
+  exact-user merging without adding generic predictive-userdb behavior. A
+  purpose-built table compiled by pinned librime is non-circular and forbids the
+  false `遮蓋` phrase. Five fresh macOS rounds at measured source `89875ee2` use
+  one Yune dylib, one librime dylib, and one complete-candidate hash; both 37/59
+  first pages match exactly. The retained pre-domain-fix packet stays red
+  evidence. This source-scoped sub-slice creates no threshold/exception, does
+  not measure the combined/reconciled source, does not supersede the Windows
+  packet, and neither causes nor supersedes its now-recorded owner disposition
+  or 4b permission. Evidence:
+  `increment-4a-luna-script-translation-order/`.
 - **Increment 4b checklist residual from 3b:** close the pre-existing
   fuzzy-versus-abbreviation collision on the heap/source
   `ExpandedSpellingCode` path with full pinned spelling-type precedence and
@@ -445,7 +473,7 @@ amendment):
       re-frozen post-fix diff + owner-signed D-48 disposition table
       (`lane-a-ranking-fix-2026-07-09/re-diff/`). Residual classes are the named
       work items in the disposition table.
-- [x] **Lane B (DONE, landed `c89a8ea9`):** luna complete-list/page-turn injection
+- [x] **Lane B reachability mechanism DONE; D-48 exact order OPEN (landed `c89a8ea9`):** luna complete-list/page-turn injection
       point traced + implemented; storage/prism facts recorded (luna is
       Compact+prism → bounded syllabary); `moboyi`→莫伯洢 acceptance added as a real-path test (not a capture).
 - [ ] Any newly captured rows committed with full provenance; Yune pre-fix output
@@ -466,14 +494,14 @@ amendment):
       the Phase 3 spec.
 
 ### Phase 3 — Implement per the diff (general mechanism)
-- [x] **(Lane B, DONE)** Luna leading-syllable injection (page-turn path, general,
+- [x] **(Lane B reachability mechanism DONE; D-48 exact order OPEN)** Luna leading-syllable injection (page-turn path, general,
       no allowlist, no baked data); `is_last_page` fixed; phrase-before-single
       ordering. Typed capability `translator/leading_syllable_reachability`
       (distinct from broad `prefix_fallback`); bounded fetch capped; `ordered_mode`
       not widened (luna early-stop preserved); untoned relaxation gated to the lane.
 - [ ] **(Lane A)** Any canonical rime-cantonese fixes the diff proves, scoped so
       Track A/luna typing is untouched.
-- [x] **(Lane B, DONE)** Byte-backed non-circular tests (`yune_web.rs`
+- [x] **(Lane B reachability mechanism DONE; D-48 exact order OPEN)** Byte-backed non-circular tests (`yune_web.rs`
       `m59_luna_*`): `moboyi`→莫伯洢 + `zhongguo`/bare-syllable controls + phrase-before-single
       ordering; jyutping `zijiguk`→諮 / `beingo`→畀 stay green.
 - [ ] **(Lane A)** non-named jyutping canonical control; `beingo`→匕 named guard.
@@ -705,11 +733,15 @@ target/, driven by scripts/oracle-rime-probe.cs).
   `moboyi` rationalised into a control, never an owner requirement; removed from the
   fixture, tests, plan, roadmap, requirements, and evidence. moboyi is THE case.)
   **Two divergences
-  RECORDED (not asserted vs Yune):** (a) Yune's PRODUCT completion ordering differs
+  RECORDED (not asserted vs Yune at this 2026-07-07 increment):** (a) Yune's PRODUCT completion ordering differs
   from librime (zhongguo page 0 `中國大陸…` Yune vs `中國 種過…` librime; Yune injects
   中 on page 0, librime has it at index 11) — M59 asserts REACHABILITY + recompose,
   not position parity; (b) librime accumulates selected singles in the preedit and
   commits once, Yune commits incrementally (same text).
+  **Superseding policy note (2026-07-08):** D-48 subsequently made Lane B
+  page/prefix-exact position and order mandatory. The historical statement above
+  describes only this earlier reachability increment and is not current
+  acceptance policy.
 - **Cangjie (fable's 3 flip questions), answered from the oracle + inspection:**
   (1) **Composition semantics:** cangjie composes per-character via shape codes (each
   code → char(s)+phrases; existing `cangjie5-basic.json`: `a`→日曰啊, `amd`→旴 + 是一樣的).
@@ -766,6 +798,70 @@ fixes; (c) **6+9 are hard flip preconditions — keep holding the default-ON com
 (d) 7's capture gates the new acceptance tests; (e) 8 with the perf pass (the
 straddle stays open — fresh-run distribution must go robustly green, no
 run-until-green, no re-baseline).
+
+## Supplemental follow-up to Increment 4a — macOS Luna page/order repair (2026-07-11)
+
+**Implementation/evidence/review complete for measured source `89875ee2` only.**
+This is a supplemental sub-slice of the existing M59/D-48 plan, not a milestone
+and not a replacement for the authoritative Windows
+`increment-4a-sentence-ordering/` packet. The Windows strict Lane A comparator
+remains `2/5`. The owner independently renewed the narrowly scoped class-3
+exception on 2026-07-11, so 4b is permitted to start; this macOS evidence did
+not cause or supersede that disposition and does not assert whether 4b behavior
+work has since started.
+
+- `71a80704` separates the upstream Luna one-best sentence stream from the
+  independent table phrase stream and makes page limits explicit.
+- `e5c57eb6` preserves phrase display metadata through partial selection.
+- `0ecd2e06` records `EntryWeightDomain::{Raw,NaturalLog}` and stops treating
+  compiled librime logarithms as source weights or logging them twice.
+- `1f0fb0e5` reconstructs the inclusive ScriptEncoder 5% pronunciation rule
+  through the representable `f32` rounding interval.
+- `fa7f3961` changes the deployed integration-test matrix only; it does not
+  change library behavior.
+- `89875ee2` is this supplemental branch's final reviewed implementation and
+  measured source commit. It
+  distinguishes compiled zero sentinels from positive sub-one weights and
+  bounds exact-user ordering to its one active default-quality Script owner,
+  with producer-aware mixed-stream tests and no new predictive-userdb claim.
+
+The non-circular `m59-librime-log-weight` fixture is compiled by pinned librime
+`33e78140250125871856cdc5b42ddc6a5fcd3cd4`; decoded `.table.bin` SHA-256 is
+`34784ffd5af9bdc79926a00057cbf8c201a64473a2334acd748685e2d1fd6405`.
+It proves the exact first page `這個引擎, 這個, 這歌, 這格, 這` and forbids
+the false `遮蓋` phrase without deriving expected output from Yune.
+
+Review bounds the exact-user follow-up to exactly one active, default-quality
+Luna ScriptTranslation owner. Tag-mismatched, multiple-owner, and
+non-default-quality configurations keep the legacy merge; this increment adds
+no generic ScriptTranslation predictive-userdb rule or claim. Producer-local
+tests prove the bounded exact rule cannot suppress or drag another translator's
+stream, including intermediate-quality and equal-quality tie cases.
+
+Five fresh final-binary macOS rounds at `89875ee2` retain one Yune dylib SHA-256
+`57bcf505e86136ae7badeb1333ff654f48c09f97120bfa85b7a0133396accaf0`,
+one librime dylib SHA-256
+`af019c3dccde16d875b9543a1cbc950517e309e11fb4d0bf379b7d576aae13d3`,
+and one complete candidate-snapshot SHA-256
+`1e79ecf566e3ed3f17907ddfed588b869fd5200094a8e5085b57a02f4bb32a88`.
+Every 37-character page is `測試一下長句輸入性能怎樣, 測試一下, 測試儀,
+測試, 側室`; every 59-character page is
+`這個引擎其實應該支持超長句子輸入才能用, 這個, 這歌, 這格, 這`.
+
+The original five-run pre-domain-fix packet that exposed `遮蓋` and six named
+pre-measurement setup retries remain preserved externally. The standing M55
+threshold file SHA-256 remains
+`e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba`;
+the signed M59 verdict SHA-256 remains
+`55ca3e1781fea2bc90ba1802d151e2843d6aea0b5bf5b2396670fa1c58ba6959`.
+No ceiling, exception, or gate changed.
+
+This closes only the exact expanded 37/59 page-zero sentence/phrase defect at
+measured source `89875ee2`. It neither establishes the seven-input Lane B state
+at any later Windows or reconciled commit nor closes M59-PARITY-02. It also does
+not change the Windows Lane A `2/5` result, the recorded class-3 owner
+disposition and 4b permission, or signed ceilings. Full evidence:
+`docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-luna-script-translation-order/`.
 
 ## Non-Goals
 - No per-input gating; no baked oracle data; no circular tests (see the three

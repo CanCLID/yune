@@ -2,9 +2,10 @@ use std::{fs, path::Path, sync::Arc};
 
 use serde_json::Value;
 use yune_core::{
-    build_poet_bin, CandidateSource, Engine, OwnedPoetBytes, PoetByteSource, PunctuationDefinition,
-    PunctuationProcessor, PunctuationTranslator, ReverseLookupTranslator, SimplifierFilter,
-    StaticTableTranslator, TableDictionary, Translator, UpstreamSentenceModel,
+    build_poet_bin, CandidateSource, CompactTableStore, Engine, OwnedPoetBytes, PoetByteSource,
+    PresetVocabularyEntry, PunctuationDefinition, PunctuationProcessor, PunctuationTranslator,
+    ReverseLookupTranslator, SimplifierFilter, StaticTableTranslator, TableDictionary,
+    TableDictionaryAdvancedData, Translator, UpstreamSentenceModel,
 };
 
 const FIXTURE_ROOT: &str = "tests/fixtures/upstream-1.17.0";
@@ -18,6 +19,7 @@ const OPTIONS_FIXTURE: &str = "luna-pinyin-options.json";
 const SENTENCE_FIXTURE: &str = "luna-pinyin-sentence.json";
 const SENTENCE_EXPANDED_FIXTURE: &str = "luna-pinyin-sentence-expanded.json";
 const LATTICE_FIXTURE: &str = "luna-pinyin-lattice.json";
+const LOG_WEIGHT_FIXTURE_ROOT: &str = "tests/fixtures/upstream-1.17.0/m59-librime-log-weight";
 
 #[test]
 fn upstream_luna_pinyin_fixture_is_locked() {
@@ -80,6 +82,132 @@ fn upstream_luna_pinyin_fixture_is_locked() {
         zhongguo["selected_candidates"][0]["text"],
         "\u{4e2d}\u{570b}"
     );
+}
+
+#[test]
+fn default_owned_model_matches_librime_page_from_compiled_log_weight_bytes() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join(LOG_WEIGHT_FIXTURE_ROOT);
+    let oracle: Value = serde_json::from_str(
+        &fs::read_to_string(root.join("oracle.json"))
+            .expect("log-weight oracle fixture should be readable"),
+    )
+    .expect("log-weight oracle fixture should parse");
+    assert_upstream_oracle_header(&oracle);
+    let table_bytes = decode_lower_hex(
+        &fs::read_to_string(root.join("luna_pinyin.table.bin.hex"))
+            .expect("captured librime table hex should be readable"),
+    );
+    let store = CompactTableStore::from_table_bin_bytes(
+        table_bytes,
+        TableDictionaryAdvancedData::default(),
+    )
+    .expect("captured librime Marisa table should parse");
+    assert!(
+        store.is_marisa_backed(),
+        "the regression must exercise librime's compiled natural-log weight domain"
+    );
+    let vocabulary = fs::read_to_string(root.join("essay.txt"))
+        .expect("captured essay rows should be readable")
+        .lines()
+        .filter_map(|line| {
+            let (text, weight) = line.split_once('\t')?;
+            Some(PresetVocabularyEntry::new(
+                text,
+                weight
+                    .parse::<f32>()
+                    .expect("captured essay weight should parse"),
+            ))
+        })
+        .collect::<Vec<_>>();
+    let translator = StaticTableTranslator::from_compact_table_store(store, None)
+        .with_completion(true)
+        .with_charset_filter(true)
+        .with_sentence(true)
+        .with_preset_vocabulary(vocabulary)
+        .with_upstream_sentence_model(100)
+        .with_upstream_script_translation_limits(1, 1);
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.add_translator(translator);
+    let input = oracle["snapshot"]["input"]
+        .as_str()
+        .expect("oracle input should be a string");
+    engine
+        .process_key_sequence(input)
+        .expect("oracle key sequence should parse");
+
+    let expected = oracle["snapshot"]["selected_candidates"]
+        .as_array()
+        .expect("oracle selected candidates should be an array")
+        .iter()
+        .map(|candidate| {
+            candidate["text"]
+                .as_str()
+                .expect("oracle candidate text should be a string")
+                .to_owned()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(current_page_texts(&engine, expected.len()), expected);
+    let forbidden = oracle["snapshot"]["forbidden_false_phrase"]
+        .as_str()
+        .expect("oracle should name the false phrase");
+    assert!(
+        engine
+            .context()
+            .candidates
+            .iter()
+            .all(|candidate| candidate.text != forbidden),
+        "the 0.09% 蓋/ge reading must not synthesize {forbidden}"
+    );
+
+    for boundary in oracle["boundary_snapshots"]
+        .as_array()
+        .expect("oracle boundary snapshots should be an array")
+    {
+        engine.clear_composition();
+        let input = boundary["input"]
+            .as_str()
+            .expect("boundary input should be a string");
+        engine
+            .process_key_sequence(input)
+            .expect("boundary key sequence should parse");
+        let expected = boundary["selected_candidates"]
+            .as_array()
+            .expect("boundary candidates should be an array")
+            .iter()
+            .map(|candidate| {
+                candidate["text"]
+                    .as_str()
+                    .expect("boundary candidate text should be a string")
+                    .to_owned()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            current_page_texts(&engine, 1),
+            expected[..1],
+            "compiled external boundary result must match pinned librime's top candidate for {input}"
+        );
+        if let Some(required) = boundary["required_boundary_phrase"].as_str() {
+            assert!(
+                engine
+                    .context()
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.text == required),
+                "the exact-5% reading must retain {required} for {input}"
+            );
+        }
+        if let Some(forbidden) = boundary["forbidden_below_boundary_phrase"].as_str() {
+            assert!(
+                engine
+                    .context()
+                    .candidates
+                    .iter()
+                    .all(|candidate| candidate.text != forbidden),
+                "the below-5% reading must exclude {forbidden} for {input}"
+            );
+        }
+    }
 }
 
 #[test]
@@ -153,8 +281,8 @@ fn zhongguo_phrase_mechanics_matches_upstream_sentence_fixture() {
         }
         assert_eq!(
             engine.context().candidates[0].source,
-            CandidateSource::Sentence,
-            "top candidate should come from the M17 upstream sentence path for {input}"
+            CandidateSource::Table,
+            "a reliable whole-input phrase should suppress sentence generation for {input}"
         );
     }
 }
@@ -196,59 +324,50 @@ fn expanded_sentence_green_rows_match_upstream_before_graph_work() {
     assert_expanded_sentence_scenario_matches(&fixture, "sentence_completion_shijian");
 }
 
-macro_rules! blocked_expanded_sentence_row {
+macro_rules! expanded_sentence_row {
     ($name:ident, $scenario:literal) => {
         #[test]
-        #[ignore = "blocked: Phase 3R-0 captured upstream row exposes pre-existing sentence-lattice mismatch"]
         fn $name() {
-            panic!(
-                "blocked: {scenario} is oracle-captured in luna-pinyin-sentence-expanded.json but current Yune does not match it before Phase 3R graph work",
-                scenario = $scenario
-            );
+            let fixture = fixture(SENTENCE_EXPANDED_FIXTURE);
+            assert_expanded_sentence_scenario_matches(&fixture, $scenario);
         }
     };
 }
 
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_phrase_zhongguoren,
+expanded_sentence_row!(
+    upstream_sentence_phrase_zhongguoren,
     "sentence_phrase_zhongguoren"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_phrase_beijingshi,
+expanded_sentence_row!(
+    upstream_sentence_phrase_beijingshi,
     "sentence_phrase_beijingshi"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_phrase_rengongzhineng,
+expanded_sentence_row!(
+    upstream_sentence_phrase_rengongzhineng,
     "sentence_phrase_rengongzhineng"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_phrase_bianchengyuyan,
+expanded_sentence_row!(
+    upstream_sentence_phrase_bianchengyuyan,
     "sentence_phrase_bianchengyuyan"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_phrase_ceshiyixia,
+expanded_sentence_row!(
+    upstream_sentence_phrase_ceshiyixia,
     "sentence_phrase_ceshiyixia"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_mixed_woxiangqubeijing,
+expanded_sentence_row!(
+    upstream_sentence_mixed_woxiangqubeijing,
     "sentence_mixed_woxiangqubeijing"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_mixed_jintiantianqihenhao,
+expanded_sentence_row!(
+    upstream_sentence_mixed_jintiantianqihenhao,
     "sentence_mixed_jintiantianqihenhao"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_completion_beijing,
+expanded_sentence_row!(
+    upstream_sentence_completion_beijing,
     "sentence_completion_beijing"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_benchmark_37,
-    "sentence_benchmark_37"
-);
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_benchmark_59,
-    "sentence_benchmark_59"
-);
+expanded_sentence_row!(upstream_sentence_benchmark_37, "sentence_benchmark_37");
+expanded_sentence_row!(upstream_sentence_benchmark_59, "sentence_benchmark_59");
 
 #[test]
 #[ignore = "evidence capture: writes M55 Phase 3R access-volume CSV when YUNE_M55_PHASE3R_VOLUME_CSV is set"]
@@ -966,6 +1085,33 @@ fn assert_expanded_sentence_scenario_matches(fixture: &Value, scenario_name: &st
             actual.text
         );
     }
+    let sentence_count = engine
+        .context()
+        .candidates
+        .iter()
+        .filter(|candidate| candidate.source == CandidateSource::Sentence)
+        .count();
+    let expects_composed_sentence = matches!(
+        scenario_name,
+        "sentence_mixed_woxiangqubeijing"
+            | "sentence_mixed_jintiantianqihenhao"
+            | "sentence_benchmark_37"
+            | "sentence_benchmark_59"
+    );
+    assert_eq!(
+        sentence_count,
+        usize::from(expects_composed_sentence),
+        "the pinned ScriptTranslator stream must expose at most its one configured sentence for {input}"
+    );
+    assert_eq!(
+        engine.context().candidates[0].source,
+        if expects_composed_sentence {
+            CandidateSource::Sentence
+        } else {
+            CandidateSource::Table
+        },
+        "a reliable full phrase suppresses Poet; otherwise Poet precedes the phrase stream for {input}"
+    );
 }
 
 fn phase3r_capture_metrics(
@@ -1116,13 +1262,7 @@ fn m17_luna_dictionary_from_rows(fixture: &Value) -> TableDictionary {
         ),
         std::iter::empty::<&str>(),
         |_| None,
-        |name| {
-            (name == "essay").then(|| {
-                essay_txt_from_fixture_rows(
-                    &fixture["capture"]["essay_vocabulary_rows_for_candidates"],
-                )
-            })
-        },
+        |name| (name == "essay").then(|| expanded_sentence_essay_rows(fixture)),
     )
     .expect("M17 upstream sentence source rows should parse")
 }
@@ -1189,6 +1329,19 @@ fn essay_txt_from_fixture_rows(rows: &Value) -> String {
         .expect("vocabulary rows should be an array")
         .iter()
         .map(|row| row.as_str().expect("vocabulary row should be a string"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn expanded_sentence_essay_rows(fixture: &Value) -> String {
+    let mut row_sets = vec![&fixture["capture"]["essay_vocabulary_rows_for_candidates"]];
+    let support_rows = &fixture["capture"]["essay_vocabulary_rows_for_sentence_support"];
+    if support_rows.is_array() {
+        row_sets.push(support_rows);
+    }
+    row_sets
+        .into_iter()
+        .map(essay_txt_from_fixture_rows)
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -1343,6 +1496,25 @@ fn assert_highlighted_commit_preview_matches(engine: &Engine, expected_snapshot:
         Some(actual.as_str()),
         expected_snapshot["commit_text_preview"].as_str()
     );
+}
+
+fn decode_lower_hex(input: &str) -> Vec<u8> {
+    let digits = input
+        .bytes()
+        .filter(|byte| !byte.is_ascii_whitespace())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        digits.len() % 2,
+        0,
+        "captured hexadecimal bytes must have complete octets"
+    );
+    digits
+        .chunks_exact(2)
+        .map(|pair| {
+            let text = std::str::from_utf8(pair).expect("hexadecimal pair should be ASCII");
+            u8::from_str_radix(text, 16).expect("captured table must use lowercase hexadecimal")
+        })
+        .collect()
 }
 
 fn current_page_texts(engine: &Engine, page_size: usize) -> Vec<String> {

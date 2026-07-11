@@ -1260,6 +1260,262 @@ C	ef	1000
 }
 
 #[test]
+fn upstream_script_translation_keeps_sentence_ahead_of_predictive_completion_stream() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ab", "AB", 100.0),
+        TableEntry::new("cd", "CD", 100.0),
+        TableEntry::new("abcdef", "PREDICT", 1_000.0),
+    ]);
+    let translator = StaticTableTranslator::from_dictionary(dictionary)
+        .with_completion(true)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_upstream_sentence_model(10);
+
+    let assert_page = |candidates: &[Candidate]| {
+        assert_eq!(
+            candidates
+                .iter()
+                .take(3)
+                .map(|candidate| (candidate.text.as_str(), candidate.source.clone()))
+                .collect::<Vec<_>>(),
+            [
+                ("ABCD", CandidateSource::Sentence),
+                ("PREDICT", CandidateSource::Completion),
+                (
+                    "AB",
+                    CandidateSource::PartialTable {
+                        consumed: 2,
+                        recompose_on_default: false,
+                    },
+                ),
+            ],
+            "a completion-only outer stream must not suppress Poet, and full-consumed predictions precede shorter phrase rows"
+        );
+    };
+
+    let complete = translator.translate("abcd");
+    assert_page(&complete);
+    let bounded = translator.translate_with_context_and_request(
+        "abcd",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(5),
+    );
+    assert_page(&bounded.candidates);
+}
+
+#[test]
+fn legacy_sentence_policy_keeps_poet_fallback_only_when_completion_exists() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ab", "AB", 100.0),
+        TableEntry::new("cd", "CD", 100.0),
+        TableEntry::new("abcdef", "PREDICT", 1_000.0),
+    ]);
+    let translator = StaticTableTranslator::from_dictionary(dictionary)
+        .with_completion(true)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::LegacyFallback)
+        .with_upstream_sentence_model(10);
+
+    let assert_legacy = |candidates: &[Candidate]| {
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|candidate| (candidate.text.as_str(), candidate.source.clone()))
+                .collect::<Vec<_>>(),
+            [("PREDICT", CandidateSource::Completion)],
+            "LegacyFallback must not merge Poet's sentence/phrase stream into an existing completion stream"
+        );
+    };
+
+    assert_legacy(&translator.translate("abcd"));
+    let bounded = translator.translate_with_context_and_request(
+        "abcd",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(5),
+    );
+    assert_legacy(&bounded.candidates);
+}
+
+#[test]
+fn upstream_script_phrase_dedup_preserves_outer_comment_formatting() {
+    let build = || {
+        StaticTableTranslator::from_dictionary(TableDictionary::new([
+            TableEntry::new("ab", "AB", 100.0),
+            TableEntry::new("c", "C", 100.0),
+        ]))
+        .with_prefix_fallback(true)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_upstream_sentence_model(10)
+    };
+    let translator = build().with_comment_format(&["xform/^ab$/META/".to_owned()]);
+
+    let candidates = translator.translate("abc");
+    let phrase = candidates
+        .iter()
+        .find(|candidate| {
+            candidate.text == "AB"
+                && matches!(
+                    candidate.source,
+                    CandidateSource::PartialTable { consumed: 2, .. }
+                )
+        })
+        .expect("the authoritative Poet phrase row should remain visible");
+
+    assert_eq!(phrase.comment, "META");
+
+    let unformatted = build().translate("abc");
+    let phrase = unformatted
+        .iter()
+        .find(|candidate| {
+            candidate.text == "AB"
+                && matches!(
+                    candidate.source,
+                    CandidateSource::PartialTable { consumed: 2, .. }
+                )
+        })
+        .expect("the unformatted Poet phrase row should remain visible");
+    assert_eq!(
+        phrase.comment, "",
+        "an ordinary outer lookup code is not ScriptTranslation display metadata"
+    );
+}
+
+#[test]
+fn upstream_script_dictionary_exclude_removes_words_from_the_sentence_graph() {
+    let translator = StaticTableTranslator::from_dictionary(TableDictionary::new([
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("b", "B", 200.0),
+        TableEntry::new("b", "X", 100.0),
+        TableEntry::new("c", "C", 100.0),
+    ]))
+    .with_prefix_fallback(true)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_model(10)
+    .with_dictionary_exclude(["B"]);
+
+    let candidates = translator.translate("abc");
+    assert!(
+        candidates.iter().all(|candidate| candidate.text != "B"),
+        "dictionary exclusions must cover the independent phrase stream"
+    );
+    assert!(
+        candidates.iter().all(|candidate| candidate.text != "ABC"),
+        "an excluded graph word must not survive inside a composed sentence"
+    );
+    assert!(candidates.iter().any(|candidate| {
+        candidate.text == "AXC" && candidate.source == CandidateSource::Sentence
+    }));
+}
+
+#[test]
+fn upstream_script_translation_keeps_sentence_with_correction_only_exact_lookup() {
+    let formulas = ["derive/^abcdx$/abcd/correction".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ab", "AB", 100.0),
+        TableEntry::new("cd", "CD", 100.0),
+        TableEntry::new("abcdx", "CORRECTED", 1_000.0),
+    ]);
+    // Construct Poet from canonical rows before installing the correction-only
+    // surface on the outer table. This mirrors the deployed compact split:
+    // poet.bin stays canonical while prism/table lookup owns algebra surfaces.
+    let translator = StaticTableTranslator::from_dictionary(dictionary)
+        .with_upstream_sentence_model(10)
+        .with_spelling_algebra(&formulas)
+        .with_completion(false)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript);
+
+    let result = translator.translate_with_context_and_request(
+        "abcd",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(5),
+    );
+    assert_eq!(result.candidates[0].text, "ABCD");
+    assert_eq!(result.candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(result.candidates[1].text, "CORRECTED");
+    assert_eq!(result.candidates[1].source, CandidateSource::Table);
+    assert_eq!(result.candidates[2].text, "AB");
+    assert_eq!(
+        result.candidates[2].source,
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: false,
+        }
+    );
+}
+
+#[test]
+fn reliable_exact_system_phrase_suppresses_upstream_sentence() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ab", "AB", 100.0),
+        TableEntry::new("cd", "CD", 100.0),
+        TableEntry::new("abcd", "EXACT", 1_000.0),
+    ]);
+    let translator = StaticTableTranslator::from_dictionary(dictionary)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_upstream_sentence_model(10);
+
+    let candidates = translator.translate("abcd");
+    assert_eq!(candidates[0].text, "EXACT");
+    assert_eq!(candidates[0].source, CandidateSource::Table);
+    assert!(
+        candidates
+            .iter()
+            .all(|candidate| candidate.source != CandidateSource::Sentence),
+        "a reliable exact non-correction system phrase owns the translation before Poet"
+    );
+}
+
+#[test]
+fn upstream_script_limits_and_cutoff_are_builder_order_independent() {
+    let dictionary = || {
+        TableDictionary::new([
+            TableEntry::new("ab", "AB", 100.0),
+            TableEntry::new("cd", "CD", 100.0),
+        ])
+    };
+    let before_model = StaticTableTranslator::from_dictionary(dictionary())
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_upstream_script_translation_limits(2, 0)
+        .with_upstream_sentence_cutoff_threshold(0.0)
+        .with_upstream_sentence_model(10);
+    let after_model = StaticTableTranslator::from_dictionary(dictionary())
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_upstream_sentence_model(10)
+        .with_upstream_script_translation_limits(2, 0)
+        .with_upstream_sentence_cutoff_threshold(0.0);
+
+    let shape = |translator: &StaticTableTranslator| {
+        translator
+            .translate("abcd")
+            .into_iter()
+            .map(|candidate| (candidate.text, candidate.source))
+            .collect::<Vec<_>>()
+    };
+    let before = shape(&before_model);
+    let after = shape(&after_model);
+    assert_eq!(before, after);
+    assert!(
+        before
+            .iter()
+            .all(|(_, source)| source != &CandidateSource::Sentence),
+        "max_homophones=0 must reach a model constructed after the limits builder"
+    );
+}
+
+#[test]
 fn bounded_engine_reuses_owned_upstream_sentence_states_for_growing_null_grammar_input() {
     let _guard = super::m37_metrics_test_guard();
     let dictionary = TableDictionary::parse_rime_dict_yaml(
@@ -1348,7 +1604,7 @@ Y	li	30000
     crate::m37_metrics_enable(false);
 
     assert_eq!(result.candidates[0].text, "AB");
-    assert_eq!(result.candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(result.candidates[0].source, CandidateSource::Table);
     assert!(
         metrics.upstream_sentence_model_vocabulary_entries_considered > 0,
         "full-pinyin compact sentence lookup must consider preset phrase vocabulary"

@@ -256,6 +256,21 @@ M19 also names the TypeDuck-Windows ABI delta through `rime_get_typeduck_profile
 
 This closes the two M17-owned `luna_pinyin` blockers in `upstream_luna_pinyin_parity.rs` without changing `RimeApi`, `RimeCandidate`, or the TypeDuck-profile ABI surface. M54 later added native octagram-compatible grammar support for a named upstream `luna_pinyin` target; broader `.gram`/octagram behavior, the C++ plugin ABI, and contextual translation stay deferred until a future named target proves they are required. Extends D-24 (oracle precedence), D-25 (target-driven scope), and D-28 (profile-specific tuning isolation). _Outcome: Good._
 
+**2026-07-11 supplemental macOS follow-up to Increment 4a.** M17's good outcome
+was scoped to its then-captured fixtures, not complete Luna page-order parity.
+At independently measured source commit `89875ee2`, the captured 37/59
+page-zero slice follows upstream `ScriptTranslation`: one best full-span
+sentence followed by an independent table phrase stream, without losing
+full-span sentence paths ahead of those phrases. Compiled librime `.table.bin`
+entry weights are natural logarithms of source weights. The supplemental repair
+keeps raw and compiled domains explicit, consumes compiled logs directly for
+graph scoring, and reconstructs pronunciation shares without summing logs as
+raw weights or logging them again. ScriptEncoder's 5% pronunciation cutoff is
+inclusive and remains inclusive across stored-`f32` rounding. A table compiled
+by pinned librime guards that exact scope. This source-scoped evidence changes
+no public C ABI, signed threshold, Windows Increment 4a disposition, or
+milestone, and does not claim that a combined/reconciled commit was measured.
+
 ### Upstream-style Jyutping composition target (project-wide D-31)
 
 **D-31 / JYUTPING-UPSTREAM-COMPOSITION - For long Jyutping composition in the TypeDuck-Web/Yune product surface, prefer an accepted upstream-librime-engine Jyutping fixture over TypeDuck v1.1.2 ranking when TypeDuck v1.1.2 produces worse segmentation.** Upstream `rime/librime 1.17.0` remains the engine oracle, but because upstream does not ship a built-in Jyutping schema, fixtures for this slice run the upstream engine against pinned Jyutping schema/dictionary source YAML and upstream's deployer. The intended ordering is sentence/lattice candidate first, longest valid fuzzy phrase-prefix candidates next, single-character fallback after that, and invalid fuzzy mis-segmentation ranked low. The hybrid upstream-engine fixture is the oracle of record for this named composition/ranking case once captured and accepted, even if it diverges from `typeduck.hk/web`, `my-rime.vercel.app`, or TypeDuck v1.1.2. TypeDuck v1.1.2 remains the compatibility-profile oracle for fork-only ABI/comment/profile behavior and existing M14-M28 fixtures; this hybrid fixture is not a dictionary-comment oracle because stock upstream lacks TypeDuck's `dictionary_lookup_filter` plugin. If the hybrid upstream-engine fixture cannot be captured or accepted, this milestone stops and requires explicit user sign-off for a Yune-authored ranking spec before ranking code changes.
@@ -617,6 +632,26 @@ Owner FINAL decision 2026-07-08, resolving what "parity" means per lane:
    v1.1.2) remain as regression pins — **do not extend, do not delete.**
    Multilingual comment behavior stays oracle-backed against TypeDuck `v1.1.2`.
 
+**2026-07-11 supplemental macOS application.** At independently measured source
+commit `89875ee2`, the expanded Luna 37/59 page-zero sentence/phrase slice
+follows D-48 exactly without an exception. This is a bounded follow-up to, not a
+replacement for, the authoritative Windows Increment 4a packet at
+`increment-4a-sentence-ordering/`. In particular, it neither changes the strict
+Lane A `2/5` result nor causes or supersedes the owner disposition recorded
+below, and it makes no claim about a later combined/reconciled source state or
+the rest of Lane B.
+
+The supplemental implementation and two independent review passes close at
+the measured source commit. Its review-constrained exact-user behavior applies
+only when there is exactly one active default-quality ScriptTranslation owner;
+tag mismatch, multiple owners, and non-default quality retain the legacy merge.
+The follow-up adds no generic predictive-userdb parity claim. Five fresh macOS
+rounds use one Yune dylib
+(`57bcf505e86136ae7badeb1333ff654f48c09f97120bfa85b7a0133396accaf0`),
+one pinned librime dylib, and one candidate-snapshot identity; both long pages
+are exact in every round. This is diagnostic evidence only and creates no
+ceiling, exception, or new milestone.
+
 Extends D-24 (oracle precedence), D-31 (upstream-wins-on-composition-conflict +
 fork-as-profile-oracle), and D-47 (the schema-general reachability guarantee, of
 which order parity is the stricter sibling for the three named lanes). _Outcome:
@@ -631,7 +666,9 @@ is permitted to start. The strict five-row comparator remains visibly red; the
 remaining surface is classified as the predeclared 4c OpenCC rows plus the
 owner-signed equal-weight class. Remaining closure is 4b
 abbreviation/segmentation, 4c OpenCC variants, 4d Cangjie CJ-1, and 4e Lane B
-exact order._
+exact order. The supplemental macOS `89875ee2` evidence closes only its exact
+37/59 source-scoped slice; it did not cause or supersede the renewed exception
+and changes none of the recorded disposition or broader lane statuses._
 
 ### Initialization notes (process decisions)
 
@@ -647,4 +684,4 @@ exact order._
 
 ---
 
-_Last updated: 2026-06-28 - a post-WEB-03 correctness follow-up fixed a `DartsDoubleArray` prism construction bug that corrupted the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words (`litbiu -> 列表` etc.); the four affected prisms were regenerated and the user-visible words are now locked by trie-level and committed-asset regression tests (`a76fcd59`, `d1c0171a`). D-46 records WEB-03 complete after the phrase-composition follow-up: regenerated launch compiled assets and native byte-backed storage are now a delivery contract, fresh Emscripten/Playwright evidence shows the shipping public-demo `full-jyutping` browser row at `160.0 MiB` ready/peak/steady, and follow-up gates restore byte-backed `ngogokdak -> 我覺得` plus `zouhapci` visible lookup rows. The old `893.1 MiB` value remains only as a synthetic no-launch-assets negative control. D-45 records WEB-02 complete as the historical public-demo Jyutping source-fallback owner classification: shipped `Rime::Prism/3.0` assets forced `owned_heap` and retained `translator.entries_by_code` rows totaling `529,602,374 B`; WEB-03 fixed that launch path. D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and the pre-WEB-03 browser Jyutping row remained `893.1 MiB`, so M46 closed as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` did not reduce settled linear memory, 48 MiB worsened Luna, and pre-WEB-03 Jyutping remained `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._
+_Last updated: 2026-07-11 - D-30 and D-48 now record the supplemental, source-scoped macOS Luna 37/59 page-zero repair measured at `89875ee2`, including the compiled natural-log weight domain, inclusive 5% pronunciation boundary, bounded exact-user scope, and unchanged ABI/threshold posture. The authoritative Windows Increment 4a packet remains at `ca52ec42` plus review fix `2257fbbe`: its strict Lane A comparator is `2/5`, and on 2026-07-11 the owner renewed the narrowly scoped D-48 class-3 exception for all `6,086` captured equal-weight inversions (zero cross-weight inversions and no beyond-oracle-depth use) with the recorded cross-weight, provenance, and common-input page-1 revisit triggers, permitting 4b to start. The macOS evidence did not cause or supersede that disposition, and no combined/reconciled commit is claimed measured. A post-WEB-03 correctness follow-up fixed a `DartsDoubleArray` prism construction bug that corrupted the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words (`litbiu -> 列表` etc.); the four affected prisms were regenerated and the user-visible words are now locked by trie-level and committed-asset regression tests (`a76fcd59`, `d1c0171a`). D-46 records WEB-03 complete after the phrase-composition follow-up: regenerated launch compiled assets and native byte-backed storage are now a delivery contract, fresh Emscripten/Playwright evidence shows the shipping public-demo `full-jyutping` browser row at `160.0 MiB` ready/peak/steady, and follow-up gates restore byte-backed `ngogokdak -> 我覺得` plus `zouhapci` visible lookup rows. The old `893.1 MiB` value remains only as a synthetic no-launch-assets negative control. D-45 records WEB-02 complete as the historical public-demo Jyutping source-fallback owner classification: shipped `Rime::Prism/3.0` assets forced `owned_heap` and retained `translator.entries_by_code` rows totaling `529,602,374 B`; WEB-03 fixed that launch path. D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and the pre-WEB-03 browser Jyutping row remained `893.1 MiB`, so M46 closed as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` did not reduce settled linear memory, 48 MiB worsened Luna, and pre-WEB-03 Jyutping remained `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._

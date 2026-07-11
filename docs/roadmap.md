@@ -43,7 +43,20 @@ plus pinned `rime/rime-cantonese`, confirmed the reported `zijiguk` / `諮議局
 case is first under the canonical oracle, fixed current `yune-web`
 TypeDuck/profile `beingo` / 畀 and `zi` / 諮 reachability by preserving
 short-input profile-ranked paging, and kept the schema-id split audit-only
-pending explicit sign-off.
+pending explicit sign-off. The authoritative Windows M59 Increment 4a packet is
+implemented at `ca52ec42` and review-fixed at `2257fbbe`; its strict Lane A
+comparator remains `2/5`. On 2026-07-11 the owner renewed the narrowly scoped
+D-48 class-3 exception for all `6,086` captured equal-weight inversions, with
+zero cross-weight inversions, no beyond-oracle-depth use, and the recorded
+cross-weight/provenance/common-input-page-1 revisit triggers; 4b is permitted
+to start.
+A separate macOS follow-up, measured only at source `89875ee2`, repairs the
+expanded upstream Luna 37/59 page-shape defect, preserves compiled natural-log
+weight semantics and the inclusive 5% pronunciation boundary across stored
+`f32`, and matches both pinned pages in five fixed-binary rounds. It is a
+source-scoped diagnostic, not a combined-source measurement or a new Mac
+performance gate, threshold, milestone, or change to the independently recorded
+Windows disposition. It did not cause or supersede that disposition.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -353,16 +366,22 @@ and current decision rules.
 | M58 | Complete for reachability; perf residual recorded | Canonical Jyutping candidate behavior was recaptured from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; TypeDuck-HK/librime v1.1.2 remains profile-only for multilingual/comment/profile and grandfathered candidate guards. The reported `zijiguk` / `諮議局` case is canonical-first and does not reproduce a canonical issue. The shipped/current `yune-web` TypeDuck/profile lane now reaches `beingo` / 畀 at TypeDuck/profile index 6 and `zi` / 諮 at index 27 through page-size-6 browser paging without first-page promotion; the post-closeout long-composition corrective also lets `zijiguk` page to standalone `諮`, select it, commit only `諮`, and recompose `jiguk`. The public dictionary row is restored to the TypeDuck source `畀	bei2	200000` value/order and compiled schema assets were regenerated. The standing M55/Track B ratchet failed twice after the long-composition follow-up (`ni`, `hao`, `zhongguo`, and Track B long-Jyutping latency), so that performance residual is recorded separately from the candidate-behavior closeout. No schema id split landed; the `jyut6ping3_typeduck` direction remains sign-off gated after the blast-radius audit. Evidence: [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/). Plan: [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
 | M59 | In progress — full Path A locked, NOT closeable | General single-character reachability so the owner can compose an arbitrary non-lexicon phrase one character at a time. GPT's first execution (`77a9540a`) was gamed (per-input `match` arms replaying oracle candidates baked into engine `.tsv` + circular tests) and was reverted (`c70774ce`), keeping the real `ni`/`hao` perf fix. **Lane B reachability was then reimplemented as a genuine general mechanism and landed (`c89a8ea9`)** with structure-driven anti-gaming controls; its D-48 exact-order lane remains open. The binding owner amendments make this a default-on, zero-per-schema-adaptation guarantee for every current and future schema and require D-48 page/prefix-exact ordering for the exact 13-input canonical rime-cantonese capture, upstream Luna, and Cangjie, with only owner-signed exceptions and no promotion/input/oracle hacks. **Full Path A is locked:** nothing remaining is moved to M60 or another milestone. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; compiled `sort: original` completed through `d55b203e`; schema-general transformed-algebra reachability completed at `2cb7e411`; Increment 4a's sentence/phrase mechanism landed at `ca52ec42`; and its owner-provided Opus blocking review is fixed forward at `2257fbbe`. The exact explicit-false deployment matrix, full workspace clippy, focused parity, and a fresh 32/32 signed post-fix ratchet guard are green. Its strict five-row Lane A comparator remains visibly red (`2/5` exact): the remaining surface is deterministically classified as predeclared 4c OpenCC plus equal-weight residue. On 2026-07-11 the owner renewed the narrowly scoped D-48 class-3 exception for the complete captured equal-weight residual (`6,086` inversions, zero cross-weight inversions, no beyond-oracle-depth use) with mandatory cross-weight/provenance/common-input-page-1 revisit triggers; 4b is permitted to start. M59-REACH-02 is complete. Remaining close blockers are canonical manifest-to-acceptance reconciliation (REACH-03); 4b abbreviation/segmentation, 4c OpenCC variants, 4d Cangjie CJ-1, and 4e Lane B exact order; final executable-evidence reconciliation; five final expanded Track A/Track B rounds from the final behavior commit; and the exact native release, source-current WASM, runtime/app, manifest, Playwright, browser, and packaging gates. Abbreviation-graph 4b is likewise review-blocking, and a red 4b short-key ratchet requires an owner decision rather than a quiet re-baseline or revert. Evidence remains under [`reports/evidence/m59-canonical-jyutping-reachability-parity/`](./reports/evidence/m59-canonical-jyutping-reachability-parity/). Plan: [`plans/active/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/active/m59-plan-canonical-jyutping-reachability-parity.md). |
 
-**M59 macOS diagnostic note (2026-07-10; no milestone or active-scope
-change):** At exact signed Increment-0 source
+**M59 supplemental macOS diagnostic and resolution note (2026-07-10/11; no
+milestone or active-scope change):** At exact signed Increment-0 source
 `457751824b8944676dc44912b9ce31ff29d78403`, a read-only macOS diagnostic
 reproduced the [already disclosed M55 expanded-Luna first-page debt](./reports/evidence/m55-native-match-or-beat/phase-3r-fixture-expansion/README.md)
 on the 37- and 59-character rows: pinned librime emits its one-best full
 sentence followed by shorter phrase candidates, while Yune exposes up to five
-full-span sentence paths. This is cross-platform candidate-source/interleaving
-parity debt governed by D-48, not a new macOS model-construction regression,
-not authority to alter signed ceilings, and not a redirection of the concurrent
-Windows M59 work. [Diagnostic report and notes](./reports/evidence/m59-macos-librime-analysis-20260710/README.md).
+full-span sentence paths. The supplemental follow-up repairs that cross-platform
+Yune defect and a compiled-log weight-domain error at independently measured
+source `89875ee2`; five fixed-binary macOS rounds match both pinned-librime long
+pages exactly. The Mac-versus-Windows latency comparison remains diagnostic
+only, with signed ceilings unchanged. This evidence neither measures the
+combined/reconciled source nor changes the authoritative Windows Increment 4a
+packet, strict Lane A `2/5` result, renewed class-3 owner disposition and 4b
+permission, or broader Lane B requirement; it did not cause or supersede the
+owner disposition. [Original diagnostic](./reports/evidence/m59-macos-librime-analysis-20260710/README.md);
+[supplemental repair evidence](./reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-luna-script-translation-order/README.md).
 
 ## Scope Ledger
 
@@ -371,7 +390,7 @@ only when an engine target needs them; nothing here commits to a timeline.
 
 | In scope - target-driven, measured | Deferred - implement when an engine target needs it | Non-goal |
 | --- | --- | --- |
-| `luna_pinyin` core versus upstream `1.17.0`, including M17's then-captured null-grammar sentence/lattice slice (expanded sentence/phrase first-page blockers remain explicitly disclosed by M55 and the 2026-07-10 macOS diagnostic), M18 punctuation processor slices, completed M42 abbreviation sentence parity for `cszysmsrsd`/`zybfshmsru`, completed M48 `jianli`/`biancheng` over-segmentation parity, and completed M54 native octagram-compatible grammar support for the named upstream target | Broader learned `.gram`/octagram behavior, contextual translation, and plugin-backed gears beyond the named M54 target | Bit-for-bit parity with librime internals |
+| `luna_pinyin` core versus upstream `1.17.0`, including M17's null-grammar sentence/lattice slice; the source-scoped M59 supplemental repair at `89875ee2` for the one-best-sentence-then-phrase first page on the 37/59 rows and compiled-log weight handling; M18 punctuation processor slices; completed M42 abbreviation sentence parity for `cszysmsrsd`/`zybfshmsru`; completed M48 `jianli`/`biancheng` over-segmentation parity; and completed M54 native octagram-compatible grammar support for the named upstream target. The broader M59 seven-row complete-list lane remains open; the supplemental measurement does not assert its state on later Windows or reconciled commits. | Broader learned `.gram`/octagram behavior, contextual translation, and plugin-backed gears beyond the named M54 target | Bit-for-bit parity with librime internals |
 | Common RIME schemas added through explicit breadth milestones | Further schema breadth only with fresh oracle fixtures and owning tests | Unbounded schema checklist work |
 | Canonical Cantonese/Jyutping candidate behavior: upstream `rime/librime 1.17.0` + pinned `rime/rime-cantonese`; exact Yune-facing id direction gated by M58 Phase 3 sign-off | TypeDuck multilingual comments/profile/display behavior and grandfathered profile candidate guards under current shipped ids until a signed-off split; preferred future id `jyut6ping3_typeduck` | Using bare `schema_id: jyut6ping3` as provenance when schema sources differ; renaming product ids without blast-radius/userdb evidence |
 | **Compose an arbitrary non-lexicon phrase one character at a time — DEFAULT-ON for EVERY schema** (M59 owner amendment 2026-07-07, binding): `luna_pinyin`, `jyut6ping3`/rime-cantonese, **cangjie/shape schemas**, and **any FUTURE schema (e.g. `rime-teochew`) inherit it automatically on install with ZERO per-schema adaptation work.** Engine/translator-level default (opt-out only, recorded reason). Delivered IN M59. | The M60 draft's capability-contract formalism / opt-out registry may follow later, but the default-on guarantee itself is **not** deferrable out of M59 | Per-input hardcoding or baked oracle data; **any per-schema adaptation work** required to enable the feature; a schema silently failing onboarding as "unsupported" |

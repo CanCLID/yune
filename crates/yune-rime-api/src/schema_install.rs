@@ -518,7 +518,12 @@ fn install_schema_dictionary_translator_from_config(
                 record_octagram_grammar_load_failure(session, language, reason);
             }
         }
-        translator = translator.with_upstream_sentence_model(100);
+        let (max_sentences, max_homophones, sentence_cutoff_threshold) =
+            upstream_script_translation_limits(schema_config, name_space);
+        translator = translator
+            .with_upstream_sentence_model(100)
+            .with_upstream_script_translation_limits(max_sentences, max_homophones)
+            .with_upstream_sentence_cutoff_threshold(sentence_cutoff_threshold);
     }
     if is_typeduck_jyut6ping3_profile {
         translator = translator.with_sentence_word_penalty(TYPEDUCK_SENTENCE_WORD_PENALTY);
@@ -979,6 +984,37 @@ fn schema_yune_profile(schema_config: &Value) -> Option<String> {
     find_config_value(schema_config, "yune/profile")
         .or_else(|| find_config_value(schema_config, "yune_profile"))
         .and_then(config_scalar_string)
+}
+
+fn upstream_script_translation_limits(
+    schema_config: &Value,
+    name_space: &str,
+) -> (usize, usize, f64) {
+    let max_sentences = find_config_value(schema_config, &format!("{name_space}/max_sentences"))
+        .and_then(config_scalar_int)
+        .map(|value| value.clamp(1, 100) as usize)
+        .unwrap_or(1);
+    let max_homophones = find_config_value(schema_config, &format!("{name_space}/max_homophones"))
+        .and_then(config_scalar_int)
+        // Pinned ScriptTranslation compares size_t::size() with the configured
+        // signed int. A malformed negative therefore converts to a very large
+        // unsigned bound; preserve that observable behavior instead of silently
+        // changing it to the zero-row case.
+        .map(|value| {
+            if value < 0 {
+                usize::MAX
+            } else {
+                usize::try_from(value).unwrap_or(usize::MAX)
+            }
+        })
+        .unwrap_or(1);
+    let sentence_cutoff_threshold = find_config_value(
+        schema_config,
+        &format!("{name_space}/sentence_cutoff_threshold"),
+    )
+    .and_then(config_scalar_double)
+    .unwrap_or(0.1);
+    (max_sentences, max_homophones, sentence_cutoff_threshold)
 }
 
 fn spelling_algebra_for_dictionary(schema_config: &Value, name_space: &str) -> Vec<String> {
@@ -3049,6 +3085,79 @@ mod sentence_policy_tests {
         let candidates = translator.translate("being");
         assert_eq!(candidates[0].text, "AM");
         assert_eq!(candidates[0].source, CandidateSource::Table);
+    }
+}
+
+#[cfg(test)]
+mod upstream_script_translation_limit_tests {
+    use super::upstream_script_translation_limits;
+    use serde_yaml::Value;
+
+    fn schema(source: &str) -> Value {
+        serde_yaml::from_str(source).expect("test schema should parse")
+    }
+
+    #[test]
+    fn absent_limits_use_upstream_script_translator_defaults() {
+        assert_eq!(
+            upstream_script_translation_limits(&schema("translator: {}\n"), "translator"),
+            (1, 1, 0.1)
+        );
+    }
+
+    #[test]
+    fn zero_sentences_is_raised_but_zero_homophones_disables_sentence_graph_rows() {
+        assert_eq!(
+            upstream_script_translation_limits(
+                &schema("translator:\n  max_sentences: 0\n  max_homophones: 0\n"),
+                "translator",
+            ),
+            (1, 0, 0.1)
+        );
+    }
+
+    #[test]
+    fn explicit_namespaced_limits_are_preserved() {
+        assert_eq!(
+            upstream_script_translation_limits(
+                &schema("custom:\n  max_sentences: 7\n  max_homophones: 23\n"),
+                "custom",
+            ),
+            (7, 23, 0.1)
+        );
+    }
+
+    #[test]
+    fn max_sentences_is_capped_at_upstream_safety_limit() {
+        assert_eq!(
+            upstream_script_translation_limits(
+                &schema("translator:\n  max_sentences: 101\n  max_homophones: 101\n"),
+                "translator",
+            ),
+            (100, 101, 0.1)
+        );
+    }
+
+    #[test]
+    fn negative_homophones_preserve_pinned_effectively_unbounded_comparison() {
+        assert_eq!(
+            upstream_script_translation_limits(
+                &schema("translator:\n  max_homophones: -1\n"),
+                "translator",
+            ),
+            (1, usize::MAX, 0.1)
+        );
+    }
+
+    #[test]
+    fn sentence_cutoff_threshold_uses_namespaced_override() {
+        assert_eq!(
+            upstream_script_translation_limits(
+                &schema("custom:\n  sentence_cutoff_threshold: 0.25\n"),
+                "custom",
+            ),
+            (1, 1, 0.25)
+        );
     }
 }
 

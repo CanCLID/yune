@@ -1,7 +1,7 @@
 use crate::{
     AiConfidence, AiContext, AiOffReason, AiResult, Candidate, CandidateRanker, CandidateSource,
-    Context, Engine, MockAiRanker, RerankResult, SchemaBehaviorProfile, StaticTableTranslator,
-    Translator, UserDb,
+    Context, Engine, MockAiRanker, RerankResult, SchemaBehaviorProfile, SentencePolicy,
+    StaticTableTranslator, Translator, UserDb,
 };
 
 struct CommentTranslator;
@@ -204,6 +204,445 @@ fn prediction_never_first_keeps_learned_prefix_prediction_behind_table_top() {
     assert_eq!(
         engine.context().candidates[1].source,
         CandidateSource::UserTable
+    );
+}
+
+#[test]
+fn exact_user_phrase_suppresses_poet_sentence_but_preserves_phrase_stream() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER", 3, 3.0, 3);
+
+    let mut engine = Engine::new();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::new([("ab", "AB"), ("cd", "CD")])
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_upstream_sentence_model(10),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+
+    assert!(
+        engine
+            .context()
+            .candidates
+            .iter()
+            .all(|candidate| candidate.source != CandidateSource::Sentence),
+        "the exact user phrase is merged after Poet and must remove the composed sentence"
+    );
+    assert!(engine.context().candidates.iter().any(|candidate| {
+        candidate.text == "USER" && candidate.source == CandidateSource::UserTable
+    }));
+    assert_eq!(
+        engine.context().candidates[0].text,
+        "USER",
+        "a reliable exact user phrase precedes the equal-length system phrase"
+    );
+    assert!(engine.context().candidates.iter().any(|candidate| {
+        candidate.text == "AB"
+            && candidate.source
+                == CandidateSource::PartialTable {
+                    consumed: 2,
+                    recompose_on_default: false,
+                }
+    }));
+}
+
+#[test]
+fn exact_user_phrase_backfills_plural_poet_window_and_keeps_list_complete() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abc", "USER", 3, 3.0, 3);
+
+    let mut engine = Engine::new();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::new([("a", "A"), ("a", "X"), ("a", "Y"), ("b", "B"), ("c", "C")])
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_upstream_sentence_model(10)
+            .with_upstream_script_translation_limits(3, 3),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("abc");
+
+    assert_eq!(engine.context().candidates[0].text, "USER");
+    assert!(engine
+        .context()
+        .candidates
+        .iter()
+        .all(|candidate| candidate.source != CandidateSource::Sentence));
+    for phrase in ["A", "X", "Y"] {
+        assert!(
+            engine
+                .context()
+                .candidates
+                .iter()
+                .any(|candidate| candidate.text == phrase),
+            "{phrase} must backfill the window after exact-user sentence suppression"
+        );
+    }
+    assert!(
+        engine.snapshot().candidate_list_complete,
+        "a non-empty userdb disables bounded refresh, so suppression must not underfill a hidden window"
+    );
+}
+
+#[test]
+fn exact_user_phrase_does_not_suppress_non_script_translation_sentence() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER", 3, 3.0, 3);
+
+    let mut engine = Engine::new();
+    engine.add_translator(
+        StaticTableTranslator::new([("ab", "AB"), ("cd", "CD")]).with_sentence(true),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+
+    assert!(engine
+        .context()
+        .candidates
+        .iter()
+        .any(|candidate| candidate.source == CandidateSource::Sentence));
+}
+
+#[test]
+fn legacy_sentence_policy_does_not_claim_exact_user_script_owner() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER", 3, 3.0, 3);
+
+    let mut engine = Engine::new();
+    engine.add_translator(
+        StaticTableTranslator::new([("ab", "AB"), ("cd", "CD")])
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::LegacyFallback)
+            .with_upstream_sentence_model(10),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+
+    assert!(engine
+        .context()
+        .candidates
+        .iter()
+        .any(|candidate| candidate.source == CandidateSource::Sentence));
+    assert!(engine.context().candidates.iter().any(|candidate| {
+        candidate.text == "USER" && candidate.source == CandidateSource::UserTable
+    }));
+}
+
+#[test]
+fn tag_mismatched_script_translator_does_not_change_active_non_script_userdb_merge() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER", 3, 3.0, 3);
+
+    let mut control = Engine::new();
+    control.add_translator(
+        StaticTableTranslator::new([("ab", "NON-AB"), ("cd", "NON-CD")])
+            .with_sentence(true)
+            .with_tags(["abc"]),
+    );
+    control.set_userdb(userdb.clone());
+    control.set_segment_tags(["abc"]);
+    control.set_input("abcd");
+    let control_order = control
+        .context()
+        .candidates
+        .iter()
+        .map(|candidate| (candidate.text.clone(), candidate.source.clone()))
+        .collect::<Vec<_>>();
+
+    let mut engine = Engine::new();
+    engine.add_translator(
+        StaticTableTranslator::new([("ab", "NON-AB"), ("cd", "NON-CD")])
+            .with_sentence(true)
+            .with_tags(["abc"]),
+    );
+    engine.add_translator(
+        StaticTableTranslator::new([("ab", "SCRIPT-AB"), ("cd", "SCRIPT-CD")])
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_upstream_sentence_model(10)
+            .with_tags(["custom"]),
+    );
+    engine.set_userdb(userdb);
+    engine.set_segment_tags(["abc"]);
+    engine.set_input("abcd");
+
+    let mixed_order = engine
+        .context()
+        .candidates
+        .iter()
+        .map(|candidate| (candidate.text.clone(), candidate.source.clone()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        mixed_order, control_order,
+        "a tag-mismatched ScriptTranslator must be observationally absent from userdb merge"
+    );
+}
+
+#[test]
+fn tag_mismatched_script_translator_preserves_legacy_predictive_order() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcdef", "LEARNED", 3, 3.0, 3);
+
+    let make_control = |with_inactive_script: bool| {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("abcd", "NON-EXACT")]));
+        if with_inactive_script {
+            engine.add_translator(
+                StaticTableTranslator::new([("ab", "SCRIPT-AB"), ("cd", "SCRIPT-CD")])
+                    .with_sentence(true)
+                    .with_sentence_policy(SentencePolicy::UpstreamScript)
+                    .with_upstream_sentence_model(10)
+                    .with_tags(["custom"]),
+            );
+        }
+        engine.set_userdb(userdb.clone());
+        engine.set_segment_tags(["abc"]);
+        engine.set_input("abcd");
+        engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| (candidate.text.clone(), candidate.source.clone()))
+            .collect::<Vec<_>>()
+    };
+
+    assert_eq!(
+        make_control(true),
+        make_control(false),
+        "an inactive ScriptTranslator must not opt an unrelated stream into predictive ScriptTranslation ordering"
+    );
+}
+
+#[test]
+fn active_script_owner_merges_userdb_when_its_system_stream_is_empty() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER-ONLY", 0, 0.0, 0);
+
+    let mut engine = Engine::new();
+    engine
+        .add_translator(StaticTableTranslator::new([("abcd", "HIGH")]).with_initial_quality(10.0));
+    engine.add_translator(
+        StaticTableTranslator::new(std::iter::empty::<(&str, &str)>())
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_upstream_sentence_model(10),
+    );
+    engine
+        .add_translator(StaticTableTranslator::new([("abcd", "LOW")]).with_initial_quality(-10.0));
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+
+    let texts = engine
+        .context()
+        .candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    let high = texts.iter().position(|text| *text == "HIGH").unwrap();
+    let user = texts.iter().position(|text| *text == "USER-ONLY").unwrap();
+    let low = texts.iter().position(|text| *text == "LOW").unwrap();
+    assert!(
+        high < user && user < low,
+        "a user-only active ScriptTranslation stream should merge globally by quality: {texts:?}"
+    );
+}
+
+#[test]
+fn active_script_exact_user_remerges_against_intermediate_non_script_quality() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER", 0, 0.0, 0);
+
+    let mut engine = Engine::new();
+    engine.add_translator(
+        StaticTableTranslator::new([("abcd", "MEDIUM")]).with_initial_quality(-0.25),
+    );
+    engine.add_translator(
+        StaticTableTranslator::new([("abcd", "SCRIPT")])
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_upstream_sentence_model(10),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+
+    let candidates = &engine.context().candidates;
+    let texts = candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    assert!(
+        candidates
+            .windows(2)
+            .any(|pair| pair[0].text == "MEDIUM" && pair[1].text == "USER"),
+        "the unrelated medium-quality head must be re-elected before the Script-local user row: {texts:?}"
+    );
+    let user = texts.iter().position(|text| *text == "USER").unwrap();
+    let script = texts.iter().position(|text| *text == "SCRIPT").unwrap();
+    assert!(
+        user < script,
+        "the exact user row must still precede its own system phrase: {texts:?}"
+    );
+}
+
+#[test]
+fn user_only_script_stream_breaks_quality_ties_by_translator_registration_order() {
+    let make_order = |script_first: bool| {
+        let mut userdb = UserDb::default();
+        userdb.learn_entry("abcd", "USER", 0, 0.0, 0);
+        let script = || {
+            StaticTableTranslator::new(std::iter::empty::<(&str, &str)>())
+                .with_sentence(true)
+                .with_sentence_policy(SentencePolicy::UpstreamScript)
+                .with_upstream_sentence_model(10)
+        };
+        let non_script =
+            || StaticTableTranslator::new([("abcd", "EQUAL")]).with_initial_quality(-0.5);
+
+        let mut engine = Engine::new();
+        if script_first {
+            engine.add_translator(script());
+            engine.add_translator(non_script());
+        } else {
+            engine.add_translator(non_script());
+            engine.add_translator(script());
+        }
+        engine.set_userdb(userdb);
+        engine.set_input("abcd");
+        let candidates = &engine.context().candidates;
+        let user = candidates
+            .iter()
+            .find(|candidate| candidate.text == "USER")
+            .expect("user row should be present");
+        let equal = candidates
+            .iter()
+            .find(|candidate| candidate.text == "EQUAL")
+            .expect("non-script row should be present");
+        assert_eq!(user.quality, equal.quality, "tie control must bite");
+        candidates
+            .iter()
+            .map(|candidate| candidate.text.clone())
+            .collect::<Vec<_>>()
+    };
+
+    let script_first = make_order(true);
+    let non_script_first = make_order(false);
+    assert!(
+        script_first.iter().position(|text| text == "USER")
+            < script_first.iter().position(|text| text == "EQUAL"),
+        "the earlier Script stream should win an exact quality tie: {script_first:?}"
+    );
+    assert!(
+        non_script_first.iter().position(|text| text == "EQUAL")
+            < non_script_first.iter().position(|text| text == "USER"),
+        "the earlier non-Script stream should win an exact quality tie: {non_script_first:?}"
+    );
+}
+
+#[test]
+fn active_script_userdb_suppression_is_local_to_its_translator_stream() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER", 3, 3.0, 3);
+
+    let mut engine = Engine::new();
+    engine.add_translator(
+        StaticTableTranslator::new([("ab", "NON-AB"), ("cd", "NON-CD")])
+            .with_sentence(true)
+            .with_initial_quality(100.0),
+    );
+    engine.add_translator(
+        StaticTableTranslator::new([("ab", "SCRIPT-AB"), ("cd", "SCRIPT-CD")])
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_upstream_sentence_model(10),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+
+    let non_script_sentence = engine
+        .context()
+        .candidates
+        .iter()
+        .position(|candidate| {
+            candidate.text == "NON-ABNON-CD" && candidate.source == CandidateSource::Sentence
+        })
+        .expect("the active non-script sentence must survive script-local suppression");
+    let user = engine
+        .context()
+        .candidates
+        .iter()
+        .position(|candidate| {
+            candidate.text == "USER" && candidate.source == CandidateSource::UserTable
+        })
+        .expect("the exact user phrase should occupy the ScriptTranslation stream");
+    let first_script_phrase = engine
+        .context()
+        .candidates
+        .iter()
+        .position(|candidate| candidate.text.starts_with("SCRIPT-"))
+        .expect("the ScriptTranslation phrase stream should remain after sentence suppression");
+    assert!(
+        non_script_sentence < user,
+        "script-local insertion must not leapfrog a higher-priority non-script sentence"
+    );
+    assert_eq!(
+        user + 1,
+        first_script_phrase,
+        "the exact user phrase should replace the suppressed sentence at the script stream anchor"
+    );
+    assert!(engine.context().candidates.iter().all(|candidate| {
+        candidate.text != "SCRIPT-ABSCRIPT-CD" || candidate.source != CandidateSource::Sentence
+    }));
+}
+
+#[test]
+fn exact_script_userdb_special_case_requires_one_default_quality_owner() {
+    let userdb = || {
+        let mut userdb = UserDb::default();
+        userdb.learn_entry("abcd", "USER", 3, 3.0, 3);
+        userdb
+    };
+    let script = |prefix: &'static str, initial_quality: f32| {
+        StaticTableTranslator::new([
+            ("ab", format!("{prefix}-AB")),
+            ("cd", format!("{prefix}-CD")),
+        ])
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_upstream_sentence_model(10)
+        .with_initial_quality(initial_quality)
+    };
+
+    let mut multiple = Engine::new();
+    multiple.add_translator(script("ONE", 0.0));
+    multiple.add_translator(script("TWO", 0.0));
+    multiple.set_userdb(userdb());
+    multiple.set_input("abcd");
+    assert_eq!(
+        multiple
+            .context()
+            .candidates
+            .iter()
+            .filter(|candidate| candidate.source == CandidateSource::Sentence)
+            .count(),
+        2,
+        "ambiguous multiple Script owners must fall back without cross-stream suppression"
+    );
+
+    let mut non_default_quality = Engine::new();
+    non_default_quality.add_translator(script("OFFSET", 1.0));
+    non_default_quality.set_userdb(userdb());
+    non_default_quality.set_input("abcd");
+    assert!(
+        non_default_quality
+            .context()
+            .candidates
+            .iter()
+            .any(|candidate| candidate.source == CandidateSource::Sentence),
+        "non-default Script namespaces stay on the legacy merge until their user quality model is owned"
     );
 }
 

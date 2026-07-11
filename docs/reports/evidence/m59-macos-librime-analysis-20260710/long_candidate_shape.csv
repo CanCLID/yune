@@ -1,0 +1,5 @@
+input_chars,engine,candidate_count,candidate_texts_first_page,observed_shape
+37,librime-1.17.0,5,測試一下長句輸入性能怎樣 | 測試一下 | 測試儀 | 測試 | 側室,one full sentence followed by shorter phrases
+37,yune,5,測試一下長足輸入性能怎樣 | 測試一下長句輸入性能怎樣 | 測試一下敞車輸入性能怎樣 | 測試一下長局輸入性能怎樣 | 測試一下長居輸入性能怎樣,five full-sentence alternatives
+59,librime-1.17.0,5,這個引擎其實應該支持超長句子輸入才能用 | 這個 | 這歌 | 這格 | 這,one full sentence followed by shorter phrases
+59,yune,5,這個引擎其實應該支持超長橘子樹肉菜能用 | 這個引擎其實應該支持超常橘子樹肉菜能用 | 這個言情其實應該支持超長橘子樹肉菜能用 | 這個言情其實應該支持超常橘子樹肉菜能用 | 這個陰晴其實應該支持超長橘子樹肉菜能用,five full-sentence alternatives

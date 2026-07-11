@@ -1,0 +1,3 @@
+input_chars,input,samples,process_key_us_per_key,sentence_model_us_per_key,abi_get_context_us_per_key,abi_free_context_us_per_key,prism_lookup_us_per_key,candidate_materialization_us_per_key,filter_pipeline_us_per_key,sentence_model_share_pct
+37,ceshiyixiachangjushuruxingnengzenyang,400,566.546,459.864,0.846,0.083,0.119,0.335,1.141,81.2
+59,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,400,984.427,853.491,0.852,0.085,0.145,0.336,1.204,86.7

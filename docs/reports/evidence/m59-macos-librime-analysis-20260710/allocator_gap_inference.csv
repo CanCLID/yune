@@ -1,0 +1,3 @@
+input_chars,windows_librime_median_us_per_key,macos_librime_median_us_per_key,api_control_nano_off_slowdown_pct,inferred_macos_nano_off_us_per_key,inferred_share_of_windows_macos_elapsed_gap_pct,interpretation
+37,298.476,164.783,21.5,200.211,26.5,inference; MallocNanoZone=0 is not the Windows allocator
+59,670.517,386.506,23.6,477.721,32.1,inference; MallocNanoZone=0 is not the Windows allocator

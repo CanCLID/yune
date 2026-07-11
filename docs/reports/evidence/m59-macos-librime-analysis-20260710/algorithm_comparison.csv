@@ -1,0 +1,6 @@
+aspect,librime,yune,why_it_matters
+No-grammar sentence strategy,One-best dynamic program (max_sentences defaults to 1),Up to 5 sentence candidates; beam width is candidates × 3 (15 here),Yune keeps and ranks many more states than the oracle path needs.
+Path representation,"Predecessor pointer, DictEntry pointer, end position, weight, hash","Accumulated String, weight, word lengths, recent-word Vec",Each Yune extension copies the accumulated sentence and metadata.
+Text materialization,Walk winner backpointers after the final state is chosen,Build a new full String for each accepted edge/state extension,Deferred text construction avoids repeated allocation and copying.
+Candidate delivery,Generator-style Peek/Next; Menu prepares only the requested page,Sentence model eagerly returns a bounded Vec for the first page,Lazy delivery can stop once the visible page is satisfied.
+Incremental graph work,Compact mapped table/prism access feeding a one-best sentence pass,Rebuilds boundary/reachability vectors and nested maps; sorts/truncates edges,Flat append-local structures would improve locality and reduce churn.

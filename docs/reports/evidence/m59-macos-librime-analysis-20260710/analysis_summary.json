@@ -1,0 +1,346 @@
+{
+  "platform_rows": 17,
+  "median_yune_mac_vs_windows_pct": -1.5,
+  "median_librime_mac_vs_windows_pct": -27.6,
+  "material_ratio_rows": 12,
+  "api_controls": [
+    {
+      "input_chars": "37",
+      "rounds": 5,
+      "yune_metrics_on_median_us_per_key": "554.776",
+      "yune_metrics_off_median_us_per_key": "556.423",
+      "metrics_off_vs_on_pct": "0.30",
+      "librime_median_us_per_key": "167.043",
+      "yune_off_librime_ratio": "3.331"
+    },
+    {
+      "input_chars": "59",
+      "rounds": 5,
+      "yune_metrics_on_median_us_per_key": "969.043",
+      "yune_metrics_off_median_us_per_key": "969.436",
+      "metrics_off_vs_on_pct": "0.04",
+      "librime_median_us_per_key": "386.592",
+      "yune_off_librime_ratio": "2.508"
+    }
+  ],
+  "allocator_controls": [
+    {
+      "input_chars": "37",
+      "engine": "yune",
+      "allocator_mode": "default",
+      "rounds": 5,
+      "median_us_per_key": "556.555",
+      "min_us_per_key": "550.552",
+      "max_us_per_key": "567.019",
+      "vs_default_pct": "0.0"
+    },
+    {
+      "input_chars": "37",
+      "engine": "yune",
+      "allocator_mode": "nano-off",
+      "rounds": 5,
+      "median_us_per_key": "555.323",
+      "min_us_per_key": "549.601",
+      "max_us_per_key": "561.801",
+      "vs_default_pct": "-0.2"
+    },
+    {
+      "input_chars": "37",
+      "engine": "yune",
+      "allocator_mode": "nano-on",
+      "rounds": 5,
+      "median_us_per_key": "553.557",
+      "min_us_per_key": "547.358",
+      "max_us_per_key": "561.881",
+      "vs_default_pct": "-0.5"
+    },
+    {
+      "input_chars": "37",
+      "engine": "librime",
+      "allocator_mode": "default",
+      "rounds": 5,
+      "median_us_per_key": "135.967",
+      "min_us_per_key": "134.688",
+      "max_us_per_key": "137.927",
+      "vs_default_pct": "0.0"
+    },
+    {
+      "input_chars": "37",
+      "engine": "librime",
+      "allocator_mode": "nano-off",
+      "rounds": 5,
+      "median_us_per_key": "165.241",
+      "min_us_per_key": "164.270",
+      "max_us_per_key": "178.561",
+      "vs_default_pct": "21.5"
+    },
+    {
+      "input_chars": "37",
+      "engine": "librime",
+      "allocator_mode": "nano-on",
+      "rounds": 5,
+      "median_us_per_key": "136.791",
+      "min_us_per_key": "134.115",
+      "max_us_per_key": "138.773",
+      "vs_default_pct": "0.6"
+    },
+    {
+      "input_chars": "59",
+      "engine": "yune",
+      "allocator_mode": "default",
+      "rounds": 5,
+      "median_us_per_key": "963.766",
+      "min_us_per_key": "959.942",
+      "max_us_per_key": "968.470",
+      "vs_default_pct": "0.0"
+    },
+    {
+      "input_chars": "59",
+      "engine": "yune",
+      "allocator_mode": "nano-off",
+      "rounds": 5,
+      "median_us_per_key": "969.449",
+      "min_us_per_key": "958.787",
+      "max_us_per_key": "972.663",
+      "vs_default_pct": "0.6"
+    },
+    {
+      "input_chars": "59",
+      "engine": "yune",
+      "allocator_mode": "nano-on",
+      "rounds": 5,
+      "median_us_per_key": "960.255",
+      "min_us_per_key": "958.004",
+      "max_us_per_key": "966.920",
+      "vs_default_pct": "-0.4"
+    },
+    {
+      "input_chars": "59",
+      "engine": "librime",
+      "allocator_mode": "default",
+      "rounds": 5,
+      "median_us_per_key": "317.263",
+      "min_us_per_key": "314.645",
+      "max_us_per_key": "335.991",
+      "vs_default_pct": "0.0"
+    },
+    {
+      "input_chars": "59",
+      "engine": "librime",
+      "allocator_mode": "nano-off",
+      "rounds": 5,
+      "median_us_per_key": "392.121",
+      "min_us_per_key": "382.709",
+      "max_us_per_key": "396.072",
+      "vs_default_pct": "23.6"
+    },
+    {
+      "input_chars": "59",
+      "engine": "librime",
+      "allocator_mode": "nano-on",
+      "rounds": 5,
+      "median_us_per_key": "314.230",
+      "min_us_per_key": "313.549",
+      "max_us_per_key": "320.424",
+      "vs_default_pct": "-1.0"
+    }
+  ],
+  "allocator_gap_inference": [
+    {
+      "input_chars": "37",
+      "windows_librime_median_us_per_key": "298.476",
+      "macos_librime_median_us_per_key": "164.783",
+      "api_control_nano_off_slowdown_pct": "21.5",
+      "inferred_macos_nano_off_us_per_key": "200.211",
+      "inferred_share_of_windows_macos_elapsed_gap_pct": "26.5",
+      "interpretation": "inference; MallocNanoZone=0 is not the Windows allocator"
+    },
+    {
+      "input_chars": "59",
+      "windows_librime_median_us_per_key": "670.517",
+      "macos_librime_median_us_per_key": "386.506",
+      "api_control_nano_off_slowdown_pct": "23.6",
+      "inferred_macos_nano_off_us_per_key": "477.721",
+      "inferred_share_of_windows_macos_elapsed_gap_pct": "32.1",
+      "interpretation": "inference; MallocNanoZone=0 is not the Windows allocator"
+    }
+  ],
+  "counter_parity": [
+    {
+      "track": "track-a-comparison",
+      "paired_rounds": 5,
+      "paired_rows": 6800,
+      "counter_fields": 88,
+      "value_comparisons": 598400,
+      "mismatches": 0,
+      "verdict": "identical"
+    },
+    {
+      "track": "track-b-product",
+      "paired_rounds": 5,
+      "paired_rows": 400,
+      "counter_fields": 88,
+      "value_comparisons": 35200,
+      "mismatches": 0,
+      "verdict": "identical"
+    }
+  ],
+  "long_sentence_breakdown": [
+    {
+      "input_chars": 37,
+      "input": "ceshiyixiachangjushuruxingnengzenyang",
+      "samples": 400,
+      "process_key_us_per_key": "566.546",
+      "sentence_model_us_per_key": "459.864",
+      "abi_get_context_us_per_key": "0.846",
+      "abi_free_context_us_per_key": "0.083",
+      "prism_lookup_us_per_key": "0.119",
+      "candidate_materialization_us_per_key": "0.335",
+      "filter_pipeline_us_per_key": "1.141",
+      "sentence_model_share_pct": "81.2"
+    },
+    {
+      "input_chars": 59,
+      "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+      "samples": 400,
+      "process_key_us_per_key": "984.427",
+      "sentence_model_us_per_key": "853.491",
+      "abi_get_context_us_per_key": "0.852",
+      "abi_free_context_us_per_key": "0.085",
+      "prism_lookup_us_per_key": "0.145",
+      "candidate_materialization_us_per_key": "0.336",
+      "filter_pipeline_us_per_key": "1.204",
+      "sentence_model_share_pct": "86.7"
+    }
+  ],
+  "librime_profiles": [
+    {
+      "input_chars": "37",
+      "total_samples": 3856,
+      "rime_process_key_inclusive_samples": 3765,
+      "script_evaluate_inclusive_samples": 2913,
+      "make_sentence_inclusive_samples": 2862,
+      "prepare_sentence_inclusive_samples": 2412,
+      "dictionary_lookup_inclusive_samples": 2137,
+      "prepare_share_of_total_pct": "62.6",
+      "dictionary_lookup_share_of_total_pct": "55.4"
+    },
+    {
+      "input_chars": "59",
+      "total_samples": 3867,
+      "rime_process_key_inclusive_samples": 3800,
+      "script_evaluate_inclusive_samples": 2772,
+      "make_sentence_inclusive_samples": 2731,
+      "prepare_sentence_inclusive_samples": 2359,
+      "dictionary_lookup_inclusive_samples": 2133,
+      "prepare_share_of_total_pct": "61.0",
+      "dictionary_lookup_share_of_total_pct": "55.2"
+    }
+  ],
+  "long_candidate_shape": [
+    {
+      "input_chars": 37,
+      "engine": "librime-1.17.0",
+      "candidate_count": 5,
+      "candidate_texts_first_page": "\u6e2c\u8a66\u4e00\u4e0b\u9577\u53e5\u8f38\u5165\u6027\u80fd\u600e\u6a23 | \u6e2c\u8a66\u4e00\u4e0b | \u6e2c\u8a66\u5100 | \u6e2c\u8a66 | \u5074\u5ba4",
+      "observed_shape": "one full sentence followed by shorter phrases"
+    },
+    {
+      "input_chars": 37,
+      "engine": "yune",
+      "candidate_count": 5,
+      "candidate_texts_first_page": "\u6e2c\u8a66\u4e00\u4e0b\u9577\u8db3\u8f38\u5165\u6027\u80fd\u600e\u6a23 | \u6e2c\u8a66\u4e00\u4e0b\u9577\u53e5\u8f38\u5165\u6027\u80fd\u600e\u6a23 | \u6e2c\u8a66\u4e00\u4e0b\u655e\u8eca\u8f38\u5165\u6027\u80fd\u600e\u6a23 | \u6e2c\u8a66\u4e00\u4e0b\u9577\u5c40\u8f38\u5165\u6027\u80fd\u600e\u6a23 | \u6e2c\u8a66\u4e00\u4e0b\u9577\u5c45\u8f38\u5165\u6027\u80fd\u600e\u6a23",
+      "observed_shape": "five full-sentence alternatives"
+    },
+    {
+      "input_chars": 59,
+      "engine": "librime-1.17.0",
+      "candidate_count": 5,
+      "candidate_texts_first_page": "\u9019\u500b\u5f15\u64ce\u5176\u5be6\u61c9\u8a72\u652f\u6301\u8d85\u9577\u53e5\u5b50\u8f38\u5165\u624d\u80fd\u7528 | \u9019\u500b | \u9019\u6b4c | \u9019\u683c | \u9019",
+      "observed_shape": "one full sentence followed by shorter phrases"
+    },
+    {
+      "input_chars": 59,
+      "engine": "yune",
+      "candidate_count": 5,
+      "candidate_texts_first_page": "\u9019\u500b\u5f15\u64ce\u5176\u5be6\u61c9\u8a72\u652f\u6301\u8d85\u9577\u6a58\u5b50\u6a39\u8089\u83dc\u80fd\u7528 | \u9019\u500b\u5f15\u64ce\u5176\u5be6\u61c9\u8a72\u652f\u6301\u8d85\u5e38\u6a58\u5b50\u6a39\u8089\u83dc\u80fd\u7528 | \u9019\u500b\u8a00\u60c5\u5176\u5be6\u61c9\u8a72\u652f\u6301\u8d85\u9577\u6a58\u5b50\u6a39\u8089\u83dc\u80fd\u7528 | \u9019\u500b\u8a00\u60c5\u5176\u5be6\u61c9\u8a72\u652f\u6301\u8d85\u5e38\u6a58\u5b50\u6a39\u8089\u83dc\u80fd\u7528 | \u9019\u500b\u9670\u6674\u5176\u5be6\u61c9\u8a72\u652f\u6301\u8d85\u9577\u6a58\u5b50\u6a39\u8089\u83dc\u80fd\u7528",
+      "observed_shape": "five full-sentence alternatives"
+    }
+  ],
+  "algorithm_comparison": [
+    {
+      "aspect": "No-grammar sentence strategy",
+      "librime": "One-best dynamic program (max_sentences defaults to 1)",
+      "yune": "Up to 5 sentence candidates; beam width is candidates \u00d7 3 (15 here)",
+      "why_it_matters": "Yune keeps and ranks many more states than the oracle path needs."
+    },
+    {
+      "aspect": "Path representation",
+      "librime": "Predecessor pointer, DictEntry pointer, end position, weight, hash",
+      "yune": "Accumulated String, weight, word lengths, recent-word Vec",
+      "why_it_matters": "Each Yune extension copies the accumulated sentence and metadata."
+    },
+    {
+      "aspect": "Text materialization",
+      "librime": "Walk winner backpointers after the final state is chosen",
+      "yune": "Build a new full String for each accepted edge/state extension",
+      "why_it_matters": "Deferred text construction avoids repeated allocation and copying."
+    },
+    {
+      "aspect": "Candidate delivery",
+      "librime": "Generator-style Peek/Next; Menu prepares only the requested page",
+      "yune": "Sentence model eagerly returns a bounded Vec for the first page",
+      "why_it_matters": "Lazy delivery can stop once the visible page is satisfied."
+    },
+    {
+      "aspect": "Incremental graph work",
+      "librime": "Compact mapped table/prism access feeding a one-best sentence pass",
+      "yune": "Rebuilds boundary/reachability vectors and nested maps; sorts/truncates edges",
+      "why_it_matters": "Flat append-local structures would improve locality and reduce churn."
+    }
+  ],
+  "build_comparison": [
+    {
+      "attribute": "source commit",
+      "macos": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+      "windows": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+      "controlled": "yes"
+    },
+    {
+      "attribute": "architecture",
+      "macos": "arm64 (Apple M5)",
+      "windows": "x64",
+      "controlled": "no"
+    },
+    {
+      "attribute": "compiler / standard library",
+      "macos": "AppleClang 21 / dynamic libc++",
+      "windows": "MSVC / static MSVC CRT",
+      "controlled": "no"
+    },
+    {
+      "attribute": "optimization",
+      "macos": "-O3 -DNDEBUG; no LTO; generic arm64",
+      "windows": "/O2 /Ob2 /MT; /OPT:REF /OPT:ICF; NDEBUG",
+      "controlled": "no"
+    },
+    {
+      "attribute": "merged plugins",
+      "macos": "off",
+      "windows": "on (Lua, Octagram, Predict)",
+      "controlled": "no"
+    },
+    {
+      "attribute": "luna payload identity",
+      "macos": "13,013,460 bytes; 498,564 entries; checksum 0xb3d4e98e / 0x29d56c89",
+      "windows": "13,013,460 bytes; 498,564 entries; checksum 0x16ad0e3e / 0xb967cfef",
+      "controlled": "no"
+    },
+    {
+      "attribute": "measured dylib / package SHA-256",
+      "macos": "7dcdfaec39e5144ccced3df4b1f473c9dbe5500bd6c0c734280e6ee98754ac41",
+      "windows": "package 86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+      "controlled": "no"
+    }
+  ]
+}

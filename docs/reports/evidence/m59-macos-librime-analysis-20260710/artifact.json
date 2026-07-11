@@ -1,0 +1,1215 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "Why librime is faster on macOS — M59 Increment-0 diagnostic",
+    "description": "Read-only causal diagnostic of the M59 Increment-0 librime macOS performance advantage and Yune improvement opportunities.",
+    "generatedAt": "2026-07-11T02:45:09Z",
+    "cards": [
+      {
+        "id": "yune_platform_card",
+        "description": "Median absolute latency change across all 17 Track A inputs.",
+        "dataset": "headline",
+        "sourceId": "platform_scaling",
+        "metrics": [
+          {
+            "label": "Yune median macOS vs Windows",
+            "field": "yune_median_platform_change",
+            "format": "percent",
+            "signed": true
+          }
+        ]
+      },
+      {
+        "id": "librime_platform_card",
+        "description": "Median absolute latency change across all 17 Track A inputs.",
+        "dataset": "headline",
+        "sourceId": "platform_scaling",
+        "metrics": [
+          {
+            "label": "librime median macOS vs Windows",
+            "field": "librime_median_platform_change",
+            "format": "percent",
+            "signed": true
+          }
+        ]
+      },
+      {
+        "id": "allocator_card",
+        "description": "59-character API-only control when MallocNanoZone is disabled.",
+        "dataset": "headline",
+        "sourceId": "allocator_controls",
+        "metrics": [
+          {
+            "label": "librime slowdown with Nano disabled",
+            "field": "librime_nano_off_59_change",
+            "format": "percent",
+            "signed": true
+          }
+        ]
+      },
+      {
+        "id": "sentence_share_card",
+        "description": "Share of Yune process-key time owned by the sentence model on the 59-character row.",
+        "dataset": "headline",
+        "sourceId": "long_breakdown",
+        "metrics": [
+          {
+            "label": "Yune sentence-model share",
+            "field": "yune_sentence_share_59",
+            "format": "percent"
+          }
+        ]
+      }
+    ],
+    "charts": [
+      {
+        "id": "platform_component_chart",
+        "title": "macOS versus Windows latency by engine",
+        "subtitle": "Median of five fixed-binary rounds; negative values mean macOS was faster",
+        "intent": "comparison",
+        "question": "Did macOS change Yune and librime absolute latency by similar amounts across the 17 inputs?",
+        "rationale": "Grouped horizontal bars expose whether the ratio change comes from Yune, librime, or both while preserving every input.",
+        "comparisonContext": {
+          "baseline": "Signed Windows Increment-0 median",
+          "denominator": "Windows median microseconds per key",
+          "grain": "17 Track A inputs",
+          "unit": "relative percent change"
+        },
+        "type": "horizontalBar",
+        "dataset": "platform_scaling",
+        "sourceId": "platform_scaling",
+        "encodings": {
+          "x": {
+            "field": "input_label",
+            "type": "nominal",
+            "label": "Input"
+          },
+          "y": {
+            "fields": [
+              "yune_change",
+              "librime_change"
+            ],
+            "type": "quantitative",
+            "label": "macOS versus Windows",
+            "format": "percent"
+          },
+          "tooltip": [
+            {
+              "field": "mac_yune_us_per_key",
+              "type": "quantitative",
+              "label": "Mac Yune µs/key"
+            },
+            {
+              "field": "windows_yune_us_per_key",
+              "type": "quantitative",
+              "label": "Windows Yune µs/key"
+            },
+            {
+              "field": "mac_librime_us_per_key",
+              "type": "quantitative",
+              "label": "Mac librime µs/key"
+            },
+            {
+              "field": "windows_librime_us_per_key",
+              "type": "quantitative",
+              "label": "Windows librime µs/key"
+            }
+          ]
+        },
+        "palette": {
+          "kind": "identity",
+          "name": "two-series comparison"
+        },
+        "legend": {
+          "position": "bottom",
+          "sort": "spec",
+          "title": "Engine"
+        },
+        "labels": {
+          "values": "auto"
+        },
+        "referenceLines": [
+          {
+            "axis": "y",
+            "value": 0,
+            "color": "neutral",
+            "label": "No platform change"
+          }
+        ],
+        "settings": {
+          "orientation": "horizontal",
+          "groupMode": "grouped",
+          "sort": "none",
+          "categoryLabelPolicy": "wrap"
+        },
+        "valueFormat": "percent",
+        "layout": "full",
+        "maxRows": 17
+      },
+      {
+        "id": "allocator_effect_chart",
+        "title": "Effect of disabling the macOS Nano zone",
+        "subtitle": "Five API-only rounds per engine and input; change versus each engine's default mode",
+        "intent": "comparison",
+        "question": "Does macOS allocator policy affect librime and Yune equally on the long-sentence path?",
+        "rationale": "A two-input grouped bar comparison makes the engine-specific allocator sensitivity directly visible.",
+        "comparisonContext": {
+          "baseline": "Default macOS allocator policy",
+          "denominator": "Default-mode median microseconds per key",
+          "grain": "37- and 59-character API-only controls",
+          "unit": "relative percent change"
+        },
+        "type": "bar",
+        "dataset": "allocator_effect",
+        "sourceId": "allocator_controls",
+        "encodings": {
+          "x": {
+            "field": "input_label",
+            "type": "nominal",
+            "label": "Input"
+          },
+          "y": {
+            "fields": [
+              "yune_change",
+              "librime_change"
+            ],
+            "type": "quantitative",
+            "label": "Latency change",
+            "format": "percent"
+          }
+        },
+        "palette": {
+          "kind": "identity",
+          "name": "two-series comparison"
+        },
+        "legend": {
+          "position": "bottom",
+          "sort": "spec",
+          "title": "Engine"
+        },
+        "labels": {
+          "values": "all"
+        },
+        "referenceLines": [
+          {
+            "axis": "y",
+            "value": 0,
+            "color": "neutral",
+            "label": "Default mode"
+          }
+        ],
+        "settings": {
+          "groupMode": "grouped",
+          "sort": "none"
+        },
+        "valueFormat": "percent",
+        "layout": "full"
+      }
+    ],
+    "tables": [
+      {
+        "id": "algorithm_table",
+        "title": "Sentence-path implementation comparison",
+        "subtitle": "Pinned librime and exact-baseline Yune source behavior",
+        "dataset": "algorithm_comparison",
+        "sourceId": "algorithm_review",
+        "defaultSort": {
+          "field": "aspect",
+          "direction": "asc"
+        },
+        "density": "spacious",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "aspect",
+            "label": "Aspect",
+            "type": "text"
+          },
+          {
+            "field": "librime",
+            "label": "librime",
+            "type": "text"
+          },
+          {
+            "field": "yune",
+            "label": "Yune",
+            "type": "text"
+          },
+          {
+            "field": "why_it_matters",
+            "label": "Performance implication",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "id": "candidate_table",
+        "title": "Long-input first-page candidate shape",
+        "subtitle": "Exact M59 Increment-0 snapshots from the macOS evidence",
+        "dataset": "candidate_shape",
+        "sourceId": "candidate_shape",
+        "defaultSort": {
+          "field": "input_label",
+          "direction": "asc"
+        },
+        "density": "spacious",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "input_label",
+            "label": "Input",
+            "type": "text"
+          },
+          {
+            "field": "librime_page_shape",
+            "label": "librime first page",
+            "type": "text"
+          },
+          {
+            "field": "yune_page_shape",
+            "label": "Yune first page",
+            "type": "text"
+          },
+          {
+            "field": "parity_observation",
+            "label": "Observed difference",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "id": "long_breakdown_table",
+        "title": "Yune long-sentence time ownership",
+        "subtitle": "Median microseconds per key over 400 samples per input; five macOS rounds",
+        "dataset": "long_breakdown",
+        "sourceId": "long_breakdown",
+        "defaultSort": {
+          "field": "process_key_us_per_key",
+          "direction": "desc"
+        },
+        "density": "dense",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "input_label",
+            "label": "Input",
+            "type": "text"
+          },
+          {
+            "field": "process_key_us_per_key",
+            "label": "Process key, µs",
+            "format": "number"
+          },
+          {
+            "field": "sentence_model_us_per_key",
+            "label": "Sentence model, µs",
+            "format": "number"
+          },
+          {
+            "field": "sentence_model_share",
+            "label": "Sentence-model share",
+            "format": "percent"
+          },
+          {
+            "field": "get_context_us_per_key",
+            "label": "Get context, µs",
+            "format": "number"
+          },
+          {
+            "field": "prism_us_per_key",
+            "label": "Prism, µs",
+            "format": "number"
+          },
+          {
+            "field": "materialization_us_per_key",
+            "label": "Materialization, µs",
+            "format": "number"
+          },
+          {
+            "field": "filter_us_per_key",
+            "label": "Filter, µs",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "build_table",
+        "title": "Uncontrolled librime build and payload differences",
+        "subtitle": "Same source commit, but not the same architecture, toolchain, configuration, or compiled payload",
+        "dataset": "build_comparison",
+        "sourceId": "build_review",
+        "defaultSort": {
+          "field": "attribute",
+          "direction": "asc"
+        },
+        "density": "spacious",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "attribute",
+            "label": "Attribute",
+            "type": "text"
+          },
+          {
+            "field": "macos",
+            "label": "macOS",
+            "type": "text"
+          },
+          {
+            "field": "windows",
+            "label": "Windows",
+            "type": "text"
+          },
+          {
+            "field": "controlled",
+            "label": "Controlled?",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "id": "counter_table",
+        "title": "Cross-platform non-timing counter check",
+        "subtitle": "All paired values from five macOS and Windows rounds",
+        "dataset": "counter_parity",
+        "sourceId": "counter_parity",
+        "defaultSort": {
+          "field": "value_comparisons",
+          "direction": "desc"
+        },
+        "density": "spacious",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "track",
+            "label": "Track",
+            "type": "text"
+          },
+          {
+            "field": "paired_rows",
+            "label": "Paired rows",
+            "format": "number"
+          },
+          {
+            "field": "counter_fields",
+            "label": "Fields per row",
+            "format": "number"
+          },
+          {
+            "field": "value_comparisons",
+            "label": "Value comparisons",
+            "format": "number"
+          },
+          {
+            "field": "mismatches",
+            "label": "Mismatches",
+            "format": "number"
+          },
+          {
+            "field": "verdict",
+            "label": "Verdict",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "id": "platform_audit_table",
+        "title": "Complete 17-input component scaling",
+        "subtitle": "Five-round medians; percentages compare macOS with the signed Windows baseline",
+        "dataset": "platform_scaling",
+        "sourceId": "platform_scaling",
+        "defaultSort": {
+          "field": "ratio_change",
+          "direction": "desc"
+        },
+        "density": "dense",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "input_label",
+            "label": "Input",
+            "type": "text"
+          },
+          {
+            "field": "yune_change",
+            "label": "Yune Mac vs Win",
+            "format": "percent",
+            "movement": true
+          },
+          {
+            "field": "librime_change",
+            "label": "librime Mac vs Win",
+            "format": "percent",
+            "movement": true
+          },
+          {
+            "field": "ratio_change",
+            "label": "Ratio change",
+            "format": "percent",
+            "movement": true
+          },
+          {
+            "field": "classification",
+            "label": "Diagnostic class",
+            "type": "text"
+          },
+          {
+            "field": "mac_ratio",
+            "label": "Mac Yune/librime",
+            "format": "number"
+          },
+          {
+            "field": "windows_ratio",
+            "label": "Windows Yune/librime",
+            "format": "number"
+          }
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "platform_scaling",
+        "label": "17-row component platform scaling",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/platform_scaling.sql"
+      },
+      {
+        "id": "allocator_controls",
+        "label": "macOS allocator API controls",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/allocator_controls.sql"
+      },
+      {
+        "id": "allocator_inference",
+        "label": "Allocator gap inference",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/allocator_inference.sql"
+      },
+      {
+        "id": "long_breakdown",
+        "label": "Yune long-sentence M37 timing ownership",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/long_breakdown.sql"
+      },
+      {
+        "id": "algorithm_review",
+        "label": "Pinned-source algorithm comparison",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/algorithm_comparison.sql"
+      },
+      {
+        "id": "candidate_shape",
+        "label": "M59 long-input candidate snapshots",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/candidate_shape.sql"
+      },
+      {
+        "id": "build_review",
+        "label": "Cross-platform librime build comparison",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/build_comparison.sql"
+      },
+      {
+        "id": "counter_parity",
+        "label": "Cross-platform non-timing counter parity",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/counter_parity.sql"
+      },
+      {
+        "id": "api_controls",
+        "label": "M37 instrumentation API controls",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/api_controls.sql"
+      },
+      {
+        "id": "m59_windows",
+        "label": "Signed Windows M59 Increment-0 packet",
+        "path": "docs/reports/evidence/m59-closeout-baseline/gate-verdict.csv"
+      },
+      {
+        "id": "m59_macos",
+        "label": "macOS M59 cross-platform evidence",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/track-a-cross-platform-comparison.csv"
+      },
+      {
+        "id": "librime_source",
+        "label": "Pinned librime sentence implementation",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sources/librime-poet-source-notes.md"
+      },
+      {
+        "id": "yune_source",
+        "label": "Exact-baseline Yune sentence implementation",
+        "path": "crates/yune-core/src/poet/mod.rs"
+      },
+      {
+        "id": "librime_profiles",
+        "label": "macOS librime sample profiles",
+        "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/librime_profile_summary.csv"
+      }
+    ],
+    "blocks": [
+      {
+        "id": "title",
+        "type": "markdown",
+        "body": "# Why librime is faster on macOS — M59 Increment-0 diagnostic"
+      },
+      {
+        "id": "technical_summary",
+        "type": "markdown",
+        "body": "## Technical summary\n\n**The surprising result is real, and it has two causes.** macOS is genuinely accelerating this librime build more than it accelerates Yune, while Yune's current long-sentence design also performs substantially more work than librime's no-grammar path. This is neither a pure platform artifact nor evidence of a generic macOS correctness failure.\n\n- Across all 17 Track A inputs, Yune's median macOS-versus-Windows change was **−1.5%**, while librime's was **−27.6%**. On the 37- and 59-character rows, librime improved **44.8%** and **42.4%**, versus **10.8%** and **12.6%** for Yune.\n- Disabling the macOS Nano zone slowed librime **21.5%** and **23.6%**, but changed Yune by less than **1%**. Allocator policy is therefore a material platform driver, not the whole explanation.\n- Yune's sentence model owns **81.2%** and **86.7%** of process-key time on the two long rows. The exact baseline keeps a 15-wide beam for up to five full-sentence paths and copies accumulated text; librime defaults to one best path with predecessor pointers and materializes text only after choosing the winner.\n- D-24/D-48 already require pinned librime's Luna page and order. Coordinate that parity correction with the active Windows M59 work, then use a parity-correct one-best/backpointer fast path, lazy page delivery, and flatter append-local graph state. Do not change the signed Windows ceilings to accommodate this result."
+      },
+      {
+        "id": "headline_metrics",
+        "type": "metric-strip",
+        "cardIds": [
+          "yune_platform_card",
+          "librime_platform_card",
+          "allocator_card",
+          "sentence_share_card"
+        ]
+      },
+      {
+        "id": "platform_heading",
+        "type": "markdown",
+        "sourceId": "platform_scaling",
+        "body": "## The ratio moved mainly because librime became faster\n\nThe component medians separate numerator from denominator. Yune was close to its Windows speed on most inputs, but librime was faster on macOS on 15 of 17 rows. That asymmetric denominator improvement produces 12 material Yune/librime ratio differences even though the same code paths and logical work were exercised."
+      },
+      {
+        "id": "platform_chart",
+        "type": "chart",
+        "chartId": "platform_component_chart",
+        "layout": "full"
+      },
+      {
+        "id": "platform_interpretation",
+        "type": "markdown",
+        "sourceId": "platform_scaling",
+        "body": "The long rows make the decomposition especially clear. At 37 characters, Yune moved from **636.3 to 567.7 µs/key**, while librime moved from **298.5 to 164.8 µs/key**. At 59 characters, Yune moved from **1,127.4 to 985.8 µs/key**, while librime moved from **670.5 to 386.5 µs/key**. The Mac therefore did help Yune, but it helped librime much more."
+      },
+      {
+        "id": "allocator_heading",
+        "type": "markdown",
+        "sourceId": "allocator_controls",
+        "body": "## The allocator explains a meaningful slice of librime's Mac advantage\n\nThe API-only control held the exact dylibs, deployment roots, inputs, and call sequence constant, then alternated default, forced-on, and disabled Nano-zone modes over five rounds. Default and forced-on behavior were essentially the same. With Nano disabled, librime slowed **21.5%** at 37 characters and **23.6%** at 59; Yune stayed within **0.6%** of default."
+      },
+      {
+        "id": "allocator_chart",
+        "type": "chart",
+        "chartId": "allocator_effect_chart",
+        "layout": "full"
+      },
+      {
+        "id": "allocator_inference_note",
+        "type": "markdown",
+        "sourceId": "allocator_inference",
+        "body": "Applying that measured sensitivity to the baseline medians would account for about **26.5%** of the 37-character Windows–Mac elapsed-time gap and **32.1%** of the 59-character gap. This is an inference, not a Windows allocator emulation: `MallocNanoZone=0` remains a macOS configuration and cannot identify the remaining compiler, CPU, STL, payload, or build effects."
+      },
+      {
+        "id": "design_heading",
+        "type": "markdown",
+        "body": "## librime wins by minimizing sentence-state work, not by skipping the dictionary graph\n\nThe symbolized librime samples put roughly **61–63%** of observed CPU on sentence preparation and about **55%** on dictionary lookup along the hottest inclusive path. The final one-best dynamic program is small because each endpoint retains a compact winning `Line` with predecessor and dictionary-entry pointers. In contrast, Yune extends and ranks multiple path objects, each carrying an accumulated `String` and metadata.\n\nThis is the most transferable lesson: preserve the same dictionary graph and candidate semantics, but represent intermediate paths as indexes/backpointers and construct output strings only for candidates that will actually be exposed."
+      },
+      {
+        "id": "algorithm_table_block",
+        "type": "table",
+        "tableId": "algorithm_table",
+        "layout": "full"
+      },
+      {
+        "id": "candidate_heading",
+        "type": "markdown",
+        "sourceId": "candidate_shape",
+        "body": "## The current candidate shape creates both parity and performance opportunity\n\nFor both long inputs, librime's first page contains one full sentence followed by shorter phrase candidates. The exact Yune Increment-0 baseline emits five full-sentence alternatives. On the 37-character row, librime's sentence is Yune's second candidate; on the 59-character row, librime's sentence is absent from Yune's first page.\n\nThat observable difference is pre-existing Lane B parity debt. The standing oracle-precedence and Lane B order-parity decisions already make pinned librime's page and order the target; implementation sequencing must be coordinated with the active Windows M59 work. A parity-correct one-best path can also remove unnecessary beam work naturally."
+      },
+      {
+        "id": "candidate_table_block",
+        "type": "table",
+        "tableId": "candidate_table",
+        "layout": "full"
+      },
+      {
+        "id": "ownership_heading",
+        "type": "markdown",
+        "sourceId": "long_breakdown",
+        "body": "## Yune's own timings localize the actionable hotspot\n\nAcross 400 samples per input, the upstream sentence model consumed **459.9 of 566.5 µs/key** on the 37-character row and **853.5 of 984.4 µs/key** on the 59-character row. ABI context export, free, prism lookup, candidate materialization, and filtering were each tiny by comparison. Optimizing the ABI wrapper or filters first would not address the dominant cost."
+      },
+      {
+        "id": "long_breakdown_block",
+        "type": "table",
+        "tableId": "long_breakdown_table",
+        "layout": "full"
+      },
+      {
+        "id": "scope_definitions",
+        "type": "markdown",
+        "body": "## Scope, data, and metric definitions\n\n- **Source scope:** Yune `457751824b8944676dc44912b9ce31ff29d78403`; upstream librime `33e78140250125871856cdc5b42ddc6a5fcd3cd4`.\n- **Baseline:** five signed Windows Increment-0 rounds versus five fixed-binary macOS rounds, with the same 17 Track A inputs and Track B product input.\n- **Absolute latency:** median microseconds per processed key for each engine and input. These values are compared within the same platform; macOS and Windows memory counters are not treated as interchangeable.\n- **Platform change:** `(macOS median / Windows median − 1)`. Negative means the engine was faster on macOS.\n- **Ratio change:** `(macOS Yune/librime ratio / Windows ratio − 1)`. The close/notable/material labels remain diagnostic only: within 10%, 10–25%, and over 25%.\n- **Causal status:** component scaling and controls are descriptive diagnostics. Only the macOS allocator policy was directly intervened on; CPU, toolchain, STL, build configuration, and compiled payload were not."
+      },
+      {
+        "id": "methodology",
+        "type": "markdown",
+        "body": "## Methodology preserves the signed baseline and isolates bounded causes\n\n1. Reused the five exact-commit macOS and signed Windows evidence rounds; no repository file or threshold was changed.\n2. Compared per-engine medians across all 17 inputs so the Yune/librime ratio could be decomposed into its numerator and denominator.\n3. Verified all **598,400** Track A and **35,200** Track B paired non-timing M37 counter values. Every value matched, ruling out a different logical workload as the explanation.\n4. Ran a separate C API driver against the measured dylibs using clear-composition, process-key, get-context, and free-context calls for every key. Five alternating rounds showed that M37 instrumentation changed Yune by only **0.30%** at 37 characters and **0.04%** at 59.\n5. Repeated five allocator-policy rounds on fresh external deployment copies, preserving each observation.\n6. Collected bounded `/usr/bin/sample` call graphs for librime and used Yune's exact M37 component timers because the release Yune dylib is heavily stripped.\n7. Reviewed the pinned source implementations and cross-platform build provenance. All derived CSVs and scripts are external to the tracked repository."
+      },
+      {
+        "id": "counter_table_block",
+        "type": "table",
+        "tableId": "counter_table",
+        "layout": "full"
+      },
+      {
+        "id": "robustness_heading",
+        "type": "markdown",
+        "body": "## The diagnosis is robust, but the remaining platform share is not yet identifiable\n\n**Ruled out:** variable Yune binaries, a different logical counter path, M37 measurement overhead, candidate/model-owner initialization failure, and simple thermal noise as the primary explanation. The five baseline ratios were stable on the long rows, and the API controls reproduced a large gap.\n\n**Still confounded:** the Mac is Apple M5 arm64 using AppleClang/libc++; the Windows artifact is x64 MSVC with a static CRT. Optimization flags, merged plugins, and compiled luna payload checksums differ. The payloads have the same byte length and entry count, but their checksums are not identical. None of those factors can be separated by comparing two prebuilt binaries.\n\n**Measurement limits:** allocator-control absolute times shifted with the warm cache state, so the report relies on within-control relative effects. Disabling Nano is not a Windows allocator proxy. Yune's stripped sample cannot support symbol-level attribution beyond its built-in component timers. The candidate-shape observation describes Increment-0; the parallel Windows M59 work may change it."
+      },
+      {
+        "id": "build_table_block",
+        "type": "table",
+        "tableId": "build_table",
+        "layout": "full"
+      },
+      {
+        "id": "audit_heading",
+        "type": "markdown",
+        "sourceId": "platform_scaling",
+        "body": "## The complete 17-input audit supports the same conclusion\n\nThe ratio moved materially on 12 rows, but the component columns show why: librime's Mac speedup is broad, whereas Yune's platform response is much smaller and mixed on short keys. The table preserves every input rather than selecting only the long red rows."
+      },
+      {
+        "id": "audit_table_block",
+        "type": "table",
+        "tableId": "platform_audit_table",
+        "layout": "full"
+      },
+      {
+        "id": "recommendations",
+        "type": "markdown",
+        "body": "## Recommended next steps\n\n1. **Treat the candidate discrepancy as existing Lane B parity debt.** D-24/D-48 already select pinned librime's no-grammar page and order. Coordinate implementation sequencing with the active Windows M59 work; treat the correction as parity first and a performance gain second.\n2. **Prototype a one-best backpointer fast path outside the signed baseline.** Store predecessor index, entry index, end position, and weight; materialize the winning string once. Keep the existing beam only where grammar or an explicit multi-sentence contract requires it.\n3. **Make candidate delivery lazy.** Produce the requested page through a generator/iterator and stop when the visible page is satisfied, preserving exact ordering tests.\n4. **Flatten incremental sentence state.** Replace nested maps and repeated boundary/reachability vectors with reusable append-local arrays or compact adjacency ranges; measure allocations, states created, and bytes copied.\n5. **Run the decisive Windows build matrix.** On one Windows machine and one compiled payload, compare: official MSVC merged build; source-built MSVC minimal build matching the Mac plugin configuration; then clang-cl with the same configuration. That separates packaging/configuration from compiler/runtime effects.\n6. **Re-run the 37/59 diagnostics after the parity correction.** Keep the signed ceilings unchanged; compare absolute component times, candidate pages, and state/allocation counters as diagnostic evidence only."
+      },
+      {
+        "id": "further_questions",
+        "type": "markdown",
+        "body": "## Further questions\n\n- How much of the remaining librime gap survives when Windows uses the same payload, plugin set, and source-built configuration?\n- Does a clang-cl build close the gap versus MSVC, or is the dominant residual CPU/ISA and STL behavior?\n- After the active M59 candidate changes land, does Yune still create a 15-wide no-grammar beam on the two long rows?\n- Can allocation counts and copied text bytes be added as diagnostics without perturbing the measured hot path?\n- Would a one-best backpointer path preserve every named target outside `luna_pinyin`, or must it be gated by grammar/profile behavior?"
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-07-11T02:45:09Z",
+    "status": "ready",
+    "datasets": {
+      "headline": [
+        {
+          "yune_median_platform_change": -0.015,
+          "librime_median_platform_change": -0.276,
+          "librime_nano_off_59_change": 0.236,
+          "yune_sentence_share_59": 0.867
+        }
+      ],
+      "platform_scaling": [
+        {
+          "input": "n",
+          "input_label": "n",
+          "yune_change": 0.122,
+          "librime_change": 0.14300000000000002,
+          "ratio_change": -0.038,
+          "classification": "close",
+          "mac_yune_us_per_key": 65.166,
+          "windows_yune_us_per_key": 58.1,
+          "mac_librime_us_per_key": 23.542,
+          "windows_librime_us_per_key": 20.6,
+          "mac_ratio": 2.712,
+          "windows_ratio": 2.82
+        },
+        {
+          "input": "ni",
+          "input_label": "ni",
+          "yune_change": 0.017,
+          "librime_change": 0.129,
+          "ratio_change": -0.10099999999999999,
+          "classification": "notable",
+          "mac_yune_us_per_key": 45.209,
+          "windows_yune_us_per_key": 44.45,
+          "mac_librime_us_per_key": 19.354,
+          "windows_librime_us_per_key": 17.15,
+          "mac_ratio": 2.336,
+          "windows_ratio": 2.599
+        },
+        {
+          "input": "hao",
+          "input_label": "hao",
+          "yune_change": 0.036000000000000004,
+          "librime_change": -0.003,
+          "ratio_change": 0.033,
+          "classification": "close",
+          "mac_yune_us_per_key": 26.722,
+          "windows_yune_us_per_key": 25.8,
+          "mac_librime_us_per_key": 14.958,
+          "windows_librime_us_per_key": 15.0,
+          "mac_ratio": 1.776,
+          "windows_ratio": 1.72
+        },
+        {
+          "input": "zhongguo",
+          "input_label": "zhongguo",
+          "yune_change": -0.044000000000000004,
+          "librime_change": -0.368,
+          "ratio_change": 0.512,
+          "classification": "material",
+          "mac_yune_us_per_key": 48.172,
+          "windows_yune_us_per_key": 50.387,
+          "mac_librime_us_per_key": 108.87,
+          "windows_librime_us_per_key": 172.175,
+          "mac_ratio": 0.443,
+          "windows_ratio": 0.293
+        },
+        {
+          "input": "ceshiyixiachangjushuruxingnengzenyang",
+          "input_label": "37-char",
+          "yune_change": -0.10800000000000001,
+          "librime_change": -0.44799999999999995,
+          "ratio_change": 0.618,
+          "classification": "material",
+          "mac_yune_us_per_key": 567.748,
+          "windows_yune_us_per_key": 636.324,
+          "mac_librime_us_per_key": 164.783,
+          "windows_librime_us_per_key": 298.476,
+          "mac_ratio": 3.449,
+          "windows_ratio": 2.132
+        },
+        {
+          "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+          "input_label": "59-char",
+          "yune_change": -0.126,
+          "librime_change": -0.424,
+          "ratio_change": 0.52,
+          "classification": "material",
+          "mac_yune_us_per_key": 985.835,
+          "windows_yune_us_per_key": 1127.444,
+          "mac_librime_us_per_key": 386.506,
+          "windows_librime_us_per_key": 670.517,
+          "mac_ratio": 2.555,
+          "windows_ratio": 1.681
+        },
+        {
+          "input": "cszysmsrsd",
+          "input_label": "cszysmsrsd",
+          "yune_change": -0.185,
+          "librime_change": -0.33799999999999997,
+          "ratio_change": 0.265,
+          "classification": "material",
+          "mac_yune_us_per_key": 392.375,
+          "windows_yune_us_per_key": 481.25,
+          "mac_librime_us_per_key": 802.292,
+          "windows_librime_us_per_key": 1211.13,
+          "mac_ratio": 0.501,
+          "windows_ratio": 0.396
+        },
+        {
+          "input": "zybfshmsru",
+          "input_label": "zybfshmsru",
+          "yune_change": -0.16399999999999998,
+          "librime_change": -0.36700000000000005,
+          "ratio_change": 0.325,
+          "classification": "material",
+          "mac_yune_us_per_key": 404.171,
+          "windows_yune_us_per_key": 483.35,
+          "mac_librime_us_per_key": 542.354,
+          "windows_librime_us_per_key": 856.68,
+          "mac_ratio": 0.754,
+          "windows_ratio": 0.569
+        },
+        {
+          "input": "zh",
+          "input_label": "zh",
+          "yune_change": 0.073,
+          "librime_change": -0.317,
+          "ratio_change": 0.584,
+          "classification": "material",
+          "mac_yune_us_per_key": 68.27,
+          "windows_yune_us_per_key": 63.6,
+          "mac_librime_us_per_key": 44.0,
+          "windows_librime_us_per_key": 64.4,
+          "mac_ratio": 1.562,
+          "windows_ratio": 0.986
+        },
+        {
+          "input": "j",
+          "input_label": "j",
+          "yune_change": -0.015,
+          "librime_change": -0.263,
+          "ratio_change": 0.335,
+          "classification": "material",
+          "mac_yune_us_per_key": 59.875,
+          "windows_yune_us_per_key": 60.8,
+          "mac_librime_us_per_key": 11.209,
+          "windows_librime_us_per_key": 15.2,
+          "mac_ratio": 5.342,
+          "windows_ratio": 4.0
+        },
+        {
+          "input": "yi",
+          "input_label": "yi",
+          "yune_change": -0.043,
+          "librime_change": -0.215,
+          "ratio_change": 0.215,
+          "classification": "notable",
+          "mac_yune_us_per_key": 77.771,
+          "windows_yune_us_per_key": 81.3,
+          "mac_librime_us_per_key": 11.104,
+          "windows_librime_us_per_key": 14.15,
+          "mac_ratio": 7.021,
+          "windows_ratio": 5.777
+        },
+        {
+          "input": "che",
+          "input_label": "che",
+          "yune_change": 0.07400000000000001,
+          "librime_change": -0.195,
+          "ratio_change": 0.304,
+          "classification": "material",
+          "mac_yune_us_per_key": 53.82,
+          "windows_yune_us_per_key": 50.133,
+          "mac_librime_us_per_key": 37.542,
+          "windows_librime_us_per_key": 46.633,
+          "mac_ratio": 1.41,
+          "windows_ratio": 1.081
+        },
+        {
+          "input": "chuang",
+          "input_label": "chuang",
+          "yune_change": 0.006,
+          "librime_change": -0.276,
+          "ratio_change": 0.39299999999999996,
+          "classification": "material",
+          "mac_yune_us_per_key": 45.958,
+          "windows_yune_us_per_key": 45.683,
+          "mac_librime_us_per_key": 26.062,
+          "windows_librime_us_per_key": 36.017,
+          "mac_ratio": 1.763,
+          "windows_ratio": 1.266
+        },
+        {
+          "input": "b",
+          "input_label": "b",
+          "yune_change": -0.004,
+          "librime_change": -0.192,
+          "ratio_change": 0.217,
+          "classification": "notable",
+          "mac_yune_us_per_key": 56.167,
+          "windows_yune_us_per_key": 56.4,
+          "mac_librime_us_per_key": 13.25,
+          "windows_librime_us_per_key": 16.4,
+          "mac_ratio": 4.186,
+          "windows_ratio": 3.439
+        },
+        {
+          "input": "ceshi",
+          "input_label": "ceshi",
+          "yune_change": -0.01,
+          "librime_change": -0.2,
+          "ratio_change": 0.261,
+          "classification": "material",
+          "mac_yune_us_per_key": 38.6,
+          "windows_yune_us_per_key": 38.98,
+          "mac_librime_us_per_key": 34.842,
+          "windows_librime_us_per_key": 43.56,
+          "mac_ratio": 1.129,
+          "windows_ratio": 0.895
+        },
+        {
+          "input": "zhongdengchangdu",
+          "input_label": "zhongdengchangdu",
+          "yune_change": -0.128,
+          "librime_change": -0.406,
+          "ratio_change": 0.46299999999999997,
+          "classification": "material",
+          "mac_yune_us_per_key": 95.81,
+          "windows_yune_us_per_key": 109.844,
+          "mac_librime_us_per_key": 202.773,
+          "windows_librime_us_per_key": 341.575,
+          "mac_ratio": 0.471,
+          "windows_ratio": 0.322
+        },
+        {
+          "input": "dazisudu",
+          "input_label": "dazisudu",
+          "yune_change": -0.064,
+          "librime_change": -0.369,
+          "ratio_change": 0.479,
+          "classification": "material",
+          "mac_yune_us_per_key": 42.12,
+          "windows_yune_us_per_key": 45.013,
+          "mac_librime_us_per_key": 27.542,
+          "windows_librime_us_per_key": 43.637,
+          "mac_ratio": 1.529,
+          "windows_ratio": 1.034
+        }
+      ],
+      "allocator_effect": [
+        {
+          "input_label": "37-char",
+          "yune_change": -0.002,
+          "librime_change": 0.215,
+          "rounds_per_engine": 5
+        },
+        {
+          "input_label": "59-char",
+          "yune_change": 0.006,
+          "librime_change": 0.23600000000000002,
+          "rounds_per_engine": 5
+        }
+      ],
+      "allocator_inference": [
+        {
+          "input_label": "37-char",
+          "windows_librime_us_per_key": 298.476,
+          "macos_librime_us_per_key": 164.783,
+          "nano_off_slowdown": 0.215,
+          "inferred_macos_nano_off_us_per_key": 200.211,
+          "inferred_gap_share": 0.265
+        },
+        {
+          "input_label": "59-char",
+          "windows_librime_us_per_key": 670.517,
+          "macos_librime_us_per_key": 386.506,
+          "nano_off_slowdown": 0.23600000000000002,
+          "inferred_macos_nano_off_us_per_key": 477.721,
+          "inferred_gap_share": 0.321
+        }
+      ],
+      "long_breakdown": [
+        {
+          "input_label": "37-char",
+          "process_key_us_per_key": 566.546,
+          "sentence_model_us_per_key": 459.864,
+          "sentence_model_share": 0.812,
+          "get_context_us_per_key": 0.846,
+          "free_context_us_per_key": 0.083,
+          "prism_us_per_key": 0.119,
+          "materialization_us_per_key": 0.335,
+          "filter_us_per_key": 1.141,
+          "samples": 400
+        },
+        {
+          "input_label": "59-char",
+          "process_key_us_per_key": 984.427,
+          "sentence_model_us_per_key": 853.491,
+          "sentence_model_share": 0.867,
+          "get_context_us_per_key": 0.852,
+          "free_context_us_per_key": 0.085,
+          "prism_us_per_key": 0.145,
+          "materialization_us_per_key": 0.336,
+          "filter_us_per_key": 1.204,
+          "samples": 400
+        }
+      ],
+      "algorithm_comparison": [
+        {
+          "aspect": "No-grammar sentence strategy",
+          "librime": "One-best dynamic program (max_sentences defaults to 1)",
+          "yune": "Up to 5 sentence candidates; beam width is candidates × 3 (15 here)",
+          "why_it_matters": "Yune keeps and ranks many more states than the oracle path needs."
+        },
+        {
+          "aspect": "Path representation",
+          "librime": "Predecessor pointer, DictEntry pointer, end position, weight, hash",
+          "yune": "Accumulated String, weight, word lengths, recent-word Vec",
+          "why_it_matters": "Each Yune extension copies the accumulated sentence and metadata."
+        },
+        {
+          "aspect": "Text materialization",
+          "librime": "Walk winner backpointers after the final state is chosen",
+          "yune": "Build a new full String for each accepted edge/state extension",
+          "why_it_matters": "Deferred text construction avoids repeated allocation and copying."
+        },
+        {
+          "aspect": "Candidate delivery",
+          "librime": "Generator-style Peek/Next; Menu prepares only the requested page",
+          "yune": "Sentence model eagerly returns a bounded Vec for the first page",
+          "why_it_matters": "Lazy delivery can stop once the visible page is satisfied."
+        },
+        {
+          "aspect": "Incremental graph work",
+          "librime": "Compact mapped table/prism access feeding a one-best sentence pass",
+          "yune": "Rebuilds boundary/reachability vectors and nested maps; sorts/truncates edges",
+          "why_it_matters": "Flat append-local structures would improve locality and reduce churn."
+        }
+      ],
+      "candidate_shape": [
+        {
+          "input_label": "37-char",
+          "librime_page_shape": "1 full sentence, then 4 shorter phrases",
+          "yune_page_shape": "5 full-sentence alternatives",
+          "parity_observation": "librime's full sentence appears at Yune rank 2"
+        },
+        {
+          "input_label": "59-char",
+          "librime_page_shape": "1 full sentence, then 4 shorter phrases",
+          "yune_page_shape": "5 full-sentence alternatives",
+          "parity_observation": "librime's full sentence is absent from Yune's first page"
+        }
+      ],
+      "build_comparison": [
+        {
+          "attribute": "source commit",
+          "macos": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+          "windows": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+          "controlled": "yes"
+        },
+        {
+          "attribute": "architecture",
+          "macos": "arm64 (Apple M5)",
+          "windows": "x64",
+          "controlled": "no"
+        },
+        {
+          "attribute": "compiler / standard library",
+          "macos": "AppleClang 21 / dynamic libc++",
+          "windows": "MSVC / static MSVC CRT",
+          "controlled": "no"
+        },
+        {
+          "attribute": "optimization",
+          "macos": "-O3 -DNDEBUG; no LTO; generic arm64",
+          "windows": "/O2 /Ob2 /MT; /OPT:REF /OPT:ICF; NDEBUG",
+          "controlled": "no"
+        },
+        {
+          "attribute": "merged plugins",
+          "macos": "off",
+          "windows": "on (Lua, Octagram, Predict)",
+          "controlled": "no"
+        },
+        {
+          "attribute": "luna payload identity",
+          "macos": "13,013,460 bytes; 498,564 entries; checksum 0xb3d4e98e / 0x29d56c89",
+          "windows": "13,013,460 bytes; 498,564 entries; checksum 0x16ad0e3e / 0xb967cfef",
+          "controlled": "no"
+        },
+        {
+          "attribute": "measured dylib / package SHA-256",
+          "macos": "7dcdfaec39e5144ccced3df4b1f473c9dbe5500bd6c0c734280e6ee98754ac41",
+          "windows": "package 86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+          "controlled": "no"
+        }
+      ],
+      "counter_parity": [
+        {
+          "track": "track-a-comparison",
+          "paired_rounds": 5,
+          "paired_rows": 6800,
+          "counter_fields": 88,
+          "value_comparisons": 598400,
+          "mismatches": 0,
+          "verdict": "identical"
+        },
+        {
+          "track": "track-b-product",
+          "paired_rounds": 5,
+          "paired_rows": 400,
+          "counter_fields": 88,
+          "value_comparisons": 35200,
+          "mismatches": 0,
+          "verdict": "identical"
+        }
+      ],
+      "api_controls": [
+        {
+          "input_label": "37-char",
+          "yune_metrics_on_us_per_key": 554.776,
+          "yune_metrics_off_us_per_key": 556.423,
+          "metrics_off_vs_on": 0.003,
+          "librime_us_per_key": 167.043,
+          "yune_off_librime_ratio": 3.331,
+          "rounds": 5
+        },
+        {
+          "input_label": "59-char",
+          "yune_metrics_on_us_per_key": 969.043,
+          "yune_metrics_off_us_per_key": 969.436,
+          "metrics_off_vs_on": 0.0004,
+          "librime_us_per_key": 386.592,
+          "yune_off_librime_ratio": 2.508,
+          "rounds": 5
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "platform_scaling",
+      "label": "17-row component platform scaling",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/platform_scaling.sql",
+      "description": "Five-round macOS and signed Windows component medians for all Track A inputs."
+    },
+    {
+      "id": "allocator_controls",
+      "label": "macOS allocator API controls",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/allocator_controls.sql",
+      "description": "Five alternating API-only rounds per engine, input, and allocator mode on fresh external roots."
+    },
+    {
+      "id": "allocator_inference",
+      "label": "Allocator gap inference",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/allocator_inference.sql",
+      "description": "Diagnostic inference applying measured macOS Nano-zone sensitivity to baseline medians."
+    },
+    {
+      "id": "long_breakdown",
+      "label": "Yune long-sentence M37 timing ownership",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/long_breakdown.sql",
+      "description": "Median component timings over 400 measured samples per long input across five macOS rounds."
+    },
+    {
+      "id": "algorithm_review",
+      "label": "Pinned-source algorithm comparison",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/algorithm_comparison.sql",
+      "description": "Reviewed comparison of librime and Yune sentence-path implementation at the pinned commits."
+    },
+    {
+      "id": "candidate_shape",
+      "label": "M59 long-input candidate snapshots",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/candidate_shape.sql",
+      "description": "First-page candidate text and shape captured from the exact Increment-0 macOS baseline."
+    },
+    {
+      "id": "build_review",
+      "label": "Cross-platform librime build comparison",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/build_comparison.sql",
+      "description": "Reviewed compiler, architecture, optimization, plugin, asset, and binary provenance differences."
+    },
+    {
+      "id": "counter_parity",
+      "label": "Cross-platform non-timing counter parity",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/counter_parity.sql",
+      "description": "Paired comparison of all non-timing M37 counter values across five Windows and macOS rounds."
+    },
+    {
+      "id": "api_controls",
+      "label": "M37 instrumentation API controls",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sql/api_controls.sql",
+      "description": "Five alternating metrics-on and metrics-off API-only controls for both long inputs."
+    },
+    {
+      "id": "m59_windows",
+      "label": "Signed Windows M59 Increment-0 packet",
+      "path": "docs/reports/evidence/m59-closeout-baseline/gate-verdict.csv",
+      "description": "Signed Windows reference medians and ceilings at the exact Yune source commit."
+    },
+    {
+      "id": "m59_macos",
+      "label": "macOS M59 cross-platform evidence",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/track-a-cross-platform-comparison.csv",
+      "description": "Five fixed-binary macOS rounds generated outside the tracked repository."
+    },
+    {
+      "id": "librime_source",
+      "label": "Pinned librime sentence implementation",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/sources/librime-poet-source-notes.md",
+      "description": "Pinned librime source locations for the one-best dynamic-programming path representation and final materialization."
+    },
+    {
+      "id": "yune_source",
+      "label": "Exact-baseline Yune sentence implementation",
+      "path": "crates/yune-core/src/poet/mod.rs",
+      "description": "Yune bounded beam, PathState extension, incremental graph, and scratch implementation."
+    },
+    {
+      "id": "librime_profiles",
+      "label": "macOS librime sample profiles",
+      "path": "docs/reports/evidence/m59-macos-librime-analysis-20260710/librime_profile_summary.csv",
+      "description": "Reviewed summaries of the bounded macOS sample call graphs for the exact pinned librime dylib."
+    }
+  ]
+}

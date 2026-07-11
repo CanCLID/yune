@@ -1,0 +1,13 @@
+input_chars,engine,allocator_mode,rounds,median_us_per_key,min_us_per_key,max_us_per_key,vs_default_pct
+37,yune,default,5,556.555,550.552,567.019,0.0
+37,yune,nano-off,5,555.323,549.601,561.801,-0.2
+37,yune,nano-on,5,553.557,547.358,561.881,-0.5
+37,librime,default,5,135.967,134.688,137.927,0.0
+37,librime,nano-off,5,165.241,164.270,178.561,21.5
+37,librime,nano-on,5,136.791,134.115,138.773,0.6
+59,yune,default,5,963.766,959.942,968.470,0.0
+59,yune,nano-off,5,969.449,958.787,972.663,0.6
+59,yune,nano-on,5,960.255,958.004,966.920,-0.4
+59,librime,default,5,317.263,314.645,335.991,0.0
+59,librime,nano-off,5,392.121,382.709,396.072,23.6
+59,librime,nano-on,5,314.230,313.549,320.424,-1.0

@@ -1,0 +1,3 @@
+input_chars,rounds,yune_metrics_on_median_us_per_key,yune_metrics_off_median_us_per_key,metrics_off_vs_on_pct,librime_median_us_per_key,yune_off_librime_ratio
+37,5,554.776,556.423,0.30,167.043,3.331
+59,5,969.043,969.436,0.04,386.592,2.508

@@ -1,0 +1,8 @@
+attribute,macos,windows,controlled
+source commit,33e78140250125871856cdc5b42ddc6a5fcd3cd4,33e78140250125871856cdc5b42ddc6a5fcd3cd4,yes
+architecture,arm64 (Apple M5),x64,no
+compiler / standard library,AppleClang 21 / dynamic libc++,MSVC / static MSVC CRT,no
+optimization,-O3 -DNDEBUG; no LTO; generic arm64,/O2 /Ob2 /MT; /OPT:REF /OPT:ICF; NDEBUG,no
+merged plugins,off,"on (Lua, Octagram, Predict)",no
+luna payload identity,"13,013,460 bytes; 498,564 entries; checksum 0xb3d4e98e / 0x29d56c89","13,013,460 bytes; 498,564 entries; checksum 0x16ad0e3e / 0xb967cfef",no
+measured dylib / package SHA-256,7dcdfaec39e5144ccced3df4b1f473c9dbe5500bd6c0c734280e6ee98754ac41,package 86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b,no

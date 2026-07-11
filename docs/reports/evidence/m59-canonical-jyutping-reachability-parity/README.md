@@ -12,17 +12,21 @@ regression guard, not an acceptance oracle.
 
 > **Current update (2026-07-11):**
 > [`increment-4a-sentence-ordering/`](./increment-4a-sentence-ordering/) is the
-> review packet for implementation commit `ca52ec42`. The Standard
-> script-sentence mechanism is locally verified without schema-id/input/oracle
-> gates, and its fixed-DLL five-run increment ratchet passes all 32 aggregate
+> review packet for mechanism commit `ca52ec42` and blocking-review fix
+> `2257fbbe`. The owner-provided Opus review substituted for unavailable Fable,
+> found a real explicit-false reachability bypass, and is now fixed forward: the
+> exact deployment matrix, full workspace clippy, Luna 14/14, Cantonese 41/41,
+> TypeDuck-Windows 4/4, and a fresh 32/32 post-fix signed ratchet guard pass.
+> The original fixed-DLL five-run increment ratchet also passes all 32 aggregate
 > rows, explicitly including the 37- and 59-character inputs. The raw five-row
 > comparator remains deliberately red (`2/5` exact, no new exception): a
 > separate fail-closed classifier assigns every remaining inversion to the
 > predeclared 4c OpenCC effects or the already owner-signed equal-weight class.
-> The expanded equal-weight surface triggers its recorded Fable revisit clause.
-> The mandatory post-4a Fable stop is active and must be followed by explicit
-> owner re-disposition under D-48 before 4b; no D-48 lane is closed, and this
-> packet is not final M59-REACH-04 evidence.
+> The classifier now labels that result `classification_status: complete` while
+> preserving `raw_comparator_all_accepted: false`. The blocking review stop is
+> resolved, but explicit owner re-disposition under D-48 is still required
+> before 4b; no D-48 lane is closed, and this packet is not final
+> M59-REACH-04 evidence.
 >
 > [`increment-3b-transformed-algebra/`](./increment-3b-transformed-algebra/) is
 > the accepted 3b packet for implementation commit `2cb7e411`. Its

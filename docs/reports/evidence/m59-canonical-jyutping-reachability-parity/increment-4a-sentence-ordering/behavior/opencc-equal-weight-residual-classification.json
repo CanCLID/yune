@@ -28,7 +28,7 @@
   },
   "raw_comparator_all_accepted": false,
   "classification_complete": true,
-  "verdict": "pass",
+  "classification_status": "complete",
   "cases": [
     {
       "input": "being",
@@ -576,8 +576,8 @@
     "beyond_oracle_depth_disposition_used": false
   },
   "tool": "classify-m59-4a-residuals.py",
-  "tool_version": "1",
-  "tool_sha256": "7e90c482903f4b775e4f693626a2ece9adf13dbc71ae6153d6903987b68e3fc9",
+  "tool_version": "2",
+  "tool_sha256": "1b56c95c5abed900060a1f1e0d1459752af5d2f0319d87d50f916d04c7f6d90d",
   "provenance": {
     "oracle": {
       "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-oracle.json",
@@ -685,8 +685,8 @@
       "--expected-opencc-source-sha256",
       "145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2",
       "--output",
-      "external/output"
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/opencc-equal-weight-residual-classification.json"
     ],
-    "effective_invocation": "python scripts/classify-m59-4a-residuals.py --oracle docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-oracle.json --expected-oracle-sha256 9cf5f91dfa81c050a3d55e54f423aa4648c64cc6f0f8447549004e3c810d755b --actual docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-yune-after-default-owned.json --expected-actual-sha256 2a367341eb4ba2f4a947a11fa84a3d0f13f4ffdeae7f4225f8bd88b3b9a0b34e --strict-comparator docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-exact-after-default-owned.json --expected-strict-comparator-sha256 cb7a1ed96cb3fc9980ab59c8257be07db3c5c9b5868f7840fd9c5c7bef92b65d --opencc-inventory docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/opencc-same-code-inventory.csv --expected-opencc-inventory-sha256 01522f437038a3591d3a3b92cbdace2cced1b1e9076e566ca40662c736afcaf1 --source-repository external/source-repository --expected-dictionary-commit c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0 --expected-dictionary-tree eb193fb80675ffa60df3c32bf24afa7d7f68617a --dictionary-manifest external/dictionary-manifest --expected-dictionary-manifest-sha256 4301001fb7bb52d5d1a9c032c519ac18ba50677e926e01006e34a48788385efa --vocabulary external/vocabulary --expected-vocabulary-sha256 a73fe3ea1004531d4872165cbcc753cea172d865277ad9996a4fe6415582f9cb --opencc-source crates/yune-core/src/opencc/data/HKVariantsFull.txt --expected-opencc-source-sha256 145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2 --output external/output"
+    "effective_invocation": "python scripts/classify-m59-4a-residuals.py --oracle docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-oracle.json --expected-oracle-sha256 9cf5f91dfa81c050a3d55e54f423aa4648c64cc6f0f8447549004e3c810d755b --actual docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-yune-after-default-owned.json --expected-actual-sha256 2a367341eb4ba2f4a947a11fa84a3d0f13f4ffdeae7f4225f8bd88b3b9a0b34e --strict-comparator docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-exact-after-default-owned.json --expected-strict-comparator-sha256 cb7a1ed96cb3fc9980ab59c8257be07db3c5c9b5868f7840fd9c5c7bef92b65d --opencc-inventory docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/opencc-same-code-inventory.csv --expected-opencc-inventory-sha256 01522f437038a3591d3a3b92cbdace2cced1b1e9076e566ca40662c736afcaf1 --source-repository external/source-repository --expected-dictionary-commit c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0 --expected-dictionary-tree eb193fb80675ffa60df3c32bf24afa7d7f68617a --dictionary-manifest external/dictionary-manifest --expected-dictionary-manifest-sha256 4301001fb7bb52d5d1a9c032c519ac18ba50677e926e01006e34a48788385efa --vocabulary external/vocabulary --expected-vocabulary-sha256 a73fe3ea1004531d4872165cbcc753cea172d865277ad9996a4fe6415582f9cb --opencc-source crates/yune-core/src/opencc/data/HKVariantsFull.txt --expected-opencc-source-sha256 145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2 --output docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/opencc-equal-weight-residual-classification.json"
   }
 }

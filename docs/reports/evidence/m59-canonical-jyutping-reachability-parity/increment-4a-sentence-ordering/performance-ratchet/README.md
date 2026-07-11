@@ -56,3 +56,14 @@ instead of aborting or adapting. Every accepted per-run threshold file is itself
 
 Only the curated nine text files per run are retained. Raw engine directories,
 deploy payloads, `.marisa` files, samples, and logs are excluded.
+
+## Blocking-review fix-forward guard
+
+The accepted five-round packet above remains bound to mechanism commit
+`ca52ec42`. After the blocking review found an explicit-false reachability
+regression, fix-forward commit `2257fbbe` ran one additional clean 17+1
+product-deployed guard with `9 / 60 / 80` iterations and
+`-FailOnRegression`. All 32 signed rows pass, including `n`, `ni`, `hao`, and
+the 37/59-character rows. Curated text evidence is under
+[`../review-fix-forward/performance-ratchet/`](../review-fix-forward/performance-ratchet/).
+That single guard does not replace M59-REACH-04's five final rounds.

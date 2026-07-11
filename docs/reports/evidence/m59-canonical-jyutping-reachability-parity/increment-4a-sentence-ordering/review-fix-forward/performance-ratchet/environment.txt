@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-11T18:06:47.5981013Z
+repo_root=C:\y59-4a-fix-perf
+yune_git_head=2257fbbe1e8de5ad0e3ac25e45e2e3b07e11878c
+yune_git_status_short=?? docs/reports/evidence/m59-increment4a-fix-perf-local/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\y59-4a-fix-perf\target\native-inprocess\run1
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=C:\y59-4a-fix-perf\docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

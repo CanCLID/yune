@@ -1,11 +1,13 @@
 # M59 Increment 4a sentence/phrase ordering review packet
 
-Status: implementation commit `ca52ec427111e2ec36b2a80dfe7b25b6f2d3c456`
-is locally green for the Increment 4a mechanism and awaits the mandatory
-post-landing Fable review plus explicit owner re-disposition of the expanded
-equal-weight class. This packet does **not** close Lane A, D-48, or M59, and
-Increment 4b must not start until Fable's findings are returned, fixed forward
-where necessary, and reverified, then the owner signs the D-48 disposition.
+Status: mechanism commit `ca52ec427111e2ec36b2a80dfe7b25b6f2d3c456`
+and blocking-review fix `2257fbbe1e8de5ad0e3ac25e45e2e3b07e11878c`
+have passed the exact owning deployment matrix and focused review gates. The
+owner-provided Opus review substituted for unavailable Fable and its blocking
+finding is fixed forward. Explicit owner re-disposition of the expanded
+equal-weight class is still required, so Increment 4b remains blocked. This
+packet does **not** close Lane A, D-48, or M59. See
+[`review-fix-forward/`](./review-fix-forward/).
 
 The implementation derives a Standard script-sentence policy from translator
 configuration and `SchemaBehaviorProfile`, never schema id or input text. It
@@ -37,9 +39,10 @@ only the predeclared `祕 -> 秘 祕` and `只 -> 只 衹` effects, every remain
 relative-order inversion has equal effective weight: `315/315` for `being`,
 `315/315` for `beingo`, and `5,456/5,456` for `zijiguk`; zero inversions cross a
 weight boundary. The prior equal-weight class disposition is owner-signed, but
-its record says to revisit if the diff grows. This larger surface is therefore
-called out for Fable explicitly and requires a fresh owner re-disposition after
-that review; the packet does not infer or carry forward an exception itself.
+its record says to revisit if the diff grows. The blocking review accepted the
+classifier mechanism and recommended a renewed, narrowly scoped class-3
+exception. A fresh owner re-disposition is still required; the packet does not
+infer or carry forward an exception itself.
 
 All compared lists are complete (`captured_all_pages=true`, `last_page`), so no
 beyond-oracle-depth disposition is used. `beixngoxx` and `mgoi` prove that the
@@ -134,17 +137,25 @@ still needs five fresh rounds from the final behavior commit. Full details and
 the two preserved invalid setup attempts are in
 [`performance-ratchet/`](./performance-ratchet/).
 
+Fix-forward commit `2257fbbe` also has a fresh single-run 17+1 product-deployed
+review guard with `-FailOnRegression`; all 32 signed rows pass, including `n`,
+`ni`, `hao`, and the 37/59-character rows. Its curated text evidence is in
+[`review-fix-forward/performance-ratchet/`](./review-fix-forward/performance-ratchet/).
+It does not replace either the accepted five-round 4a packet above or the five
+final rounds required from M59's eventual final behavior commit.
+
 ## Verification and review boundary
 
-Focused core/API/Cantonese/Luna/Cangjie/Double Pinyin/Bopomofo/TypeDuck-Windows
-and browser-control gates passed. `cantonese_parity` is `41/41` and
-`typeduck_windows_boundary` is `4/4`. Two independent internal reviews found no
-remaining implementation issue after the final toned-only source-fallback,
-schema-general grammar, and token-inventory changes.
-The residual classifier's separate independent review found two evidence-tool
-issues (aggregate raw-red validation and atomic output replacement); both were
-fixed forward, its focused suite is `13/13`, and the final real replay is
-byte-identical.
+The review found one blocking regression the original focused packet missed:
+`UpstreamScript` bypassed the explicit-false reachability opt-out. The exact
+deployment matrix reproduced red on `2b4a169a` and passes on fix-forward commit
+`2257fbbe`. Full workspace clippy, core/API, Cantonese, Luna, Zhuyin,
+TypeDuck-Windows, and classifier gates pass; `cantonese_parity` is `41/41`,
+`upstream_luna_pinyin_parity` is `14/14`, and `typeduck_windows_boundary` is
+`4/4`. Two independent internal reviews approved the final boundary-aware fix.
+The classifier now uses `classification_status: "complete"` rather than an
+ambiguous top-level `verdict: "pass"`; the raw comparator remains explicitly
+unaccepted.
 
 An attempted full 50-test `yune_web` process timed out after 15 minutes under
 cache pressure. The load-bearing focused browser/API controls passed in isolated

@@ -1,13 +1,12 @@
 {
   "schema_version": 1,
   "packet": "m59-increment-4a-sentence-ordering",
-  "status": "pending-fable-review-and-owner-redisposition",
+  "status": "blocking-review-resolved-pending-owner-redisposition",
   "acceptance": {
     "strict_exact_all_accepted": false,
     "strict_exact_passes": 2,
     "strict_exact_failures": 3,
     "classification_complete": true,
-    "classification_verdict": "pass",
     "new_exception_created": false,
     "closes_lane_a": false,
     "closes_d48": false,
@@ -15,13 +14,18 @@
     "closes_m59": false,
     "next_engine_increment_permitted": false,
     "owner_redisposition_required": true,
-    "owner_redisposition_complete": false
+    "owner_redisposition_complete": false,
+    "classification_status": "complete",
+    "blocking_review_complete": true,
+    "blocking_review_findings_resolved": true
   },
   "implementation": {
     "base_commit": "212a4a39c1db236f2b260db2eee51595e7bffa94",
     "commit": "ca52ec427111e2ec36b2a80dfe7b25b6f2d3c456",
     "tree": "18a2c5ce50fa9c91d561a3f4ba53814bda30fbe2",
-    "capture_source_clean": true
+    "capture_source_clean": true,
+    "review_fix_commit": "2257fbbe1e8de5ad0e3ac25e45e2e3b07e11878c",
+    "review_fix_tree": "5e883e9a2121699dbbceedfbea50cc4e0cb0a5a0"
   },
   "release_dll": {
     "included": false,
@@ -47,14 +51,17 @@
     "after_exact_failures": 3,
     "after_yune_capture_sha256": "2a367341eb4ba2f4a947a11fa84a3d0f13f4ffdeae7f4225f8bd88b3b9a0b34e",
     "strict_comparator_sha256": "cb7a1ed96cb3fc9980ab59c8257be07db3c5c9b5868f7840fd9c5c7bef92b65d",
-    "residual_classifier_tool_sha256": "7e90c482903f4b775e4f693626a2ece9adf13dbc71ae6153d6903987b68e3fc9",
-    "residual_classification_sha256": "beef6d636f4bcc0eb915f6f745e4e38416fea5df93fdfdbfcc2fa7a1e9ca5925",
+    "residual_classifier_tool_sha256": "1b56c95c5abed900060a1f1e0d1459752af5d2f0319d87d50f916d04c7f6d90d",
+    "residual_classification_sha256": "e398f4259ff5fe6bd26ddfe33b2b973ac53d13a58841b3da67b15719e1a7b367",
     "normalized_inversions": 6086,
     "cross_weight_inversions": 0,
     "beyond_oracle_depth_disposition_used": false,
     "default_owned_vs_replay_exact_passes": 5,
     "replay_storage_attestation": false,
-    "replay_boundary": "corroborating equality only; executable tests separately prove optional native mmap selection and 4a compiled-byte semantics"
+    "replay_boundary": "corroborating equality only; executable tests separately prove optional native mmap selection and 4a compiled-byte semantics",
+    "residual_classifier_tool_version": "2",
+    "classification_status": "complete",
+    "raw_comparator_all_accepted": false
   },
   "performance": {
     "thresholds_sha256": "e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba",
@@ -105,24 +112,73 @@
       "run2-attempt0-execution-policy",
       "run2-attempt1-space-delimited-input"
     ],
-    "tracked_text_canonicalization": "UTF-8/LF; only CRLF record endings normalized; embedded control bytes preserved"
+    "tracked_text_canonicalization": "UTF-8/LF; only CRLF record endings normalized; embedded control bytes preserved",
+    "review_fix_guard": {
+      "commit": "2257fbbe1e8de5ad0e3ac25e45e2e3b07e11878c",
+      "accepted_runs": 1,
+      "aggregate_rows": 32,
+      "aggregate_passes": 32,
+      "fail_on_regression": true,
+      "track_a_input_count": 17,
+      "track_b_input_count": 1,
+      "iterations": {
+        "startup": 9,
+        "session": 60,
+        "key": 80
+      },
+      "key_rows": {
+        "n": {
+          "observed": 2.743,
+          "ceiling": 3.006,
+          "status": "pass"
+        },
+        "ni": {
+          "observed": 1.937,
+          "ceiling": 2.666,
+          "status": "pass"
+        },
+        "hao": {
+          "observed": 1.295,
+          "ceiling": 1.844,
+          "status": "pass"
+        },
+        "37-char": {
+          "observed": 0.227,
+          "ceiling": 2.339,
+          "status": "pass"
+        },
+        "59-char": {
+          "observed": 0.126,
+          "ceiling": 1.748,
+          "status": "pass"
+        }
+      }
+    }
   },
   "verification": {
-    "residual_classifier_tests": "13 passed",
-    "m59_evidence_tool_tests": "74 passed",
-    "core_lib": "412 passed",
+    "commit": "2257fbbe1e8de5ad0e3ac25e45e2e3b07e11878c",
+    "fmt": "passed",
+    "workspace_clippy_all_targets_deny_warnings": "passed",
+    "core_lib": "413 passed",
     "api_lib": "345 passed, 1 ignored",
+    "upstream_luna_pinyin_parity": "14 passed, 13 ignored",
     "cantonese_parity": "41 passed",
+    "upstream_zhuyin_parity": "3 passed, 3 ignored",
+    "m59_luna": "4 passed",
     "typeduck_windows_boundary": "4 passed",
-    "full_yune_web": "attempted; timed out after 15 minutes under cache pressure; not claimed green"
+    "explicit_false_deployment_matrix": "1 passed, 49 filtered; 556.49 seconds",
+    "upstream_script_policy": "4 passed",
+    "residual_classifier_tests": "13 passed",
+    "original_m59_evidence_tool_tests": "74 passed at ca52ec42",
+    "full_yune_web": "exact owning deployment matrix passed; final full 50-test suite remains open and is not claimed green"
   },
   "binary_payloads_included": false,
-  "file_count_excluding_manifest": 74,
+  "file_count_excluding_manifest": 86,
   "files": [
     {
       "path": "README.md",
-      "bytes": 9092,
-      "sha256": "3b873d52fb110dc2723e910f478095ca3ca37a719d8389ac5700dcf142b664c8",
+      "bytes": 9777,
+      "sha256": "b52ce3facd3b36b9429df0351cd60a516b5eef3746e469ad1db8c835fd482628",
       "role": "packet narrative and acceptance boundary"
     },
     {
@@ -193,14 +249,14 @@
     },
     {
       "path": "behavior/opencc-equal-weight-residual-classification.json",
-      "bytes": 21871,
-      "sha256": "beef6d636f4bcc0eb915f6f745e4e38416fea5df93fdfdbfcc2fa7a1e9ca5925",
+      "bytes": 22165,
+      "sha256": "e398f4259ff5fe6bd26ddfe33b2b973ac53d13a58841b3da67b15719e1a7b367",
       "role": "fail-closed OpenCC and equal-weight residual classification"
     },
     {
       "path": "performance-ratchet/README.md",
-      "bytes": 2898,
-      "sha256": "d8ee2949f82b55ae959b441166372a717768cc5ed1ecdb33ebfc5a655923197e",
+      "bytes": 3508,
+      "sha256": "06368652d601f5f6f732434353eea7b7afcd75cc0125749f6047549c562aa3c2",
       "role": "ratchet replay and attempt-disposition narrative"
     },
     {
@@ -558,11 +614,97 @@
       "role": "accepted raw run evidence: threshold-check.csv"
     },
     {
+      "path": "review-fix-forward/README.md",
+      "bytes": 5992,
+      "sha256": "f4f7c750191845e5423f5dfd24ff37faed279f319076848438b3583e6533c90e",
+      "role": "owner-provided blocking-review diagnosis, fix, verification, and remaining owner boundary"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/README.md",
+      "bytes": 818,
+      "sha256": "1eade85435c106a11be3fbd973145747214ba3bf88665af2ef1e457a8b3db7e6",
+      "role": "post-fix native ratchet run narrative"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/candidate_snapshots.csv",
+      "bytes": 22477,
+      "sha256": "306758a6b5489275b83fda80fcf9772d8250a1992c265c5f6bdd9f0395415385",
+      "role": "post-fix candidate snapshot audit"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/commands.txt",
+      "bytes": 713,
+      "sha256": "656f893f6c61141fcceea4b398e8b8d740c5fc39d623e8a69bee6b4d6e698250",
+      "role": "post-fix ratchet command record"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/environment.txt",
+      "bytes": 921,
+      "sha256": "75ff8a8f60b6c7b38aa1ef21a6b037f12e7bca2c516e3c80234a697f9541a883",
+      "role": "post-fix ratchet environment and clean source commit"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/m37_metrics.csv",
+      "bytes": 1099530,
+      "sha256": "a4be1876e8eb11bbfedfa02aa24d114dda91d1bb4d9c9ccf6a13f04eab805a16",
+      "role": "post-fix detailed translator metrics"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/memory-owner-profile.csv",
+      "bytes": 31240,
+      "sha256": "1e80b1a3d8ca3767f27f8bcb98d38a752f97d767909ff08cbe813f40072b36f3",
+      "role": "post-fix memory owner profile"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/product_path_status.csv",
+      "bytes": 3115,
+      "sha256": "8cc8b0121aa396f86c46ca980368297facef99b99f34c805127f3705396d78a3",
+      "role": "post-fix deployed product storage status"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/provenance.txt",
+      "bytes": 765,
+      "sha256": "ba6b40a8438c82a2f6826deea2583fa609e58dc1569ce8da89fa7bf6bf6fa53c",
+      "role": "post-fix DLL, oracle, schema tree, thresholds, and iteration provenance"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/raw_lookup_microbench.csv",
+      "bytes": 8754,
+      "sha256": "c621f08feab9a567ed8ee1eae016b918731b47901b7491cf3d2f48ec18df923b",
+      "role": "post-fix raw lookup microbenchmark"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/summary-comparison.csv",
+      "bytes": 3378,
+      "sha256": "6edc9e61dbf98ed09e0f6f111be22569f3d0c98ade9c832501f3c0efb91be4cc",
+      "role": "post-fix Track A and Track B comparison summary"
+    },
+    {
+      "path": "review-fix-forward/performance-ratchet/threshold-check.csv",
+      "bytes": 11026,
+      "sha256": "15c55a2e286b9091cf3e97cdd2a50994412276f5f1d2682a5bb5838badd422dd",
+      "role": "post-fix signed 32-row threshold verdict"
+    },
+    {
       "path": "verification.md",
-      "bytes": 1744,
-      "sha256": "2d4f8ca72ebfe90be6333e093f8cc2c93bf6666d193ce1294afb9fdee258426a",
+      "bytes": 2296,
+      "sha256": "0e4f15836b8093dd389f9d1bff99d6050464cd14866a9a9ff87d206a8f72efab",
       "role": "focused verification record and disclosed skipped gate"
     }
   ],
-  "manifest_self_hash": null
+  "manifest_self_hash": null,
+  "review": {
+    "provider": "Claude Opus",
+    "owner_provided_substitute_for_unavailable_fable": true,
+    "initial_verdict": "fix-forward-required",
+    "blocking_finding": "UpstreamScript bypassed explicit-false leading_syllable_reachability",
+    "fix_commit": "2257fbbe1e8de5ad0e3ac25e45e2e3b07e11878c",
+    "resolved": true,
+    "owner_redisposition_pending": true
+  },
+  "review_fix_release_dll": {
+    "included": false,
+    "bytes": 3892224,
+    "sha256": "9873dae8fac00753544ce49fb5816976362bf95eac576bacaf6d74f6f55b4d1b"
+  }
 }

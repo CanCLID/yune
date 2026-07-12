@@ -96,24 +96,21 @@ pub enum DictionaryLookupByteStoreError {
     InvalidUtf8,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-struct ByteBackedLookupTextEntry {
-    text: Range<usize>,
-    records: Range<usize>,
-    record_count: usize,
-}
-
 #[derive(Clone, Debug)]
 pub struct ByteBackedDictionaryLookupRecords {
     source: Arc<dyn DictionaryLookupByteSource>,
-    entries: Arc<[ByteBackedLookupTextEntry]>,
+    // Start offset for each validated text row plus one end sentinel. The row
+    // already encodes its text length and record count, while the next offset
+    // is exactly the current record-list end. Retaining one native offset per
+    // text avoids duplicating five usize fields in the D-32 immutable cache.
+    row_offsets: Arc<[usize]>,
     payload: Range<usize>,
     record_count: usize,
 }
 
 impl PartialEq for ByteBackedDictionaryLookupRecords {
     fn eq(&self, other: &Self) -> bool {
-        self.entries == other.entries
+        self.row_offsets == other.row_offsets
             && self.payload == other.payload
             && self.record_count == other.record_count
             && self.source.bytes().get(self.payload.clone())
@@ -146,16 +143,19 @@ impl ByteBackedDictionaryLookupRecords {
             .checked_add(4)
             .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
 
-        let mut entries: Vec<ByteBackedLookupTextEntry> = Vec::with_capacity(text_count);
+        let mut row_offsets = Vec::with_capacity(text_count.saturating_add(1));
+        let mut previous_text = None::<Range<usize>>;
         let mut record_total = 0usize;
         for _ in 0..text_count {
+            row_offsets.push(cursor);
             let (text, next) = read_lookup_string_range(bytes, cursor)?;
             cursor = next;
-            if let Some(previous) = entries.last() {
-                if lookup_range_str(bytes, &previous.text)? >= lookup_range_str(bytes, &text)? {
+            if let Some(previous) = &previous_text {
+                if lookup_range_str(bytes, previous)? >= lookup_range_str(bytes, &text)? {
                     return Err(DictionaryLookupByteStoreError::InvalidCount);
                 }
             }
+            previous_text = Some(text);
 
             let record_count = read_lookup_count(bytes, cursor)?;
             if record_count > 1_000_000 {
@@ -168,7 +168,6 @@ impl ByteBackedDictionaryLookupRecords {
                 .checked_add(4)
                 .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
 
-            let records_start = cursor;
             for _ in 0..record_count {
                 let (_, next) = read_lookup_string_range(bytes, cursor)?;
                 cursor = next;
@@ -185,20 +184,16 @@ impl ByteBackedDictionaryLookupRecords {
                     cursor = next;
                 }
             }
-            entries.push(ByteBackedLookupTextEntry {
-                text,
-                records: records_start..cursor,
-                record_count,
-            });
         }
 
         if cursor != bytes.len() {
             return Err(DictionaryLookupByteStoreError::UnsupportedSection);
         }
+        row_offsets.push(cursor);
 
         Ok(Self {
             source,
-            entries: entries.into(),
+            row_offsets: row_offsets.into(),
             payload: payload_offset..cursor,
             record_count: record_total,
         })
@@ -206,7 +201,7 @@ impl ByteBackedDictionaryLookupRecords {
 
     #[must_use]
     pub fn text_count(&self) -> usize {
-        self.entries.len()
+        self.row_offsets.len().saturating_sub(1)
     }
 
     #[must_use]
@@ -222,9 +217,9 @@ impl ByteBackedDictionaryLookupRecords {
     #[must_use]
     pub fn estimated_index_bytes(&self) -> usize {
         mem::size_of::<Self>().saturating_add(
-            self.entries
+            self.row_offsets
                 .len()
-                .saturating_mul(mem::size_of::<ByteBackedLookupTextEntry>()),
+                .saturating_mul(mem::size_of::<usize>()),
         )
     }
 
@@ -246,14 +241,15 @@ impl ByteBackedDictionaryLookupRecords {
     #[must_use]
     pub fn records_for_text(&self, text: &str) -> Option<Vec<DictionaryLookupRecord>> {
         let index = self.entry_index(text)?;
-        self.decode_records(&self.entries[index]).ok()
+        self.decode_records(index).ok()
     }
 
     fn entry_index(&self, text: &str) -> Option<usize> {
         let bytes = self.source.bytes();
-        self.entries
-            .binary_search_by(|entry| {
-                lookup_range_str(bytes, &entry.text)
+        self.row_offsets[..self.text_count()]
+            .binary_search_by(|row_start| {
+                read_lookup_string_range(bytes, *row_start)
+                    .and_then(|(range, _)| lookup_range_str(bytes, &range))
                     .unwrap_or_default()
                     .cmp(text)
             })
@@ -262,12 +258,24 @@ impl ByteBackedDictionaryLookupRecords {
 
     fn decode_records(
         &self,
-        entry: &ByteBackedLookupTextEntry,
+        index: usize,
     ) -> Result<Vec<DictionaryLookupRecord>, DictionaryLookupByteStoreError> {
         let bytes = self.source.bytes();
-        let mut cursor = entry.records.start;
-        let mut records = Vec::with_capacity(entry.record_count);
-        while cursor < entry.records.end {
+        let row_start = *self
+            .row_offsets
+            .get(index)
+            .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+        let records_end = *self
+            .row_offsets
+            .get(index.saturating_add(1))
+            .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+        let (_, record_count_offset) = read_lookup_string_range(bytes, row_start)?;
+        let record_count = read_lookup_count(bytes, record_count_offset)?;
+        let mut cursor = record_count_offset
+            .checked_add(4)
+            .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+        let mut records = Vec::with_capacity(record_count);
+        while cursor < records_end {
             let (code, next) = read_lookup_string_owned(bytes, cursor)?;
             cursor = next;
             let field_count = read_lookup_count(bytes, cursor)?;
@@ -286,7 +294,7 @@ impl ByteBackedDictionaryLookupRecords {
             }
             records.push(DictionaryLookupRecord { code, fields });
         }
-        if cursor != entry.records.end {
+        if cursor != records_end {
             return Err(DictionaryLookupByteStoreError::OutOfBounds);
         }
         Ok(records)

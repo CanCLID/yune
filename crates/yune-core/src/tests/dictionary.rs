@@ -1438,6 +1438,16 @@ nei5,1,0,,oth,,,,,,,you (singular),tm,nepali,hindi,kamu\tword\n",
 
     assert_eq!(byte_backed.text_count(), 1);
     assert_eq!(byte_backed.record_count(), 2);
+    assert!(
+        byte_backed.estimated_index_bytes()
+            <= 128usize.saturating_add(
+                byte_backed
+                    .text_count()
+                    .saturating_add(1)
+                    .saturating_mul(std::mem::size_of::<usize>())
+            ),
+        "the D-32 lookup cache must retain one row offset per text plus an end sentinel"
+    );
     let records = byte_backed
         .records_for_text("word")
         .expect("records should decode on demand");

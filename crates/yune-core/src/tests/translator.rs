@@ -7125,6 +7125,7 @@ fn large_prefix_fallback_request_limit_caches_when_actual_rows_fit() {
 
 #[test]
 fn oversized_prefix_count_and_key_bytes_bypass_the_cache() {
+    let _guard = super::m37_metrics_test_guard();
     for (first_len, prefix_count) in [(1usize, 65usize), (513usize, 64usize)] {
         let entries = (0..prefix_count)
             .map(|index| {
@@ -7136,6 +7137,8 @@ fn oversized_prefix_count_and_key_bytes_bypass_the_cache() {
         let input = "a".repeat(first_len + prefix_count);
         let complete = translator.translate(&input);
 
+        crate::m37_metrics_enable(true);
+        crate::m37_metrics_reset();
         let bounded = translator.translate_with_context_and_request(
             &input,
             &Status::default(),
@@ -7143,6 +7146,8 @@ fn oversized_prefix_count_and_key_bytes_bypass_the_cache() {
             &Context::default(),
             CandidateRequest::bounded(4),
         );
+        let metrics = crate::m37_metrics_snapshot();
+        crate::m37_metrics_enable(false);
 
         let bounded_len = bounded.candidates.len();
         assert_eq!(
@@ -7151,6 +7156,10 @@ fn oversized_prefix_count_and_key_bytes_bypass_the_cache() {
             "bounded uncached parity failed for first_len={first_len}, prefix_count={prefix_count}"
         );
         assert_eq!(prefix_fallback_cache_owner_snapshot(&translator), (0, 0));
+        assert!(
+            metrics.prefix_fallback_views_visited <= 16,
+            "the uncached collector must retain the signed four-window bound for first_len={first_len}, prefix_count={prefix_count}: {metrics:?}"
+        );
     }
 }
 

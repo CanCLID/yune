@@ -45,6 +45,7 @@ const PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE: usize = 2;
 const PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE: usize = 3;
 const PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS: usize = 7;
 const PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER: usize = 4;
+const PREFIX_FALLBACK_BOUNDED_LONG_PENDING_MULTIPLIER: usize = 2;
 const PREFIX_FALLBACK_CACHE_MAX_ROWS: usize = 128;
 const PREFIX_FALLBACK_CACHE_MAX_PREFIXES: usize = 64;
 const PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES: usize = 32 * 1024;
@@ -6236,6 +6237,15 @@ impl StaticTableTranslator {
             None
         };
         if let Some(limit) = bounded_limit {
+            let pending_cap = limit
+                .saturating_mul(PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER)
+                .max(limit);
+            // Oversized uncached families keep one visible page plus one page
+            // of duplicate/deferred replacement reserve. Short M59
+            // abbreviation inputs retain the wider four-page exact window.
+            let long_streaming_pending_cap = limit
+                .saturating_mul(PREFIX_FALLBACK_BOUNDED_LONG_PENDING_MULTIPLIER)
+                .max(limit);
             let mut cache_prefixes = Vec::new();
             let cache_probe_complete = if self.direct_prism_prefix_family_exceeds_cache_limit(
                 lookup_code,
@@ -6293,8 +6303,23 @@ impl StaticTableTranslator {
                         existing_candidates,
                         admitted_span_candidates,
                         limit,
-                        pending_cap: usize::MAX,
-                        per_fetch_cap: limit,
+                        pending_cap: if input.len() <= MAX_ABBREVIATION_SENTENCE_INPUT_BYTES {
+                            pending_cap
+                        } else {
+                            long_streaming_pending_cap
+                        },
+                        // The M59 exact abbreviation graph is deliberately
+                        // bounded to short inputs. Keep its requested page
+                        // window intact, but retain the historical two-head
+                        // sampling boundary when an oversized prism family on
+                        // a longer input cannot use the bounded prefix cache.
+                        // Complete translation remains unbounded and is still
+                        // available when forward navigation requests it.
+                        per_fetch_cap: if input.len() <= MAX_ABBREVIATION_SENTENCE_INPUT_BYTES {
+                            limit
+                        } else {
+                            limit.min(PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE)
+                        },
                     },
                 );
             if !saw_prefix {

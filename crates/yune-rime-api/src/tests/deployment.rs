@@ -2668,6 +2668,37 @@ fn workspace_update_fails_for_missing_top_level_and_deploys_valid_sibling() {
 }
 
 #[test]
+fn targeted_workspace_update_invalidates_shared_translators_before_mutation() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    crate::schema_install::clear_dictionary_translator_cache();
+
+    let root = unique_temp_dir("workspace-cache-invalidation");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&user).expect("user dir should be created");
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    unsafe { RimeSetup(&traits) };
+
+    const PROBE: &str = "m59-workspace-cache-invalidation";
+    crate::schema_install::seed_dictionary_translator_cache_probe(PROBE);
+    let task = CString::new("workspace_update:missing_schema").expect("task is valid");
+    assert_eq!(RimeRunTask(task.as_ptr()), FALSE);
+    assert!(
+        !crate::schema_install::dictionary_translator_cache_contains_probe(PROBE),
+        "workspace update must release mmap-backed translators before attempting artifact writes"
+    );
+
+    crate::schema_install::clear_dictionary_translator_cache();
+    fs::remove_dir_all(root).expect("temp root should be removed");
+}
+
+#[test]
 fn workspace_update_fails_for_malformed_top_level_and_deploys_valid_sibling() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

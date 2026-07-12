@@ -5,17 +5,19 @@ use std::{
     sync::Arc,
 };
 
+use crate::poet::WeightedSentenceCodeSpan;
 use crate::translator::{sentence_path_score_replaces, SentencePathScore};
 use crate::{
-    build_poet_bin, build_prism_bin, build_table_bin, parse_rime_prism_bin_payload,
-    parse_rime_prism_runtime_payload, parse_rime_table_bin_advanced_data,
-    parse_rime_table_bin_dictionary, Candidate, CandidateFilter, CandidateRequest, CandidateSource,
-    CompactTableByteSource, CompactTableStore, Context, DartsDoubleArray, DictionaryLookupRecord,
-    Engine, HistoryTranslator, MemoryOwnerClass, OwnedPoetBytes, PoetByteSource,
-    PresetVocabularyEntry, PunctuationTranslator, ReverseLookupTranslator, RimeCorrectionEntry,
-    RimePrismBinPayload, RimePrismSpellingDescriptor, RimeToleranceRule, SentencePolicy,
+    build_poet_bin, build_prism_bin, build_table_bin, encode_octagram_key,
+    parse_rime_prism_bin_payload, parse_rime_prism_runtime_payload,
+    parse_rime_table_bin_advanced_data, parse_rime_table_bin_dictionary, Candidate,
+    CandidateFilter, CandidateRequest, CandidateSource, CompactTableByteSource, CompactTableStore,
+    Context, DartsDoubleArray, DictionaryLookupRecord, Engine, HistoryTranslator, MemoryOwnerClass,
+    OctagramGrammar, OctagramGrammarConfig, OwnedPoetBytes, PoetByteSource, PresetVocabularyEntry,
+    PunctuationTranslator, ReverseLookupTranslator, RimeCorrectionEntry, RimePrismBinPayload,
+    RimePrismSpellingDescriptor, RimeToleranceRule, SentenceCodeSpan, SentencePolicy,
     StaticTableTranslator, Status, TableDictionary, TableDictionaryAdvancedData, TableEntry,
-    Translator, UniquifierFilter,
+    TranslationResult, Translator, TranslatorScratch, UniquifierFilter, UpstreamSentenceModel,
 };
 
 struct DropFirstWindowFilter;
@@ -159,6 +161,7 @@ fifth	ne	5
 fn static_table_memory_owner_rows_cover_m43_owner_set() {
     let translator =
         StaticTableTranslator::new([("ni", "你"), ("hao", "好"), ("zhong", "中"), ("guo", "國")])
+            .with_sentence(true)
             .with_upstream_sentence_model(5);
 
     let rows = translator.memory_owner_rows();
@@ -175,14 +178,39 @@ fn static_table_memory_owner_rows_cover_m43_owner_set() {
     );
     assert_eq!(
         owner_class("poet.entries_by_code"),
+        MemoryOwnerClass::Shared,
+        "the lazy model reports a zero-byte placeholder before first use"
+    );
+    assert_eq!(owner_class("poet.lookup_index"), MemoryOwnerClass::Shared);
+    assert_eq!(
+        owner_class("poet.abbreviation_vocabulary"),
+        MemoryOwnerClass::Shared
+    );
+    assert_eq!(
+        owner_class("translator.upstream_sentence_model_build_source"),
+        MemoryOwnerClass::HeapOwnedGuarded,
+        "the retained source recipe owns the pre-initialization heap"
+    );
+
+    let _ = translator.translate("nihao");
+    let initialized_rows = translator.memory_owner_rows();
+    let initialized_class = |owner: &str| {
+        initialized_rows
+            .iter()
+            .find(|row| row.owner == owner)
+            .map(|row| row.class)
+            .expect("initialized owner row should be present")
+    };
+    assert_eq!(
+        initialized_class("poet.entries_by_code"),
         MemoryOwnerClass::HeapOwnedReducible
     );
     assert_eq!(
-        owner_class("poet.lookup_index"),
+        initialized_class("poet.lookup_index"),
         MemoryOwnerClass::HeapOwnedGuarded
     );
     assert_eq!(
-        owner_class("poet.abbreviation_vocabulary"),
+        initialized_class("poet.abbreviation_vocabulary"),
         MemoryOwnerClass::HeapOwnedReducible
     );
 }
@@ -2265,7 +2293,7 @@ HAU	hau	100
 }
 
 #[test]
-fn bounded_long_prefix_fallback_keeps_two_candidates_per_fetch_code() {
+fn bounded_long_prefix_fallback_uses_the_requested_per_fetch_window() {
     let _guard = super::m37_metrics_test_guard();
     let dictionary = TableDictionary::parse_rime_dict_yaml(
         r#"
@@ -2322,25 +2350,17 @@ AB3	ab	88
     );
     assert_eq!(
         prefix_candidates,
-        ["AB1", "AB2"],
-        "long compact prefix fallback should keep the M55 two-candidate per-fetch cap"
+        ["AB1", "AB2", "AB3"],
+        "a requested eight-row page must not retain an obsolete two-row per-fetch cap"
     );
     assert!(
-        !result
-            .candidates
-            .iter()
-            .any(|candidate| candidate.text == "AB3"),
-        "the bounded batch must not cross the two-row per-fetch cap"
+        result.is_complete,
+        "the bounded collector may prove completion when every family exhausts below K"
     );
-    assert!(
-        !result.is_complete,
-        "hitting the per-fetch cap cannot prove that no later unique row exists"
-    );
-    assert!(
-        result
-            .full_count
-            .is_some_and(|count| count > result.candidates.len()),
-        "debug full_count must carry the conservative has-more witness"
+    assert_eq!(
+        result.full_count,
+        Some(result.candidates.len()),
+        "debug full_count must report the proven complete family"
     );
 
     crate::m37_metrics_enable(true);
@@ -4415,6 +4435,19 @@ fn upstream_script_sentence_traverses_explicit_multi_span_table_phrases() {
             candidates[0].text, "AYZ",
             "{storage}: the explicit b1c1 table row must remain an internal sentence edge"
         );
+        let bounded = translator.translate_with_context_and_request(
+            "abc",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(2).with_debug_full_count(true),
+        );
+        assert_eq!(
+            bounded.candidates,
+            candidates[..bounded.candidates.len()],
+            "{storage}: bounded internal-phrase output must be a field-for-field complete prefix"
+        );
+        assert!(!bounded.is_complete, "{storage}");
     }
 
     for (storage, translator) in build_translators(true) {
@@ -4601,6 +4634,7 @@ fn upstream_script_prefix_collector_excludes_dead_longer_overlap_across_storage_
 
 #[test]
 fn upstream_script_policy_admits_complete_abbreviation_graphs_across_storage_paths() {
+    let _guard = super::m37_metrics_test_guard();
     let dictionary = TableDictionary::new([
         TableEntry::new("na1", "N-low", 30.0),
         TableEntry::new("nei5", "N-high", 100.0),
@@ -4634,7 +4668,8 @@ fn upstream_script_policy_admits_complete_abbreviation_graphs_across_storage_pat
     )
     .with_spelling_algebra(&formulas)
     .with_sentence(true)
-    .with_sentence_policy(SentencePolicy::UpstreamScript);
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_model(100);
 
     let table_bytes = build_table_bin(&dictionary, 0x5904_2001);
     let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
@@ -4651,10 +4686,19 @@ fn upstream_script_policy_admits_complete_abbreviation_graphs_across_storage_pat
     )
     .with_spelling_algebra(&formulas)
     .with_sentence(true)
-    .with_sentence_policy(SentencePolicy::UpstreamScript);
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_model(100);
 
     for (storage, translator) in [("owned", owned), ("byte", byte_backed)] {
+        crate::m37_metrics_enable(true);
+        crate::m37_metrics_reset();
         let initial_family = translator.translate("n");
+        let cold_metrics = crate::m37_metrics_snapshot();
+        crate::m37_metrics_enable(false);
+        assert_eq!(
+            cold_metrics.upstream_sentence_model_vocabulary_entries_considered, 0,
+            "{storage}: a one-syllable root cannot match a multi-character vocabulary row"
+        );
         assert_eq!(
             initial_family
                 .iter()
@@ -4698,7 +4742,373 @@ fn upstream_script_policy_admits_complete_abbreviation_graphs_across_storage_pat
             "NHG",
             "{storage}: multiple abbreviation positions must compose without an input allowlist"
         );
+
+        for input in ["n", "nri", "ngohaig", "ngohg"] {
+            let complete = translator.translate(input);
+            let bounded = translator.translate_with_context_and_request(
+                input,
+                &Status::default(),
+                &HashMap::new(),
+                &Context::default(),
+                CandidateRequest::bounded(2).with_debug_full_count(true),
+            );
+            assert_eq!(
+                bounded.candidates,
+                complete[..bounded.candidates.len()],
+                "{storage} {input}: bounded candidates, including qualities, must equal the complete prefix"
+            );
+            assert!(!bounded.is_complete, "{storage} {input}");
+            crate::m37_metrics_enable(true);
+            crate::m37_metrics_reset();
+            let cached = translator.translate_with_context_and_request(
+                input,
+                &Status::default(),
+                &HashMap::new(),
+                &Context::default(),
+                CandidateRequest::bounded(2).with_debug_full_count(true),
+            );
+            let cached_metrics = crate::m37_metrics_snapshot();
+            crate::m37_metrics_enable(false);
+            assert_eq!(cached, bounded, "{storage} {input}: bounded cache hit");
+            assert_eq!(
+                cached_metrics.upstream_sentence_model_graph_rebuild_calls, 0,
+                "{storage} {input}: a cached page window must not rebuild the sentence graph"
+            );
+            assert!(
+                bounded
+                    .full_count
+                    .is_some_and(|count| count > bounded.candidates.len()),
+                "{storage} {input}: bounded work must advertise an on-demand tail"
+            );
+        }
+
+        let populated_cache = translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == "translator.bounded_upstream_script_cache")
+            .expect("bounded cache owner row should exist");
+        assert!(
+            (1..=64).contains(&populated_cache.item_count),
+            "{storage}: bounded requests should populate the fixed-capacity page cache"
+        );
+
+        translator.clear_ephemeral_runtime_caches();
+        let oversized = translator.translate_with_context_and_request(
+            "n",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(65).with_debug_full_count(true),
+        );
+        assert!(!oversized.candidates.is_empty(), "{storage}");
+        let oversized_cache = translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == "translator.bounded_upstream_script_cache")
+            .expect("bounded cache owner row should exist");
+        assert_eq!(
+            oversized_cache.item_count, 0,
+            "{storage}: a request beyond the declared page limit must not be retained"
+        );
+
+        let cached_before_reconfiguration = translator.translate_with_context_and_request(
+            "n",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(2).with_debug_full_count(true),
+        );
+        let mut scratch = TranslatorScratch::default();
+        scratch.seed_for_test();
+        let scratch_hit = translator.translate_with_context_and_request_with_scratch(
+            "n",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(2).with_debug_full_count(true),
+            &mut scratch,
+        );
+        assert_eq!(scratch_hit, cached_before_reconfiguration, "{storage}");
+        assert!(
+            scratch.is_empty(),
+            "{storage}: a page-cache hit must clear reusable sentence scratch"
+        );
+
+        let reconfigured = translator.with_initial_quality(3.0);
+        let reset_cache = reconfigured
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == "translator.bounded_upstream_script_cache")
+            .expect("bounded cache owner row should exist");
+        assert_eq!(
+            reset_cache.item_count, 0,
+            "{storage}: translator reconfiguration must invalidate bounded results"
+        );
+        let reconfigured_bounded = reconfigured.translate_with_context_and_request(
+            "n",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(2).with_debug_full_count(true),
+        );
+        assert_ne!(
+            reconfigured_bounded.candidates[0].quality,
+            cached_before_reconfiguration.candidates[0].quality,
+            "{storage}: a warmed pre-reconfiguration quality must not leak"
+        );
+        let reconfigured_complete = reconfigured.translate("n");
+        assert_eq!(
+            reconfigured_bounded.candidates,
+            reconfigured_complete[..reconfigured_bounded.candidates.len()],
+            "{storage}: cache invalidation must preserve bounded/full field equality"
+        );
     }
+}
+
+#[test]
+fn upstream_script_bounded_collector_keeps_explicit_before_equal_generated_rows() {
+    let entries = vec![
+        TableEntry::new("a1", "A", 1.0),
+        TableEntry::new("a1", "U", 1.0),
+        TableEntry::new("b1", "B", 1.0),
+        TableEntry::new("b1", "V", 1.0),
+        TableEntry::new("a1b1", "EXPLICIT", 1.0),
+    ];
+    let vocabulary = vec![PresetVocabularyEntry::new("UV", 1.0)];
+    let owned = UpstreamSentenceModel::from_table_entries(entries.clone(), &vocabulary, 100);
+    let checksum = 0x5904_b403;
+    let source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        entries,
+        &vocabulary,
+        &vocabulary,
+        checksum,
+    )));
+    let byte = UpstreamSentenceModel::from_poet_bin_source(source, checksum, 100)
+        .expect("byte-backed tie model");
+    let spans = [
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(0, 1, "a1"), 0.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(1, 2, "b1"), 0.0),
+    ];
+    for (storage, model) in [("owned", owned), ("byte", byte)] {
+        let complete = model.ranked_script_phrase_candidates_for_weighted_code_spans("ab", &spans);
+        let bounded = model
+            .ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered(
+                "ab",
+                &spans,
+                2,
+                &|_, _| true,
+            );
+        assert_eq!(complete[0].candidate.text, "EXPLICIT", "{storage}");
+        assert_eq!(complete[1].candidate.text, "UV", "{storage}");
+        assert_eq!(bounded, complete[..2], "{storage}");
+    }
+}
+
+#[test]
+fn upstream_script_bounded_cap_counts_only_eligible_rows() {
+    let excluded = (0..8)
+        .map(|index| format!("EXCLUDED{index}"))
+        .collect::<Vec<_>>();
+    let mut entries = vec![TableEntry::new("bb1", "B", 100.0)];
+    entries.extend(
+        (0..8).map(|index| TableEntry::new("aa1", format!("S{index}"), 500.0 - index as f32)),
+    );
+    entries.extend(
+        excluded
+            .iter()
+            .enumerate()
+            .map(|(index, text)| TableEntry::new("aa1bb1", text, 400.0 - index as f32)),
+    );
+    entries.extend((0..8).map(|index| {
+        TableEntry::new(
+            "aa1bb1",
+            format!("\u{3400}HIDDEN{index}"),
+            300.0 - index as f32,
+        )
+    }));
+    entries.extend(
+        (0..3).map(|index| {
+            TableEntry::new("aa1bb1", format!("VISIBLE{index}"), 100.0 - index as f32)
+        }),
+    );
+    let dictionary = TableDictionary::new(entries);
+    let formulas = vec!["derive/\\d//".to_owned()];
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(
+        &syllabary,
+        &formulas,
+        0x5904_b411,
+        0x5904_b412,
+    ))
+    .expect("filtered-head prism");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_spelling_algebra(&formulas)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_charset_filter(true)
+        .with_dictionary_exclude(excluded)
+        .with_upstream_sentence_model(100);
+    let complete = translator.translate_with_context_and_request(
+        "aabb",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::unbounded(),
+    );
+    assert_eq!(
+        complete
+            .candidates
+            .iter()
+            .take(3)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["VISIBLE0", "VISIBLE1", "VISIBLE2"]
+    );
+    let bounded = translator.translate_with_context_and_request(
+        "aabb",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(2),
+    );
+    assert_eq!(bounded.candidates, complete.candidates[..2]);
+}
+
+#[test]
+fn upstream_sentence_model_is_lazy_and_builder_reconfiguration_resets_it() {
+    let entries = vec![
+        TableEntry::new("aa", "A", 1.0),
+        TableEntry::new("bb", "B", 1.0),
+    ];
+    let vocabulary = vec![PresetVocabularyEntry::new("AB", 1.0)];
+    let checksum = 0x5904_b423;
+    let poet_source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        entries.clone(),
+        &vocabulary,
+        &vocabulary,
+        checksum,
+    )));
+    let octagram_entries = [(encode_octagram_key("AB"), 42)];
+    let double_array =
+        DartsDoubleArray::build_bytes(&octagram_entries).expect("synthetic grammar should build");
+    let mut grammar_bytes = vec![0; 44];
+    grammar_bytes[.."Rime::Grammar/1.0".len()].copy_from_slice(b"Rime::Grammar/1.0");
+    grammar_bytes[36..40].copy_from_slice(&(double_array.units().len() as u32).to_le_bytes());
+    grammar_bytes[40..44].copy_from_slice(&4_i32.to_le_bytes());
+    for unit in double_array.units() {
+        grammar_bytes.extend_from_slice(&unit.to_le_bytes());
+    }
+    let grammar = OctagramGrammar::from_bytes(&grammar_bytes, OctagramGrammarConfig::default())
+        .expect("synthetic grammar should parse");
+    let translator = StaticTableTranslator::new([("aa", "A"), ("bb", "B")])
+        .with_sentence(true)
+        .with_preset_vocabulary(vocabulary)
+        .with_upstream_sentence_poet_source(poet_source, checksum)
+        .with_upstream_sentence_grammar(grammar)
+        .with_upstream_sentence_model(10);
+    let owner = |translator: &StaticTableTranslator| {
+        translator
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == "poet.entries_by_code")
+            .expect("poet owner row")
+    };
+    let owners = translator.memory_owner_rows();
+    assert_eq!(
+        owner(&translator).item_count,
+        0,
+        "configuration must not build the model"
+    );
+    assert!(owners.iter().any(|row| {
+        row.owner == "translator.upstream_sentence_model_poet_source_recipe"
+            && row.item_count == 1
+            && row.estimated_bytes > 0
+    }));
+    assert!(owners.iter().any(|row| {
+        row.owner == "translator.upstream_sentence_model_preset_vocabulary_recipe"
+            && row.item_count == 1
+            && row.estimated_bytes > 0
+    }));
+    assert_eq!(
+        owners
+            .iter()
+            .filter(|row| row.owner.contains("octagram_double_array"))
+            .count(),
+        1,
+        "the translator-owned grammar recipe must be reported before initialization"
+    );
+    let _ = translator.translate("aabb");
+    assert!(
+        owner(&translator).item_count > 0,
+        "first translation should initialize the model"
+    );
+    let initialized_owners = translator.memory_owner_rows();
+    assert!(initialized_owners
+        .iter()
+        .all(|row| { row.owner != "translator.upstream_sentence_model_poet_source_recipe" }));
+    assert!(initialized_owners.iter().any(|row| {
+        row.owner == "translator.upstream_sentence_model_preset_vocabulary_recipe"
+            && row.item_count == 1
+            && row.estimated_bytes > 0
+    }));
+    assert_eq!(
+        initialized_owners
+            .iter()
+            .filter(|row| row.owner.contains("octagram_double_array"))
+            .count(),
+        2,
+        "model initialization clones the translator-owned octagram trie"
+    );
+    let reconfigured = translator.with_dictionary_exclude(["A"]);
+    assert_eq!(
+        owner(&reconfigured).item_count,
+        0,
+        "builder changes must discard the lazy model"
+    );
+    let reset_owners = reconfigured.memory_owner_rows();
+    assert!(reset_owners.iter().any(|row| {
+        row.owner == "translator.upstream_sentence_model_poet_source_recipe" && row.item_count == 1
+    }));
+    assert_eq!(
+        reset_owners
+            .iter()
+            .filter(|row| row.owner.contains("octagram_double_array"))
+            .count(),
+        1,
+        "reset must discard the model clone but retain the translator recipe"
+    );
+}
+
+#[test]
+fn bounded_page_cache_rejects_results_with_more_than_64_rows() {
+    let translator = StaticTableTranslator::new([("aa", "A")])
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript);
+    let rows = (0..65)
+        .map(|index| Candidate {
+            text: format!("ROW{index:02}"),
+            comment: String::new(),
+            preedit: None,
+            source: CandidateSource::Table,
+            quality: 0.0,
+        })
+        .collect::<Vec<_>>();
+    translator.cache_bounded_result_probe(TranslationResult::complete(rows.clone()));
+    translator.cache_bounded_result_probe(TranslationResult {
+        candidates: rows,
+        is_complete: false,
+        full_count: Some(66),
+    });
+    let owner = translator
+        .memory_owner_rows()
+        .into_iter()
+        .find(|row| row.owner == "translator.bounded_upstream_script_cache")
+        .expect("bounded cache owner row");
+    assert_eq!(owner.item_count, 0);
 }
 
 #[test]
@@ -5070,6 +5480,7 @@ fn upstream_script_model_applies_cumulative_spelling_credibility_across_storage_
 
 #[test]
 fn upstream_script_recovers_late_phrase_only_syllables_across_storage_paths() {
+    let _guard = super::m37_metrics_test_guard();
     let mut entries = vec![TableEntry::new("goeng1", "G", 100.0)];
     for index in 0..140usize {
         let first = char::from(b'a' + (index / 26) as u8);
@@ -5124,7 +5535,33 @@ fn upstream_script_recovers_late_phrase_only_syllables_across_storage_paths() {
     .with_upstream_sentence_model(500);
 
     for (storage, translator) in [("owned", owned), ("byte", byte_backed)] {
+        crate::m37_metrics_enable(true);
+        crate::m37_metrics_reset();
+        let bounded = translator.translate_with_context_and_request(
+            "ng",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(5).with_debug_full_count(true),
+        );
+        let bounded_metrics = crate::m37_metrics_snapshot();
+        crate::m37_metrics_enable(false);
+
         let candidates = translator.translate("ng");
+        assert_eq!(
+            bounded.candidates,
+            candidates[..bounded.candidates.len()],
+            "{storage}: page-bounded late-family rows must be a field-for-field complete prefix"
+        );
+        assert!(!bounded.is_complete, "{storage}");
+        assert!(
+            bounded_metrics.upstream_sentence_model_phrase_index_nodes_visited < 2_048,
+            "{storage}: bounded typing must not traverse the complete late abbreviation graph: {bounded_metrics:?}"
+        );
+        assert!(
+            bounded_metrics.upstream_sentence_model_graph_edges < 512,
+            "{storage}: a cold bounded request must retain bounded graph edges: {bounded_metrics:?}"
+        );
         let target = candidates
             .iter()
             .position(|candidate| candidate.text == "TARGET-ZERO")
@@ -6426,6 +6863,65 @@ fn compact_prefix_fallback_test_translator(
         .with_sentence(false)
 }
 
+#[test]
+fn legacy_prefix_fallback_bounded_fields_match_complete_after_script_declines() {
+    let _guard = super::m37_metrics_test_guard();
+    let duplicate_heads = (0..8).map(|index| TableEntry::new("a0", "DUP", 1_000.0 - index as f32));
+    let unique_rows =
+        (0..512).map(|index| TableEntry::new("a0", format!("ROW{index:04}"), 900.0 - index as f32));
+    let entries = duplicate_heads.chain(unique_rows).collect::<Vec<_>>();
+    let dictionary = TableDictionary::new(entries.clone());
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(
+        &["a0".to_owned()],
+        &[],
+        0x5904_b421,
+        0x5904_b422,
+    ))
+    .expect("owned duplicate-head prism");
+    let owned = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_spelling_algebra(&[])
+        .with_prefix_fallback(true)
+        .with_sentence(true)
+        .with_upstream_sentence_model(20);
+    let byte = compact_prefix_fallback_test_translator(entries, &[])
+        .with_sentence(true)
+        .with_upstream_sentence_model(20);
+    for (storage, translator) in [("owned", owned), ("byte", byte)] {
+        let complete = translator.translate("a0z");
+        crate::m37_metrics_enable(true);
+        crate::m37_metrics_reset();
+        let bounded = translator.translate_with_context_and_request(
+            "a0z",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(5).with_debug_full_count(true),
+        );
+        let cold_metrics = crate::m37_metrics_snapshot();
+        crate::m37_metrics_enable(false);
+        assert_eq!(
+            bounded
+                .candidates
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["DUP", "ROW0000", "ROW0001", "ROW0002", "ROW0003"],
+            "{storage}: duplicate heads must not consume the unique page window"
+        );
+        assert_eq!(bounded.candidates, complete[..5], "{storage}");
+        assert!(
+            bounded
+                .full_count
+                .is_some_and(|count| count > bounded.candidates.len()),
+            "{storage}: the bounded family must advertise an on-demand tail"
+        );
+        assert!(
+            cold_metrics.owned_candidates_materialized <= 16,
+            "{storage}: a cold five-row page must not materialize the 512-row family: {cold_metrics:?}"
+        );
+    }
+}
+
 fn prefix_fallback_cache_owner_snapshot(translator: &StaticTableTranslator) -> (usize, usize) {
     translator
         .memory_owner_rows()
@@ -6590,7 +7086,7 @@ fn bounded_prefix_fallback_cache_admits_a_59_character_request() {
 }
 
 #[test]
-fn oversized_prefix_fallback_request_limit_bypasses_the_cache() {
+fn large_prefix_fallback_request_limit_caches_when_actual_rows_fit() {
     let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
     let entries = (b'a'..=b'y')
         .map(char::from)
@@ -6619,7 +7115,12 @@ fn oversized_prefix_fallback_request_limit_bypasses_the_cache() {
         candidate_shape_without_quality(bounded.candidates),
         candidate_shape_without_quality(complete.into_iter().take(bounded_len))
     );
-    assert_eq!(prefix_fallback_cache_owner_snapshot(&translator), (0, 0));
+    let (bytes, items) = prefix_fallback_cache_owner_snapshot(&translator);
+    assert_eq!(
+        items, 25,
+        "cache admission is based on actual retained rows"
+    );
+    assert!((1..=512 * 1024).contains(&bytes));
 }
 
 #[test]

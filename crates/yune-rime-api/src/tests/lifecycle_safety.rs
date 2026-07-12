@@ -76,6 +76,60 @@ fn lifecycle_safety_repeated_session_destroy_and_cleanup_reject_stale_handles() 
 }
 
 #[test]
+fn dictionary_translator_cache_survives_finalize_but_releases_on_cleanup_and_root_change() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    crate::schema_install::clear_dictionary_translator_cache();
+
+    let root = unique_temp_dir("translator-cache-lifetime");
+    let other_root = unique_temp_dir("translator-cache-lifetime-other");
+    for path in [&root, &other_root] {
+        fs::create_dir_all(path.join("shared")).expect("shared dir should be created");
+        fs::create_dir_all(path.join("user")).expect("user dir should be created");
+    }
+    let shared =
+        CString::new(root.join("shared").to_string_lossy().as_ref()).expect("path is valid");
+    let user = CString::new(root.join("user").to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared.as_ptr();
+    traits.user_data_dir = user.as_ptr();
+    unsafe { RimeSetup(&traits) };
+
+    const PROBE: &str = "m59-cache-lifetime-probe";
+    crate::schema_install::seed_dictionary_translator_cache_probe(PROBE);
+    RimeFinalize();
+    assert!(
+        crate::schema_install::dictionary_translator_cache_contains_probe(PROBE),
+        "D-32 keeps fingerprinted immutable translators warm across finalize"
+    );
+
+    unsafe { RimeSetup(&traits) };
+    RimeCleanupAllSessions();
+    assert!(
+        !crate::schema_install::dictionary_translator_cache_contains_probe(PROBE),
+        "explicit cleanup must release mapped artifacts for same-path replacement"
+    );
+    crate::schema_install::seed_dictionary_translator_cache_probe(PROBE);
+
+    let other_shared =
+        CString::new(other_root.join("shared").to_string_lossy().as_ref()).expect("path is valid");
+    let other_user =
+        CString::new(other_root.join("user").to_string_lossy().as_ref()).expect("path is valid");
+    let mut other_traits = empty_traits();
+    other_traits.shared_data_dir = other_shared.as_ptr();
+    other_traits.user_data_dir = other_user.as_ptr();
+    unsafe { RimeSetup(&other_traits) };
+    assert!(
+        !crate::schema_install::dictionary_translator_cache_contains_probe(PROBE),
+        "changing dictionary roots must release mmap-backed cache owners"
+    );
+
+    crate::schema_install::clear_dictionary_translator_cache();
+    fs::remove_dir_all(root).expect("temp root should be removed");
+    fs::remove_dir_all(other_root).expect("other temp root should be removed");
+}
+
+#[test]
 fn lifecycle_safety_schema_switching_and_deployment_emit_ordered_notifications() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
@@ -119,6 +173,11 @@ fn lifecycle_safety_schema_switching_and_deployment_emit_ordered_notifications()
     }
     assert_eq!(RimeStartMaintenance(TRUE), TRUE);
     assert_eq!(RimeDeployWorkspace(), TRUE);
+    assert_eq!(
+        RimeFindSession(session_id),
+        FALSE,
+        "workspace artifact mutation closes sessions before releasing shared translator owners"
+    );
     assert_eq!(
         RimeDeploySchema(c"sample_schema.schema.yaml".as_ptr()),
         TRUE
@@ -169,7 +228,11 @@ fn lifecycle_safety_schema_switching_and_deployment_emit_ordered_notifications()
     drop(events);
 
     RimeSetNotificationHandler(None, ptr::null_mut());
-    assert_eq!(RimeDestroySession(session_id), TRUE);
+    assert_eq!(
+        RimeDestroySession(session_id),
+        FALSE,
+        "the deployment boundary already invalidated this stale handle"
+    );
     let reset_traits = empty_traits();
     unsafe { RimeSetup(&reset_traits) };
     fs::remove_dir_all(root).expect("temp dirs should be removed");

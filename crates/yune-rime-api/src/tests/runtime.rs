@@ -1373,6 +1373,11 @@ fn notification_handler_receives_runtime_events_and_can_be_cleared() {
     }
     assert_eq!(RimeStartMaintenance(TRUE), TRUE);
     assert_eq!(RimeDeployWorkspace(), TRUE);
+    assert_eq!(
+        RimeFindSession(session_id),
+        FALSE,
+        "workspace artifact mutation closes sessions before releasing shared translator owners"
+    );
 
     let events = notification_events_lock();
     assert_eq!(
@@ -1423,7 +1428,11 @@ fn notification_handler_receives_runtime_events_and_can_be_cleared() {
     unsafe { RimeSetOption(session_id, ascii_mode.as_ptr(), TRUE) };
     assert_eq!(notification_events_lock().len(), 6);
 
-    assert_eq!(RimeDestroySession(session_id), TRUE);
+    assert_eq!(
+        RimeDestroySession(session_id),
+        FALSE,
+        "the deployment boundary already invalidated this stale handle"
+    );
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.
     unsafe { RimeSetup(&reset_traits) };

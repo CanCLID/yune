@@ -248,16 +248,20 @@ pub extern "C" fn RimeDestroySession(session_id: RimeSessionId) -> Bool {
 #[no_mangle]
 pub extern "C" fn RimeCleanupAllSessions() {
     crate::ffi_guard::guard_void(|| {
-        sessions()
-            .lock()
-            .expect("session registry should not be poisoned")
-            .sessions
-            .clear();
+        clear_session_registry();
         // Shared translators may own mmap-backed compiled artifacts. Once all
         // sessions are gone, retaining those cache entries needlessly pins the
         // files and prevents same-path deployment replacement on Windows.
         crate::schema_install::clear_dictionary_translator_cache();
     });
+}
+
+pub(crate) fn clear_session_registry() {
+    sessions()
+        .lock()
+        .expect("session registry should not be poisoned")
+        .sessions
+        .clear();
 }
 
 #[no_mangle]

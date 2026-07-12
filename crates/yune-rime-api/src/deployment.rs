@@ -23,11 +23,12 @@ use crate::{
     apply_config_directives, apply_custom_patch, apply_legacy_preset_config_plugins, bool_from,
     config_scalar_string, cstring_from_lossless_str, find_config_value, load_runtime_config_root,
     normalize_config_resource_id, optional_c_string, path_join,
-    resource_id::validate_data_resource_id, runtime_paths, runtime_user_data_sync_dir,
-    schema_install::has_typeduck_lookup_source_rows, service_started, set_build_info,
-    set_config_value, source_modified_secs, source_uses_auto_custom_patch, sync_all_user_dicts,
-    user_dict_upgrade, Bool, ConfigOpenKind, RimeCleanupAllSessions, RimeSetup, RimeTraits, FALSE,
-    RIME_VERSION_BYTES, TRUE,
+    resource_id::validate_data_resource_id,
+    runtime_paths, runtime_user_data_sync_dir,
+    schema_install::{clear_dictionary_translator_cache, has_typeduck_lookup_source_rows},
+    service_started, set_build_info, set_config_value, source_modified_secs,
+    source_uses_auto_custom_patch, sync_all_user_dicts, user_dict_upgrade, Bool, ConfigOpenKind,
+    RimeCleanupAllSessions, RimeSetup, RimeTraits, FALSE, RIME_VERSION_BYTES, TRUE,
 };
 
 /// Initializes the runtime using the same trait handling as `RimeSetup`.
@@ -49,8 +50,12 @@ pub unsafe extern "C" fn RimeInitialize(traits: *const RimeTraits) {
 pub extern "C" fn RimeFinalize() {
     crate::ffi_guard::guard_void(|| {
         let _trace = crate::startup_trace::span("runtime_finalize");
-        RimeCleanupAllSessions();
+        // D-32 deliberately keeps fingerprinted immutable translator assets
+        // warm across finalize for startup/runtime-ready parity. Sessions and
+        // user-input/page-window caches are still a strict finalize boundary.
         service_started().store(false, Ordering::SeqCst);
+        crate::session::clear_session_registry();
+        crate::schema_install::clear_dictionary_translator_ephemeral_runtime_caches();
     });
 }
 
@@ -189,6 +194,11 @@ pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
             let Some(schema_id) = validate_data_resource_id(schema_id) else {
                 return FALSE;
             };
+            // End active sessions before artifact mutation: clearing only the
+            // registry cache would leave session-owned Arcs pinning mmap files
+            // on Windows.
+            RimeCleanupAllSessions();
+            clear_dictionary_translator_cache();
             let mut built = HashSet::new();
             return bool_from(workspace_update_schema(&schema_id, false, &mut built));
         }
@@ -617,6 +627,11 @@ fn current_unix_time_string() -> String {
 
 pub(crate) fn workspace_update() -> bool {
     memory_probe_mark("m47:deploy:workspace_update:start");
+    // Workspace mutation is externally serialized with session use. Within
+    // that sequential boundary, public cleanup closes sessions and releases
+    // the shared translator registry before any filesystem mutation begins.
+    RimeCleanupAllSessions();
+    clear_dictionary_translator_cache();
     clear_workspace_dictionary_rebuild_reports();
     if !deploy_config_file("default.yaml", "config_version") {
         return false;

@@ -29,6 +29,11 @@ const TYPEDUCK_CORRECTION_CREDIBILITY: f32 = -16.118_095; // log(1e-7)
 const TYPEDUCK_CORRECTION_MAX_DISTANCE: usize = 4;
 const DEFAULT_SENTENCE_WORD_PENALTY: f32 = 0.0;
 const BOUNDED_SENTENCE_MODEL_PAGE_LIMIT: usize = 5;
+const BOUNDED_UPSTREAM_SCRIPT_CACHE_CAPACITY: usize = 64;
+const BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_LIMIT: usize = 64;
+const BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_INPUT_BYTES: usize = 256;
+const BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_ENTRY_BYTES: usize = 128 * 1024;
+const BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_TOTAL_BYTES: usize = 512 * 1024;
 const MAX_ABBREVIATION_SENTENCE_INPUT_BYTES: usize = 16;
 const MAX_ABBREVIATION_SENTENCE_SPAN_BYTES: usize = 6;
 const MAX_ABBREVIATION_SENTENCE_CODES_PER_SPAN: usize = 128;
@@ -204,6 +209,12 @@ struct ConcatenatedSurfaceCode {
     code: String,
     abbreviation: bool,
     credibility: f32,
+}
+
+struct UpstreamScriptDirectChunk<'a> {
+    code: &'a ConcatenatedSurfaceCode,
+    rows: Box<dyn Iterator<Item = LookupCandidate<'a>> + 'a>,
+    head: Option<(Candidate, f64)>,
 }
 
 #[derive(Clone, Debug)]
@@ -663,6 +674,7 @@ mod original_merge_algorithm_tests {
     }
 }
 
+#[derive(Clone, Copy)]
 struct BoundedLookupRequest<'a> {
     input: &'a str,
     lookup_code: &'a str,
@@ -748,10 +760,156 @@ struct PrefixFallbackWindowCacheEntry {
     truncated: bool,
 }
 
+#[derive(Clone, Debug)]
 struct PrefixFallbackBatch {
     candidates: Vec<Candidate>,
     truncated: bool,
     owns_reachability: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct BoundedUpstreamScriptCacheKey {
+    input: String,
+    filter_by_charset: bool,
+    limit: usize,
+    include_full_count: bool,
+}
+
+#[derive(Clone, Debug)]
+struct BoundedUpstreamScriptCacheEntry {
+    key: BoundedUpstreamScriptCacheKey,
+    result: TranslationResult,
+}
+
+#[derive(Debug, Default)]
+struct BoundedUpstreamScriptCache {
+    entries: VecDeque<BoundedUpstreamScriptCacheEntry>,
+}
+
+impl BoundedUpstreamScriptCache {
+    fn get(
+        &mut self,
+        input: &str,
+        filter_by_charset: bool,
+        limit: usize,
+        include_full_count: bool,
+    ) -> Option<TranslationResult> {
+        let index = self.entries.iter().position(|entry| {
+            entry.key.input == input
+                && entry.key.filter_by_charset == filter_by_charset
+                && entry.key.limit == limit
+                && entry.key.include_full_count == include_full_count
+        })?;
+        let entry = self
+            .entries
+            .remove(index)
+            .expect("located bounded upstream-script cache entry should exist");
+        let result = entry.result.clone();
+        self.entries.push_back(entry);
+        Some(result)
+    }
+
+    fn insert(
+        &mut self,
+        input: &str,
+        filter_by_charset: bool,
+        limit: usize,
+        include_full_count: bool,
+        result: TranslationResult,
+    ) {
+        if input.len() > BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_INPUT_BYTES
+            || limit > BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_LIMIT
+            || result.candidates.len() > BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_LIMIT
+            || result.is_complete
+        {
+            return;
+        }
+        let entry_bytes = bounded_upstream_script_cache_entry_bytes(input, &result);
+        if entry_bytes > BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_ENTRY_BYTES {
+            return;
+        }
+        if let Some(index) = self.entries.iter().position(|entry| {
+            entry.key.input == input
+                && entry.key.filter_by_charset == filter_by_charset
+                && entry.key.limit == limit
+                && entry.key.include_full_count == include_full_count
+        }) {
+            self.entries.remove(index);
+        }
+        while self.entries.len() >= BOUNDED_UPSTREAM_SCRIPT_CACHE_CAPACITY
+            || self.entry_payload_bytes().saturating_add(entry_bytes)
+                > BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_TOTAL_BYTES
+        {
+            if self.entries.pop_front().is_none() {
+                break;
+            }
+        }
+        self.entries.push_back(BoundedUpstreamScriptCacheEntry {
+            key: BoundedUpstreamScriptCacheKey {
+                input: input.to_owned(),
+                filter_by_charset,
+                limit,
+                include_full_count,
+            },
+            result,
+        });
+    }
+
+    fn entry_payload_bytes(&self) -> usize {
+        self.entries
+            .iter()
+            .map(|entry| bounded_upstream_script_cache_entry_bytes(&entry.key.input, &entry.result))
+            .sum()
+    }
+
+    fn estimated_retained_bytes(&self) -> usize {
+        mem::size_of::<Self>()
+            .saturating_add(
+                self.entries
+                    .capacity()
+                    .saturating_mul(mem::size_of::<BoundedUpstreamScriptCacheEntry>()),
+            )
+            .saturating_add(self.entries.iter().fold(0usize, |bytes, entry| {
+                bytes
+                    .saturating_add(entry.key.input.capacity())
+                    .saturating_add(
+                        entry
+                            .result
+                            .candidates
+                            .capacity()
+                            .saturating_mul(mem::size_of::<Candidate>()),
+                    )
+                    .saturating_add(entry.result.candidates.iter().fold(
+                        0usize,
+                        |candidate_bytes, candidate| {
+                            candidate_bytes
+                                .saturating_add(candidate.text.capacity())
+                                .saturating_add(candidate.comment.capacity())
+                                .saturating_add(
+                                    candidate.preedit.as_ref().map_or(0, String::capacity),
+                                )
+                        },
+                    ))
+            }))
+    }
+}
+
+fn bounded_upstream_script_cache_entry_bytes(input: &str, result: &TranslationResult) -> usize {
+    mem::size_of::<BoundedUpstreamScriptCacheEntry>()
+        .saturating_add(input.len())
+        .saturating_add(
+            result
+                .candidates
+                .capacity()
+                .saturating_mul(mem::size_of::<Candidate>()),
+        )
+        .saturating_add(
+            result
+                .candidates
+                .iter()
+                .map(estimate_candidate_bytes)
+                .sum::<usize>(),
+        )
 }
 
 #[derive(Clone, Copy)]
@@ -1403,6 +1561,23 @@ fn estimate_string_triple_hash_set_bytes(values: &HashSet<(String, String, Strin
         )
 }
 
+fn estimate_source_entry_build_bytes(entries: &[(String, Candidate)]) -> usize {
+    mem::size_of_val(entries).saturating_add(entries.iter().fold(0usize, |bytes, (code, row)| {
+        bytes
+            .saturating_add(code.capacity())
+            .saturating_add(estimate_candidate_bytes(row))
+    }))
+}
+
+fn estimate_preset_vocabulary_build_bytes(entries: &[PresetVocabularyEntry]) -> usize {
+    mem::size_of_val(entries).saturating_add(
+        entries
+            .iter()
+            .map(|entry| entry.text.capacity())
+            .sum::<usize>(),
+    )
+}
+
 pub struct StaticTableTranslator {
     source_entries: Option<Vec<(String, Candidate)>>,
     storage: TableStorage,
@@ -1476,6 +1651,9 @@ pub struct StaticTableTranslator {
     // bounding the per-keystroke walk to O(max_syllable_len) instead of
     // O(input_len) and collapsing the long-input O(n^2) to O(n). Cached once.
     max_leading_prefix_len_cache: OnceLock<usize>,
+    // Fixed-capacity immutable page prefixes for Standard ScriptTranslation.
+    // Complete lists remain on-demand and are never retained here.
+    bounded_upstream_script_cache: Mutex<BoundedUpstreamScriptCache>,
     // One bounded raw prefix window is retained across incremental keystrokes.
     // The key contains the resolved deployed-surface fetch graph, so a longer
     // input that keeps the same leading family can reuse immutable raw rows
@@ -1491,7 +1669,13 @@ pub struct StaticTableTranslator {
     upstream_sentence_poet_source: Option<(Arc<dyn PoetByteSource>, u32)>,
     upstream_sentence_cutoff_threshold: f64,
     upstream_script_translation_limits: Option<(usize, usize)>,
-    upstream_sentence_model: Option<UpstreamSentenceModel>,
+    // Sentence/abbreviation indexing is the expensive part of installing a
+    // Standard script translator. Keep the immutable build inputs on the
+    // translator and construct the model on its first translation/warmup.
+    // D-32 may then share this initialized translator across sessions; the
+    // model is still owned by, and dies with, that fingerprinted translator.
+    upstream_sentence_model_max_candidates: Option<usize>,
+    upstream_sentence_model: OnceLock<UpstreamSentenceModel>,
 }
 
 impl StaticTableTranslator {
@@ -1561,6 +1745,7 @@ impl StaticTableTranslator {
             leading_fetch_index_cache: OnceLock::new(),
             leading_fetch_index_seed: None,
             max_leading_prefix_len_cache: OnceLock::new(),
+            bounded_upstream_script_cache: Mutex::new(BoundedUpstreamScriptCache::default()),
             prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra: SpellingAlgebra::default(),
@@ -1571,7 +1756,8 @@ impl StaticTableTranslator {
             upstream_sentence_poet_source: None,
             upstream_sentence_cutoff_threshold: 0.1,
             upstream_script_translation_limits: None,
-            upstream_sentence_model: None,
+            upstream_sentence_model_max_candidates: None,
+            upstream_sentence_model: OnceLock::new(),
         }
     }
 
@@ -1641,6 +1827,7 @@ impl StaticTableTranslator {
             leading_fetch_index_cache: OnceLock::new(),
             leading_fetch_index_seed: None,
             max_leading_prefix_len_cache: OnceLock::new(),
+            bounded_upstream_script_cache: Mutex::new(BoundedUpstreamScriptCache::default()),
             prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra: SpellingAlgebra::default(),
@@ -1651,7 +1838,8 @@ impl StaticTableTranslator {
             upstream_sentence_poet_source: None,
             upstream_sentence_cutoff_threshold: 0.1,
             upstream_script_translation_limits: None,
-            upstream_sentence_model: None,
+            upstream_sentence_model_max_candidates: None,
+            upstream_sentence_model: OnceLock::new(),
         }
     }
 
@@ -1712,6 +1900,7 @@ impl StaticTableTranslator {
             leading_fetch_index_cache: OnceLock::new(),
             leading_fetch_index_seed: None,
             max_leading_prefix_len_cache: OnceLock::new(),
+            bounded_upstream_script_cache: Mutex::new(BoundedUpstreamScriptCache::default()),
             prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra: SpellingAlgebra::default(),
@@ -1722,7 +1911,8 @@ impl StaticTableTranslator {
             upstream_sentence_poet_source: None,
             upstream_sentence_cutoff_threshold: 0.1,
             upstream_script_translation_limits: None,
-            upstream_sentence_model: None,
+            upstream_sentence_model_max_candidates: None,
+            upstream_sentence_model: OnceLock::new(),
         }
     }
 
@@ -1796,6 +1986,7 @@ impl StaticTableTranslator {
             leading_fetch_index_cache: OnceLock::new(),
             leading_fetch_index_seed: None,
             max_leading_prefix_len_cache: OnceLock::new(),
+            bounded_upstream_script_cache: Mutex::new(BoundedUpstreamScriptCache::default()),
             prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra: SpellingAlgebra::default(),
@@ -1806,55 +1997,69 @@ impl StaticTableTranslator {
             upstream_sentence_poet_source: None,
             upstream_sentence_cutoff_threshold: 0.1,
             upstream_script_translation_limits: None,
-            upstream_sentence_model: None,
+            upstream_sentence_model_max_candidates: None,
+            upstream_sentence_model: OnceLock::new(),
         }
+    }
+
+    fn reset_bounded_translation_caches(&mut self) {
+        self.bounded_upstream_script_cache = Mutex::new(BoundedUpstreamScriptCache::default());
+        self.prefix_fallback_window_cache = Mutex::new(None);
     }
 
     #[must_use]
     pub fn with_completion(mut self, enable_completion: bool) -> Self {
         self.enable_completion = enable_completion;
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_correction(mut self, enable_correction: bool) -> Self {
         self.enable_correction = enable_correction;
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_dynamic_correction_lookup(mut self, dynamic_correction_lookup: bool) -> Self {
         self.dynamic_correction_lookup = dynamic_correction_lookup;
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_charset_filter(mut self, enable_charset_filter: bool) -> Self {
         self.enable_charset_filter = enable_charset_filter;
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_sentence(mut self, enable_sentence: bool) -> Self {
         self.enable_sentence = enable_sentence;
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_sentence_policy(mut self, policy: SentencePolicy) -> Self {
         self.sentence_policy = policy;
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_sentence_word_penalty(mut self, sentence_word_penalty: f32) -> Self {
         self.sentence_word_penalty = sentence_word_penalty;
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_sentence_over_completion(mut self, sentence_over_completion: bool) -> Self {
         self.sentence_over_completion = sentence_over_completion;
+        self.reset_bounded_translation_caches();
         self
     }
 
@@ -1864,6 +2069,7 @@ impl StaticTableTranslator {
         if self.delimiters.is_empty() {
             self.delimiters = " ".to_owned();
         }
+        self.reset_bounded_translation_caches();
         self
     }
 
@@ -1873,24 +2079,28 @@ impl StaticTableTranslator {
         if self.tags.is_empty() {
             self.tags.push("abc".to_owned());
         }
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_initial_quality(mut self, initial_quality: f32) -> Self {
         self.initial_quality = initial_quality;
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_comment_format(mut self, formulas: &[String]) -> Self {
         self.comment_format = CommentFormat::parse(formulas);
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_preedit_format(mut self, formulas: &[String]) -> Self {
         self.preedit_format = CommentFormat::parse(formulas);
+        self.reset_bounded_translation_caches();
         self
     }
 
@@ -1900,17 +2110,15 @@ impl StaticTableTranslator {
         words: impl IntoIterator<Item = impl Into<String>>,
     ) -> Self {
         self.dictionary_exclude = words.into_iter().map(Into::into).collect();
-        if let Some(model) = self.upstream_sentence_model.take() {
-            self.upstream_sentence_model =
-                Some(model.with_excluded_texts(self.dictionary_exclude.iter().cloned()));
-        }
-        self.prefix_fallback_window_cache = Mutex::new(None);
+        self.reset_upstream_sentence_model();
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_combine_candidates(mut self, combine_candidates: bool) -> Self {
         self.combine_candidates = combine_candidates;
+        self.reset_bounded_translation_caches();
         self
     }
 
@@ -1918,37 +2126,42 @@ impl StaticTableTranslator {
     pub fn with_affix(mut self, prefix: impl Into<String>, suffix: impl Into<String>) -> Self {
         self.prefix = prefix.into();
         self.suffix = suffix.into();
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_show_full_code(mut self, show_full_code: bool) -> Self {
         self.show_full_code = show_full_code;
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_prediction_weight_threshold(mut self, threshold: f32) -> Self {
         self.prediction_weight_threshold = Some(threshold);
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_prediction_never_first(mut self, prediction_never_first: bool) -> Self {
         self.prediction_never_first = prediction_never_first;
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_prediction_candidate_limit(mut self, limit: usize) -> Self {
         self.prediction_candidate_limit = Some(limit);
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_prefix_fallback(mut self, prefix_fallback: bool) -> Self {
         self.prefix_fallback = prefix_fallback;
-        self.prefix_fallback_window_cache = Mutex::new(None);
+        self.reset_bounded_translation_caches();
         self.leading_fetch_index_seed = None;
         self.leading_fetch_index_cache = OnceLock::new();
         self.max_leading_prefix_len_cache = OnceLock::new();
@@ -1967,7 +2180,7 @@ impl StaticTableTranslator {
         leading_syllable_reachability: bool,
     ) -> Self {
         self.leading_syllable_reachability = leading_syllable_reachability;
-        self.prefix_fallback_window_cache = Mutex::new(None);
+        self.reset_bounded_translation_caches();
         self.leading_fetch_index_seed = None;
         self.leading_fetch_index_cache = OnceLock::new();
         self.max_leading_prefix_len_cache = OnceLock::new();
@@ -1986,6 +2199,8 @@ impl StaticTableTranslator {
         vocabulary: impl IntoIterator<Item = PresetVocabularyEntry>,
     ) -> Self {
         self.preset_vocabulary = vocabulary.into_iter().collect();
+        self.reset_upstream_sentence_model();
+        self.reset_bounded_translation_caches();
         self
     }
 
@@ -1995,6 +2210,8 @@ impl StaticTableTranslator {
         vocabulary: impl IntoIterator<Item = PresetVocabularyEntry>,
     ) -> Self {
         self.abbreviation_preset_vocabulary = vocabulary.into_iter().collect();
+        self.reset_upstream_sentence_model();
+        self.reset_bounded_translation_caches();
         self
     }
 
@@ -2005,11 +2222,20 @@ impl StaticTableTranslator {
         dictionary_checksum: u32,
     ) -> Self {
         self.upstream_sentence_poet_source = Some((source, dictionary_checksum));
+        self.reset_upstream_sentence_model();
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_upstream_sentence_model(mut self, max_candidates: usize) -> Self {
+        self.upstream_sentence_model_max_candidates = Some(max_candidates.max(1));
+        self.reset_upstream_sentence_model();
+        self.reset_bounded_translation_caches();
+        self
+    }
+
+    fn build_upstream_sentence_model(&self, max_candidates: usize) -> UpstreamSentenceModel {
         let abbreviation_vocabulary = if self.abbreviation_preset_vocabulary.is_empty() {
             self.preset_vocabulary.as_slice()
         } else {
@@ -2026,15 +2252,18 @@ impl StaticTableTranslator {
         // misreading source/legacy rows as compiled logs.
         let natural_log_table_weights =
             self.entry_weight_domain == TableEntryWeightDomain::NaturalLog;
-        let model = if let Some((source, dictionary_checksum)) =
-            self.upstream_sentence_poet_source.take()
+        let model = if let Some((source, dictionary_checksum)) = &self.upstream_sentence_poet_source
         {
-            UpstreamSentenceModel::from_poet_bin_source(source, dictionary_checksum, max_candidates)
-                .expect("validated poet artifact should load into sentence model")
-        } else if let Some(entries) = self.source_entries.take() {
+            UpstreamSentenceModel::from_poet_bin_source(
+                Arc::clone(source),
+                *dictionary_checksum,
+                max_candidates,
+            )
+            .expect("validated poet artifact should load into sentence model")
+        } else if let Some(entries) = &self.source_entries {
             let table_entries = entries
-                .into_iter()
-                .map(|(code, candidate)| TableEntry::new(code, candidate.text, candidate.quality))
+                .iter()
+                .map(|(code, candidate)| TableEntry::new(code, &candidate.text, candidate.quality))
                 .collect::<Vec<_>>();
             if natural_log_table_weights {
                 UpstreamSentenceModel::from_natural_log_table_entries(
@@ -2086,17 +2315,31 @@ impl StaticTableTranslator {
         if let Some((max_sentences, max_homophones)) = self.upstream_script_translation_limits {
             model = model.with_script_translation_limits(max_sentences, max_homophones);
         }
-        self.upstream_sentence_model = Some(model);
-        self
+        model
+    }
+
+    fn has_upstream_sentence_model(&self) -> bool {
+        self.upstream_sentence_model_max_candidates.is_some()
+    }
+
+    fn upstream_sentence_model(&self) -> Option<&UpstreamSentenceModel> {
+        let max_candidates = self.upstream_sentence_model_max_candidates?;
+        Some(
+            self.upstream_sentence_model
+                .get_or_init(|| self.build_upstream_sentence_model(max_candidates)),
+        )
+    }
+
+    fn reset_upstream_sentence_model(&mut self) {
+        self.upstream_sentence_model = OnceLock::new();
     }
 
     #[must_use]
     pub fn with_upstream_sentence_grammar(mut self, grammar: impl Into<GrammarProvider>) -> Self {
         let grammar = grammar.into();
         self.upstream_sentence_grammar = grammar.clone();
-        if let Some(model) = self.upstream_sentence_model.take() {
-            self.upstream_sentence_model = Some(model.with_grammar(grammar));
-        }
+        self.reset_upstream_sentence_model();
+        self.reset_bounded_translation_caches();
         self
     }
 
@@ -2107,19 +2350,16 @@ impl StaticTableTranslator {
         max_homophones: usize,
     ) -> Self {
         self.upstream_script_translation_limits = Some((max_sentences, max_homophones));
-        if let Some(model) = self.upstream_sentence_model.take() {
-            self.upstream_sentence_model =
-                Some(model.with_script_translation_limits(max_sentences, max_homophones));
-        }
+        self.reset_upstream_sentence_model();
+        self.reset_bounded_translation_caches();
         self
     }
 
     #[must_use]
     pub fn with_upstream_sentence_cutoff_threshold(mut self, threshold: f64) -> Self {
         self.upstream_sentence_cutoff_threshold = threshold;
-        if let Some(model) = self.upstream_sentence_model.take() {
-            self.upstream_sentence_model = Some(model.with_sentence_cutoff_threshold(threshold));
-        }
+        self.reset_upstream_sentence_model();
+        self.reset_bounded_translation_caches();
         self
     }
 
@@ -2129,6 +2369,7 @@ impl StaticTableTranslator {
         corrections: impl IntoIterator<Item = RimeCorrectionEntry>,
     ) -> Self {
         self.corrections = corrections.into_iter().collect();
+        self.reset_bounded_translation_caches();
         self
     }
 
@@ -2138,6 +2379,7 @@ impl StaticTableTranslator {
         tolerance_rules: impl IntoIterator<Item = RimeToleranceRule>,
     ) -> Self {
         self.tolerance_rules = tolerance_rules.into_iter().collect();
+        self.reset_bounded_translation_caches();
         self
     }
 
@@ -2327,7 +2569,8 @@ impl StaticTableTranslator {
     pub fn with_spelling_algebra(mut self, formulas: &[String]) -> Self {
         let algebra = SpellingAlgebra::parse(formulas);
         self.spelling_algebra = algebra.clone();
-        self.prefix_fallback_window_cache = Mutex::new(None);
+        self.reset_upstream_sentence_model();
+        self.reset_bounded_translation_caches();
         if self.spelling_algebra_configured {
             self.direct_prism_surface_mapping_current &=
                 self.spelling_algebra_formulas.as_slice() == formulas;
@@ -2360,10 +2603,23 @@ impl StaticTableTranslator {
                     .any(|formula| formula_is_abbreviation(formula));
                 return self;
             }
-            let source_entries = self
-                .source_entries
-                .take()
-                .unwrap_or_else(|| self.storage.owned_entries());
+            // A lazy sentence model must retain the same canonical pre-algebra
+            // recipe the former eager builder consumed at this point. Derived,
+            // abbreviated, and correction surfaces belong only to the outer
+            // table lookup; rebuilding Poet from expanded storage would promote
+            // those aliases into genuine sentence phrases. Schema installation
+            // configures the UpstreamScript owner before algebra and the direct
+            // builder may configure the model itself first, so cover both orders.
+            let retain_canonical_sentence_recipe = self.upstream_sentence_poet_source.is_none()
+                && (self.has_upstream_sentence_model()
+                    || (self.enable_sentence
+                        && self.sentence_policy == SentencePolicy::UpstreamScript));
+            let source_entries = if retain_canonical_sentence_recipe {
+                self.source_entries.clone()
+            } else {
+                self.source_entries.take()
+            }
+            .unwrap_or_else(|| self.storage.owned_entries());
             let (entries, normal_codes, has_single_letter_abbreviations) =
                 algebra.expand_entries_with_normal_codes(source_entries, self.entry_weight_domain);
             self.spelling_correction_entries = spelling_correction_entries(&entries);
@@ -2381,7 +2637,16 @@ impl StaticTableTranslator {
             self.normal_codes = NormalCodeIndex::eager(normal_codes);
             self.single_letter_sentence_guard_enabled = has_single_letter_abbreviations;
         } else if self.source_entries.is_some() && !self.storage.has_code("") {
-            let source_entries = self.source_entries.take().unwrap_or_default();
+            let retain_canonical_sentence_recipe = self.upstream_sentence_poet_source.is_none()
+                && (self.has_upstream_sentence_model()
+                    || (self.enable_sentence
+                        && self.sentence_policy == SentencePolicy::UpstreamScript));
+            let source_entries = if retain_canonical_sentence_recipe {
+                self.source_entries.clone()
+            } else {
+                self.source_entries.take()
+            }
+            .unwrap_or_default();
             if !source_entries.is_empty() {
                 self.storage = TableStorage::Heap(entries_by_code_from_entries(source_entries));
             }
@@ -2912,56 +3177,83 @@ impl StaticTableTranslator {
             .collect()
     }
 
-    fn upstream_script_ranked_family(
-        &self,
+    fn advance_upstream_script_direct_chunk<'a>(
+        &'a self,
         input: &str,
         end: usize,
-        codes: &[ConcatenatedSurfaceCode],
         filter_by_charset: bool,
-    ) -> Vec<RankedScriptPhraseCandidate> {
+        graph: &UpstreamScriptSurfaceGraph,
+        chunk: &mut UpstreamScriptDirectChunk<'a>,
+    ) {
         let surface = &input[..end];
         let weight_domain = self.entry_weight_domain;
-        let mut chunks = Vec::<VecDeque<(Candidate, f64)>>::new();
-        for code in codes {
-            let mut rows = VecDeque::new();
-            for lookup in self
-                .storage
-                .exact_candidates(&code.code)
-                .filter(|candidate| {
-                    self.is_dictionary_text_allowed(candidate.text())
-                        && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
-                })
-            {
-                let raw_quality = lookup.raw_quality();
-                let mut candidate = self.candidate_for_lookup_view(
-                    &code.code,
-                    &lookup,
-                    surface,
-                    None,
-                    code.credibility,
-                );
-                candidate.quality = upstream_script_raw_candidate_quality(
-                    end,
-                    raw_quality,
-                    code.credibility,
-                    weight_domain,
-                );
-                candidate.source = if end < input.len() {
-                    CandidateSource::PartialTable {
-                        consumed: end,
-                        recompose_on_default: true,
-                    }
-                } else {
-                    CandidateSource::Table
-                };
-                let comparison_weight = match weight_domain {
-                    TableEntryWeightDomain::Raw => f64::from(raw_quality).max(f64::EPSILON).ln(),
-                    TableEntryWeightDomain::NaturalLog => f64::from(raw_quality),
-                } + f64::from(code.credibility);
-                rows.push_back((candidate, comparison_weight));
+        chunk.head = None;
+        for lookup in chunk.rows.by_ref() {
+            if !self.upstream_script_text_at_end_allowed(
+                lookup.text(),
+                end,
+                input.len(),
+                graph,
+                filter_by_charset,
+            ) {
+                continue;
             }
-            if !rows.is_empty() {
-                chunks.push(rows);
+            let raw_quality = lookup.raw_quality();
+            let mut candidate = self.candidate_for_lookup_view(
+                &chunk.code.code,
+                &lookup,
+                surface,
+                None,
+                chunk.code.credibility,
+            );
+            candidate.quality = upstream_script_raw_candidate_quality(
+                end,
+                raw_quality,
+                chunk.code.credibility,
+                weight_domain,
+            );
+            candidate.source = if end < input.len() {
+                CandidateSource::PartialTable {
+                    consumed: end,
+                    recompose_on_default: true,
+                }
+            } else {
+                CandidateSource::Table
+            };
+            let comparison_weight = match weight_domain {
+                TableEntryWeightDomain::Raw => f64::from(raw_quality).max(f64::EPSILON).ln(),
+                TableEntryWeightDomain::NaturalLog => f64::from(raw_quality),
+            } + f64::from(chunk.code.credibility);
+            chunk.head = Some((candidate, comparison_weight));
+            return;
+        }
+    }
+
+    fn upstream_script_ranked_family<'a>(
+        &'a self,
+        input: &str,
+        end: usize,
+        codes: &'a [ConcatenatedSurfaceCode],
+        filter_by_charset: bool,
+        visible_limit: Option<usize>,
+        graph: &UpstreamScriptSurfaceGraph,
+    ) -> Vec<RankedScriptPhraseCandidate> {
+        let mut chunks = Vec::<UpstreamScriptDirectChunk<'a>>::new();
+        for code in codes {
+            let mut chunk = UpstreamScriptDirectChunk {
+                code,
+                rows: self.storage.exact_candidates(&code.code),
+                head: None,
+            };
+            self.advance_upstream_script_direct_chunk(
+                input,
+                end,
+                filter_by_charset,
+                graph,
+                &mut chunk,
+            );
+            if chunk.head.is_some() {
+                chunks.push(chunk);
             }
         }
 
@@ -2978,8 +3270,9 @@ impl StaticTableTranslator {
         while active < chunks.len() {
             for index in active + 1..chunks.len() {
                 if chunks[index]
-                    .front()
-                    .zip(chunks[active].front())
+                    .head
+                    .as_ref()
+                    .zip(chunks[active].head.as_ref())
                     .is_some_and(|(candidate, current)| candidate.1 > current.1)
                 {
                     // MSVC's one-item partial-sort heap moves the old active
@@ -2991,8 +3284,16 @@ impl StaticTableTranslator {
                 }
             }
             let (candidate, _) = chunks[active]
-                .pop_front()
+                .head
+                .take()
                 .expect("active script chunk should be nonempty");
+            self.advance_upstream_script_direct_chunk(
+                input,
+                end,
+                filter_by_charset,
+                graph,
+                &mut chunks[active],
+            );
             if seen.insert(candidate.text.clone()) {
                 family.push(RankedScriptPhraseCandidate {
                     candidate,
@@ -3000,8 +3301,11 @@ impl StaticTableTranslator {
                 });
                 emitted += 1;
             }
-            if chunks[active].is_empty() {
+            if chunks[active].head.is_none() {
                 active += 1;
+            }
+            if visible_limit.is_some_and(|limit| family.len() >= limit) {
+                break;
             }
         }
         family
@@ -3012,6 +3316,7 @@ impl StaticTableTranslator {
         input: &str,
         graph: &UpstreamScriptSurfaceGraph,
         filter_by_charset: bool,
+        visible_limit: Option<usize>,
     ) -> Option<(Vec<RankedScriptPhraseCandidate>, bool)> {
         let mut codes_by_boundary =
             vec![Vec::<ConcatenatedSurfaceCode>::new(); graph.boundaries.len()];
@@ -3099,7 +3404,14 @@ impl StaticTableTranslator {
                 continue;
             }
             let codes = exact_codes.clone();
-            let family = self.upstream_script_ranked_family(input, end, &codes, filter_by_charset);
+            let family = self.upstream_script_ranked_family(
+                input,
+                end,
+                &codes,
+                filter_by_charset,
+                visible_limit,
+                graph,
+            );
             families.push((end, family));
         }
 
@@ -3117,8 +3429,14 @@ impl StaticTableTranslator {
                     credibility: choice.credibility,
                 })
                 .collect::<Vec<_>>();
-            let family =
-                self.upstream_script_ranked_family(input, syllable.end, &codes, filter_by_charset);
+            let family = self.upstream_script_ranked_family(
+                input,
+                syllable.end,
+                &codes,
+                filter_by_charset,
+                visible_limit,
+                graph,
+            );
             families.push((syllable.end, family));
         }
 
@@ -3132,6 +3450,9 @@ impl StaticTableTranslator {
             for ranked in family {
                 if seen.insert(ranked.candidate.text.clone()) {
                     candidates.push(ranked);
+                    if visible_limit.is_some_and(|limit| candidates.len() >= limit) {
+                        return Some((candidates, has_full_exact));
+                    }
                 }
             }
         }
@@ -3145,15 +3466,38 @@ impl StaticTableTranslator {
         limit: Option<usize>,
     ) -> Option<PrefixFallbackBatch> {
         let graph = self.upstream_script_surface_segmentation(input)?;
-        let (direct, _) = self.upstream_script_direct_families(input, &graph, filter_by_charset)?;
+        let visible_limit = limit.map(|limit| limit.saturating_add(1));
+        // Each direct family counts distinct eligible rows before applying its
+        // K+1 cap. The first K+1 unique rows of the concatenated family union
+        // must therefore occur within one of those retained family prefixes.
+        let (direct, _) =
+            self.upstream_script_direct_families(input, &graph, filter_by_charset, visible_limit)?;
         let spans = Self::upstream_script_model_spans(&graph);
-        let model_candidates = self
-            .upstream_sentence_model
-            .as_ref()
-            .map(|model| {
-                model.ranked_script_phrase_candidates_for_weighted_code_spans(input, &spans)
+        let model_candidates = if let Some(visible) = visible_limit {
+            let eligible = |text: &str, end: usize| {
+                self.upstream_script_text_at_end_allowed(
+                    text,
+                    end,
+                    input.len(),
+                    &graph,
+                    filter_by_charset,
+                )
+            };
+            self.upstream_sentence_model().map_or_else(Vec::new, |model| {
+                model.ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered(
+                    input,
+                    &spans,
+                    visible,
+                    &eligible,
+                )
             })
-            .unwrap_or_default();
+        } else {
+            self.upstream_sentence_model()
+                .map(|model| {
+                    model.ranked_script_phrase_candidates_for_weighted_code_spans(input, &spans)
+                })
+                .unwrap_or_default()
+        };
         let mut candidate_indices = HashMap::<String, usize>::new();
         let mut candidates = Vec::<RankedScriptPhraseCandidate>::new();
         for ranked in model_candidates {
@@ -3209,21 +3553,30 @@ impl StaticTableTranslator {
             )
         });
         if !has_full_phrase {
+            // No score-safe prefix certificate exists for an unseen table-trie
+            // path. Record the exact cold fallback explicitly instead of
+            // presenting it as bounded work; the retained Candidate window is
+            // still capped below and warm requests use the page cache.
+            crate::m37_record_full_list_fallback();
             let model_limit = limit.map(|limit| limit.saturating_add(1)).unwrap_or(100);
-            let sentence = self.upstream_sentence_model.as_ref().and_then(|model| {
-                model
+            let sentence = self.upstream_sentence_model().and_then(|model| {
+                // Do not cap the table-trie walk by discovery count. A late
+                // path can own a higher-weight sentence than every earlier BFS
+                // state, so such a budget cannot preserve the complete prefix.
+                // This full fallback is reached only when no direct full phrase
+                // exists; ordinary bounded typing stays on the direct K+1 path.
+                let candidates = model
                     .candidates_for_weighted_surface_code_spans_with_limit_excluding(
                         input,
                         &spans,
                         model_limit,
                         &self.dictionary_exclude,
-                    )
-                    .into_iter()
-                    .find(|candidate| {
-                        candidate.source == CandidateSource::Sentence
-                            && self.is_dictionary_text_allowed(&candidate.text)
-                            && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
-                    })
+                    );
+                candidates.into_iter().find(|candidate| {
+                    candidate.source == CandidateSource::Sentence
+                        && self.is_dictionary_text_allowed(&candidate.text)
+                        && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
+                })
             });
             if let Some(sentence) = sentence {
                 candidates.insert(
@@ -3250,19 +3603,24 @@ impl StaticTableTranslator {
                 candidate.preedit = Some(preedit.clone());
             }
         }
-        self.assign_ordered_candidate_qualities(&mut candidates);
-        let mut truncated = false;
+        self.assign_upstream_script_candidate_qualities(&mut candidates);
+        // A bounded upstream-script surface is intentionally a page window.
+        // Even when that window happens to contain every currently visible row,
+        // forward navigation must request the complete exact graph rather than
+        // treating the bounded work budget as authoritative.
+        let mut truncated = limit.is_some();
         if let Some(limit) = limit {
             if candidates.len() > limit {
                 candidates.truncate(limit);
                 truncated = true;
             }
         }
-        Some(PrefixFallbackBatch {
+        let batch = PrefixFallbackBatch {
             candidates,
             truncated,
             owns_reachability: true,
-        })
+        };
+        Some(batch)
     }
 
     fn upstream_script_partial_candidate_allowed(
@@ -3270,11 +3628,6 @@ impl StaticTableTranslator {
         candidate: &Candidate,
         graph: &UpstreamScriptSurfaceGraph,
     ) -> bool {
-        // The script policy owns sentence/phrase ordering, but it must not
-        // silently re-enable M59's independently configurable leading-single
-        // reachability. Preserve full-input rows, sentences, and multi-character
-        // partial phrases. A separately enabled broad prefix_fallback continues
-        // to own its historical reachability surface.
         if self.leading_syllable_reachability || self.prefix_fallback {
             return true;
         }
@@ -3283,6 +3636,34 @@ impl StaticTableTranslator {
         };
         let consumes_one_leading_syllable = graph.is_one_syllable_prefix_end(consumed);
         !consumes_one_leading_syllable || candidate.text.chars().count() != 1
+    }
+
+    fn upstream_script_text_at_end_allowed(
+        &self,
+        text: &str,
+        end: usize,
+        input_len: usize,
+        graph: &UpstreamScriptSurfaceGraph,
+        filter_by_charset: bool,
+    ) -> bool {
+        if !self.is_dictionary_text_allowed(text)
+            || (filter_by_charset && contains_extended_cjk(text))
+        {
+            return false;
+        }
+        // The script policy owns sentence/phrase ordering, but it must not
+        // silently re-enable M59's independently configurable leading-single
+        // reachability. Preserve full-input rows, sentences, and multi-character
+        // partial phrases. A separately enabled broad prefix_fallback continues
+        // to own its historical reachability surface.
+        if self.leading_syllable_reachability || self.prefix_fallback {
+            return true;
+        }
+        if end >= input_len {
+            return true;
+        }
+        let consumes_one_leading_syllable = graph.is_one_syllable_prefix_end(end);
+        !consumes_one_leading_syllable || text.chars().count() != 1
     }
 
     fn abbreviation_sentence_candidates(
@@ -4193,9 +4574,10 @@ impl StaticTableTranslator {
             );
             if !leading_singles.is_empty() {
                 candidates.splice(insert_at..insert_at, leading_singles);
-                self.assign_ordered_candidate_qualities(&mut candidates);
+                self.assign_mode_stable_ordered_candidate_qualities(&mut candidates);
             }
         }
+        self.assign_mode_stable_ordered_candidate_qualities(&mut candidates);
         let merged_window_overflow = candidates.len() > limit;
         candidates.truncate(limit);
         let full_count =
@@ -4217,6 +4599,79 @@ impl StaticTableTranslator {
         request: BoundedLookupRequest<'_>,
         mut scratch: Option<&mut TranslatorScratch>,
     ) -> TranslationResult {
+        if let Some(result) = self.cached_bounded_upstream_script_result(
+            request.input,
+            request.filter_by_charset,
+            request.limit,
+            request.include_full_count,
+        ) {
+            if let Some(scratch) = scratch.as_deref_mut() {
+                scratch.clear();
+            }
+            return result;
+        }
+        let result = self.bounded_candidates_for_lookup_codes_uncached(request, scratch);
+        self.cache_bounded_upstream_script_result(
+            request.input,
+            request.filter_by_charset,
+            request.limit,
+            request.include_full_count,
+            result.clone(),
+        );
+        result
+    }
+
+    fn cached_bounded_upstream_script_result(
+        &self,
+        input: &str,
+        filter_by_charset: bool,
+        limit: usize,
+        include_full_count: bool,
+    ) -> Option<TranslationResult> {
+        if !self.caches_bounded_translation_results() {
+            return None;
+        }
+        self.bounded_upstream_script_cache
+            .lock()
+            .expect("bounded upstream-script cache should not be poisoned")
+            .get(input, filter_by_charset, limit, include_full_count)
+    }
+
+    fn cache_bounded_upstream_script_result(
+        &self,
+        input: &str,
+        filter_by_charset: bool,
+        limit: usize,
+        include_full_count: bool,
+        result: TranslationResult,
+    ) {
+        if !self.caches_bounded_translation_results() {
+            return;
+        }
+        self.bounded_upstream_script_cache
+            .lock()
+            .expect("bounded upstream-script cache should not be poisoned")
+            .insert(input, filter_by_charset, limit, include_full_count, result);
+    }
+
+    fn caches_bounded_translation_results(&self) -> bool {
+        (self.sentence_policy == SentencePolicy::UpstreamScript && self.enable_sentence)
+            || (self.sentence_policy == SentencePolicy::LegacyFallback && self.prefix_fallback)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn cache_bounded_result_probe(&self, result: TranslationResult) {
+        self.bounded_upstream_script_cache
+            .lock()
+            .expect("bounded upstream-script cache should not be poisoned")
+            .insert("probe", false, 2, false, result);
+    }
+
+    fn bounded_candidates_for_lookup_codes_uncached(
+        &self,
+        request: BoundedLookupRequest<'_>,
+        mut scratch: Option<&mut TranslatorScratch>,
+    ) -> TranslationResult {
         let BoundedLookupRequest {
             input,
             lookup_code,
@@ -4226,16 +4681,6 @@ impl StaticTableTranslator {
             limit,
             include_full_count,
         } = request;
-        if let Some(batch) = self.upstream_script_translation(input, filter_by_charset, Some(limit))
-        {
-            let full_count = if batch.truncated {
-                batch.candidates.len().saturating_add(1)
-            } else {
-                batch.candidates.len()
-            };
-            crate::m37_record_bounded_iterator(limit, batch.candidates.len(), full_count);
-            return TranslationResult::bounded(batch.candidates, full_count, include_full_count);
-        }
         // NOTE: `leading_syllable_reachability` deliberately does NOT widen
         // `ordered_mode` here — that would disable luna's bounded early-stop
         // (`can_stop_after_window`) and cost typing latency. Ordering for the
@@ -4283,7 +4728,7 @@ impl StaticTableTranslator {
             {
                 exact_candidates += 1;
                 full_count += 1;
-                if self.upstream_sentence_model.is_some() {
+                if self.has_upstream_sentence_model() {
                     has_reliable_exact_system_phrase |=
                         self.is_reliable_exact_system_phrase(lookup_spec, &candidate);
                 }
@@ -4444,7 +4889,7 @@ impl StaticTableTranslator {
             && self.enable_sentence
             && selected.is_empty()
         {
-            if let Some(model) = &self.upstream_sentence_model {
+            if let Some(model) = self.upstream_sentence_model() {
                 if let Some(result) = self.legacy_bounded_upstream_sentence_fallback(
                     LegacyBoundedSentenceFallbackRequest {
                         model,
@@ -4461,7 +4906,7 @@ impl StaticTableTranslator {
                 }
             }
         }
-        if selected.is_empty() && self.enable_sentence && self.upstream_sentence_model.is_none() {
+        if selected.is_empty() && self.enable_sentence && !self.has_upstream_sentence_model() {
             if self.prefix_fallback && !has_correction_lookup {
                 crate::m37_record_full_list_fallback();
                 if !self.bounds_compact_fallback_expansion() {
@@ -4517,7 +4962,7 @@ impl StaticTableTranslator {
         if selected.is_empty()
             && self.prefix_fallback
             && !has_correction_lookup
-            && self.upstream_sentence_model.is_none()
+            && !self.has_upstream_sentence_model()
         {
             let mut batch = self.prefix_fallback_candidates(
                 input,
@@ -4535,7 +4980,7 @@ impl StaticTableTranslator {
                 // Engine's global quality merge preserves the fallback's
                 // longest-consumed-span order instead of re-sorting the rows
                 // by source dictionary weight.
-                self.assign_ordered_candidate_qualities(&mut batch.candidates);
+                self.assign_mode_stable_ordered_candidate_qualities(&mut batch.candidates);
                 batch.candidates.truncate(limit);
                 let result_full_count = if batch.truncated || full_count >= limit {
                     batch.candidates.len().saturating_add(1)
@@ -4703,7 +5148,7 @@ impl StaticTableTranslator {
             }
         }
         if ordered_mode {
-            self.assign_ordered_candidate_qualities(&mut candidates);
+            self.assign_mode_stable_ordered_candidate_qualities(&mut candidates);
         }
         // M59 finding #1 (corrective): leading-syllable reachability must make
         // the leading-single family reachable on THIS (non-empty-`selected`)
@@ -4742,7 +5187,7 @@ impl StaticTableTranslator {
             if !leading_singles.is_empty() {
                 let overflows_page = candidates.len().saturating_add(leading_singles.len()) > limit;
                 candidates.splice(insert_at..insert_at, leading_singles);
-                self.assign_ordered_candidate_qualities(&mut candidates);
+                self.assign_mode_stable_ordered_candidate_qualities(&mut candidates);
                 if candidates.len() > limit {
                     candidates.truncate(limit);
                 }
@@ -4757,7 +5202,7 @@ impl StaticTableTranslator {
             && self.enable_sentence
             && !has_reliable_exact_system_phrase
         {
-            if let Some(model) = &self.upstream_sentence_model {
+            if let Some(model) = self.upstream_sentence_model() {
                 let sentence_limit = limit.min(BOUNDED_SENTENCE_MODEL_PAGE_LIMIT);
                 let model_start = crate::m37_metrics_enabled().then(Instant::now);
                 let mut upstream_candidates = if let Some(scratch) = scratch.as_mut() {
@@ -5290,6 +5735,12 @@ impl StaticTableTranslator {
             {
                 views_visited += 1;
                 exact_candidates += 1;
+                if fetch_rows
+                    .iter()
+                    .any(|row| row.candidate.text == candidate.text())
+                {
+                    continue;
+                }
                 let spelling_abbreviation =
                     self.is_spelling_abbreviation_view(prefix_spec.input_prefix, &candidate);
                 let row = CachedPrefixFallbackView {
@@ -5368,6 +5819,7 @@ impl StaticTableTranslator {
         struct PendingPrefixCandidate {
             fetch_code: String,
             candidate_index: usize,
+            text: String,
             consumed_lookup_len: usize,
             consumed_input_len: usize,
             recompose_on_default: bool,
@@ -5414,6 +5866,9 @@ impl StaticTableTranslator {
                 }
                 views_visited += 1;
                 exact_candidates += 1;
+                if fetch_rows.iter().any(|row| row.text == candidate.text()) {
+                    continue;
+                }
                 let consumed_input_len = if full_span_texts.contains(candidate.text()) {
                     input.len()
                 } else {
@@ -5431,6 +5886,7 @@ impl StaticTableTranslator {
                 let row = PendingPrefixCandidate {
                     fetch_code: prefix_spec.fetch_code.clone(),
                     candidate_index,
+                    text: candidate.text().to_owned(),
                     consumed_lookup_len: prefix_spec.consumed_lookup_len,
                     consumed_input_len,
                     recompose_on_default,
@@ -5632,15 +6088,8 @@ impl StaticTableTranslator {
             limit,
             fallback_start,
         } = request;
-        let pending_cap = limit
-            .saturating_mul(PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER)
-            .max(limit);
-        let per_fetch_cap =
-            if input.chars().count() <= PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS {
-                PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE
-            } else {
-                PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE
-            };
+        let per_fetch_cap = limit;
+        let pending_cap = limit.saturating_mul(prefixes.len().max(1)).max(limit);
         let key = PrefixFallbackWindowCacheKey {
             prefixes: prefixes
                 .iter()
@@ -5674,15 +6123,32 @@ impl StaticTableTranslator {
                 key,
             );
             views_visited = built_views;
-            if estimate_prefix_fallback_window_cache_key_bytes(&built.key)
-                > PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES
+            if built.rows.len() > PREFIX_FALLBACK_CACHE_MAX_ROWS
+                || estimate_prefix_fallback_window_cache_key_bytes(&built.key)
+                    > PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES
                 || estimate_prefix_fallback_window_cache_bytes(&built)
                     > PREFIX_FALLBACK_CACHE_MAX_ENTRY_BYTES
             {
-                // Keep any prior admitted entry intact. This oversized window
-                // must use the borrowed bounded collector and must never become
-                // retained translator state.
-                return None;
+                // Keep any prior admitted entry intact. The already-built
+                // bounded rows remain request-local; materialize them once
+                // instead of discarding the work and rescanning through the
+                // streaming fallback.
+                let batch = self.materialize_bounded_prefix_fallback_entry(
+                    &built,
+                    input,
+                    lookup_code,
+                    existing_candidates,
+                    admitted_span_candidates,
+                    limit,
+                );
+                if let Some(start) = fallback_start {
+                    crate::m37_record_prefix_fallback(
+                        start.elapsed(),
+                        views_visited,
+                        batch.candidates.len(),
+                    );
+                }
+                return Some(batch);
             }
             let mut cache = self
                 .prefix_fallback_window_cache
@@ -5770,9 +6236,6 @@ impl StaticTableTranslator {
             None
         };
         if let Some(limit) = bounded_limit {
-            let pending_cap = limit
-                .saturating_mul(PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER)
-                .max(limit);
             let mut cache_prefixes = Vec::new();
             let cache_probe_complete = if self.direct_prism_prefix_family_exceeds_cache_limit(
                 lookup_code,
@@ -5803,7 +6266,6 @@ impl StaticTableTranslator {
                 };
             }
             let cache_admitted = cache_probe_complete
-                && pending_cap <= PREFIX_FALLBACK_CACHE_MAX_ROWS
                 && prefix_fallback_cache_key_bytes(&cache_prefixes)
                     <= PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES;
             if cache_admitted {
@@ -5822,12 +6284,6 @@ impl StaticTableTranslator {
                     return batch;
                 }
             }
-            let per_fetch_cap =
-                if input.chars().count() <= PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS {
-                    PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE
-                } else {
-                    PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE
-                };
             let (batch, views_visited, saw_prefix) = self
                 .bounded_prefix_fallback_candidates_streaming(
                     BoundedPrefixFallbackStreamingRequest {
@@ -5837,8 +6293,8 @@ impl StaticTableTranslator {
                         existing_candidates,
                         admitted_span_candidates,
                         limit,
-                        pending_cap,
-                        per_fetch_cap,
+                        pending_cap: usize::MAX,
+                        per_fetch_cap: limit,
                     },
                 );
             if !saw_prefix {
@@ -6582,6 +7038,31 @@ impl StaticTableTranslator {
         }
     }
 
+    fn assign_mode_stable_ordered_candidate_qualities(&self, candidates: &mut [Candidate]) {
+        if self.sentence_policy == SentencePolicy::LegacyFallback && self.prefix_fallback {
+            // A bounded legacy fallback must not materialize its complete tail
+            // merely to learn a count-dependent denominator. Positional ranks
+            // in this open unit band depend only on the visible index, so the
+            // bounded and complete shared prefix is field-identical.
+            for (index, candidate) in candidates.iter_mut().enumerate() {
+                candidate.quality = self.initial_quality + 1.0 / (index as f32 + 2.0);
+            }
+        } else {
+            self.assign_ordered_candidate_qualities(candidates);
+        }
+    }
+
+    fn assign_upstream_script_candidate_qualities(&self, candidates: &mut [Candidate]) {
+        // Page-bounded and complete upstream ScriptTranslation lists must use
+        // identical qualities for their shared prefix so downstream producer
+        // merges cannot distinguish the typing window from the on-demand full
+        // list. A reciprocal positional rank stays inside the translator's
+        // open unit band without depending on how many tail rows were fetched.
+        for (index, candidate) in candidates.iter_mut().enumerate() {
+            candidate.quality = self.initial_quality + 1.0 / (index as f32 + 2.0);
+        }
+    }
+
     fn translated_candidates(&self, input: &str, filter_by_charset: bool) -> Vec<Candidate> {
         self.translated_candidates_for_segment(input, filter_by_charset, None)
     }
@@ -6650,7 +7131,7 @@ impl StaticTableTranslator {
                 || (self.sentence_policy == SentencePolicy::LegacyFallback
                     && candidates.is_empty()))
         {
-            if let Some(model) = &self.upstream_sentence_model {
+            if let Some(model) = self.upstream_sentence_model() {
                 let model_start = crate::m37_metrics_enabled().then(Instant::now);
                 let mut upstream_candidates = model
                     .candidates_for_input(input)
@@ -6815,7 +7296,7 @@ impl StaticTableTranslator {
             || self.prediction_candidate_limit.is_some()
             || leading_singles_inserted
         {
-            self.assign_ordered_candidate_qualities(&mut candidates);
+            self.assign_mode_stable_ordered_candidate_qualities(&mut candidates);
             // M59 finding #10: the positional overwrite above ranks by list index,
             // which clobbers the `sentence_over_completion` priority floor — the
             // floored sentence sits at the tail (pushed after the completions), so
@@ -6879,18 +7360,62 @@ impl StaticTableTranslator {
             return TranslationResult::complete(Vec::new());
         }
 
+        if let Some(result) = self.cached_bounded_upstream_script_result(
+            input,
+            filter_by_charset,
+            limit,
+            request.include_debug_full_count,
+        ) {
+            return result;
+        }
+
+        if let Some(batch) = self.upstream_script_translation(input, filter_by_charset, Some(limit))
+        {
+            let full_count = batch.candidates.len().saturating_add(1);
+            crate::m37_record_bounded_iterator(limit, batch.candidates.len(), full_count);
+            let result = TranslationResult::bounded(
+                batch.candidates,
+                full_count,
+                request.include_debug_full_count,
+            );
+            self.cache_bounded_upstream_script_result(
+                input,
+                filter_by_charset,
+                limit,
+                request.include_debug_full_count,
+                result.clone(),
+            );
+            return result;
+        }
+
         let Some(lookup_code) = self.lookup_code(input) else {
-            return TranslationResult::complete(Vec::new());
+            let result = TranslationResult::complete(Vec::new());
+            self.cache_bounded_upstream_script_result(
+                input,
+                filter_by_charset,
+                limit,
+                request.include_debug_full_count,
+                result.clone(),
+            );
+            return result;
         };
         let expanded_lookup_codes = self.expanded_lookup_specs(lookup_code);
         if !self.bounded_request_supported(&expanded_lookup_codes) {
             crate::m37_record_full_list_fallback();
             if !self.bounds_compact_fallback_expansion() {
-                return TranslationResult::complete(self.translated_candidates_for_segment(
+                let result = TranslationResult::complete(self.translated_candidates_for_segment(
                     input,
                     filter_by_charset,
                     segment_tags,
                 ));
+                self.cache_bounded_upstream_script_result(
+                    input,
+                    filter_by_charset,
+                    limit,
+                    request.include_debug_full_count,
+                    result.clone(),
+                );
+                return result;
             }
             let batch = self.translated_candidates_for_segment_with_prefix_fallback_limit(
                 input,
@@ -6903,11 +7428,19 @@ impl StaticTableTranslator {
             } else {
                 batch.candidates.len()
             };
-            return TranslationResult::bounded(
+            let result = TranslationResult::bounded(
                 batch.candidates,
                 full_count,
                 request.include_debug_full_count,
             );
+            self.cache_bounded_upstream_script_result(
+                input,
+                filter_by_charset,
+                limit,
+                request.include_debug_full_count,
+                result.clone(),
+            );
+            return result;
         }
         self.bounded_candidates_for_lookup_codes(
             BoundedLookupRequest {
@@ -6948,20 +7481,66 @@ impl StaticTableTranslator {
             return TranslationResult::complete(Vec::new());
         }
 
+        if let Some(result) = self.cached_bounded_upstream_script_result(
+            input,
+            filter_by_charset,
+            limit,
+            request.include_debug_full_count,
+        ) {
+            scratch.clear();
+            return result;
+        }
+
+        if let Some(batch) = self.upstream_script_translation(input, filter_by_charset, Some(limit))
+        {
+            scratch.clear();
+            let full_count = batch.candidates.len().saturating_add(1);
+            crate::m37_record_bounded_iterator(limit, batch.candidates.len(), full_count);
+            let result = TranslationResult::bounded(
+                batch.candidates,
+                full_count,
+                request.include_debug_full_count,
+            );
+            self.cache_bounded_upstream_script_result(
+                input,
+                filter_by_charset,
+                limit,
+                request.include_debug_full_count,
+                result.clone(),
+            );
+            return result;
+        }
+
         let Some(lookup_code) = self.lookup_code(input) else {
             scratch.clear();
-            return TranslationResult::complete(Vec::new());
+            let result = TranslationResult::complete(Vec::new());
+            self.cache_bounded_upstream_script_result(
+                input,
+                filter_by_charset,
+                limit,
+                request.include_debug_full_count,
+                result.clone(),
+            );
+            return result;
         };
         let expanded_lookup_codes = self.expanded_lookup_specs(lookup_code);
         if !self.bounded_request_supported(&expanded_lookup_codes) {
             scratch.clear();
             crate::m37_record_full_list_fallback();
             if !self.bounds_compact_fallback_expansion() {
-                return TranslationResult::complete(self.translated_candidates_for_segment(
+                let result = TranslationResult::complete(self.translated_candidates_for_segment(
                     input,
                     filter_by_charset,
                     segment_tags,
                 ));
+                self.cache_bounded_upstream_script_result(
+                    input,
+                    filter_by_charset,
+                    limit,
+                    request.include_debug_full_count,
+                    result.clone(),
+                );
+                return result;
             }
             let batch = self.translated_candidates_for_segment_with_prefix_fallback_limit(
                 input,
@@ -6974,11 +7553,19 @@ impl StaticTableTranslator {
             } else {
                 batch.candidates.len()
             };
-            return TranslationResult::bounded(
+            let result = TranslationResult::bounded(
                 batch.candidates,
                 full_count,
                 request.include_debug_full_count,
             );
+            self.cache_bounded_upstream_script_result(
+                input,
+                filter_by_charset,
+                limit,
+                request.include_debug_full_count,
+                result.clone(),
+            );
+            return result;
         }
         self.bounded_candidates_for_lookup_codes(
             BoundedLookupRequest {
@@ -7936,13 +8523,13 @@ impl Translator for StaticTableTranslator {
     }
 
     fn uses_translate_scratch(&self) -> bool {
-        self.upstream_sentence_model.is_some()
+        self.has_upstream_sentence_model()
     }
 
     fn active_upstream_script_translation(&self, context: &Context) -> bool {
         self.sentence_policy == SentencePolicy::UpstreamScript
             && self.enable_sentence
-            && self.upstream_sentence_model.is_some()
+            && self.has_upstream_sentence_model()
             && self.initial_quality == 0.0
             && self.accepts_segment_tags(&context.segment_tags)
     }
@@ -8046,6 +8633,18 @@ impl Translator for StaticTableTranslator {
         self.prediction_weight_threshold
     }
 
+    fn clear_ephemeral_runtime_caches(&self) {
+        self.bounded_upstream_script_cache
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .entries
+            .clear();
+        *self
+            .prefix_fallback_window_cache
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
+    }
+
     fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
         let mut rows = self.storage.memory_owner_rows();
         rows.push(self.normal_codes.memory_owner_row(&self.storage));
@@ -8106,6 +8705,19 @@ impl Translator for StaticTableTranslator {
             "OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",
             "algebra surface spelling to canonical fetch edges, allocated lazily on first indexed reachability lookup; no-algebra paths remain direct",
         ));
+        let bounded_script_cache = self
+            .bounded_upstream_script_cache
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        rows.push(MemoryOwnerRow::new(
+            "translator.bounded_upstream_script_cache",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            bounded_script_cache.estimated_retained_bytes(),
+            bounded_script_cache.entries.len(),
+            "Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>",
+            "ephemeral LRU of at most 64 bounded page prefixes, limited to 64 visible rows, 128 KiB per entry, and 512 KiB total payload; cleared at runtime finalize while immutable translator assets stay warm",
+        ));
+        drop(bounded_script_cache);
         let cache = self
             .prefix_fallback_window_cache
             .lock()
@@ -8128,9 +8740,74 @@ impl Translator for StaticTableTranslator {
         if let Some(prism_payload) = &self.prism_payload {
             rows.extend(prism_payload.memory_owner_rows());
         }
-        if let Some(model) = &self.upstream_sentence_model {
+        let (lazy_source_bytes, lazy_source_items) =
+            self.source_entries.as_ref().map_or((0, 0), |entries| {
+                (estimate_source_entry_build_bytes(entries), entries.len())
+            });
+        rows.push(MemoryOwnerRow::new(
+            "translator.upstream_sentence_model_build_source",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            lazy_source_bytes,
+            lazy_source_items,
+            "Option<Vec<(String, Candidate)>>",
+            if self.has_upstream_sentence_model() {
+                "source-order rows retained as the lazy sentence-model build recipe; construction occurs on first translation/warmup and resets after relevant builder reconfiguration"
+            } else {
+                "source rows are not configured as a sentence-model build recipe"
+            },
+        ));
+        rows.push(MemoryOwnerRow::new(
+            "translator.upstream_sentence_model_preset_vocabulary_recipe",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            estimate_preset_vocabulary_build_bytes(&self.preset_vocabulary),
+            self.preset_vocabulary.len(),
+            "Vec<PresetVocabularyEntry>",
+            "translator-owned normal preset-vocabulary recipe; the initialized model owns its separately packed runtime index",
+        ));
+        rows.push(MemoryOwnerRow::new(
+            "translator.upstream_sentence_model_abbreviation_vocabulary_recipe",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            estimate_preset_vocabulary_build_bytes(&self.abbreviation_preset_vocabulary),
+            self.abbreviation_preset_vocabulary.len(),
+            "Vec<PresetVocabularyEntry>",
+            "translator-owned abbreviation-vocabulary recipe; the initialized model owns its separately packed runtime index",
+        ));
+        let model_initialized = self.upstream_sentence_model.get().is_some();
+        for mut grammar in self.upstream_sentence_grammar.memory_owner_rows() {
+            grammar.owner = format!(
+                "translator.upstream_sentence_model_grammar_recipe.{}",
+                grammar.owner
+            );
+            grammar.notes = format!(
+                "translator-owned grammar recipe; model initialization clones its owned runtime trie: {}",
+                grammar.notes
+            );
+            rows.push(grammar);
+        }
+        if self.has_upstream_sentence_model() && !model_initialized {
+            if let Some((source, _)) = &self.upstream_sentence_poet_source {
+                rows.push(MemoryOwnerRow::new(
+                    "translator.upstream_sentence_model_poet_source_recipe",
+                    if source.mapping_mode() == "mmap" {
+                        MemoryOwnerClass::MmapFileBacked
+                    } else {
+                        MemoryOwnerClass::HeapOwnedGuarded
+                    },
+                    source.bytes().len(),
+                    1,
+                    source.storage_label(),
+                    "lazy Poet byte source reported only before model initialization; afterward poet storage reports the same shared source to avoid double counting",
+                ));
+            }
+        }
+        if let Some(model) = self.upstream_sentence_model.get() {
             rows.extend(model.memory_owner_rows());
         } else {
+            let lazy_note = if self.has_upstream_sentence_model() {
+                "configured but not initialized; first translation/warmup owns model construction"
+            } else {
+                "upstream sentence model not configured for this translator"
+            };
             rows.extend([
                 MemoryOwnerRow::new(
                     "poet.entries_by_code",
@@ -8138,7 +8815,7 @@ impl Translator for StaticTableTranslator {
                     0,
                     0,
                     "none",
-                    "upstream sentence model not retained for this translator",
+                    lazy_note,
                 ),
                 MemoryOwnerRow::new(
                     "poet.lookup_index",
@@ -8146,7 +8823,7 @@ impl Translator for StaticTableTranslator {
                     0,
                     0,
                     "none",
-                    "upstream sentence model not retained for this translator",
+                    lazy_note,
                 ),
                 MemoryOwnerRow::new(
                     "poet.abbreviation_vocabulary",
@@ -8154,7 +8831,7 @@ impl Translator for StaticTableTranslator {
                     0,
                     0,
                     "none",
-                    "upstream sentence model not retained for this translator",
+                    lazy_note,
                 ),
             ]);
         }

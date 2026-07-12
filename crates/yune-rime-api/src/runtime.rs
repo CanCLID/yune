@@ -82,6 +82,13 @@ impl RuntimePaths {
         }
     }
 
+    fn dictionary_data_roots_match(&self, other: &Self) -> bool {
+        self.shared_data_dir.as_bytes() == other.shared_data_dir.as_bytes()
+            && self.user_data_dir.as_bytes() == other.user_data_dir.as_bytes()
+            && self.prebuilt_data_dir.as_bytes() == other.prebuilt_data_dir.as_bytes()
+            && self.staging_dir.as_bytes() == other.staging_dir.as_bytes()
+    }
+
     pub(crate) unsafe fn from_traits(traits: *const RimeTraits) -> Option<Self> {
         if traits.is_null() {
             return None;
@@ -196,6 +203,20 @@ pub unsafe extern "C" fn RimeSetup(traits: *const RimeTraits) {
     crate::ffi_guard::guard_void(|| {
         let _trace = crate::startup_trace::span("runtime_setup");
         if let Some(paths) = unsafe { RuntimePaths::from_traits(traits) } {
+            let roots_changed = {
+                let current = runtime_paths()
+                    .lock()
+                    .expect("runtime paths should not be poisoned");
+                !current.dictionary_data_roots_match(&paths)
+            };
+            if roots_changed {
+                // The public lifecycle contract serializes Setup with session
+                // use. Within that sequential boundary, end sessions before
+                // switching roots so neither the old mmap tree nor its
+                // lookup-filter payload remains pinned.
+                crate::session::clear_session_registry();
+                crate::schema_install::clear_dictionary_translator_cache();
+            }
             *runtime_paths()
                 .lock()
                 .expect("runtime paths should not be poisoned") = paths;

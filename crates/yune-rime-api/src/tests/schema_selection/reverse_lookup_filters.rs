@@ -168,21 +168,29 @@ word\tnei
 ",
     )
     .expect("target dictionary should be written");
-    fs::write(
-        shared.join("typeduck_lookup.dict.yaml"),
-        "\
+    let lookup_source = "\
 ---
 name: typeduck_lookup
 version: '0.1'
 sort: original
-columns: [text, code, weight, stem, source, jyutping, english]
 ...
 
-word\tnei\t1\tn\tprimary\tnei\tyou
-word\tlei\t2\tl\tvariant\tlei\tyou alt
-",
-    )
+nei,1,n,primary,nei,you\tword
+lei,2,l,variant,lei,you alt\tword
+";
+    fs::write(shared.join("typeduck_lookup.dict.yaml"), lookup_source)
     .expect("dictionary lookup rows should be written");
+    let lookup_dictionary = yune_core::TableDictionary::parse_typeduck_lookup_dict_yaml(
+        lookup_source,
+    )
+    .expect("lookup dictionary should compile");
+    let lookup_checksum =
+        yune_core::rime_dict_source_checksum(0, [lookup_source.as_bytes()], None);
+    fs::write(
+        shared.join("typeduck_lookup.table.bin"),
+        yune_core::build_table_bin(&lookup_dictionary, lookup_checksum),
+    )
+    .expect("compiled lookup table should be written");
 
     let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
     let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
@@ -194,11 +202,39 @@ word\tlei\t2\tl\tvariant\tlei\tyou alt
 
     let session_id = RimeCreateSession();
     let schema_id = CString::new("typeduck").expect("schema id should be valid");
+    begin_startup_trace(None);
     // SAFETY: schema id is a valid NUL-terminated string.
     assert_eq!(
         unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
         TRUE
     );
+    let first_trace = finish_startup_trace();
+    assert!(
+        first_trace
+            .iter()
+            .any(|event| event.name == "dictionary_lookup_records_parse"),
+        "first selection should parse the immutable byte-backed lookup index"
+    );
+    let second_session_id = RimeCreateSession();
+    begin_startup_trace(None);
+    assert_eq!(
+        unsafe { RimeSelectSchema(second_session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    let second_trace = finish_startup_trace();
+    assert!(
+        second_trace
+            .iter()
+            .any(|event| event.name == "dictionary_lookup_records_cache_hit"),
+        "unchanged selection should clone cached Arc-backed lookup records"
+    );
+    assert!(
+        !second_trace
+            .iter()
+            .any(|event| event.name == "dictionary_lookup_records_parse"),
+        "unchanged selection must not reparse every lookup record"
+    );
+    assert_eq!(RimeDestroySession(second_session_id), TRUE);
     for ch in "nei".chars() {
         assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
     }

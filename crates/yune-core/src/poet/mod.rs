@@ -117,6 +117,13 @@ impl GrammarProvider {
             Self::Octagram(grammar) => Some(grammar),
         }
     }
+
+    pub(crate) fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
+        match self {
+            Self::Null(_) => Vec::new(),
+            Self::Octagram(grammar) => vec![grammar.memory_owner_row()],
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -190,6 +197,31 @@ pub(crate) struct WeightedSentenceCodeSpan {
 pub(crate) struct RankedScriptPhraseCandidate {
     pub candidate: Candidate,
     pub code_order: String,
+}
+
+#[derive(Clone, Copy)]
+struct CodeSpanGraphOptions<'a> {
+    abbreviation: bool,
+    bounded_for_sentence_scoring: bool,
+    excluded_texts: Option<&'a HashSet<String>>,
+    root_only: bool,
+    vocabulary_only: bool,
+    visible_limit: Option<usize>,
+    eligible_candidate: Option<&'a dyn Fn(&str, usize) -> bool>,
+}
+
+impl CodeSpanGraphOptions<'_> {
+    const fn complete(abbreviation: bool, bounded_for_sentence_scoring: bool) -> Self {
+        Self {
+            abbreviation,
+            bounded_for_sentence_scoring,
+            excluded_texts: None,
+            root_only: false,
+            vocabulary_only: false,
+            visible_limit: None,
+            eligible_candidate: None,
+        }
+    }
 }
 
 impl SentenceCodeSpan {
@@ -1281,6 +1313,22 @@ impl UpstreamSentenceScratch {
         self.exact_spans_by_start.clear();
     }
 
+    #[cfg(test)]
+    pub(crate) fn is_empty(&self) -> bool {
+        self.input.is_empty()
+            && self.max_candidates == 0
+            && self.states_by_end.is_empty()
+            && self.sentence_paths_by_end.is_empty()
+            && self.phrase_candidates.is_empty()
+            && self.prefix_states_by_start.is_empty()
+            && self.exact_spans_by_start.is_empty()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn seed_for_test(&mut self) {
+        self.input = "seed".to_owned();
+    }
+
     fn is_ready_for(&self, input: &str, max_candidates: usize) -> bool {
         !self.input.is_empty()
             && self.max_candidates == max_candidates
@@ -1779,9 +1827,7 @@ impl UpstreamSentenceModel {
     #[must_use]
     pub fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
         let mut rows = self.storage.memory_owner_rows(&self.lookup_index);
-        if let GrammarProvider::Octagram(grammar) = &self.grammar {
-            rows.push(grammar.memory_owner_row());
-        }
+        rows.extend(self.grammar.memory_owner_rows());
         rows
     }
 
@@ -1855,7 +1901,11 @@ impl UpstreamSentenceModel {
             .iter()
             .map(WeightedSentenceCodeSpan::from)
             .collect::<Vec<_>>();
-        let graph = self.word_graph_for_code_spans(input, &spans, true, true, None);
+        let graph = self.word_graph_for_code_spans(
+            input,
+            &spans,
+            CodeSpanGraphOptions::complete(true, true),
+        );
         self.candidates_for_abbreviation_graph_with_limit(input, &graph, max_candidates)
     }
 
@@ -1878,7 +1928,11 @@ impl UpstreamSentenceModel {
             .iter()
             .map(WeightedSentenceCodeSpan::from)
             .collect::<Vec<_>>();
-        let graph = self.word_graph_for_code_spans(input, &spans, false, true, None);
+        let graph = self.word_graph_for_code_spans(
+            input,
+            &spans,
+            CodeSpanGraphOptions::complete(false, true),
+        );
         self.candidates_for_graph_with_limit(input, &graph, max_candidates)
     }
 
@@ -1898,8 +1952,14 @@ impl UpstreamSentenceModel {
             .iter()
             .map(WeightedSentenceCodeSpan::from)
             .collect::<Vec<_>>();
-        let graph =
-            self.word_graph_for_code_spans(input, &spans, false, true, Some(excluded_texts));
+        let graph = self.word_graph_for_code_spans(
+            input,
+            &spans,
+            CodeSpanGraphOptions {
+                excluded_texts: Some(excluded_texts),
+                ..CodeSpanGraphOptions::complete(false, true)
+            },
+        );
         self.candidates_for_graph_with_limit(input, &graph, max_candidates)
     }
 
@@ -1914,7 +1974,14 @@ impl UpstreamSentenceModel {
             return Vec::new();
         }
 
-        let graph = self.word_graph_for_code_spans(input, spans, false, true, Some(excluded_texts));
+        let graph = self.word_graph_for_code_spans(
+            input,
+            spans,
+            CodeSpanGraphOptions {
+                excluded_texts: Some(excluded_texts),
+                ..CodeSpanGraphOptions::complete(false, true)
+            },
+        );
         self.candidates_for_graph_with_limit(input, &graph, max_candidates)
     }
 
@@ -1944,10 +2011,54 @@ impl UpstreamSentenceModel {
         input: &str,
         spans: &[WeightedSentenceCodeSpan],
     ) -> Vec<RankedScriptPhraseCandidate> {
+        self.ranked_script_phrase_candidates_for_weighted_code_spans_impl(
+            input, spans, None, false, None,
+        )
+    }
+
+    pub(crate) fn ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered(
+        &self,
+        input: &str,
+        spans: &[WeightedSentenceCodeSpan],
+        max_candidates: usize,
+        eligible_candidate: &dyn Fn(&str, usize) -> bool,
+    ) -> Vec<RankedScriptPhraseCandidate> {
+        self.ranked_script_phrase_candidates_for_weighted_code_spans_impl(
+            input,
+            spans,
+            Some(max_candidates.max(1)),
+            false,
+            Some(eligible_candidate),
+        )
+    }
+
+    fn ranked_script_phrase_candidates_for_weighted_code_spans_impl(
+        &self,
+        input: &str,
+        spans: &[WeightedSentenceCodeSpan],
+        visible_limit: Option<usize>,
+        vocabulary_only: bool,
+        eligible_candidate: Option<&dyn Fn(&str, usize) -> bool>,
+    ) -> Vec<RankedScriptPhraseCandidate> {
         if input.is_empty() || spans.is_empty() {
             return Vec::new();
         }
-        let graph = self.word_graph_for_code_spans(input, spans, false, false, None);
+        let graph = self.word_graph_for_code_spans(
+            input,
+            spans,
+            CodeSpanGraphOptions {
+                root_only: visible_limit.is_some(),
+                vocabulary_only,
+                // Source rows are scanned exactly, but every collector chunk
+                // retains only its first K+1 distinct eligible heads. The
+                // first K+1 unique rows of the union must occur inside that
+                // prefix of at least one chunk; later equal rows cannot precede
+                // an earlier equal head in the same stable chunk.
+                visible_limit,
+                eligible_candidate,
+                ..CodeSpanGraphOptions::complete(false, false)
+            },
+        );
         let Some(edges) = graph.get(&0) else {
             return Vec::new();
         };
@@ -2079,6 +2190,9 @@ impl UpstreamSentenceModel {
                 .unwrap_or(Ordering::Equal)
                 .then_with(|| left.code_order.cmp(&right.code_order))
         });
+        if let Some(limit) = visible_limit {
+            candidates.truncate(limit);
+        }
         candidates
     }
 
@@ -3334,16 +3448,25 @@ impl UpstreamSentenceModel {
         &self,
         input: &str,
         spans: &[WeightedSentenceCodeSpan],
-        abbreviation: bool,
-        bounded_for_sentence_scoring: bool,
-        excluded_texts: Option<&HashSet<String>>,
+        options: CodeSpanGraphOptions<'_>,
     ) -> WordGraph {
+        let CodeSpanGraphOptions {
+            abbreviation,
+            bounded_for_sentence_scoring,
+            excluded_texts,
+            root_only,
+            vocabulary_only,
+            visible_limit,
+            eligible_candidate,
+        } = options;
         let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
-        let entry_limit = if bounded_for_sentence_scoring {
-            self.word_graph_entry_limit()
-        } else {
-            usize::MAX
-        };
+        let entry_limit = visible_limit.unwrap_or_else(|| {
+            if bounded_for_sentence_scoring {
+                self.word_graph_entry_limit()
+            } else {
+                usize::MAX
+            }
+        });
         let mut graph = WordGraph::new();
         let boundaries = input
             .char_indices()
@@ -3398,6 +3521,9 @@ impl UpstreamSentenceModel {
         let mut vocabulary_chars = Vec::new();
         let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
         for (start_index, start) in boundaries.iter().copied().enumerate() {
+            if root_only && start_index > 0 {
+                break;
+            }
             if start >= input.len() {
                 continue;
             }
@@ -3408,75 +3534,91 @@ impl UpstreamSentenceModel {
             lookup_metrics.reachable_starts_visited += 1;
             let mut table_paths = VecDeque::<(usize, usize, String, usize, f64)>::new();
             for span in &spans_by_start[start_index] {
-                if spans_by_start
-                    .get(span.end_index)
-                    .is_some_and(|next| !next.is_empty())
-                {
-                    // Seed before the exact single-span lookup: a dictionary
-                    // phrase may have a live trie prefix with no standalone
-                    // word at that first syllable.
-                    table_paths.push_back((
-                        span.end,
-                        span.end_index,
-                        span.code.to_owned(),
-                        1,
-                        span.spelling_credibility,
-                    ));
+                if !vocabulary_only {
+                    if spans_by_start
+                        .get(span.end_index)
+                        .is_some_and(|next| !next.is_empty())
+                    {
+                        // Seed before the exact single-span lookup: a dictionary
+                        // phrase may have a live trie prefix with no standalone
+                        // word at that first syllable.
+                        table_paths.push_back((
+                            span.end,
+                            span.end_index,
+                            span.code.to_owned(),
+                            1,
+                            span.spelling_credibility,
+                        ));
+                    }
+                    lookup_metrics.phrase_index_walk_calls += 1;
+                    lookup_metrics.phrase_index_nodes_visited += 1;
+                    let Some(entries) = self.entries_for_code_range(span.code) else {
+                        lookup_metrics.exact_range_index_misses += 1;
+                        lookup_metrics.partition_point_fallback_calls += 1;
+                        continue;
+                    };
+                    lookup_metrics.exact_range_index_hits += 1;
+                    let (bounded_entries, scanned) = collect_distinct_word_graph_entries(
+                        entries
+                            .clone()
+                            .filter(|entry_index| {
+                                let text = self.storage.entry_text(*entry_index);
+                                !self.excluded_texts.contains(text)
+                                    && excluded_texts
+                                        .map_or(true, |excluded| !excluded.contains(text))
+                                    && eligible_candidate
+                                        .map_or(true, |eligible| eligible(text, span.end))
+                            })
+                            .map(|entry_index| {
+                                let stored_weight = self.storage.entry_weight(entry_index);
+                                let weight = match (&self.storage, abbreviation) {
+                                    (PoetModelStorage::Owned(storage), true) => {
+                                        storage.raw_weight(stored_weight)
+                                    }
+                                    (PoetModelStorage::Owned(storage), false) => {
+                                        storage.dictionary_weight(stored_weight)
+                                    }
+                                    (_, true) => f64::from(stored_weight),
+                                    (_, false) => {
+                                        upstream_dictionary_weight(f64::from(stored_weight))
+                                    }
+                                };
+                                (self.storage.entry_text(entry_index), weight)
+                            }),
+                        entry_limit,
+                    );
+                    table_entries_considered += scanned;
+                    let inserted_edge = !bounded_entries.is_empty();
+                    for mut entry in bounded_entries {
+                        entry.weight += span.spelling_credibility;
+                        graph
+                            .entry(start)
+                            .or_default()
+                            .entry(span.end)
+                            .or_default()
+                            .push(entry.with_code_order(span.code).with_traversal_depth(1));
+                        graph_edges += 1;
+                    }
+                    if inserted_edge {
+                        reachable[span.end_index] = true;
+                    }
                 }
-                lookup_metrics.phrase_index_walk_calls += 1;
-                lookup_metrics.phrase_index_nodes_visited += 1;
-                let Some(entries) = self.entries_for_code_range(span.code) else {
-                    lookup_metrics.exact_range_index_misses += 1;
-                    lookup_metrics.partition_point_fallback_calls += 1;
+                // Every preset-vocabulary row admitted by the model has at
+                // least two characters. If the selected first surface span
+                // cannot reach any second span, no vocabulary phrase can
+                // match; avoid cloning/scanning the complete first-code family
+                // on cold one-syllable keys such as n/ni/hao.
+                if spans_by_start.get(span.end_index).is_none_or(Vec::is_empty) {
                     continue;
-                };
-                lookup_metrics.exact_range_index_hits += 1;
-                let (bounded_entries, scanned) = collect_distinct_word_graph_entries(
-                    entries
-                        .clone()
-                        .filter(|entry_index| {
-                            let text = self.storage.entry_text(*entry_index);
-                            !self.excluded_texts.contains(text)
-                                && excluded_texts.map_or(true, |excluded| !excluded.contains(text))
-                        })
-                        .map(|entry_index| {
-                            let stored_weight = self.storage.entry_weight(entry_index);
-                            let weight = match (&self.storage, abbreviation) {
-                                (PoetModelStorage::Owned(storage), true) => {
-                                    storage.raw_weight(stored_weight)
-                                }
-                                (PoetModelStorage::Owned(storage), false) => {
-                                    storage.dictionary_weight(stored_weight)
-                                }
-                                (_, true) => f64::from(stored_weight),
-                                (_, false) => upstream_dictionary_weight(f64::from(stored_weight)),
-                            };
-                            (self.storage.entry_text(entry_index), weight)
-                        }),
-                    entry_limit,
-                );
-                table_entries_considered += scanned;
-                let inserted_edge = !bounded_entries.is_empty();
-                for mut entry in bounded_entries {
-                    entry.weight += span.spelling_credibility;
-                    graph
-                        .entry(start)
-                        .or_default()
-                        .entry(span.end)
-                        .or_default()
-                        .push(entry.with_code_order(span.code).with_traversal_depth(1));
-                    graph_edges += 1;
-                }
-                if inserted_edge {
-                    reachable[span.end_index] = true;
                 }
                 let vocabulary_entries = self
                     .storage
                     .vocabulary_indices_for_first_code(abbreviation, span.code);
                 for index in vocabulary_entries {
-                    if excluded_texts.is_some_and(|excluded| {
-                        excluded.contains(self.storage.vocabulary_text(abbreviation, index))
-                    }) {
+                    let vocabulary_text = self.storage.vocabulary_text(abbreviation, index);
+                    if self.excluded_texts.contains(vocabulary_text)
+                        || excluded_texts.is_some_and(|excluded| excluded.contains(vocabulary_text))
+                    {
                         continue;
                     }
                     self.storage
@@ -3490,6 +3632,11 @@ impl UpstreamSentenceModel {
                             abbreviation,
                         )
                     {
+                        if eligible_candidate
+                            .is_some_and(|eligible| !eligible(vocabulary_text, phrase_end))
+                        {
+                            continue;
+                        }
                         let raw_weight =
                             f64::from(self.storage.vocabulary_weight(abbreviation, index));
                         let weight = if abbreviation {
@@ -3501,21 +3648,21 @@ impl UpstreamSentenceModel {
                                 self.storage.vocabulary_weight(abbreviation, index),
                             )
                         } + spelling_credibility;
-                        graph
-                            .entry(start)
-                            .or_default()
-                            .entry(phrase_end)
-                            .or_default()
-                            .push(
-                                WordGraphEntry::new(
-                                    self.storage.vocabulary_text(abbreviation, index).to_owned(),
-                                    weight,
-                                )
-                                .with_code_order(phrase_code)
-                                .with_traversal_depth(vocabulary_chars.len())
-                                .with_encoded_phrase_phase(),
-                            );
-                        graph_edges += 1;
+                        let entry = WordGraphEntry::new(vocabulary_text.to_owned(), weight)
+                            .with_code_order(phrase_code)
+                            .with_traversal_depth(vocabulary_chars.len())
+                            .with_encoded_phrase_phase();
+                        if push_bounded_collector_chunk_entry(
+                            graph
+                                .entry(start)
+                                .or_default()
+                                .entry(phrase_end)
+                                .or_default(),
+                            entry,
+                            entry_limit,
+                        ) {
+                            graph_edges += 1;
+                        }
                         reachable[phrase_end_index] = true;
                     }
                 }
@@ -3569,6 +3716,8 @@ impl UpstreamSentenceModel {
                                     !self.excluded_texts.contains(text)
                                         && excluded_texts
                                             .map_or(true, |excluded| !excluded.contains(text))
+                                        && eligible_candidate
+                                            .map_or(true, |eligible| eligible(text, path_end))
                                 })
                                 .map(|entry_index| {
                                     let stored_weight = self.storage.entry_weight(entry_index);
@@ -3629,8 +3778,11 @@ impl UpstreamSentenceModel {
             }
         }
         for edges in graph.values_mut() {
-            for entries in edges.values_mut() {
-                entries.retain(|entry| !self.excluded_texts.contains(&entry.text));
+            for (end, entries) in edges.iter_mut() {
+                entries.retain(|entry| {
+                    !self.excluded_texts.contains(&entry.text)
+                        && eligible_candidate.map_or(true, |eligible| eligible(&entry.text, *end))
+                });
                 if abbreviation {
                     entries.sort_by(compare_word_graph_entry);
                 } else {
@@ -4329,6 +4481,53 @@ fn collect_distinct_word_graph_entries<'a>(
         }
     }
     (collected, scanned)
+}
+
+fn push_bounded_collector_chunk_entry(
+    entries: &mut Vec<WordGraphEntry>,
+    entry: WordGraphEntry,
+    limit: usize,
+) -> bool {
+    if limit == usize::MAX {
+        entries.push(entry);
+        return true;
+    }
+    let same_chunk = |other: &WordGraphEntry| {
+        other.traversal_depth == entry.traversal_depth && other.code_order == entry.code_order
+    };
+    let order = |left: &WordGraphEntry, right: &WordGraphEntry| {
+        right
+            .weight
+            .total_cmp(&left.weight)
+            .then_with(|| left.collector_phase.cmp(&right.collector_phase))
+    };
+    if let Some(index) = entries
+        .iter()
+        .position(|other| same_chunk(other) && other.text == entry.text)
+    {
+        if order(&entry, &entries[index]) == Ordering::Less {
+            entries[index] = entry;
+        }
+        return false;
+    }
+    let chunk_indices = entries
+        .iter()
+        .enumerate()
+        .filter(|(_, other)| same_chunk(other))
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    if chunk_indices.len() < limit {
+        entries.push(entry);
+        return true;
+    }
+    let worst_index = chunk_indices
+        .into_iter()
+        .max_by(|left, right| order(&entries[*left], &entries[*right]))
+        .expect("a saturated collector chunk should have a worst row");
+    if order(&entry, &entries[worst_index]) == Ordering::Less {
+        entries[worst_index] = entry;
+    }
+    false
 }
 
 fn sort_dedup_truncate_word_graph_entries(entries: &mut Vec<WordGraphEntry>, limit: usize) {

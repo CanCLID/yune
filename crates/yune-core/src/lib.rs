@@ -202,6 +202,9 @@ pub trait Translator: Send + Sync {
     fn storage_diagnostics(&self) -> Vec<StorageDiagnosticsRow> {
         Vec::new()
     }
+    /// Clears user-input/page-window state while retaining immutable compiled
+    /// assets owned by a fingerprinted translator.
+    fn clear_ephemeral_runtime_caches(&self) {}
 }
 
 #[derive(Debug, Default)]
@@ -212,6 +215,16 @@ pub struct TranslatorScratch {
 impl TranslatorScratch {
     fn clear(&mut self) {
         self.upstream_sentence.clear();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn is_empty(&self) -> bool {
+        self.upstream_sentence.is_empty()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn seed_for_test(&mut self) {
+        self.upstream_sentence.seed_for_test();
     }
 }
 

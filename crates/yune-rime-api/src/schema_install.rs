@@ -208,19 +208,63 @@ const HEADER_CACHE_READ_LIMIT: usize = 16 * 1024;
 
 static DICTIONARY_TRANSLATOR_CACHE: OnceLock<Mutex<HashMap<String, SharedTranslator>>> =
     OnceLock::new();
+static DICTIONARY_LOOKUP_RECORD_CACHE: OnceLock<
+    Mutex<HashMap<String, yune_core::ByteBackedDictionaryLookupRecords>>,
+> = OnceLock::new();
 
 fn dictionary_translator_cache() -> &'static Mutex<HashMap<String, SharedTranslator>> {
     DICTIONARY_TRANSLATOR_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+fn dictionary_lookup_record_cache(
+) -> &'static Mutex<HashMap<String, yune_core::ByteBackedDictionaryLookupRecords>> {
+    DICTIONARY_LOOKUP_RECORD_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 pub(crate) fn clear_dictionary_translator_cache() {
+    if let Some(cache) = DICTIONARY_TRANSLATOR_CACHE.get() {
+        cache
+            .lock()
+            .expect("dictionary translator cache should not be poisoned")
+            .clear();
+    }
+    if let Some(lookup_cache) = DICTIONARY_LOOKUP_RECORD_CACHE.get() {
+        lookup_cache
+            .lock()
+            .expect("dictionary lookup record cache should not be poisoned")
+            .clear();
+    }
+}
+
+pub(crate) fn clear_dictionary_translator_ephemeral_runtime_caches() {
     let Some(cache) = DICTIONARY_TRANSLATOR_CACHE.get() else {
         return;
     };
-    cache
+    let translators = cache
         .lock()
         .expect("dictionary translator cache should not be poisoned")
-        .clear();
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
+    for translator in translators {
+        translator.clear_ephemeral_runtime_caches();
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn seed_dictionary_translator_cache_probe(key: &str) {
+    dictionary_translator_cache()
+        .lock()
+        .expect("dictionary translator cache should not be poisoned")
+        .insert(key.to_owned(), Arc::new(EchoTranslator));
+}
+
+#[cfg(test)]
+pub(crate) fn dictionary_translator_cache_contains_probe(key: &str) -> bool {
+    dictionary_translator_cache()
+        .lock()
+        .expect("dictionary translator cache should not be poisoned")
+        .contains_key(key)
 }
 
 fn install_schema_dictionary_translator_from_config(
@@ -1489,8 +1533,25 @@ fn load_schema_dictionary_lookup_records_byte_backed(
     dictionary_name: &str,
     source_yaml: Option<&String>,
 ) -> Result<Option<yune_core::ByteBackedDictionaryLookupRecords>, CompiledRejectReason> {
+    let _trace = startup_trace::span("dictionary_lookup_records_load");
     let table_name = validate_data_resource_id(&format!("{dictionary_name}.table.bin"))
         .ok_or_else(|| CompiledRejectReason::Invalid("invalid table resource id".to_owned()))?;
+    let mut cache_key_parts = vec![format!("dictionary={dictionary_name}")];
+    append_runtime_file_metadata_signature(&mut cache_key_parts, "table", &table_name);
+    cache_key_parts.push(format!(
+        "source={:016x}",
+        source_yaml.map_or(0, |source| stable_hash_bytes(source.as_bytes()))
+    ));
+    let cache_key = cache_key_parts.join("\n");
+    if let Some(records) = dictionary_lookup_record_cache()
+        .lock()
+        .expect("dictionary lookup record cache should not be poisoned")
+        .get(&cache_key)
+        .cloned()
+    {
+        let _cache_hit = startup_trace::span("dictionary_lookup_records_cache_hit");
+        return Ok(Some(records));
+    }
     let Some(table_path) = selected_runtime_data_path(&table_name) else {
         return Ok(None);
     };
@@ -1502,13 +1563,25 @@ fn load_schema_dictionary_lookup_records_byte_backed(
             return Err(CompiledRejectReason::Stale);
         }
     }
-    byte_backed_lookup_records_from_table_bin_byte_source(table_source).map_err(|error| match error
-    {
-        yune_core::RimeTableBinParseError::UnsupportedSection { role } => {
-            CompiledRejectReason::Unsupported(role)
-        }
-        other => CompiledRejectReason::Invalid(format!("lookup payload parse failed: {other:?}")),
-    })
+    let _parse = startup_trace::span("dictionary_lookup_records_parse");
+    let records =
+        byte_backed_lookup_records_from_table_bin_byte_source(table_source).map_err(|error| {
+            match error {
+                yune_core::RimeTableBinParseError::UnsupportedSection { role } => {
+                    CompiledRejectReason::Unsupported(role)
+                }
+                other => {
+                    CompiledRejectReason::Invalid(format!("lookup payload parse failed: {other:?}"))
+                }
+            }
+        })?;
+    if let Some(records) = &records {
+        dictionary_lookup_record_cache()
+            .lock()
+            .expect("dictionary lookup record cache should not be poisoned")
+            .insert(cache_key, records.clone());
+    }
+    Ok(records)
 }
 
 fn install_schema_simplifier_filter_from_config(

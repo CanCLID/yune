@@ -1,0 +1,14 @@
+engine=yune
+track=track-b-product
+schema=jyut6ping3_mobile
+dll=C:\m59-4d-perf-work-final-38e759f6\run5\track-b-yune-product\rime.dll
+shared=C:\m59-4d-perf-work-final-38e759f6\run5\track-b-yune-product\shared
+user=C:\m59-4d-perf-work-final-38e759f6\run5\track-b-yune-product\user
+build=C:\m59-4d-perf-work-final-38e759f6\run5\track-b-yune-product\user\build
+inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80
+deploy_before_benchmark=true
+deploy_only=false
+managed_runtime=false

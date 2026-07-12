@@ -1,5 +1,15 @@
 # D-48 item 2 — cangjie5 order-parity onboarding (2026-07-09)
 
+> **Current Increment 4d resolution (2026-07-12):** CJ-1 and
+> M59-PARITY-03 are complete at clean source `38e759f6`. The explicitly marked
+> upstream-Cangjie validation lane is strict `12/12` through every captured
+> page, including `tak` exact `30/30`; the owning parity suite is `3 passed / 0
+> ignored`. A separately captured unmarked control remains exact `12/12`
+> against `fd6bd2a7`. The implementation is configuration/profile-derived and
+> uses no schema-id/input/oracle gate or new exception. Final evidence:
+> [`../m59-canonical-jyutping-reachability-parity/increment-4d-cangjie-cj1/`](../m59-canonical-jyutping-reachability-parity/increment-4d-cangjie-cj1/).
+> The Increment 1 material below is retained as the pre-fix diagnosis.
+
 Executes D-48 item 2 (`docs/decisions.md`): onboard `cangjie5` as an order-parity
 lane by capturing upstream librime 1.17.0 cangjie5 over pinned `rime/rime-cangjie`
 for the three owner composition rows + controls, answering the decisive question
@@ -14,7 +24,8 @@ finding, not fixed inline.
 > diff, and deterministic manifest. The strict exact result is deliberately red:
 > 4 passed / 8 failed, comparator exit `1`, no exceptions. The packet corrects
 > the old fixture's mojibaked hand-embedded owner targets without changing any
-> captured candidate or page arrays. CJ-1 remains open.
+> captured candidate or page arrays. Its CJ-1 finding is historical and is
+> superseded by the Increment 4d resolution above.
 
 ## Deliverables
 
@@ -59,7 +70,7 @@ Per D-48: librime composes them → **oracle-backed order rows** (phrase pinned 
 captured position). The `lyk` control (中文 at pos 1, behind single-char 奜) proves the
 ordering is not a trivial "phrase always first" rule.
 
-## Yune real-path result — FINDING CJ-1 (owner review; not fixed inline)
+## Historical Yune real-path result — FINDING CJ-1 (fixed by Increment 4d)
 
 **Corrected 2026-07-09 after fable re-verification — the original "Yune lacks
 ☯-sentence composition" framing was FALSIFIED.** The gap is a lane-specific
@@ -84,20 +95,24 @@ Yune's real production path (`yune-cli frontend --schema cangjie5`):
   produce the oracle's candidate-0 character at position 0 (`hwmvs`→粵, `qtt`→拼,
   `ebcn`→測, `yripm`→試, `tak`→莫, `oha`→伯, `eosk`→洢). So **D-47 is not violated.**
 
-**Interpretation:** this is a **segmentation-scoring divergence specific to the upstream
+**Historical interpretation:** this was a **segmentation-scoring divergence specific to the upstream
 `rime/rime-cangjie` lane** (`sort: by_weight` + `essay` preset vocabulary), where the
 common root characters (竹 田 一 女 尸 手 廿 — each a high-frequency char) score the
 8-single-root path above the 2-character 粵拼. The product lane, with different weights,
 segments correctly. **Owner decision — diagnose+fix the upstream-lane segmentation
-scoring divergence.** Hypotheses to check first: (1) the weight model — upstream
+scoring divergence.** Increment 4d resolved it through the explicit
+upstream-table sentence policy, compiled-prism predictive traversal,
+reverse-syllabification graph, and pinned stream-head merge. The original
+hypotheses were: (1) the weight model — upstream
 `by_weight`+essay hands root chars huge weights, so a segmentation summing eight of them
 out-scores 粵拼; (2) whether the sentence scorer on this lane sums **raw frequencies**
 rather than log-probs (the M48 luna raw-frequency class of bug —
 `memory/luna-pinyin-sentence-raw-frequency-scoring.md`). The ignored test
-`cangjie5_upstream_lane_segmentation_scoring_is_blocked` keeps this real upstream-lane
-gap named — no silent hole.
+`cangjie5_upstream_lane_segmentation_scoring_is_blocked` kept this real
+upstream-lane gap named until Increment 4d removed the ignore and made the
+owning suite 3 passed / 0 ignored.
 
-## Test wiring (non-circular, per D-48 + CLAUDE.md "no silent gaps")
+## Historical pre-fix test wiring (non-circular, per D-48)
 
 `cargo test -p yune-core --test upstream_cangjie5_composition_parity` → 2 passed, 1
 ignored:

@@ -1,0 +1,25 @@
+{
+    "tool":  "stage-m59-schema-validation-overlay.ps1",
+    "tool_version":  "2",
+    "tool_sha256":  "1a1b68396e82bf7f451656012df18f7e695a648009b0b4ffbe6ad511b419d65f",
+    "yune_source":  {
+                        "commit":  "38e759f6ac0c79512713c33533df465e908538db",
+                        "tree":  "948504ed5ef79771cf647e8ad9429fcfb5f43fde",
+                        "clean":  true,
+                        "status_short":  [
+
+                                         ]
+                    },
+    "source_shared_data_dir":  "C:/m59-4d-repro-fd6bd2a7/shared",
+    "source_shared_tree_sha256":  "a17ab574977ac3dc8e197286a29180eaf979b80c944ca106bfeca74b552a404c",
+    "schema_id":  "cangjie5",
+    "schema_patch_overlay":  "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/cangjie-validation-runner/cangjie5.custom.yaml",
+    "schema_patch_overlay_sha256":  "7a87b53e19e4dbe5496eeca25fe816a7be27a1b6c268821745bf70d91aef5d2f",
+    "schema_patch_key":  "translator/yune_sentence_policy",
+    "schema_patch_value":  "upstream_script",
+    "patched_schema_destination":  "cangjie5.schema.yaml",
+    "source_schema_sha256":  "eb9397f2c6fb8b0d73e5d67d8a68821a9eefad41d2b30fa080e5fa320d314695",
+    "staged_schema_sha256":  "34b037fee3640628513a0a983f2339b443acb3f09c10ade1a5cac7d79723aee3",
+    "output_shared_data_dir":  "C:/m59-4d-final-stage-38e759f6/shared",
+    "staged_shared_tree_sha256":  "ef1ada0ff95b0ab9ea04463f448c3b3f0e4c93d733c1a989f05cfcdc431917f1"
+}

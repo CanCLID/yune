@@ -1,0 +1,8 @@
+﻿track_a_deploy_prep=separate_process
+poet_generation_environment=YUNE_POET_BYTE_BACKED=1 (deploy-prep invocation only)
+benchmark_poet_environment=default-owned
+restored_oracle_build_artifacts=true
+poet_artifact=C:\m59-4d-perf-work-final-38e759f6\run1\track-a-yune\user\build\luna_pinyin.poet.bin
+poet_bytes=28616073
+table_artifact=C:\m59-4d-perf-work-final-38e759f6\run1\track-a-yune\user\build\luna_pinyin.table.bin
+table_bytes=13013460

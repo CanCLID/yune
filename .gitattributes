@@ -49,3 +49,7 @@ docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4b-ab
 # Preserve the imported M59 Increment 4c performance packet byte-for-byte.
 # The aggregate provenance binds the original Windows measurement receipts.
 docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/** -text whitespace=-blank-at-eol
+
+# Preserve the imported M59 Increment 4d performance packet byte-for-byte.
+# The aggregate provenance binds the original Windows measurement receipts.
+docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4d-cangjie-cj1/performance-ratchet/** -text whitespace=-blank-at-eol

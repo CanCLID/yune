@@ -1,0 +1,3 @@
+syllabary_count=19975
+owned_canonical_k_count=504
+byte_backed_canonical_k_count=504

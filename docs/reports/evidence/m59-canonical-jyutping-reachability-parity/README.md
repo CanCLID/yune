@@ -11,6 +11,20 @@ Yune `luna_pinyin` vs `librime 1.17.0` + upstream luna. TypeDuck profile is a
 regression guard, not an acceptance oracle.
 
 > **Current update (2026-07-12):**
+> [`increment-4d-cangjie-cj1/`](./increment-4d-cangjie-cj1/) is the final
+> Increment 4d packet bound to clean source `38e759f6`. The explicit
+> validation-only marker value `upstream_script` selects the internal
+> `SentencePolicy::UpstreamTable` for `table_translator` and closes CJ-1 without
+> schema-id or input gates: the marked all-page comparator is strict `12/12`,
+> the owning Cangjie composition suite is `3 passed / 0 ignored`, and the separately captured
+> unmarked control remains exact `12/12` against `fd6bd2a7`. The packet
+> preserves the create-new staging manifest, a public-API owned/byte-backed
+> predictive traversal audit (`504/504` with identical rows), and five fresh
+> one-build/four-reuse performance rounds. All 32 aggregate median rows and all
+> 160 individual observations pass unchanged ceilings. M59-PARITY-03 is
+> complete. Lane B/WEB-04, REACH-03/04, final evidence, final gates, and M59
+> remain open.
+>
 > [`increment-4c-opencc-variants/`](./increment-4c-opencc-variants/) is the
 > Increment 4c packet bound to clean source `e11557e2`. Ordered whole-word
 > one-to-many OpenCC conversion, stable family deduplication, and default-only
@@ -24,7 +38,7 @@ regression guard, not an acceptance oracle.
 > text/order contract; no whole-capture byte identity or canonical comment
 > parity is claimed. Five fresh one-build/four-reuse performance rounds pass all
 > 32 aggregate median rows under unchanged ceilings and preserve two individual
-> red observations. Lane A is complete; 4d Cangjie, 4e Lane B/WEB-04,
+> red observations. Lane A is complete; 4e Lane B/WEB-04,
 > REACH-03/04, final evidence, and final gates remain open.
 >
 > [`increment-4b-abbreviation-segmentation/`](./increment-4b-abbreviation-segmentation/)
@@ -119,9 +133,22 @@ regression guard, not an acceptance oracle.
 > commit `c7c04ff7...`. It preserves both raw and curated oracle files and has a
 > strict exact verdict of 4 passed / 8 failed (exit `1`, no exceptions). The
 > curated oracle replaces the old mojibaked fixture metadata byte-for-byte while
-> leaving all candidate/page arrays unchanged. CJ-1 remains open.
+> leaving all candidate/page arrays unchanged. Its CJ-1 finding is superseded
+> by the clean Increment 4d packet above.
 
 ## Artifact classification
+
+### VALID — Increment 4d Cangjie CJ-1 acceptance packet
+
+- `increment-4d-cangjie-cj1/` preserves the clean marked and unmarked captures,
+  strict comparators, create-new staging manifest, public-API 504/504 audit,
+  five raw text-only performance rounds, aggregate provenance, focused
+  verification, and three independent final reviews. It contains no DLL,
+  benchmark executable, deployed tree, compiled table, or MARISA payload.
+- Acceptance at this boundary is marked strict all-page `12/12`, Cangjie parity
+  `3 passed / 0 ignored`, unmarked exact `12/12`, and performance `32/32` over
+  160 observations under unchanged ceilings. It closes M59-PARITY-03 only and
+  makes no Lane B, REACH-04, browser, package, or M59 closeout claim.
 
 ### VALID — Increment 4c Lane A acceptance packet
 

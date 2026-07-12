@@ -38,3 +38,8 @@ powershell -NoProfile -ExecutionPolicy Bypass `
 The staged shared tree is then passed unchanged to
 `scripts/capture-yune-candidate-order.ps1`. Final acceptance also captures the
 unmarked control separately.
+
+Final Increment 4d acceptance is preserved under
+[`../increment-4d-cangjie-cj1/`](../increment-4d-cangjie-cj1/): marked strict
+`12/12`, owning parity `3 passed / 0 ignored`, and unmarked control exact
+`12/12` at clean source `38e759f6`.

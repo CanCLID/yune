@@ -1,0 +1,458 @@
+{
+  "tool": "compare-candidate-order.py",
+  "tool_version": "5",
+  "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+  "policy": "exact",
+  "inputs": [
+    "hwmvsqtt",
+    "ebcnyripm",
+    "takohaeosk",
+    "hwmvs",
+    "qtt",
+    "ebcn",
+    "yripm",
+    "tak",
+    "oha",
+    "eosk",
+    "hdaetcu",
+    "lyk"
+  ],
+  "all_accepted": true,
+  "cases": [
+    {
+      "input": "hwmvsqtt",
+      "policy": "exact",
+      "oracle_count": 7,
+      "actual_count": 7,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "f8486a62c0ec29e7a0fc62f64e63fcd3eb2ef0b8bb21cc1ea7675ee646465fe7",
+      "actual_rows_sha256": "f8486a62c0ec29e7a0fc62f64e63fcd3eb2ef0b8bb21cc1ea7675ee646465fe7",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "ebcnyripm",
+      "policy": "exact",
+      "oracle_count": 5,
+      "actual_count": 5,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "115730904066a31fca1b9d9b07c39d6bc2c6f62fc3ee7296a3357b8ad6941911",
+      "actual_rows_sha256": "115730904066a31fca1b9d9b07c39d6bc2c6f62fc3ee7296a3357b8ad6941911",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "takohaeosk",
+      "policy": "exact",
+      "oracle_count": 4,
+      "actual_count": 4,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "039c9860ac506011609ba42d608f8ca62a5f9ed8880b62037c5ec285bbb849b9",
+      "actual_rows_sha256": "039c9860ac506011609ba42d608f8ca62a5f9ed8880b62037c5ec285bbb849b9",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "hwmvs",
+      "policy": "exact",
+      "oracle_count": 2,
+      "actual_count": 2,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "7ab4084623f1488187bcd3ad458bfd57164cedd7682f993f6da8004b7aa257ed",
+      "actual_rows_sha256": "7ab4084623f1488187bcd3ad458bfd57164cedd7682f993f6da8004b7aa257ed",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "qtt",
+      "policy": "exact",
+      "oracle_count": 27,
+      "actual_count": 27,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "82c3ee4aded8fc291103c5efe201b876432c3c52cf423464651e4ee353557e7b",
+      "actual_rows_sha256": "82c3ee4aded8fc291103c5efe201b876432c3c52cf423464651e4ee353557e7b",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "ebcn",
+      "policy": "exact",
+      "oracle_count": 1,
+      "actual_count": 1,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "d8ba7d840ee3a5dd2ec4fe85afb8dfb605e312c0f9a80c22ed941abc4508f90f",
+      "actual_rows_sha256": "d8ba7d840ee3a5dd2ec4fe85afb8dfb605e312c0f9a80c22ed941abc4508f90f",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "yripm",
+      "policy": "exact",
+      "oracle_count": 1,
+      "actual_count": 1,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "18981507797ec3d76db86933fb4511dface108bfa738394c29c991e1961c2245",
+      "actual_rows_sha256": "18981507797ec3d76db86933fb4511dface108bfa738394c29c991e1961c2245",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "tak",
+      "policy": "exact",
+      "oracle_count": 30,
+      "actual_count": 30,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "bfd794645267e91a9802552a9a800541ae2a6c17fd49ebdd1dd4879f0a8e3108",
+      "actual_rows_sha256": "bfd794645267e91a9802552a9a800541ae2a6c17fd49ebdd1dd4879f0a8e3108",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "oha",
+      "policy": "exact",
+      "oracle_count": 11,
+      "actual_count": 11,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "cdc3ec7e8388bbc30ecd931ccffb69c2f47cb7fe3b8f2cc5cd7057f9098ffa57",
+      "actual_rows_sha256": "cdc3ec7e8388bbc30ecd931ccffb69c2f47cb7fe3b8f2cc5cd7057f9098ffa57",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "eosk",
+      "policy": "exact",
+      "oracle_count": 1,
+      "actual_count": 1,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "b1d269ca7a223968dcd9e20c272fcfd61bc0726386e31235fa586940ce6db179",
+      "actual_rows_sha256": "b1d269ca7a223968dcd9e20c272fcfd61bc0726386e31235fa586940ce6db179",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "hdaetcu",
+      "policy": "exact",
+      "oracle_count": 6,
+      "actual_count": 6,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "ca3d40c1062454da1dd11f445e5d1dbbb8f983b0a01caf68a0145d09e98ee8e2",
+      "actual_rows_sha256": "ca3d40c1062454da1dd11f445e5d1dbbb8f983b0a01caf68a0145d09e98ee8e2",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "lyk",
+      "policy": "exact",
+      "oracle_count": 19,
+      "actual_count": 19,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "c3bbe5f5e82745ca1257325b1b44054ce42798dcf8ec3b5c4934a3027b5270ba",
+      "actual_rows_sha256": "c3bbe5f5e82745ca1257325b1b44054ce42798dcf8ec3b5c4934a3027b5270ba",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    }
+  ],
+  "provenance": {
+    "oracle": {
+      "path": "crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-composition.json",
+      "sha256": "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf"
+    },
+    "actual": {
+      "path": "external/actual",
+      "sha256": "49caff1a77cc3f9d13e673401cb22371d535a8b48a65e0c5942f7893aea0b3c1"
+    },
+    "exceptions": null,
+    "tool_path": "scripts/compare-candidate-order.py",
+    "tool_version": "5",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "effective_argv": [
+      "--oracle",
+      "crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-composition.json",
+      "--actual",
+      "external/actual",
+      "--policy",
+      "exact",
+      "--output-json",
+      "external/output-json",
+      "--output-csv",
+      "external/output-csv"
+    ],
+    "effective_invocation": "python scripts/compare-candidate-order.py --oracle crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-composition.json --actual external/actual --policy exact --output-json external/output-json --output-csv external/output-csv"
+  }
+}

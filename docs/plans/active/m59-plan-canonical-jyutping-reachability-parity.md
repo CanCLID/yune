@@ -39,8 +39,14 @@
 > Five fresh source-bound performance rounds pass all 32 aggregate median rows
 > under unchanged ceilings and preserve two individual red observations; `n`,
 > `ni`, `hao`, and the 37/59-character rows all pass. Lane A D-48 is complete.
-> Increment 4d Cangjie CJ-1 is next. Lane B, Cangjie, REACH-03/04, final evidence,
-> and final gates remain open.
+> Increment 4d is implemented at clean production source `38e759f6`. The
+> explicitly marked upstream-Cangjie validation lane is strict `12/12` through
+> every captured page, the owning Cangjie parity suite is `3 passed / 0
+> ignored`, and the unmarked control is exact `12/12` against its pre-4d
+> capture. Its one-build/four-reuse five-round guard passes all 32 aggregate
+> median rows and all 160 individual observations under unchanged ceilings.
+> M59-PARITY-03 and CJ-1 are complete. Increment 4e Lane B exact order/WEB-04,
+> REACH-03/04, final evidence, and final gates remain open.
 >
 > Nothing remaining moves to M60 or another milestone. The blocking-review
 > conditions for 4a and 4b are satisfied. Reviews for 4c and later non-4a/4b
@@ -94,8 +100,8 @@
   and explicit owner re-disposition are complete. Increment 4b is landed, its
   retained-ceiling lazy/page-bounded implementation passes all 32 signed rows
   in five source-bound rounds, and its designated Opus review approved it with
-  no blocking finding. Increment 4c is complete; 4d is next. Other reviews
-  remain nonblocking.
+  no blocking finding. Increments 4c and 4d are complete; 4e is next. Other
+  reviews remain nonblocking.
 - **Increment 2 complete (`e37ee011`, pushed 2026-07-10):** explicit
   TypeDuck-profile activation repaired the direct Cantonese and synthetic
   Windows harnesses without golden edits; one `Engine` policy now governs
@@ -167,7 +173,20 @@
   text/order contract. Five fresh one-build/four-reuse rounds pass all 32 signed
   aggregate median rows under unchanged ceilings while preserving two
   individual red observations. Evidence: `increment-4c-opencc-variants/`.
-  Lane A D-48 is complete; 4d Cangjie CJ-1 is next.
+  Lane A D-48 is complete.
+- **Increment 4d implemented at `38e759f6`:** an explicit
+  configuration/profile-derived upstream-table sentence policy, compiled-prism
+  predictive traversal, reverse-syllabification graph, bounded reverse
+  preset-vocabulary reconstruction, and upstream stream-head merge close the
+  pinned `rime/rime-cangjie` CJ-1 divergence without schema-id, input, oracle,
+  ABI, or compiled-format gates. The disposable marked lane is strict `12/12`
+  over all pages, including `tak` exact `30/30`; the owning parity suite is
+  `3/3` with zero ignored. The separately captured unmarked control remains
+  exact `12/12` against `fd6bd2a7`. A public-API audit independently proves
+  owned and byte-backed predictive traversal both return the same 504 canonical
+  `k` rows. Five fresh one-build/four-reuse rounds pass all 32 signed aggregate
+  rows and all 160 individual observations under unchanged ceilings. Evidence:
+  `increment-4d-cangjie-cj1/`. M59-PARITY-03 is complete; 4e is next.
 - **Supplemental macOS 37/59 repair measured at source `89875ee2`:**
   `71a80704` separates upstream Luna's one-best sentence from its independent
   phrase stream; `e5c57eb6` preserves ScriptTranslation display metadata;

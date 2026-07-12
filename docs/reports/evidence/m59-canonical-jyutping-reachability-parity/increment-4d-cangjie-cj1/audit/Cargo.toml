@@ -1,0 +1,7 @@
+[package]
+name = "m59-4d-kcount-audit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+yune-core = { path = "C:/Users/laubonghaudoi/Documents/GitHub/yune/crates/yune-core" }

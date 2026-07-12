@@ -1,0 +1,1395 @@
+{
+    "schema_version":  1,
+    "packet":  "m59-increment-4d-cangjie-cj1",
+    "status":  "internal-reviews-approved-external-review-nonblocking",
+    "acceptance":  {
+                       "marked_inputs":  12,
+                       "marked_strict_passes":  12,
+                       "marked_strict_failures":  0,
+                       "cangjie_tests_passed":  3,
+                       "cangjie_tests_ignored":  0,
+                       "unmarked_control_inputs":  12,
+                       "unmarked_control_passes":  12,
+                       "exceptions_used":  0,
+                       "closes_m59_parity_03":  true,
+                       "closes_m59_reach_04":  false,
+                       "closes_m59":  false,
+                       "next_engine_increment":  "4e-lane-b-exact-order-web04"
+                   },
+    "implementation":  {
+                           "commit":  "38e759f6ac0c79512713c33533df465e908538db",
+                           "tree":  "948504ed5ef79771cf647e8ad9429fcfb5f43fde",
+                           "capture_source_clean":  true,
+                           "public_abi_changed":  false,
+                           "compiled_format_changed":  false,
+                           "product_schema_assets_changed":  false
+                       },
+    "release_dll":  {
+                        "included":  false,
+                        "sha256":  "a0fe13b7a5df3669d09425f48adaa5e2821ac578df00962cffc2d95a0420652e"
+                    },
+    "oracle":  {
+                   "librime_commit":  "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+                   "rime_dll_sha256":  "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+                   "cangjie_fixture_sha256":  "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf"
+               },
+    "behavior":  {
+                     "marked_capture":  "behavior/cangjie-yune-marked.json",
+                     "marked_capture_sha256":  "49caff1a77cc3f9d13e673401cb22371d535a8b48a65e0c5942f7893aea0b3c1",
+                     "marked_comparator_sha256":  "f35c3641f60f05827abb4e066238cd7db4dff0f4993cf8e72b12031d53980d82",
+                     "unmarked_capture":  "behavior/cangjie-yune-unmarked.json",
+                     "unmarked_capture_sha256":  "fac6140a02b1c522c62791aa801643d3293c4ed2d1ed4f5d100804f7db9e11d6",
+                     "unmarked_comparator_sha256":  "5485e78f54fd7d1b1c0b84578673bd91bebee4d4d61be7a3e13b9a5fbc8efe37",
+                     "staging_manifest_sha256":  "113573b3b6a2e5cb335635cc8de6b9016b85ea3e9d30ff8cd431c8b9edf11c7b"
+                 },
+    "public_api_audit":  {
+                             "syllabary_count":  19975,
+                             "owned_canonical_k_count":  504,
+                             "byte_backed_canonical_k_count":  504,
+                             "rows_equal":  true,
+                             "source_sha256":  "121a4b696ba05b27d644ad0c05f9b07c7b779b76af5eaeaf7dc2dbc72b3e91bc"
+                         },
+    "performance":  {
+                        "source_commit":  "38e759f6ac0c79512713c33533df465e908538db",
+                        "accepted_runs":  5,
+                        "aggregate_rows":  32,
+                        "aggregate_passes":  32,
+                        "individual_observations":  160,
+                        "individual_failures":  0,
+                        "mode_sequence":  "build,reuse,reuse,reuse,reuse",
+                        "gate_verdict_sha256":  "3556fd85ed0b915c4f3a001f493eae734d51c3c86532b73827aca44f63c3b644",
+                        "provenance_sha256":  "197cb2419dd4d60b3e25cc8078885768318dbf425867c632d4b3ae549c4fe965",
+                        "ceilings_changed":  false
+                    },
+    "reviews":  {
+                    "specification":  "approve",
+                    "quality":  "approve",
+                    "staging_runner":  "approve",
+                    "designated_external_review":  "nonblocking-not-yet-requested"
+                },
+    "binary_payloads_copied":  false,
+    "packet_file_count":  264,
+    "packet_bytes_excluding_manifest":  19568409,
+    "file_inventory":  [
+                           {
+                               "path":  "README.md",
+                               "bytes":  4974,
+                               "sha256":  "18303f4e584234892fc3d58b80f3fae7a23339754ad8ee1a309c3ef0d132bbeb"
+                           },
+                           {
+                               "path":  "audit/Cargo.lock",
+                               "bytes":  6800,
+                               "sha256":  "95a77e715e1406156cafdce7d375da449b80b8786b4561b51ed672a65371d5b8"
+                           },
+                           {
+                               "path":  "audit/Cargo.toml",
+                               "bytes":  177,
+                               "sha256":  "32b9f1413e4cd4276b03220fe37870b8d1dac106051d050d0f099facaef98165"
+                           },
+                           {
+                               "path":  "audit/main.rs",
+                               "bytes":  1943,
+                               "sha256":  "121a4b696ba05b27d644ad0c05f9b07c7b779b76af5eaeaf7dc2dbc72b3e91bc"
+                           },
+                           {
+                               "path":  "audit/results.txt",
+                               "bytes":  84,
+                               "sha256":  "0e61741c6229e35dc8002ccc2d5fd292be3143037bea8e0d1fa859aa6675820f"
+                           },
+                           {
+                               "path":  "behavior/cangjie-marked-exact.json",
+                               "bytes":  13599,
+                               "sha256":  "f35c3641f60f05827abb4e066238cd7db4dff0f4993cf8e72b12031d53980d82"
+                           },
+                           {
+                               "path":  "behavior/cangjie-unmarked-vs-fd6bd2a7-exact.json",
+                               "bytes":  13425,
+                               "sha256":  "5485e78f54fd7d1b1c0b84578673bd91bebee4d4d61be7a3e13b9a5fbc8efe37"
+                           },
+                           {
+                               "path":  "behavior/cangjie-yune-marked.json",
+                               "bytes":  145528,
+                               "sha256":  "49caff1a77cc3f9d13e673401cb22371d535a8b48a65e0c5942f7893aea0b3c1"
+                           },
+                           {
+                               "path":  "behavior/cangjie-yune-unmarked.json",
+                               "bytes":  119354,
+                               "sha256":  "fac6140a02b1c522c62791aa801643d3293c4ed2d1ed4f5d100804f7db9e11d6"
+                           },
+                           {
+                               "path":  "commands-provenance.md",
+                               "bytes":  3062,
+                               "sha256":  "2ea95a42dea239feb21583fb2c52efa3c078b661dfa7ccc7ea972c3f48ff4db5"
+                           },
+                           {
+                               "path":  "performance-ratchet/gate-verdict.csv",
+                               "bytes":  5503,
+                               "sha256":  "3556fd85ed0b915c4f3a001f493eae734d51c3c86532b73827aca44f63c3b644"
+                           },
+                           {
+                               "path":  "performance-ratchet/gate-verdict.provenance.json",
+                               "bytes":  8612,
+                               "sha256":  "197cb2419dd4d60b3e25cc8078885768318dbf425867c632d4b3ae549c4fe965"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/README.md",
+                               "bytes":  826,
+                               "sha256":  "80b9d136f538b9511b7126ecfccfb17ebc64f510ed076fc1ce242a1afb63c392"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/actual-invocation.txt",
+                               "bytes":  1245,
+                               "sha256":  "9a10910b80a56e825dadc874520f93aa79394a8f3f4a2c575886b4cbdec48447"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/candidate_snapshots.csv",
+                               "bytes":  22293,
+                               "sha256":  "4fcb03525759a40e5f1d8756b5456815f8758c3882aadf5358d3c1ff6f43c463"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/cargo-build-native-inprocess-benchmark.log",
+                               "bytes":  108195,
+                               "sha256":  "ded6f6e0ed3ba9e7e77ed8f379cc5d69e79a26b7d769181ed030b476c929b9fe"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/commands.txt",
+                               "bytes":  1319,
+                               "sha256":  "853d2d2cf0e3c6107da266802d27f38c045b0b68617d492e4cc5139994b48ca0"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/environment.txt",
+                               "bytes":  3262,
+                               "sha256":  "9a12bdc139a7c8ca1a2e56995dca4aa8c43dc1f940401c99841f61825855d621"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/external-provenance.txt",
+                               "bytes":  1282,
+                               "sha256":  "fb634dbfcedb5e88e961ce04e20caed492a33649bebc23338dc6ed27f0e56044"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/m37_metrics.csv",
+                               "bytes":  1023115,
+                               "sha256":  "2f9355d8ed910fd89bc3c610591a1ff13ad18db9c581e86d74da5395901dc70b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/memory-owner-profile.csv",
+                               "bytes":  36475,
+                               "sha256":  "c918ad686527b385a02ace23cd16087f63bcc55b341cdc507c19396b5465481d"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/native-benchmark-build-receipt.txt",
+                               "bytes":  1347,
+                               "sha256":  "cc4b7eed3df4fe46dc26fea6dc74ccf77a8c2596914560cf2eaaa1b79adb6075"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/product_path_status.csv",
+                               "bytes":  2981,
+                               "sha256":  "c28b4d7bca8abca4ec2ada0f2c5636b1f520bf0425271a94fcb54f1b0018990d"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/raw_lookup_microbench.csv",
+                               "bytes":  8466,
+                               "sha256":  "59ccc4dbfa4d0aebde810a08c286385974b42915b19af3ebdaf96d70e591b0dc"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/run-status.txt",
+                               "bytes":  68,
+                               "sha256":  "d2723d1847dc90991aa674af7b6c9ebc9506d538cec75e239c0579844fcb3b99"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/samples.csv",
+                               "bytes":  726872,
+                               "sha256":  "5a99ed46d7b666a3e9c7b4c665be8aa89979140219a8a80b8fd8b01b7e8566aa"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/startup_session_trace.csv",
+                               "bytes":  368860,
+                               "sha256":  "cc06f6e00e8d9fbf0cd50f37184c93ebb5cf28eadfa1213621a1d1c649389882"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/summary-comparison.csv",
+                               "bytes":  3397,
+                               "sha256":  "a3889b8385b19eeee588f2501a08e2dd102417cdf5bb074b65db6c4b55f4cc5b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/summary.csv",
+                               "bytes":  7989,
+                               "sha256":  "61f8c33f18f20e4f5bd6eed62e96bdb9f4e3ace4dd2645fae816837c3beb7c03"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/threshold-check.csv",
+                               "bytes":  11058,
+                               "sha256":  "f7f57f45d586d23389e9f8216421529f11b079b1b90129b49fe05e7487cf99bc"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-librime-1.17.0/candidate_snapshots.csv",
+                               "bytes":  7979,
+                               "sha256":  "445af9ff4ca999fc37740c98e4c68e8ac38cf9ff09a928d07fc3c610ee0221ae"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-librime-1.17.0/cargo-bench-native-inprocess.log",
+                               "bytes":  165,
+                               "sha256":  "8e16f5067efa440253f2881c7aeda8ff042f039fe5ecde1e9f1664bdc44cf514"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-librime-1.17.0/m37_metrics.csv",
+                               "bytes":  3974,
+                               "sha256":  "1dc3aabcdc40b6492535239e66378680c2bef309d9773f3f0deda55becd16774"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-librime-1.17.0/memory-owner-profile.csv",
+                               "bytes":  219,
+                               "sha256":  "fa9eddb591acbe5e4dab8ce04afe7c5ef45948f6c5239591215680e7a0595977"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-librime-1.17.0/metadata.txt",
+                               "bytes":  693,
+                               "sha256":  "ef6dd07ce6dee21f9211f3f71ceaec5b0ee328639e9545ee807987b6d8b1be22"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-librime-1.17.0/product_path_status.csv",
+                               "bytes":  551,
+                               "sha256":  "2d5b2772b336d2f46696dbf92917e2e1c6a6ebe298a212e871274cb53051a9c3"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-librime-1.17.0/raw_lookup_microbench.csv",
+                               "bytes":  655,
+                               "sha256":  "82c9c866265ed8a732bbbb2b0b6796a936a734a7c0bb1bcb3a83ff09212f8955"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-librime-1.17.0/samples.csv",
+                               "bytes":  289728,
+                               "sha256":  "d1cb6f402229d62d405ea84d9861f98f8b367d4f85c128bae0b5d06da5517c0c"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-librime-1.17.0/startup_session_trace.csv",
+                               "bytes":  135,
+                               "sha256":  "5986f1e9e3d3b909fdc1b784d5efa57425ff45279429f5d7b5ab148efe7bca44"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-librime-1.17.0/summary.csv",
+                               "bytes":  3260,
+                               "sha256":  "7c2dec24a90c3a533a90b3cb95d5e146479e78a08a5e41334d81bb4b19f6a7a2"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune-deploy-prep-artifacts.txt",
+                               "bytes":  449,
+                               "sha256":  "0570fb52fb88778eca8d45e461c763a3d5300a4022298c8748296aeff9cb5006"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune-deploy-prep.log",
+                               "bytes":  80,
+                               "sha256":  "063d56806942ca039aae2fe3ac771e585e8518ef45615ca27d10f394e288f394"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune/candidate_snapshots.csv",
+                               "bytes":  7166,
+                               "sha256":  "2361cdeb2a6eabb25b7531982aaad2d60a2edd6fb7db24675495e396017bbce8"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune/cargo-bench-native-inprocess.log",
+                               "bytes":  145,
+                               "sha256":  "76a2766979bc5ab2610f6f39a09c224d6cd0540a4bc64d9be04c1f59962a5040"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune/m37_metrics.csv",
+                               "bytes":  539183,
+                               "sha256":  "3531e63b6966c23a612ee7e169fa5c0cc3e4739be3f43571035e61e15b85e053"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune/memory-owner-profile.csv",
+                               "bytes":  12400,
+                               "sha256":  "26d2046339cfc17419bb1b21f1094c732ea844322e9ea6890e5db605ee8317f4"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune/metadata.txt",
+                               "bytes":  643,
+                               "sha256":  "a0165ab54fb9f7cc91b6ee1d6c552f553f71f725129cf02b4df643c491114c61"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune/product_path_status.csv",
+                               "bytes":  1387,
+                               "sha256":  "50d132cd24b1a0e632c89e63cc3b91bc1756646025b9d0e73d7693c5a209266b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune/raw_lookup_microbench.csv",
+                               "bytes":  7365,
+                               "sha256":  "2141f0031e75dfb6ca52cf2cfe053982e8293315c44e693112577d21e0962d37"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune/samples.csv",
+                               "bytes":  286425,
+                               "sha256":  "95312974d18e99e2c62d41001883dc201ab3bf6035f309cf988737b71c687eb1"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune/startup_session_trace.csv",
+                               "bytes":  106310,
+                               "sha256":  "1f1e5c9dbae758f36c7fbfed9e8f679cf3a6c45fb8a59157fcd42c77a3d5cdc3"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-a-yune/summary.csv",
+                               "bytes":  3080,
+                               "sha256":  "7f458bf48216254b8d31dc3e5a52beef5fd3a8fcc0708c0b80a34369408d1080"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-b-yune-product/candidate_snapshots.csv",
+                               "bytes":  2689,
+                               "sha256":  "5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-b-yune-product/cargo-bench-native-inprocess.log",
+                               "bytes":  155,
+                               "sha256":  "46fb7f30f4c78067c56221b326a9f49a2d36ef977cfc7e1f765de31b4ba7c90b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-b-yune-product/m37_metrics.csv",
+                               "bytes":  66310,
+                               "sha256":  "f1b8fda2f42c423cab98c4b65e36cca9ea8e1cd91c0ba7b813cd1b75fd44d24b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-b-yune-product/memory-owner-profile.csv",
+                               "bytes":  20542,
+                               "sha256":  "cc439952488e7f487450d34a7c8562646167cfb9d54ad310def3999e3f0d5fd4"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-b-yune-product/metadata.txt",
+                               "bytes":  548,
+                               "sha256":  "d0fa51e23b095d13d5760accc3cb5baecb39b2347e4708240c5ec25433985474"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-b-yune-product/product_path_status.csv",
+                               "bytes":  1870,
+                               "sha256":  "95744b7054698d6c4ddf0878d3274b050b69bc289a171116bb706555a9e903c4"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-b-yune-product/raw_lookup_microbench.csv",
+                               "bytes":  655,
+                               "sha256":  "82c9c866265ed8a732bbbb2b0b6796a936a734a7c0bb1bcb3a83ff09212f8955"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-b-yune-product/samples.csv",
+                               "bytes":  34062,
+                               "sha256":  "8a80a052d738da5936069709318da9a740e8a89117c7064a16fe6a1ac536298b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-b-yune-product/startup_session_trace.csv",
+                               "bytes":  204982,
+                               "sha256":  "58815df5da37a08f05da2547e1a12dd5a8e00d4044675671b0d0c142872aadd6"
+                           },
+                           {
+                               "path":  "performance-ratchet/run1/track-b-yune-product/summary.csv",
+                               "bytes":  714,
+                               "sha256":  "f031787a645105bcb7ab7e91451d0e82d7880663c511820ea320f0422f46cd3b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/README.md",
+                               "bytes":  826,
+                               "sha256":  "80b9d136f538b9511b7126ecfccfb17ebc64f510ed076fc1ce242a1afb63c392"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/actual-invocation.txt",
+                               "bytes":  1500,
+                               "sha256":  "3d3cccd2439c33e275dc7baca91225dbb0f3a80e9d7fd16b0c9f55ba018a4acf"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/candidate_snapshots.csv",
+                               "bytes":  22293,
+                               "sha256":  "4fcb03525759a40e5f1d8756b5456815f8758c3882aadf5358d3c1ff6f43c463"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/commands.txt",
+                               "bytes":  1608,
+                               "sha256":  "866f93b2337d18279b236895d52e72a0cc706d38988e340699337758a979abf9"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/environment.txt",
+                               "bytes":  3274,
+                               "sha256":  "dd0d963e725ba8206af69b41ea3fe708ec80a150f4f5357c3755cf39a2b58d1d"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/external-provenance.txt",
+                               "bytes":  1282,
+                               "sha256":  "c5fe7dd4819513ce86b3fc7a7b7afb8eba91957466a2add6f80d9d94dbf6339c"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/m37_metrics.csv",
+                               "bytes":  1022989,
+                               "sha256":  "19b70cc9035f96607d0208b117d0096e776dbf0f01f565526de698c1f4b22265"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/memory-owner-profile.csv",
+                               "bytes":  36475,
+                               "sha256":  "70469aa914618cb9b16271be0557666799d0fb3c0af6a8d11e4a4f5e2c5869aa"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/native-benchmark-build-receipt.txt",
+                               "bytes":  1347,
+                               "sha256":  "cc4b7eed3df4fe46dc26fea6dc74ccf77a8c2596914560cf2eaaa1b79adb6075"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/product_path_status.csv",
+                               "bytes":  2981,
+                               "sha256":  "7753f828eebdc3de6a625d489431b3fc4c380990264e7eed291befeaa2b25e71"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/raw_lookup_microbench.csv",
+                               "bytes":  8466,
+                               "sha256":  "1e44c33ca0fb77a3ea7642587f2f3aae3eb1b2bd2dbe1083bb051bd029fff45c"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/run-status.txt",
+                               "bytes":  68,
+                               "sha256":  "79e6c0f10bcb4cc5c4a58fcf7792a3079f1d14d731288e2f0d83a3139f3bb956"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/samples.csv",
+                               "bytes":  726573,
+                               "sha256":  "8670dec3245733dd71227895e0d9dbaf2f376af68958ae0ed565d5941a673688"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/startup_session_trace.csv",
+                               "bytes":  368862,
+                               "sha256":  "10ed66546ec0600fe3d94f84cae64669d110a7014a31dad0a11f2d920b3fa816"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/summary-comparison.csv",
+                               "bytes":  3393,
+                               "sha256":  "2df3b999e7d6173be21c99fedc3c438223cfd1a54c80c325c05a3c22c060df37"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/summary.csv",
+                               "bytes":  7992,
+                               "sha256":  "5ae734e7ed4e3be12fae8d7476d5948eaf1897d39b0308c4e7d0fefe149b2c36"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/threshold-check.csv",
+                               "bytes":  11058,
+                               "sha256":  "a9ce56e2335de7b26d73b27a9008eeb1ad656791fb3b8494325ee828d1a59727"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-librime-1.17.0/candidate_snapshots.csv",
+                               "bytes":  7979,
+                               "sha256":  "445af9ff4ca999fc37740c98e4c68e8ac38cf9ff09a928d07fc3c610ee0221ae"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-librime-1.17.0/cargo-bench-native-inprocess.log",
+                               "bytes":  165,
+                               "sha256":  "116d5becc63d5349ad63827fc951211475ff8a04608cb29d8de72b09422307a7"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-librime-1.17.0/m37_metrics.csv",
+                               "bytes":  3974,
+                               "sha256":  "1dc3aabcdc40b6492535239e66378680c2bef309d9773f3f0deda55becd16774"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-librime-1.17.0/memory-owner-profile.csv",
+                               "bytes":  219,
+                               "sha256":  "fa9eddb591acbe5e4dab8ce04afe7c5ef45948f6c5239591215680e7a0595977"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-librime-1.17.0/metadata.txt",
+                               "bytes":  693,
+                               "sha256":  "5e5c0282effbbffe38823b34817c9d9c909bfc4b576921640984808144908302"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-librime-1.17.0/product_path_status.csv",
+                               "bytes":  551,
+                               "sha256":  "2d5b2772b336d2f46696dbf92917e2e1c6a6ebe298a212e871274cb53051a9c3"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-librime-1.17.0/raw_lookup_microbench.csv",
+                               "bytes":  655,
+                               "sha256":  "82c9c866265ed8a732bbbb2b0b6796a936a734a7c0bb1bcb3a83ff09212f8955"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-librime-1.17.0/samples.csv",
+                               "bytes":  289731,
+                               "sha256":  "4cca33639d13f7bc8de6ffb6be4d9a9dfe8687fa83a8541c18f7098c5114dd45"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-librime-1.17.0/startup_session_trace.csv",
+                               "bytes":  135,
+                               "sha256":  "5986f1e9e3d3b909fdc1b784d5efa57425ff45279429f5d7b5ab148efe7bca44"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-librime-1.17.0/summary.csv",
+                               "bytes":  3262,
+                               "sha256":  "8606bd515b7cf472a01cb1901aa2ff83f4e9019bb841ab938cc4a5edc2e8c84f"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune-deploy-prep-artifacts.txt",
+                               "bytes":  449,
+                               "sha256":  "ac959a8018dee8c5e8f3e4b6f464dc03555e6ed96fd93977e4e3e46f78abd4a2"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune-deploy-prep.log",
+                               "bytes":  80,
+                               "sha256":  "063d56806942ca039aae2fe3ac771e585e8518ef45615ca27d10f394e288f394"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune/candidate_snapshots.csv",
+                               "bytes":  7166,
+                               "sha256":  "2361cdeb2a6eabb25b7531982aaad2d60a2edd6fb7db24675495e396017bbce8"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune/cargo-bench-native-inprocess.log",
+                               "bytes":  145,
+                               "sha256":  "be0cd745f7b097f796ddebd075c3a11d0b82ced79db4be9cfde5f940b812a7ab"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune/m37_metrics.csv",
+                               "bytes":  539077,
+                               "sha256":  "dce8acf64e31a76db5345e7490c9b7aa8bfb98ccce589d4812c3f781576abef5"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune/memory-owner-profile.csv",
+                               "bytes":  12400,
+                               "sha256":  "affb661cccd5df3feb49172a505898ba516664faa53d7e783adf0d934ce72cc2"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune/metadata.txt",
+                               "bytes":  643,
+                               "sha256":  "99196c0cc078faa479a2df94638c8e13fbf66cef3d07e05858c8abbec3298a2f"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune/product_path_status.csv",
+                               "bytes":  1387,
+                               "sha256":  "991e4c02e9a0f0854f4279a272bbb261d6b06a799b3ffaa4a179e987dc899f9b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune/raw_lookup_microbench.csv",
+                               "bytes":  7365,
+                               "sha256":  "709f747fe397cf2edddfc1cd6d96d71fa43c2a2e8f611baf7ac3470f53eb9411"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune/samples.csv",
+                               "bytes":  286123,
+                               "sha256":  "1ac18162104e46207ab56bb2917b1cd313321d7cf5ccb1cd138caad4f36a460d"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune/startup_session_trace.csv",
+                               "bytes":  106310,
+                               "sha256":  "2fb37c237a4c9a61d3da66e332e800721b3c40b6b8ecef5e919bc92435133879"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-a-yune/summary.csv",
+                               "bytes":  3081,
+                               "sha256":  "0ab152ddb655c2f952e192113a261d88ba53d493fd815676a575774868b56d81"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-b-yune-product/candidate_snapshots.csv",
+                               "bytes":  2689,
+                               "sha256":  "5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-b-yune-product/cargo-bench-native-inprocess.log",
+                               "bytes":  155,
+                               "sha256":  "91854dc1b97aaf0c42aec0f320b828da26a5ce642ba13009a9ebcde7bc7740e3"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-b-yune-product/m37_metrics.csv",
+                               "bytes":  66290,
+                               "sha256":  "0b2c9facdc313295aa88d7e7f3f8c2192bf7ad6a2d801ca43d64f65556a5852b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-b-yune-product/memory-owner-profile.csv",
+                               "bytes":  20542,
+                               "sha256":  "46c7353d560ceb9fb018dc74c3f8aecd1595b54ea2d9d94970c35a79c7946f17"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-b-yune-product/metadata.txt",
+                               "bytes":  548,
+                               "sha256":  "f3bc744f3bb7629ae4c8e4cad1be73199c3abeffff61529f9d5f6ce5a56bb1c6"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-b-yune-product/product_path_status.csv",
+                               "bytes":  1870,
+                               "sha256":  "e87c5c05c8d3e1987652929431e07ff45b8208ecb8131f011943f6f64054f575"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-b-yune-product/raw_lookup_microbench.csv",
+                               "bytes":  655,
+                               "sha256":  "82c9c866265ed8a732bbbb2b0b6796a936a734a7c0bb1bcb3a83ff09212f8955"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-b-yune-product/samples.csv",
+                               "bytes":  34062,
+                               "sha256":  "5e3de1991d56d2f3ec91cf21ed89c640677c04adb01852a82dd73bcc0c1820d3"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-b-yune-product/startup_session_trace.csv",
+                               "bytes":  204984,
+                               "sha256":  "37a58e08515e9dff8f7b91a0023dfedfc5886402aa39b7ea3c829469b291be0f"
+                           },
+                           {
+                               "path":  "performance-ratchet/run2/track-b-yune-product/summary.csv",
+                               "bytes":  714,
+                               "sha256":  "a280510d859a42eea6b65dbc283ad21c3ff8f2ce8dbf00278d65c4755a97c9d4"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/README.md",
+                               "bytes":  826,
+                               "sha256":  "80b9d136f538b9511b7126ecfccfb17ebc64f510ed076fc1ce242a1afb63c392"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/actual-invocation.txt",
+                               "bytes":  1500,
+                               "sha256":  "da32ef0c920dda54ae48e83cf6fc8283c387f61f8b70d58f0840324baf1b036e"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/candidate_snapshots.csv",
+                               "bytes":  22293,
+                               "sha256":  "4fcb03525759a40e5f1d8756b5456815f8758c3882aadf5358d3c1ff6f43c463"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/commands.txt",
+                               "bytes":  1608,
+                               "sha256":  "ce5ce6ba7087ceb489c9ef445ad659a595e77795c9e012f59507ee7f945b8dec"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/environment.txt",
+                               "bytes":  3274,
+                               "sha256":  "fe2dd096db72ab4dddebe87f6cc10b9207f66ca5854fbf8167ccfedd6375ff54"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/external-provenance.txt",
+                               "bytes":  1282,
+                               "sha256":  "9cf4d1b3e4db86ad138815f9086d37f9174171c790f9ad485020dcdaafaa6173"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/m37_metrics.csv",
+                               "bytes":  1023257,
+                               "sha256":  "52276992fdf3fdcd20b806d6e78069ad1677fc3aa0f625b7d84fbc9978853560"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/memory-owner-profile.csv",
+                               "bytes":  36475,
+                               "sha256":  "8bd482c7731bd52898b81c4c4a66e64929ee854cc17775f93b0a214f2a8266f8"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/native-benchmark-build-receipt.txt",
+                               "bytes":  1347,
+                               "sha256":  "cc4b7eed3df4fe46dc26fea6dc74ccf77a8c2596914560cf2eaaa1b79adb6075"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/product_path_status.csv",
+                               "bytes":  2981,
+                               "sha256":  "89eaae44cc50932dbf47adda2943301d2f19ef049ca1081a08e5f5e79861d1a6"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/raw_lookup_microbench.csv",
+                               "bytes":  8466,
+                               "sha256":  "9e0c5c15c3103c8effaaef31d80d54a604e9746a82be669bbf1750760d1a59ad"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/run-status.txt",
+                               "bytes":  68,
+                               "sha256":  "0a8b3204524725550bfa59f20b697753847c316a32aace8d48791380b40742d2"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/samples.csv",
+                               "bytes":  726908,
+                               "sha256":  "a14b7c35be214473d444e6df0330951e57959c42222ed60066c8e530050648ff"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/startup_session_trace.csv",
+                               "bytes":  368813,
+                               "sha256":  "ac0256a6245ddd26913a33e388e11b911470102abe0cf66f0457f2ab8e06ddeb"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/summary-comparison.csv",
+                               "bytes":  3394,
+                               "sha256":  "f55c7a3cf77ee0ef9c66c0d008900a86279e2bceeae77bdafc3ad3de0b677a02"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/summary.csv",
+                               "bytes":  8002,
+                               "sha256":  "3f9c03e85f3a393b4f3826b118958b45ce6814a700b4adf65a30f2b636bca00f"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/threshold-check.csv",
+                               "bytes":  11058,
+                               "sha256":  "1ca5eb57e9d39eb41a0452eadc6de158ebebd4d7139672d9a49ae856781ff52c"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-librime-1.17.0/candidate_snapshots.csv",
+                               "bytes":  7979,
+                               "sha256":  "445af9ff4ca999fc37740c98e4c68e8ac38cf9ff09a928d07fc3c610ee0221ae"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-librime-1.17.0/cargo-bench-native-inprocess.log",
+                               "bytes":  165,
+                               "sha256":  "dc89d0d48831ce7c110d8e42d45d4a8278215bde7bfb14493ea66186f51fbe19"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-librime-1.17.0/m37_metrics.csv",
+                               "bytes":  3974,
+                               "sha256":  "1dc3aabcdc40b6492535239e66378680c2bef309d9773f3f0deda55becd16774"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-librime-1.17.0/memory-owner-profile.csv",
+                               "bytes":  219,
+                               "sha256":  "fa9eddb591acbe5e4dab8ce04afe7c5ef45948f6c5239591215680e7a0595977"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-librime-1.17.0/metadata.txt",
+                               "bytes":  693,
+                               "sha256":  "2d908d3787181fe102bfdad5304c8109b97eb788b6d685f73614a8ecde7e2c7a"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-librime-1.17.0/product_path_status.csv",
+                               "bytes":  551,
+                               "sha256":  "2d5b2772b336d2f46696dbf92917e2e1c6a6ebe298a212e871274cb53051a9c3"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-librime-1.17.0/raw_lookup_microbench.csv",
+                               "bytes":  655,
+                               "sha256":  "82c9c866265ed8a732bbbb2b0b6796a936a734a7c0bb1bcb3a83ff09212f8955"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-librime-1.17.0/samples.csv",
+                               "bytes":  289732,
+                               "sha256":  "fef35cd983bd0721e3b14712abe237df9aec40f7dfcb9cc0ed5c05be09550209"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-librime-1.17.0/startup_session_trace.csv",
+                               "bytes":  135,
+                               "sha256":  "5986f1e9e3d3b909fdc1b784d5efa57425ff45279429f5d7b5ab148efe7bca44"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-librime-1.17.0/summary.csv",
+                               "bytes":  3264,
+                               "sha256":  "77cfaf622feae32c3a9a2bac84b0084aea4552c8696bee39e58e131aecb6693e"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune-deploy-prep-artifacts.txt",
+                               "bytes":  449,
+                               "sha256":  "0961efc90cc55c4e74d41de3e15011a220db1baee23a1e8100b0b558b76d9e5b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune-deploy-prep.log",
+                               "bytes":  80,
+                               "sha256":  "063d56806942ca039aae2fe3ac771e585e8518ef45615ca27d10f394e288f394"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune/candidate_snapshots.csv",
+                               "bytes":  7166,
+                               "sha256":  "2361cdeb2a6eabb25b7531982aaad2d60a2edd6fb7db24675495e396017bbce8"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune/cargo-bench-native-inprocess.log",
+                               "bytes":  145,
+                               "sha256":  "f8415e3765f87a7def3995f0c24677670a122084da15c71ce11e14247f3a4d95"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune/m37_metrics.csv",
+                               "bytes":  539497,
+                               "sha256":  "b9a57b5645d842f81084055a760b71c0027a80a54e53494b24d9856d5f25c5f1"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune/memory-owner-profile.csv",
+                               "bytes":  12400,
+                               "sha256":  "acdfffd0c88ab87ae0ffe0199868fc2028c82c0c8da55a20d9e14524f64435f4"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune/metadata.txt",
+                               "bytes":  643,
+                               "sha256":  "8a6f4697b57ee9416854e5bd88ec9f23e9370b9d3d3a560a50d371462248cbbb"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune/product_path_status.csv",
+                               "bytes":  1387,
+                               "sha256":  "6aa9971a53152257bc9575533ec913d1dce2b57ce941c73feda9ee8856d7be0c"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune/raw_lookup_microbench.csv",
+                               "bytes":  7365,
+                               "sha256":  "75278a5bd3f740a2abafba64c38b8970d00eb2621a1507b63583202fe6dfa534"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune/samples.csv",
+                               "bytes":  286457,
+                               "sha256":  "e9af337d117f55007d933cbea2f2591093261028bde28373bdc8d60c163e7360"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune/startup_session_trace.csv",
+                               "bytes":  106311,
+                               "sha256":  "9dc74e98c8f15e6742db92a311b17c7f44de2fded0d1ba8634eabf6bcf0c7773"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-a-yune/summary.csv",
+                               "bytes":  3089,
+                               "sha256":  "c1ff9c6b3ad5f852dd78680f90d2f13baf5256287d26a3f8afc9d58fa670ad85"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-b-yune-product/candidate_snapshots.csv",
+                               "bytes":  2689,
+                               "sha256":  "5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-b-yune-product/cargo-bench-native-inprocess.log",
+                               "bytes":  155,
+                               "sha256":  "c32f10d0c5c4d69c323e84bbb7e35c361b3048003edf78526ec649eb37c323d6"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-b-yune-product/m37_metrics.csv",
+                               "bytes":  66138,
+                               "sha256":  "9b4c887b1e541ff89059f458498655d6eb005d1e55c56089630c57d13a46be77"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-b-yune-product/memory-owner-profile.csv",
+                               "bytes":  20542,
+                               "sha256":  "459d93ae798a15035ad952bcd2d61950644d29bbddc32da1f201a7cf5c5597dd"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-b-yune-product/metadata.txt",
+                               "bytes":  548,
+                               "sha256":  "efa573990632961efc4c2243359ac817e5aa3b885227d07a45aea565f422bd02"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-b-yune-product/product_path_status.csv",
+                               "bytes":  1870,
+                               "sha256":  "314c98e2d30457bbf948f85a52935ff9d6e1181ac08d15ac167560d291a45e5d"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-b-yune-product/raw_lookup_microbench.csv",
+                               "bytes":  655,
+                               "sha256":  "82c9c866265ed8a732bbbb2b0b6796a936a734a7c0bb1bcb3a83ff09212f8955"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-b-yune-product/samples.csv",
+                               "bytes":  34062,
+                               "sha256":  "a40950f1cde88601b076769e92a23549e4baa3ca651e4b5c8433f08bf78d41e9"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-b-yune-product/startup_session_trace.csv",
+                               "bytes":  204934,
+                               "sha256":  "aadef368378716a22491e5a6f6214d4128aa59b28cebc132438e9d63ad7d6d70"
+                           },
+                           {
+                               "path":  "performance-ratchet/run3/track-b-yune-product/summary.csv",
+                               "bytes":  714,
+                               "sha256":  "6c8de25e4c27a1fdb3c07d583a679bc24de350a7a7704e9ac6f56548b13f4a12"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/README.md",
+                               "bytes":  826,
+                               "sha256":  "80b9d136f538b9511b7126ecfccfb17ebc64f510ed076fc1ce242a1afb63c392"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/actual-invocation.txt",
+                               "bytes":  1500,
+                               "sha256":  "7ca37be563998d71cfe2a6d0f00d07db5a1ccaa2039a71180dac05f1d38ef17e"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/candidate_snapshots.csv",
+                               "bytes":  22293,
+                               "sha256":  "4fcb03525759a40e5f1d8756b5456815f8758c3882aadf5358d3c1ff6f43c463"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/commands.txt",
+                               "bytes":  1608,
+                               "sha256":  "c68432277e6ee752f5e533f13340a8517a5a2bebe38bf9d0d10b9edf5c5dac10"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/environment.txt",
+                               "bytes":  3274,
+                               "sha256":  "8c02cd8c93baa683bec1352c02020992fe4cdeac2d6997eca4699ce4cf6ac0ef"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/external-provenance.txt",
+                               "bytes":  1282,
+                               "sha256":  "8ca3439e494ad993c67d268082f4bbbcab4a357e0f5b9eec9bf37f8658dd35e4"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/m37_metrics.csv",
+                               "bytes":  1023080,
+                               "sha256":  "7215ca5ca052710f3e2d396a7d049437628be2e61f02b68ecc694492c30628e5"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/memory-owner-profile.csv",
+                               "bytes":  36475,
+                               "sha256":  "65a79a4c452226fb1d02af7e08af70b059d9712347ed8feedb98a0e38db6cdff"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/native-benchmark-build-receipt.txt",
+                               "bytes":  1347,
+                               "sha256":  "cc4b7eed3df4fe46dc26fea6dc74ccf77a8c2596914560cf2eaaa1b79adb6075"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/product_path_status.csv",
+                               "bytes":  2981,
+                               "sha256":  "71357865013aa7143eaa87bf8a6f2a4ea6988c385290bf4b11a0bd5f8adb47cf"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/raw_lookup_microbench.csv",
+                               "bytes":  8466,
+                               "sha256":  "b57811b4a9badf12a6fca675dacb18a8fa20dae6617e17b301039895c3d02f08"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/run-status.txt",
+                               "bytes":  68,
+                               "sha256":  "ad468e8d6bb17f63fe9353328069e7575492836d4e31dd5c82d88646ef89b232"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/samples.csv",
+                               "bytes":  726571,
+                               "sha256":  "d9eb20253d23ecda0547eb656bcacbc08c9715eecd11be19c760888994e0c35e"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/startup_session_trace.csv",
+                               "bytes":  368818,
+                               "sha256":  "e36df0c9e17db1414ff61df7ffb1fb3504688009efe8a231156b3e622f923ccf"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/summary-comparison.csv",
+                               "bytes":  3394,
+                               "sha256":  "7a2f2bd477f551b4497407e9e983005ea363e877360ae9c50e276e9a198fd3e0"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/summary.csv",
+                               "bytes":  7992,
+                               "sha256":  "f078cff7566a6ea89e4b39bb6c7cd6549ef3d333e3077f6d520668017c8e9b20"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/threshold-check.csv",
+                               "bytes":  11058,
+                               "sha256":  "efa7e5e245368c8d5508bdf7eff1265cfa01664619124dc975f5cb42515a9e11"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-librime-1.17.0/candidate_snapshots.csv",
+                               "bytes":  7979,
+                               "sha256":  "445af9ff4ca999fc37740c98e4c68e8ac38cf9ff09a928d07fc3c610ee0221ae"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-librime-1.17.0/cargo-bench-native-inprocess.log",
+                               "bytes":  165,
+                               "sha256":  "b98b8f07d95561a6441984965e1604ffd6dbb8291b32032e0e1624a49f01a415"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-librime-1.17.0/m37_metrics.csv",
+                               "bytes":  3974,
+                               "sha256":  "1dc3aabcdc40b6492535239e66378680c2bef309d9773f3f0deda55becd16774"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-librime-1.17.0/memory-owner-profile.csv",
+                               "bytes":  219,
+                               "sha256":  "fa9eddb591acbe5e4dab8ce04afe7c5ef45948f6c5239591215680e7a0595977"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-librime-1.17.0/metadata.txt",
+                               "bytes":  693,
+                               "sha256":  "d9efc149b55481d6ba1b878b61bce972bb261e6c20622e2526ad4831a99d8b74"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-librime-1.17.0/product_path_status.csv",
+                               "bytes":  551,
+                               "sha256":  "2d5b2772b336d2f46696dbf92917e2e1c6a6ebe298a212e871274cb53051a9c3"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-librime-1.17.0/raw_lookup_microbench.csv",
+                               "bytes":  655,
+                               "sha256":  "82c9c866265ed8a732bbbb2b0b6796a936a734a7c0bb1bcb3a83ff09212f8955"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-librime-1.17.0/samples.csv",
+                               "bytes":  289730,
+                               "sha256":  "7cbe3abd9dda1cd4846f8a9c4e398edab10aab0181c52ace54eff66253ecf865"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-librime-1.17.0/startup_session_trace.csv",
+                               "bytes":  135,
+                               "sha256":  "5986f1e9e3d3b909fdc1b784d5efa57425ff45279429f5d7b5ab148efe7bca44"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-librime-1.17.0/summary.csv",
+                               "bytes":  3262,
+                               "sha256":  "90af6d772dbc3e8e38ab894934371e134eafb7a30fea6802a2a48c3fc6fd1116"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune-deploy-prep-artifacts.txt",
+                               "bytes":  449,
+                               "sha256":  "f097960c086d6c2fc2c1ce61b5a26b5a5173eef19845e14cccfab07788bafeba"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune-deploy-prep.log",
+                               "bytes":  80,
+                               "sha256":  "063d56806942ca039aae2fe3ac771e585e8518ef45615ca27d10f394e288f394"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune/candidate_snapshots.csv",
+                               "bytes":  7166,
+                               "sha256":  "2361cdeb2a6eabb25b7531982aaad2d60a2edd6fb7db24675495e396017bbce8"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune/cargo-bench-native-inprocess.log",
+                               "bytes":  145,
+                               "sha256":  "145e1277a5a811deeb5df634198ee20cfad1e990a8d27811d4bee05e24a37a25"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune/m37_metrics.csv",
+                               "bytes":  539282,
+                               "sha256":  "d58f04637321a32e1a36c4da1e7c769868c99b452649c137314ec3c343a39088"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune/memory-owner-profile.csv",
+                               "bytes":  12400,
+                               "sha256":  "bacd332dfc41ba696e3ebeadb40ba148d7df7696796daf5b6af464403127bf3d"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune/metadata.txt",
+                               "bytes":  643,
+                               "sha256":  "c98233bc0317e0ddae91b5c77dfe00939788046db22d18ed2e24510153be3c81"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune/product_path_status.csv",
+                               "bytes":  1387,
+                               "sha256":  "d5b87a61d1b5ed2cd742f5f6982a1e309ab6d4f807e8b5149b6389628063c4cd"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune/raw_lookup_microbench.csv",
+                               "bytes":  7365,
+                               "sha256":  "66d4587168b2bd6913383771dca20c145508c6388cf48393f38a2616fbdf509e"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune/samples.csv",
+                               "bytes":  286122,
+                               "sha256":  "80c0c262863c43b97e5c9004f1252f07479c3d0b07977da1e9c5f38a359320a8"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune/startup_session_trace.csv",
+                               "bytes":  106310,
+                               "sha256":  "d0968c2a008c3a5dfb1c88ca6efb0bee900014a00a3909cf5d2a3f255fad191b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-a-yune/summary.csv",
+                               "bytes":  3081,
+                               "sha256":  "1c3b0bb5aa884795a3fbde72cb5fb59d32d752c19128a851910671b0ef105a22"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-b-yune-product/candidate_snapshots.csv",
+                               "bytes":  2689,
+                               "sha256":  "5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-b-yune-product/cargo-bench-native-inprocess.log",
+                               "bytes":  155,
+                               "sha256":  "e3397f069c6c6ca16140387bc1a99b721265fcc155ddc78ca8711210c04cf9ab"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-b-yune-product/m37_metrics.csv",
+                               "bytes":  66176,
+                               "sha256":  "12560c15afd259a54533ea53842485e51453f8f472281ad6fcdc0efb3f83bd04"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-b-yune-product/memory-owner-profile.csv",
+                               "bytes":  20542,
+                               "sha256":  "911c75f6cbe4b3d301f4824a6fb1f1c0bba46c2c19a8dfcae0b41c354827c441"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-b-yune-product/metadata.txt",
+                               "bytes":  548,
+                               "sha256":  "84caa6f80f1f5db01f0f8d8e22eddd2ef8991d0b6c54db50781344a543e9a426"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-b-yune-product/product_path_status.csv",
+                               "bytes":  1870,
+                               "sha256":  "9b27b5be5f63d4d6ef1e78c8b830580a2f4419c141fcd9fbfd9fea2d5713161e"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-b-yune-product/raw_lookup_microbench.csv",
+                               "bytes":  655,
+                               "sha256":  "82c9c866265ed8a732bbbb2b0b6796a936a734a7c0bb1bcb3a83ff09212f8955"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-b-yune-product/samples.csv",
+                               "bytes":  34062,
+                               "sha256":  "3a6ccb0faaeec2bf7fe9ecf4a0468cc395381f7c59c03a9c066786ea157916cc"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-b-yune-product/startup_session_trace.csv",
+                               "bytes":  204940,
+                               "sha256":  "912eac7b4b36486221f440690afab51ad6fde3c2de0de985c5b7ddaa350d3187"
+                           },
+                           {
+                               "path":  "performance-ratchet/run4/track-b-yune-product/summary.csv",
+                               "bytes":  714,
+                               "sha256":  "ecdc8c36af5c2c0152b4cfb3acc00f7b797541565f87620992c522f99be4850c"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/README.md",
+                               "bytes":  826,
+                               "sha256":  "80b9d136f538b9511b7126ecfccfb17ebc64f510ed076fc1ce242a1afb63c392"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/actual-invocation.txt",
+                               "bytes":  1500,
+                               "sha256":  "7036866da2d08bd92e59f70806ccc99cdad878a6ba5571d28fe1dc553306755c"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/candidate_snapshots.csv",
+                               "bytes":  22293,
+                               "sha256":  "4fcb03525759a40e5f1d8756b5456815f8758c3882aadf5358d3c1ff6f43c463"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/commands.txt",
+                               "bytes":  1608,
+                               "sha256":  "04e9520a7f09457915bccc50eec6480ba8e9976a61b3872b6fcc3e2b6785fad3"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/environment.txt",
+                               "bytes":  3274,
+                               "sha256":  "f90e9ee71d40a35947e5f5c2a8404e27b53c6b2dc8d4536c3909639aaaff47a7"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/external-provenance.txt",
+                               "bytes":  1282,
+                               "sha256":  "d5e4734c58e6538831d1de65c84499cfa47535e6732c8e4582029e8b46f48b8e"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/m37_metrics.csv",
+                               "bytes":  1023035,
+                               "sha256":  "ca2fd078d2757752d6084c8d9686a1e2c56be5bc98539d5befdebfc50f568252"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/memory-owner-profile.csv",
+                               "bytes":  36475,
+                               "sha256":  "6223c9318dd9c8e206385c3a1f52ee335f927d6696349cdca4400af7f52b14c7"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/native-benchmark-build-receipt.txt",
+                               "bytes":  1347,
+                               "sha256":  "cc4b7eed3df4fe46dc26fea6dc74ccf77a8c2596914560cf2eaaa1b79adb6075"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/product_path_status.csv",
+                               "bytes":  2981,
+                               "sha256":  "f6922ae26b37763b8ecb80c3aac938819e82814738d165aba32c1b60c2d7a507"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/raw_lookup_microbench.csv",
+                               "bytes":  8466,
+                               "sha256":  "70ff7625e244b6871aa0c582271b2ba933bdd67e620cbdcdc78e86f0b9b4d3c5"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/run-status.txt",
+                               "bytes":  68,
+                               "sha256":  "498cee874fd5e23c4d3d4f59ed38399b68acb62eadd949f5da6455d0c5204e56"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/samples.csv",
+                               "bytes":  726876,
+                               "sha256":  "3ed115f40365dd9324ad8e5ccd12e3f39c514613912c4e992f283c16ff9dce9a"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/startup_session_trace.csv",
+                               "bytes":  368865,
+                               "sha256":  "13c62f4123560702c36633b5882c662722a6321428278e5a055e809ccf83e111"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/summary-comparison.csv",
+                               "bytes":  3392,
+                               "sha256":  "1815f6b3136565926e48212a8e70fac81b960eb1e90e46e096472942547c45a6"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/summary.csv",
+                               "bytes":  7991,
+                               "sha256":  "7da02df86c5dcc5e82845367d5d4c85ba97150794397eafc39bd50bb295af562"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/threshold-check.csv",
+                               "bytes":  11058,
+                               "sha256":  "17481d1332e6cac1eed2c42ebc698dfb7efb40a7eecb0db3fa5e439e7daac187"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-librime-1.17.0/candidate_snapshots.csv",
+                               "bytes":  7979,
+                               "sha256":  "445af9ff4ca999fc37740c98e4c68e8ac38cf9ff09a928d07fc3c610ee0221ae"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-librime-1.17.0/cargo-bench-native-inprocess.log",
+                               "bytes":  165,
+                               "sha256":  "4f8094c1ffba1b6953e1f34ad6d6eea8147480be70312f3f9a1054c8c64d92d2"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-librime-1.17.0/m37_metrics.csv",
+                               "bytes":  3974,
+                               "sha256":  "1dc3aabcdc40b6492535239e66378680c2bef309d9773f3f0deda55becd16774"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-librime-1.17.0/memory-owner-profile.csv",
+                               "bytes":  219,
+                               "sha256":  "fa9eddb591acbe5e4dab8ce04afe7c5ef45948f6c5239591215680e7a0595977"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-librime-1.17.0/metadata.txt",
+                               "bytes":  693,
+                               "sha256":  "314ffa01b82433fef7beb33084a566d1740831a34aeb9644610f331bede90fbe"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-librime-1.17.0/product_path_status.csv",
+                               "bytes":  551,
+                               "sha256":  "2d5b2772b336d2f46696dbf92917e2e1c6a6ebe298a212e871274cb53051a9c3"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-librime-1.17.0/raw_lookup_microbench.csv",
+                               "bytes":  655,
+                               "sha256":  "82c9c866265ed8a732bbbb2b0b6796a936a734a7c0bb1bcb3a83ff09212f8955"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-librime-1.17.0/samples.csv",
+                               "bytes":  289726,
+                               "sha256":  "48e31f9e2c95423caaef48d0980165d03a0ad8af854fdf4207deabd5884428c2"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-librime-1.17.0/startup_session_trace.csv",
+                               "bytes":  135,
+                               "sha256":  "5986f1e9e3d3b909fdc1b784d5efa57425ff45279429f5d7b5ab148efe7bca44"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-librime-1.17.0/summary.csv",
+                               "bytes":  3260,
+                               "sha256":  "7bd9ad2b385ea4c0f8dc33449ed35ec475c1c7744444ab912e778d0992f7da45"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune-deploy-prep-artifacts.txt",
+                               "bytes":  449,
+                               "sha256":  "ad8506a35754952dad79f99c395fa01aa1d4e509f325387671ecd793e9faca51"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune-deploy-prep.log",
+                               "bytes":  80,
+                               "sha256":  "063d56806942ca039aae2fe3ac771e585e8518ef45615ca27d10f394e288f394"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune/candidate_snapshots.csv",
+                               "bytes":  7166,
+                               "sha256":  "2361cdeb2a6eabb25b7531982aaad2d60a2edd6fb7db24675495e396017bbce8"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune/cargo-bench-native-inprocess.log",
+                               "bytes":  145,
+                               "sha256":  "ec61d879bd45d26c38a990d2daf7fed0cf0c0dd0a655b2a136564c282f947c55"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune/m37_metrics.csv",
+                               "bytes":  539113,
+                               "sha256":  "8089441703bac600fd038d35adb69e39c6d2b449db642a1aee6c833ff0a2d5c1"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune/memory-owner-profile.csv",
+                               "bytes":  12400,
+                               "sha256":  "b0d896aabad68d20be74a03959af8fd15e872508f613c2399a2649d60108a03e"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune/metadata.txt",
+                               "bytes":  643,
+                               "sha256":  "9b33896ab4434cb9734cf4e903779411cd1fff071329bcfcf0bbc854d884a010"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune/product_path_status.csv",
+                               "bytes":  1387,
+                               "sha256":  "f28cb7ccd1a752704a1167e7ec331bc986795d3f3312565d7eb09c01960d747d"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune/raw_lookup_microbench.csv",
+                               "bytes":  7365,
+                               "sha256":  "37bf571f70207836ebf2103a503b2ac0c58dc5de594d46394a130860570f4f94"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune/samples.csv",
+                               "bytes":  286431,
+                               "sha256":  "de0e838a8b5640c66a5e50c95f2c442fe504022c1f70967ac75c5b0f83770bda"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune/startup_session_trace.csv",
+                               "bytes":  106309,
+                               "sha256":  "353f534614bc60cc7ec13125ba8ef3fcfefd0e65e61e9f11a5fe4b000fb5c1c8"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-a-yune/summary.csv",
+                               "bytes":  3082,
+                               "sha256":  "78f1a58036de7bebaff38369787b6c8fc22f0e78b99d97aa2a3a0c78c1aac308"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-b-yune-product/candidate_snapshots.csv",
+                               "bytes":  2689,
+                               "sha256":  "5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-b-yune-product/cargo-bench-native-inprocess.log",
+                               "bytes":  155,
+                               "sha256":  "51f766e1f34c2f799ca0decaa7fc9600b5e66d21c00cb2a64f619088d3df710d"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-b-yune-product/m37_metrics.csv",
+                               "bytes":  66300,
+                               "sha256":  "998ea31c36440e1e1d526fc380ac04b71aeb0e014c4b1aaf1ad7735febb1aa19"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-b-yune-product/memory-owner-profile.csv",
+                               "bytes":  20542,
+                               "sha256":  "d68f6d0d921a3370bd7f1aa4c57be2bf312ae44e1e1e4e627207cacd408366a5"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-b-yune-product/metadata.txt",
+                               "bytes":  548,
+                               "sha256":  "5d2c857b149388eb83ebb807027299b8c5790a1a4074141da4149e8648895e09"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-b-yune-product/product_path_status.csv",
+                               "bytes":  1870,
+                               "sha256":  "df1acfd697e1fa1b0e4b8d43f00785dc0c4909d67e25d70345f1dd21b289658b"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-b-yune-product/raw_lookup_microbench.csv",
+                               "bytes":  655,
+                               "sha256":  "82c9c866265ed8a732bbbb2b0b6796a936a734a7c0bb1bcb3a83ff09212f8955"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-b-yune-product/samples.csv",
+                               "bytes":  34062,
+                               "sha256":  "544bc7fc99ee021e1b5e7340945c2b0fec030144cd2c2c4bf409d2288184f11d"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-b-yune-product/startup_session_trace.csv",
+                               "bytes":  204988,
+                               "sha256":  "e4bc753d95d615062918502dd97d0b0c0e924cf543c99c5b654c9f48b95118b8"
+                           },
+                           {
+                               "path":  "performance-ratchet/run5/track-b-yune-product/summary.csv",
+                               "bytes":  714,
+                               "sha256":  "5b316b19fbabce81a7d29129ec6a9277125bcc6a1050aa71dbcc3a2ae1aa8972"
+                           },
+                           {
+                               "path":  "reviews/quality-review.md",
+                               "bytes":  930,
+                               "sha256":  "262a55963812b384d312a5592f26e9041e4ee0d4e1e8d26542df6486d71ad85d"
+                           },
+                           {
+                               "path":  "reviews/runner-review.md",
+                               "bytes":  714,
+                               "sha256":  "b55e7e967944714546e493cc0b6ed0834d9285d47ce89d6aa5d0dcc741259995"
+                           },
+                           {
+                               "path":  "reviews/spec-review.md",
+                               "bytes":  898,
+                               "sha256":  "5e201c0270431f41752da76576997b4246d55f48e9b49dec341063c08aa76d6c"
+                           },
+                           {
+                               "path":  "setup-attempts.md",
+                               "bytes":  1496,
+                               "sha256":  "3f2f9e52533a87ec736f84c2049d6a2907ec711f4e1e06c56d548ed4400e2948"
+                           },
+                           {
+                               "path":  "staging/staging-manifest.json",
+                               "bytes":  1480,
+                               "sha256":  "113573b3b6a2e5cb335635cc8de6b9016b85ea3e9d30ff8cd431c8b9edf11c7b"
+                           },
+                           {
+                               "path":  "verification.md",
+                               "bytes":  3996,
+                               "sha256":  "3533b24004b1ca3ade0b3ecda66848dd3652b22308bd4dfe70a808827c10aa47"
+                           }
+                       ]
+}

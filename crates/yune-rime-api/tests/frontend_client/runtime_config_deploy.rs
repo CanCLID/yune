@@ -127,7 +127,10 @@ fn frontend_style_api_table_can_receive_runtime_notifications() {
         6
     );
 
-    assert_eq!(destroy_session(session_id), TRUE);
+    // A successful workspace deployment invalidates every live session before
+    // replacing the shared dictionary and lookup caches. The old handle must
+    // therefore already be absent when the frontend tries to destroy it.
+    assert_eq!(destroy_session(session_id), FALSE);
     let reset_traits = empty_traits();
     unsafe { setup(&reset_traits) };
     fs::remove_dir_all(root).expect("temp dirs should be removed");

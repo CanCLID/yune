@@ -114,17 +114,19 @@ TypeDuck profile split).
   into bounded slices, dispatch repo-local custom agents when available, and
   keep the main thread focused on coordination, integration, and final
   verification.
-- Keep the main/default model on the strongest available Codex model with
-  highest reasoning (`gpt-5.5` with `model_reasoning_effort = "xhigh"` in this
-  repo). Do not downgrade the main session just to use Spark quota.
-- Use Spark (`gpt-5.3-codex-spark`) only for trivial or simple sub-agent slices,
-  such as bounded file lookups, simple mechanical edits, straightforward
-  test-name gathering, or low-risk narrow reviews. Spark agents must always use
-  the highest reasoning setting (`model_reasoning_effort = "xhigh"`). Prefer the
-  repo-local `spark-*` agents for those slices when available.
-- Use the default strongest model for complex implementation, architecture,
-  debugging, compatibility/oracle decisions, C ABI work, security-sensitive
-  resource handling, broad reviews, and any task whose risk is unclear.
+- Keep the main/default model and every subagent on the strongest available
+  Codex model at its highest supported reasoning level. This repo pins
+  `gpt-5.6-sol` with `model_reasoning_effort = "ultra"` for the main session and
+  the repo-local `default`, `worker`, `explorer`, and `yune-reviewer` agents.
+- The repo-local agent definitions intentionally override Codex's built-in
+  `default`, `worker`, and `explorer` roles so delegated work is not
+  automatically routed to a cheaper model. Use the role that fits the slice;
+  use `yune-reviewer` for independent review passes.
+- There is no automatic fallback. If Sol Ultra is unavailable on the current
+  account or surface, explicitly override both the main default and every
+  repo-local agent definition to the strongest available model at its highest
+  supported reasoning level, and state the fallback. Do not silently downgrade
+  work for latency or quota.
 - Use parallel subagents for independent read-heavy work: codebase exploration,
   failing-test triage, compatibility/oracle investigation, and review passes.
   For write-heavy work, avoid parallel agents editing overlapping files; use one
@@ -138,8 +140,8 @@ TypeDuck profile split).
   high enough that skipping it would make the handoff unreliable. For docs-only
   or narrow mechanical edits, prefer targeted inspection/link checks over broad
   test suites.
-- Do not claim Spark quota was consumed unless the active model or subagent
-  configuration is visible or confirmed in the current session.
+- Do not claim Sol Ultra was used unless the active runtime or agent thread
+  reports it; checked-in configuration proves intent, not execution.
 
 ## Quality Gate
 

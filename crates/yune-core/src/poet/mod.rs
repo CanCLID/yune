@@ -1910,6 +1910,33 @@ impl UpstreamSentenceModel {
         self.candidates_for_abbreviation_graph_with_limit(input, &graph, max_candidates)
     }
 
+    #[cfg(test)]
+    pub(crate) fn abbreviation_graph_texts_for_code_spans_for_test(
+        &self,
+        input: &str,
+        spans: &[SentenceCodeSpan],
+        bounded: bool,
+    ) -> Vec<String> {
+        let spans = spans
+            .iter()
+            .map(WeightedSentenceCodeSpan::from)
+            .collect::<Vec<_>>();
+        let graph = self.word_graph_for_code_spans(
+            input,
+            &spans,
+            CodeSpanGraphOptions::complete(true, bounded),
+        );
+        let mut seen = HashSet::new();
+        graph
+            .get(&0)
+            .and_then(|edges| edges.get(&input.len()))
+            .into_iter()
+            .flatten()
+            .filter(|&entry| seen.insert(entry.text.as_str()))
+            .map(|entry| entry.text.clone())
+            .collect()
+    }
+
     /// Evaluates deployed surface-spelling spans with the ordinary script-
     /// translator sentence semantics. Unlike the abbreviation entry point
     /// above, this uses the normal preset vocabulary, normal dictionary
@@ -4510,7 +4537,12 @@ fn push_bounded_collector_chunk_entry(
         .position(|other| same_chunk(other) && other.text == entry.text)
     {
         if order(&entry, &entries[index]) == Ordering::Less {
-            entries[index] = entry;
+            // The complete collector's stable homophone sort retains emission
+            // order for an equal final key. A later, better duplicate therefore
+            // occupies its later emission position rather than the original
+            // row's slot.
+            entries.remove(index);
+            entries.push(entry);
         }
         return false;
     }
@@ -4529,7 +4561,11 @@ fn push_bounded_collector_chunk_entry(
         .max_by(|left, right| order(&entries[*left], &entries[*right]))
         .expect("a saturated collector chunk should have a worst row");
     if order(&entry, &entries[worst_index]) == Ordering::Less {
-        entries[worst_index] = entry;
+        // Removing the displaced row and appending the later emission keeps
+        // stable equal-weight order identical to the complete collector. An
+        // in-place replacement would turn A(low), B(high), C(high) into C, B.
+        entries.remove(worst_index);
+        entries.push(entry);
     }
     false
 }

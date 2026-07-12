@@ -232,6 +232,113 @@ fn owned_and_byte_backed_sentence_graphs_preserve_equal_weight_source_order() {
 }
 
 #[test]
+fn bounded_abbreviation_replacement_preserves_complete_equal_weight_order() {
+    let entries = vec![
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("a", "B", 100.0),
+        TableEntry::new("a", "C", 100.0),
+        TableEntry::new("a", "D", 100.0),
+        TableEntry::new("a", "E", 100.0),
+        TableEntry::new("a", "F", 100.0),
+        TableEntry::new("a", "G", 100.0),
+        TableEntry::new("a", "H", 100.0),
+        TableEntry::new("b", "Z", 100.0),
+    ];
+    let abbreviation_vocabulary = vec![
+        PresetVocabularyEntry::new("AZ", 1.0),
+        PresetVocabularyEntry::new("BZ", 100.0),
+        PresetVocabularyEntry::new("CZ", 100.0),
+        PresetVocabularyEntry::new("DZ", 100.0),
+        PresetVocabularyEntry::new("EZ", 100.0),
+        PresetVocabularyEntry::new("FZ", 100.0),
+        PresetVocabularyEntry::new("GZ", 100.0),
+        PresetVocabularyEntry::new("HZ", 100.0),
+    ];
+    let checksum = 0x5904_b401;
+    let owned = UpstreamSentenceModel::from_table_entries_with_abbreviation_vocabulary(
+        entries.clone(),
+        &[],
+        &abbreviation_vocabulary,
+        16,
+    );
+    let byte_backed = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(build_poet_bin(
+            entries,
+            &[],
+            &abbreviation_vocabulary,
+            checksum,
+        ))) as Arc<dyn PoetByteSource>,
+        checksum,
+        16,
+    )
+    .expect("byte-backed bounded-order fixture should parse");
+    let spans = [
+        SentenceCodeSpan::new(0, 1, "a"),
+        SentenceCodeSpan::new(1, 2, "b"),
+    ];
+
+    for (storage, model) in [("owned", owned), ("byte-backed", byte_backed)] {
+        let complete = model.abbreviation_graph_texts_for_code_spans_for_test("ab", &spans, false);
+        let bounded = model.abbreviation_graph_texts_for_code_spans_for_test("ab", &spans, true);
+
+        assert_eq!(bounded, complete[..bounded.len()], "{storage}");
+        assert_eq!(
+            bounded,
+            ["BZ", "CZ", "DZ", "EZ", "FZ", "GZ", "HZ"],
+            "{storage}: replacing the low head must preserve later equal-weight source order"
+        );
+    }
+}
+
+#[test]
+fn bounded_abbreviation_duplicate_upgrade_preserves_complete_equal_weight_order() {
+    let entries = vec![
+        TableEntry::new("a", "X", 100.0),
+        TableEntry::new("a", "Y", 100.0),
+        TableEntry::new("b", "Z", 100.0),
+    ];
+    let abbreviation_vocabulary = vec![
+        PresetVocabularyEntry::new("XZ", 1.0),
+        PresetVocabularyEntry::new("YZ", 100.0),
+        PresetVocabularyEntry::new("XZ", 100.0),
+    ];
+    let checksum = 0x5904_b402;
+    let owned = UpstreamSentenceModel::from_table_entries_with_abbreviation_vocabulary(
+        entries.clone(),
+        &[],
+        &abbreviation_vocabulary,
+        16,
+    );
+    let byte_backed = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(build_poet_bin(
+            entries,
+            &[],
+            &abbreviation_vocabulary,
+            checksum,
+        ))) as Arc<dyn PoetByteSource>,
+        checksum,
+        16,
+    )
+    .expect("byte-backed duplicate-upgrade fixture should parse");
+    let spans = [
+        SentenceCodeSpan::new(0, 1, "a"),
+        SentenceCodeSpan::new(1, 2, "b"),
+    ];
+
+    for (storage, model) in [("owned", owned), ("byte-backed", byte_backed)] {
+        let complete = model.abbreviation_graph_texts_for_code_spans_for_test("ab", &spans, false);
+        let bounded = model.abbreviation_graph_texts_for_code_spans_for_test("ab", &spans, true);
+
+        assert_eq!(bounded, complete, "{storage}");
+        assert_eq!(
+            bounded,
+            ["YZ", "XZ"],
+            "{storage}: an upgraded duplicate must keep its later source position"
+        );
+    }
+}
+
+#[test]
 fn singular_grammar_poet_retains_up_to_seven_last_word_states() {
     let mut graph = WordGraph::new();
     graph.entry(0).or_default().entry(1).or_default().extend([

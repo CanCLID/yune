@@ -5,12 +5,12 @@ use serde_json::Value;
 
 use crate::poet::UpstreamSentenceScratch;
 use crate::{
-    build_poet_bin, encode_octagram_key, make_sentences, make_sentences_with_grammar,
-    null_grammar_score, CandidateSource, DartsDoubleArray, Grammar, MemoryOwnerClass,
-    OctagramGrammar, OctagramGrammarConfig, OctagramGrammarParseError, OwnedPoetBytes,
-    PoetByteSource, PresetVocabularyEntry, SentenceCodeSpan, StaticTableTranslator,
-    TableDictionary, TableEntry, Translator, UpstreamSentenceModel, WordGraph, WordGraphEntry,
-    UPSTREAM_NO_GRAMMAR_PENALTY,
+    build_poet_bin, build_table_bin, encode_octagram_key, make_sentences,
+    make_sentences_with_grammar, null_grammar_score, parse_rime_table_bin_dictionary,
+    CandidateSource, DartsDoubleArray, Grammar, MemoryOwnerClass, OctagramGrammar,
+    OctagramGrammarConfig, OctagramGrammarParseError, OwnedPoetBytes, PoetByteSource,
+    PresetVocabularyEntry, SentenceCodeSpan, StaticTableTranslator, TableDictionary, TableEntry,
+    Translator, UpstreamSentenceModel, WordGraph, WordGraphEntry, UPSTREAM_NO_GRAMMAR_PENALTY,
 };
 
 #[test]
@@ -459,6 +459,28 @@ fn natural_log_table_weights_are_not_logged_twice_for_sentence_ranking() {
     assert_eq!(raw_candidates[0].text, "ABC");
     assert_eq!(raw_candidates[0].source, CandidateSource::Sentence);
     assert_eq!(natural_log_candidates, raw_candidates);
+}
+
+#[test]
+fn dictionary_constructor_preserves_compiled_natural_log_sentence_semantics() {
+    let raw_dictionary = TableDictionary::new([
+        TableEntry::new("a", "A", 1_000_000.0),
+        TableEntry::new("bc", "BC", 2.0),
+        TableEntry::new("ab", "X", 100.0),
+        TableEntry::new("c", "Y", 100.0),
+    ]);
+    let compiled_dictionary =
+        parse_rime_table_bin_dictionary(build_table_bin(&raw_dictionary, 0x5904_b401))
+            .expect("compiled table should parse");
+
+    let raw = UpstreamSentenceModel::from_dictionary(&raw_dictionary, 10);
+    let compiled = UpstreamSentenceModel::from_dictionary(&compiled_dictionary, 10);
+    let raw_candidates = raw.candidates_for_input("abc");
+    let compiled_candidates = compiled.candidates_for_input("abc");
+
+    assert_eq!(raw_candidates[0].text, "ABC");
+    assert_eq!(raw_candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(compiled_candidates, raw_candidates);
 }
 
 #[test]
@@ -975,6 +997,55 @@ fn script_phrase_vocabulary_preserves_blank_source_rows_and_suppresses_preset_du
                 candidate.text == "CD" && candidate.source == CandidateSource::Table
             }),
             "{storage}: a blank-code source phrase is encoded before preset suppression"
+        );
+    }
+}
+
+#[test]
+fn compiled_natural_log_blank_source_phrases_keep_raw_weight_order() {
+    let raw_entries = vec![
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("a", "X", 100.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("b", "Y", 100.0),
+        TableEntry::new("ab", "XY", 2_500.0),
+        TableEntry::new("", "AB", 3_292.0),
+    ];
+    let compiled_entries = raw_entries
+        .iter()
+        .map(|entry| TableEntry::new(&entry.code, &entry.text, entry.weight.ln()))
+        .collect::<Vec<_>>();
+    let vocabulary = [PresetVocabularyEntry::new("AB", 1_000_000.0)];
+    let checksum = 0x5904_0004;
+    let raw = UpstreamSentenceModel::from_table_entries(raw_entries.clone(), &vocabulary, 10);
+    let compiled =
+        UpstreamSentenceModel::from_natural_log_table_entries(compiled_entries, &vocabulary, 10);
+    let byte = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(build_poet_bin(
+            raw_entries,
+            &vocabulary,
+            &vocabulary,
+            checksum,
+        ))) as Arc<dyn PoetByteSource>,
+        checksum,
+        10,
+    )
+    .expect("raw-domain poet artifact should load");
+    let spans = [
+        SentenceCodeSpan::new(0, 1, "a"),
+        SentenceCodeSpan::new(1, 2, "b"),
+    ];
+
+    for (storage, model) in [("raw", raw), ("compiled", compiled), ("byte", byte)] {
+        let texts = model
+            .script_phrase_candidates_for_code_spans("ab", &spans)
+            .into_iter()
+            .map(|candidate| candidate.text)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            texts.iter().take(2).map(String::as_str).collect::<Vec<_>>(),
+            ["AB", "XY"],
+            "{storage}: source-only ScriptEncoder weight must remain comparable with explicit table rows"
         );
     }
 }

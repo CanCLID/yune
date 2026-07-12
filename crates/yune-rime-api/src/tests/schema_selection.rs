@@ -39,8 +39,8 @@ fn m21_gap_01_copy_asset(
 }
 
 fn m21_gap_01_write_real_browser_assets(shared: &std::path::Path, staging: &std::path::Path) {
-    let schema_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../apps/yune-web/source/public/schema");
+    let schema_root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public/schema");
     for file_name in [
         "default.yaml",
         "default.custom.yaml",

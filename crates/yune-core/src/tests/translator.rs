@@ -1036,6 +1036,135 @@ Y	def	1
 }
 
 #[test]
+fn legacy_fallback_raw_and_v2_compiled_weights_keep_sentence_and_prediction_parity() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: legacy_weight_domain_parity
+version: "0.1"
+sort: by_weight
+...
+
+A	ab	1000
+B	cd	1000
+C	ef	1000
+X	abc	1
+Y	def	1
+HIGH	na	100
+BOUNDARY	nb	10
+DROP	nc	9
+"#,
+    )
+    .expect("legacy weight-domain fixture should parse");
+
+    let configure = |translator: StaticTableTranslator| {
+        translator
+            .with_completion(true)
+            .with_prediction_weight_threshold(10.0)
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::LegacyFallback)
+            .with_sentence_word_penalty(21.0)
+    };
+    let raw = configure(StaticTableTranslator::from_dictionary(dictionary.clone()));
+
+    let table_bytes = build_table_bin(&dictionary, 0x5904_b007);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("v2 compiled metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("v2 compiled table should parse");
+    let compiled = configure(StaticTableTranslator::from_compact_table_store(store, None));
+
+    let signature = |candidates: Vec<Candidate>| {
+        candidates
+            .into_iter()
+            .map(|candidate| (candidate.text, candidate.source))
+            .collect::<Vec<_>>()
+    };
+    let raw_sentence = signature(raw.translate("abcdef"));
+    let compiled_sentence = signature(compiled.translate("abcdef"));
+    assert_eq!(compiled_sentence, raw_sentence);
+    assert_eq!(
+        raw_sentence[0],
+        ("XY".to_owned(), CandidateSource::Sentence)
+    );
+
+    let raw_predictions = signature(raw.translate("n"));
+    let compiled_predictions = signature(compiled.translate("n"));
+    assert_eq!(compiled_predictions, raw_predictions);
+    assert_eq!(
+        raw_predictions,
+        [
+            ("HIGH".to_owned(), CandidateSource::Completion),
+            ("BOUNDARY".to_owned(), CandidateSource::Completion),
+        ],
+        "the inclusive threshold and prediction order must be weight-domain invariant"
+    );
+}
+
+#[test]
+fn legacy_fallback_original_prediction_merge_uses_raw_weights_in_eager_and_bounded_paths() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: legacy_original_prediction_weight_domain
+version: "0.1"
+sort: original
+...
+
+ANCHOR	n	1
+ORDINARY	n	0.25
+PREDICTION	n1a	0.5
+"#,
+    )
+    .expect("sort-original prediction fixture should parse");
+
+    let configure = |translator: StaticTableTranslator| {
+        translator
+            .with_completion(true)
+            .with_prediction_candidate_limit(1)
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::LegacyFallback)
+    };
+    let raw = configure(StaticTableTranslator::from_dictionary(dictionary.clone()));
+    let table_bytes = build_table_bin(&dictionary, 0x5904_b008);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("sort-original v2 metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("sort-original v2 table should parse");
+    let compiled = configure(StaticTableTranslator::from_compact_table_store(store, None));
+
+    let signature = |candidates: &[Candidate]| {
+        candidates
+            .iter()
+            .map(|candidate| (candidate.text.clone(), candidate.source.clone()))
+            .collect::<Vec<_>>()
+    };
+    let expected = [
+        ("ANCHOR".to_owned(), CandidateSource::Table),
+        ("PREDICTION".to_owned(), CandidateSource::Completion),
+        ("ORDINARY".to_owned(), CandidateSource::Table),
+    ];
+    let raw_eager = raw.translate("n");
+    let compiled_eager = compiled.translate("n");
+    assert_eq!(signature(&raw_eager), expected);
+    assert_eq!(signature(&compiled_eager), expected);
+
+    let bounded = |translator: &StaticTableTranslator| {
+        translator
+            .translate_with_context_and_request(
+                "n",
+                &Status::default(),
+                &HashMap::new(),
+                &Context::default(),
+                CandidateRequest::bounded(3),
+            )
+            .candidates
+    };
+    assert_eq!(signature(&bounded(&raw)), expected);
+    assert_eq!(signature(&bounded(&compiled)), expected);
+}
+
+#[test]
 fn sentence_span_fold_prefers_exact_then_quality_and_keeps_first_tie() {
     let _guard = super::m37_metrics_test_guard();
     let dictionary = TableDictionary::new([
@@ -2561,6 +2690,109 @@ fn transformed_bopomofo_surface_preserves_digits_on_byte_backed_and_heap_paths()
 }
 
 #[test]
+fn transformed_bopomofo_upstream_script_honors_leading_single_opt_out() {
+    let formulas = [
+        "xform/^hao/cl/".to_owned(),
+        "xform/^ni/su/".to_owned(),
+        "xform/^wan/j0/".to_owned(),
+    ];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("hao3", "\u{597d}", 100.0),
+        TableEntry::new("ni3", "\u{4f60}", 90.0),
+        TableEntry::new("wan6", "\u{73a9}", 80.0),
+        // A one-scalar phrase consuming two syllables is not the independently
+        // configurable leading-single family and must remain visible.
+        TableEntry::new("hao3ni3", "Q", 1.0),
+    ]);
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, 0x5904_b001, 0x5904_b002);
+
+    let build = |leading_syllable_reachability: bool, prefix_fallback: bool| {
+        let owned_prism = parse_rime_prism_bin_payload(prism_bytes.clone())
+            .expect("owned Bopomofo opt-out prism should parse");
+        let owned =
+            StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(owned_prism))
+                .with_spelling_algebra(&formulas)
+                .with_sentence(true)
+                .with_sentence_policy(SentencePolicy::UpstreamScript)
+                .with_prefix_fallback(prefix_fallback)
+                .with_leading_syllable_reachability(leading_syllable_reachability)
+                .with_upstream_sentence_model(100);
+
+        let table_bytes = build_table_bin(&dictionary, 0x5904_b001);
+        let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+            .expect("byte-backed Bopomofo opt-out table metadata should parse");
+        let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+            .expect("byte-backed Bopomofo opt-out table should parse");
+        let prism_source: Arc<dyn CompactTableByteSource> = Arc::new(AlgebraPrismByteSource(
+            Arc::<[u8]>::from(prism_bytes.clone()),
+        ));
+        let byte_prism = parse_rime_prism_runtime_payload(prism_source)
+            .expect("byte-backed Bopomofo opt-out prism should parse");
+        let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+            store,
+            Some(byte_prism),
+        )
+        .with_spelling_algebra(&formulas)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_prefix_fallback(prefix_fallback)
+        .with_leading_syllable_reachability(leading_syllable_reachability)
+        .with_upstream_sentence_model(100);
+
+        [("owned", owned), ("byte-backed", byte_backed)]
+    };
+
+    for (storage, translator) in build(false, false) {
+        let candidates = translator.translate("cl3su3j06");
+        assert!(
+            candidates
+                .iter()
+                .any(|candidate| candidate.source == CandidateSource::Sentence),
+            "{storage}: explicit false must retain the full sentence; candidates were {candidates:?}"
+        );
+        assert!(
+            candidates
+                .iter()
+                .all(|candidate| candidate.text != "\u{597d}"),
+            "{storage}: explicit false must suppress the transformed leading single"
+        );
+        assert!(
+            candidates.iter().any(|candidate| {
+                candidate.text == "Q"
+                    && matches!(
+                        candidate.source,
+                        CandidateSource::PartialTable { consumed: 6, .. }
+                    )
+            }),
+            "{storage}: a one-scalar two-syllable phrase must remain visible"
+        );
+    }
+
+    for (owner, translators) in [
+        ("default-on", build(true, false)),
+        ("prefix_fallback", build(false, true)),
+    ] {
+        for (storage, translator) in translators {
+            assert!(
+                translator.translate("cl3su3j06").iter().any(|candidate| {
+                    candidate.text == "\u{597d}"
+                        && matches!(
+                            candidate.source,
+                            CandidateSource::PartialTable { consumed: 3, .. }
+                        )
+                }),
+                "{storage}: {owner} must retain the transformed leading single"
+            );
+        }
+    }
+}
+
+#[test]
 fn transformed_correction_only_surface_is_not_a_default_reachability_edge() {
     let formulas = ["derive/^hao$/hx/correction".to_owned()];
     let heap = StaticTableTranslator::new([("hao", "\u{597d}"), ("ni", "\u{4f60}")])
@@ -2652,6 +2884,189 @@ fn normal_correction_wins_a_fuzzy_collision_for_compact_and_heap_reachability() 
         bare_qualities[0], bare_qualities[1],
         "compact and heap collision paths must apply the same merged credibility"
     );
+}
+
+#[test]
+fn spelling_credibility_ranks_in_log_domain_across_raw_and_compiled_storage() {
+    // A fuzzy spelling carries credibility ln(0.5). Librime compares
+    // ln(dictionary_weight) + credibility, so A's effective weight is 5 and
+    // the normal B row at 7 must win. Adding ln(0.5) directly to the raw value
+    // would incorrectly keep A (10 - 0.693) ahead on source/legacy storage.
+    let formulas = ["fuzz/^aa1$/x/".to_owned(), "derive/^ab1$/x/".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("aa1", "A", 10.0),
+        TableEntry::new("ab1", "B", 7.0),
+    ]);
+    let syllabary = ["aa1", "ab1"].map(str::to_owned);
+    let checksum = 0x5904_b411;
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, checksum, 0x5904_b412);
+
+    let heap = StaticTableTranslator::from_dictionary(dictionary.clone())
+        .with_spelling_algebra(&formulas)
+        .with_sentence(false);
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone())
+                .expect("owned credibility-domain prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(false);
+
+    let table_bytes = build_table_bin(&dictionary, checksum);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("compiled credibility-domain metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("compiled credibility-domain table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("compiled credibility-domain prism should parse");
+    let compiled = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(false);
+
+    let mut quality_rows = Vec::new();
+    for (storage, translator) in [("heap", heap), ("owned", owned), ("compiled", compiled)] {
+        let candidates = translator.translate("x");
+        assert_eq!(
+            candidates
+                .iter()
+                .take(2)
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["B", "A"],
+            "{storage}: credibility must multiply dictionary weight in the compiled log domain"
+        );
+        assert!(
+            candidates[0].quality > candidates[1].quality,
+            "{storage}: exported quality must preserve the same order"
+        );
+        let expected = [7.0_f32.exp(), 5.0_f32.exp()];
+        for (candidate, expected) in candidates.iter().take(2).zip(expected) {
+            assert!(
+                (candidate.quality - expected).abs() <= expected * 0.000_01,
+                "{storage}: exported quality {} must stay in the shared legacy namespace near {expected}",
+                candidate.quality
+            );
+        }
+        quality_rows.push([candidates[0].quality, candidates[1].quality]);
+    }
+    for row in quality_rows.iter().skip(1) {
+        for (&quality, &baseline) in row.iter().zip(&quality_rows[0]) {
+            assert!(
+                (quality - baseline).abs() <= baseline * 0.000_01,
+                "heap/compact/compiled credibility qualities must share one merge namespace"
+            );
+        }
+    }
+}
+
+#[test]
+fn raw_and_compiled_zero_weight_rows_stay_below_positive_one() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("yi", "ZERO", 0.0),
+        TableEntry::new("yi", "ONE", 1.0),
+    ]);
+    let heap = StaticTableTranslator::from_dictionary(dictionary.clone()).with_sentence(false);
+    let owned = StaticTableTranslator::from_compact_dictionary(dictionary.clone(), None)
+        .with_sentence(false);
+    let table_bytes = build_table_bin(&dictionary, 0x5904_b431);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("compiled zero-weight ordering metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("compiled zero-weight ordering table should parse");
+    let compiled =
+        StaticTableTranslator::from_compact_table_store(store, None).with_sentence(false);
+
+    for (storage, translator) in [("heap", heap), ("owned", owned), ("compiled", compiled)] {
+        let candidates = translator.translate("yi");
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["ONE", "ZERO"],
+            "{storage}: an unweighted row must not tie a positive weight of one"
+        );
+        assert!(candidates[0].quality > candidates[1].quality, "{storage}");
+    }
+}
+
+#[test]
+fn fuzzy_spelling_wins_an_abbreviation_collision_across_storage_paths() {
+    let formulas = ["fuzz/^hao$/hx/".to_owned(), "abbrev/^hao$/hx/".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("hao", "GOOD", 100.0),
+        TableEntry::new("ni", "YOU", 90.0),
+    ]);
+    let syllabary = ["hao", "ni"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("fuzzy/abbreviation collision prism should parse");
+    let descriptor = prism
+        .lookup_canonical_codes("hx", &syllabary)
+        .into_iter()
+        .find(|descriptor| descriptor.code == "hao")
+        .expect("colliding spelling should resolve to hao");
+    assert!(
+        !descriptor.abbreviation,
+        "pinned spelling update keeps the fuzzy path over an abbreviation to the same code"
+    );
+
+    let compact = StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(prism))
+        .with_spelling_algebra(&formulas)
+        .with_prefix_fallback(true)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+    let heap = StaticTableTranslator::from_dictionary(dictionary)
+        .with_spelling_algebra(&formulas)
+        .with_prefix_fallback(true)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+
+    for (storage, translator) in [("compact", compact), ("heap/source", heap)] {
+        let candidate = translator
+            .translate("hxni")
+            .into_iter()
+            .find(|candidate| candidate.text == "GOOD")
+            .unwrap_or_else(|| panic!("{storage}: fuzzy winner must remain an injectable prefix"));
+        assert_eq!(
+            candidate.source,
+            CandidateSource::PartialTable {
+                consumed: 2,
+                recompose_on_default: true,
+            },
+            "{storage}: abbreviation provenance must not leak through the fuzzy winner"
+        );
+    }
+}
+
+#[test]
+fn heap_source_mixed_abbreviations_are_not_limited_to_initial_m_or_two_syllables() {
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "abbrev/^([a-z]).+$/$1/".to_owned(),
+    ];
+    let translator =
+        StaticTableTranslator::from_dictionary(TableDictionary::new([TableEntry::new(
+            "dak1mai5si6",
+            "DMS",
+            100.0,
+        )]))
+        .with_spelling_algebra(&formulas)
+        .with_sentence(false);
+
+    for input in ["dmaisi", "dakmsi", "dakmais"] {
+        assert_eq!(
+            translator.translate(input)[0].text,
+            "DMS",
+            "heap/source must admit one abbreviated edge at any position of an arbitrary three-syllable code ({input})"
+        );
+    }
 }
 
 #[test]
@@ -2757,7 +3172,7 @@ fn pinned_correction_surface_order_matches_heap_owned_and_byte_backed_paths() {
         );
         assert!(
             candidates[0].quality > candidates[1].quality,
-            "{storage}: equal-weight direct `cu` must outrank correction-penalized `cuo`"
+            "{storage}: equal-weight direct `cu` must outrank correction-penalized `cuo`; candidates were {candidates:?}"
         );
         quality_bits.push(
             candidates
@@ -2795,9 +3210,13 @@ fn pinned_correction_surface_order_matches_heap_owned_and_byte_backed_paths() {
             "{storage}: the correction cuo sibling must remain exact-only"
         );
     }
-    assert!(
-        quality_bits.windows(2).all(|pair| pair[0] == pair[1]),
-        "heap, owned compact, and byte-backed compact must emit identical correction qualities"
+    assert_eq!(
+        quality_bits[0], quality_bits[1],
+        "the two raw/source storage paths must retain identical correction qualities"
+    );
+    assert_ne!(
+        quality_bits[1], quality_bits[2],
+        "Rime::Table/4.0 compiles a non-positive source weight to the pinned ln(DBL_EPSILON) sentinel"
     );
 }
 
@@ -3923,6 +4342,92 @@ fn upstream_script_policy_merges_phrase_sentence_and_partial_families_across_sto
 }
 
 #[test]
+fn upstream_script_sentence_traverses_explicit_multi_span_table_phrases() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("a1", "A", 1_000.0),
+        TableEntry::new("b1", "B", 1_000.0),
+        TableEntry::new("c1", "C", 1_000.0),
+        TableEntry::new("b1c1", "YZ", 1_000_000.0),
+    ]);
+    // The explicit source row suppresses this same-text preset row in
+    // ScriptEncoder. Its deliberately tiny weight makes the test depend on the
+    // compiled multi-syllable table edge rather than accidental preset reuse.
+    let vocabulary = vec![PresetVocabularyEntry::new("YZ", 0.001)];
+    let formulas = ["derive/\\d//".to_owned()];
+    // Phrase codes are table-trie paths, not prism syllables. Keeping `b1c1`
+    // out of the prism prevents a synthetic one-edge spelling from masking the
+    // consecutive-span traversal this regression owns.
+    let syllabary = ["a1", "b1", "c1"].map(str::to_owned);
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, 0x5904_b201, 0x5904_b202);
+
+    let build_translators = |exclude_internal_phrase: bool| {
+        let owned_prism = parse_rime_prism_bin_payload(prism_bytes.clone())
+            .expect("owned multi-span prism should parse");
+        let owned =
+            StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(owned_prism))
+                .with_spelling_algebra(&formulas)
+                .with_sentence(true)
+                .with_sentence_policy(SentencePolicy::UpstreamScript)
+                .with_preset_vocabulary(vocabulary.clone())
+                .with_upstream_sentence_model(100);
+
+        let table_bytes = build_table_bin(&dictionary, 0x5904_b201);
+        let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+            .expect("byte-backed multi-span table metadata should parse");
+        let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+            .expect("byte-backed multi-span table should parse");
+        let prism_source: Arc<dyn CompactTableByteSource> = Arc::new(AlgebraPrismByteSource(
+            Arc::<[u8]>::from(prism_bytes.clone()),
+        ));
+        let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+            .expect("byte-backed multi-span prism should parse");
+        let poet_source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+            dictionary.entries().iter().cloned(),
+            &vocabulary,
+            &vocabulary,
+            0x5904_b201,
+        )));
+        let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+            store,
+            Some(runtime_prism),
+        )
+        .with_spelling_algebra(&formulas)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_preset_vocabulary(vocabulary.clone())
+        .with_upstream_sentence_poet_source(poet_source, 0x5904_b201)
+        .with_upstream_sentence_model(100);
+
+        [("owned", owned), ("byte", byte_backed)].map(|(storage, translator)| {
+            let translator = if exclude_internal_phrase {
+                translator.with_dictionary_exclude(["YZ"])
+            } else {
+                translator
+            };
+            (storage, translator)
+        })
+    };
+
+    for (storage, translator) in build_translators(false) {
+        let candidates = translator.translate("abc");
+        assert_eq!(candidates[0].source, CandidateSource::Sentence, "{storage}");
+        assert_eq!(
+            candidates[0].text, "AYZ",
+            "{storage}: the explicit b1c1 table row must remain an internal sentence edge"
+        );
+    }
+
+    for (storage, translator) in build_translators(true) {
+        let candidates = translator.translate("abc");
+        assert_eq!(candidates[0].source, CandidateSource::Sentence, "{storage}");
+        assert_eq!(
+            candidates[0].text, "ABC",
+            "{storage}: dictionary_exclude must still remove the internal phrase edge"
+        );
+    }
+}
+
+#[test]
 fn upstream_script_policy_honors_leading_single_opt_out_across_storage_paths() {
     let dictionary = TableDictionary::new([
         TableEntry::new("bei2", "B", 100.0),
@@ -4022,6 +4527,675 @@ fn upstream_script_policy_honors_leading_single_opt_out_across_storage_paths() {
             "{storage}: independent prefix_fallback must retain its leading family"
         );
     }
+}
+
+#[test]
+fn upstream_script_prefix_collector_excludes_dead_longer_overlap_across_storage_paths() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("be1", "B", 100.0),
+        TableEntry::new("in1", "I", 100.0),
+        TableEntry::new("be1in1", "BI", 100.0),
+        TableEntry::new("bei1", "LONG", 1.0),
+        TableEntry::new("ngo5", "NGO", 100.0),
+        TableEntry::new("hai6", "HAI", 100.0),
+        TableEntry::new("haa6", "HAA", 100.0),
+        TableEntry::new("go3", "GO", 100.0),
+        TableEntry::new("ngo5hai6go3", "FULL", 100.0),
+        TableEntry::new("ngo5haa6", "ALT", 90.0),
+    ]);
+    let formulas = ["derive/aa(?=\\d)/a/".to_owned(), "derive/\\d//".to_owned()];
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, 0x5904_1001, 0x5904_1002);
+    let owned_prism = parse_rime_prism_bin_payload(prism_bytes.clone())
+        .expect("owned inverse-overlap prism should parse");
+    let owned =
+        StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(owned_prism))
+            .with_spelling_algebra(&formulas)
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_leading_syllable_reachability(true);
+
+    let table_bytes = build_table_bin(&dictionary, 0x5904_1001);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed inverse-overlap table metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed inverse-overlap table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed inverse-overlap prism should parse");
+    let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_leading_syllable_reachability(true);
+
+    for (storage, translator) in [("owned", owned), ("byte", byte_backed)] {
+        let candidates = translator.translate("bein");
+        assert!(
+            candidates.iter().any(|candidate| candidate.text == "BI"),
+            "{storage}: the live be + in path must remain admitted"
+        );
+        assert!(
+            !candidates.iter().any(|candidate| candidate.text == "LONG"),
+            "{storage}: a disconnected longer bei overlap must not leak from the prefix collector"
+        );
+        let recomposed = translator.translate("ngohaigo");
+        assert!(
+            recomposed.iter().any(|candidate| candidate.text == "FULL"),
+            "{storage}: the complete ngo + hai + go path must remain admitted"
+        );
+        assert!(
+            recomposed.iter().any(|candidate| candidate.text == "ALT"),
+            "{storage}: the shorter ngo + ha recognized prefix must recompose"
+        );
+    }
+}
+
+#[test]
+fn upstream_script_policy_admits_complete_abbreviation_graphs_across_storage_paths() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("na1", "N-low", 30.0),
+        TableEntry::new("nei5", "N-high", 100.0),
+        TableEntry::new("nong4", "N-mid", 50.0),
+        TableEntry::new("ngaam1feel", "N-lettered-tail", 1_000.0),
+        TableEntry::new("dak1", "D", 20.0),
+        TableEntry::new("mai5", "M", 20.0),
+        TableEntry::new("si6", "S", 20.0),
+        TableEntry::new("dak1mai5si6", "DMS", 500.0),
+        TableEntry::new("ngo5", "NGO", 20.0),
+        TableEntry::new("hai6", "HAI", 20.0),
+        TableEntry::new("gam2", "GAM", 20.0),
+        TableEntry::new("ngo5hai6gam2", "NHG", 500.0),
+    ]);
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "abbrev/^([a-z]).+$/$1/".to_owned(),
+    ];
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, 0x5904_2001, 0x5904_2002);
+
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone()).expect("owned 4b prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript);
+
+    let table_bytes = build_table_bin(&dictionary, 0x5904_2001);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed 4b table metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed 4b table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism =
+        parse_rime_prism_runtime_payload(prism_source).expect("byte-backed 4b prism should parse");
+    let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript);
+
+    for (storage, translator) in [("owned", owned), ("byte", byte_backed)] {
+        let initial_family = translator.translate("n");
+        assert_eq!(
+            initial_family
+                .iter()
+                .take(3)
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["N-high", "N-mid", "N-low"],
+            "{storage}: all same-end abbreviation codes merge by raw dictionary weight"
+        );
+        assert_eq!(initial_family[0].source, CandidateSource::Table);
+        assert!(
+            initial_family
+                .iter()
+                .all(|candidate| candidate.text != "N-lettered-tail"),
+            "{storage}: an untoned Latin tail after a toned syllable remains a second syllable"
+        );
+
+        let residual = translator.translate("nri");
+        assert_eq!(residual[0].text, "N-high", "{storage}");
+        assert_eq!(
+            residual[0].source,
+            CandidateSource::PartialTable {
+                consumed: 1,
+                recompose_on_default: true,
+            },
+            "{storage}: the farthest recognized abbreviation prefix must retain the raw tail"
+        );
+
+        assert_eq!(
+            translator.translate("dakms")[0].text,
+            "DMS",
+            "{storage}: mixed full spelling plus two arbitrary initials must compose"
+        );
+        assert_eq!(
+            translator.translate("ngohaig")[0].text,
+            "NHG",
+            "{storage}: a final abbreviation must compose after two normal syllables"
+        );
+        assert_eq!(
+            translator.translate("ngohg")[0].text,
+            "NHG",
+            "{storage}: multiple abbreviation positions must compose without an input allowlist"
+        );
+    }
+}
+
+#[test]
+fn upstream_script_uses_librime_lexical_syllable_order_across_storage_paths() {
+    // The compact artifact deliberately keeps B before A. Pinned librime does
+    // not: EntryCollector builds a std::set syllabary, so Table::Query sees
+    // A, B, C, D. The multi-row C/D chunks make that initial order observable
+    // after MSVC's repeated one-element partial_sort tournaments.
+    let dictionary = TableDictionary::new([
+        TableEntry::new("nei5", "B", 50.0),
+        TableEntry::new("na1", "A", 50.0),
+        TableEntry::new("nong4", "C-high", 60.0),
+        TableEntry::new("nong4", "C-tail", 50.0),
+        TableEntry::new("nyun4", "D-high", 60.0),
+        TableEntry::new("nyun4", "D-tail", 50.0),
+    ]);
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "abbrev/^([a-z]).+$/$1/".to_owned(),
+    ];
+    let syllabary = ["nei5", "na1", "nong4", "nyun4"].map(str::to_owned);
+    let checksum = 0x5904_b403;
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, checksum, 0x5904_b404);
+
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone())
+                .expect("owned lexical-order prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript);
+
+    let table_bytes = build_table_bin(&dictionary, checksum);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed lexical-order metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed lexical-order table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed lexical-order prism should parse");
+    let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript);
+
+    for (storage, translator) in [("owned", owned), ("byte", byte_backed)] {
+        assert_eq!(
+            translator
+                .translate("n")
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["C-high", "D-high", "D-tail", "B", "A", "C-tail"],
+            "{storage}: Yune artifact insertion order must not replace librime's lexical syllable traversal"
+        );
+    }
+}
+
+#[test]
+fn upstream_script_reconstructed_vocabulary_uses_librime_chunk_tournament() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("nei5", "乙", 10.0),
+        TableEntry::new("na1", "甲", 10.0),
+        TableEntry::new("nong4", "丙", 10.0),
+        TableEntry::new("nong4", "丁", 10.0),
+        TableEntry::new("nyun4", "戊", 10.0),
+        TableEntry::new("nyun4", "己", 10.0),
+        TableEntry::new("ngo5", "我", 10.0),
+    ]);
+    let vocabulary = vec![
+        PresetVocabularyEntry::new("我乙", 50.0),
+        PresetVocabularyEntry::new("我甲", 50.0),
+        PresetVocabularyEntry::new("我丙", 60.0),
+        PresetVocabularyEntry::new("我丁", 50.0),
+        PresetVocabularyEntry::new("我戊", 60.0),
+        PresetVocabularyEntry::new("我己", 50.0),
+    ];
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "abbrev/^([a-z]).+$/$1/".to_owned(),
+    ];
+    let syllabary = ["nei5", "na1", "nong4", "nyun4", "ngo5"].map(str::to_owned);
+    let checksum = 0x5904_b405;
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, checksum, 0x5904_b406);
+
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone())
+                .expect("owned vocabulary-tournament prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_preset_vocabulary(vocabulary.clone())
+    .with_upstream_sentence_model(100);
+
+    let table_bytes = build_table_bin(&dictionary, checksum);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed vocabulary-tournament metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed vocabulary-tournament table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed vocabulary-tournament prism should parse");
+    let poet_source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        dictionary.entries().iter().cloned(),
+        &vocabulary,
+        &[],
+        checksum,
+    )));
+    let byte_poet = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_preset_vocabulary(vocabulary)
+    .with_upstream_sentence_poet_source(poet_source, checksum)
+    .with_upstream_sentence_model(100);
+
+    for (storage, translator) in [("owned", owned), ("byte-poet", byte_poet)] {
+        assert_eq!(
+            translator
+                .translate("ngon")
+                .iter()
+                .take(6)
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["我丙", "我戊", "我己", "我乙", "我甲", "我丁"],
+            "{storage}: reconstructed compiler vocabulary must retain DictEntryIterator's mutable chunk residual"
+        );
+    }
+}
+
+#[test]
+fn upstream_script_keeps_explicit_source_before_equal_generated_phrase() {
+    // EntryCollector reads every explicitly coded row in pass 1, then runs
+    // ScriptEncoder over blank-code phrases in pass 2. Its stable homophone
+    // sort therefore retains 鈕公 before the equal-weight generated 紐公 row.
+    let dictionary = TableDictionary::new([
+        TableEntry::new("nau2", "鈕", 10.0),
+        TableEntry::new("nau2", "紐", 10.0),
+        TableEntry::new("gung1", "公", 10.0),
+        TableEntry::new("nau2gung1", "鈕公", 1.0),
+        TableEntry::new("", "紐公", 1.0),
+    ]);
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "abbrev/^([a-z]).+$/$1/".to_owned(),
+    ];
+    let syllabary = ["nau2", "gung1"].map(str::to_owned);
+    let checksum = 0x5904_b407;
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, checksum, 0x5904_b408);
+
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone())
+                .expect("owned source-phase prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_model(100);
+
+    let table_bytes = build_table_bin(&dictionary, checksum);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed source-phase metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed source-phase table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed source-phase prism should parse");
+    let poet_source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        dictionary.entries().iter().cloned(),
+        &[],
+        &[],
+        checksum,
+    )));
+    let byte_poet = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_poet_source(poet_source, checksum)
+    .with_upstream_sentence_model(100);
+
+    for (storage, translator) in [("owned", owned), ("byte-poet", byte_poet)] {
+        assert_eq!(
+            translator
+                .translate("ng")
+                .iter()
+                .filter(|candidate| matches!(candidate.text.as_str(), "鈕公" | "紐公"))
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["鈕公", "紐公"],
+            "{storage}: pass-1 explicit rows must precede equal pass-2 ScriptEncoder rows"
+        );
+    }
+}
+
+#[test]
+fn upstream_script_generated_vocabulary_uses_compiled_f32_chunk_weights() {
+    let lower = 10.0_f32;
+    let higher = f32::from_bits(lower.to_bits() + 1);
+    assert!(higher > lower);
+    assert_eq!(
+        (f64::from(lower).ln() as f32).to_bits(),
+        (f64::from(higher).ln() as f32).to_bits(),
+        "the fixture must straddle a raw-f32 boundary that collapses in the compiled log-f32 domain"
+    );
+
+    let dictionary = TableDictionary::new([
+        TableEntry::new("a1", "A", 1.0),
+        TableEntry::new("a2", "X", 1.0),
+        TableEntry::new("b1", "B", 1.0),
+        TableEntry::new("b2", "Y", 1.0),
+    ]);
+    let vocabulary = vec![
+        PresetVocabularyEntry::new("AB", lower),
+        PresetVocabularyEntry::new("XY", higher),
+    ];
+    let formulas = ["derive/\\d//".to_owned()];
+    let syllabary = ["a1", "a2", "b1", "b2"].map(str::to_owned);
+    let checksum = 0x5904_b409;
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, checksum, 0x5904_b410);
+
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone())
+                .expect("owned f32-vocabulary prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_preset_vocabulary(vocabulary.clone())
+    .with_upstream_sentence_model(100);
+
+    let table_bytes = build_table_bin(&dictionary, checksum);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed f32-vocabulary metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed f32-vocabulary table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed f32-vocabulary prism should parse");
+    let poet_source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        dictionary.entries().iter().cloned(),
+        &vocabulary,
+        &vocabulary,
+        checksum,
+    )));
+    let byte_poet = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_preset_vocabulary(vocabulary)
+    .with_upstream_sentence_poet_source(poet_source, checksum)
+    .with_upstream_sentence_model(100);
+
+    for (storage, translator) in [("owned", owned), ("byte-poet", byte_poet)] {
+        assert_eq!(
+            translator
+                .translate("ab")
+                .iter()
+                .filter(|candidate| matches!(candidate.text.as_str(), "AB" | "XY"))
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["AB", "XY"],
+            "{storage}: compiled equal heads retain lexical accessor order instead of raw-f64 promotion"
+        );
+    }
+}
+
+#[test]
+fn upstream_script_model_applies_cumulative_spelling_credibility_across_storage_paths() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("naa5", "NAA", 10.0),
+        TableEntry::new("go3", "GO", 10.0),
+        TableEntry::new("hou2", "HOU", 10.0),
+        TableEntry::new("ngo5", "NGO", 10.0),
+        TableEntry::new("hoeng3", "HOENG", 10.0),
+        TableEntry::new("naa5go3hou2", "TWO-ABBREV", 785.0),
+        TableEntry::new("ngo5hoeng3", "ONE-ABBREV", 703.0),
+    ]);
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "abbrev/^([a-z]).+$/$1/".to_owned(),
+    ];
+    // Phrase codes are table-trie paths, not prism syllables. Keeping them out
+    // prevents a synthetic one-edge phrase spelling from masking cumulative
+    // credibility across the real n + go + h and ngo + h paths.
+    let syllabary = ["naa5", "go3", "hou2", "ngo5", "hoeng3"].map(str::to_owned);
+    let checksum = 0x5904_b401;
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, checksum, 0x5904_b402);
+
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone())
+                .expect("owned credibility prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_model(100);
+
+    let table_bytes = build_table_bin(&dictionary, checksum);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed credibility metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed credibility table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed credibility prism should parse");
+    let poet_source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        dictionary.entries().iter().cloned(),
+        &[],
+        &[],
+        checksum,
+    )));
+    let byte_poet = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_poet_source(poet_source, checksum)
+    .with_upstream_sentence_model(100);
+
+    for (storage, translator) in [("owned", owned), ("byte-poet", byte_poet)] {
+        let candidates = translator.translate("ngoh");
+        let position = |text: &str| {
+            candidates
+                .iter()
+                .position(|candidate| candidate.text == text)
+                .unwrap_or_else(|| panic!("{storage}: missing {text}: {candidates:?}"))
+        };
+        assert!(
+            position("ONE-ABBREV") < position("TWO-ABBREV"),
+            "{storage}: one abbreviation gives 703 * 0.5, which must outrank two abbreviations at 785 * 0.25"
+        );
+    }
+}
+
+#[test]
+fn upstream_script_recovers_late_phrase_only_syllables_across_storage_paths() {
+    let mut entries = vec![TableEntry::new("goeng1", "G", 100.0)];
+    for index in 0..140usize {
+        let first = char::from(b'a' + (index / 26) as u8);
+        let second = char::from(b'a' + (index % 26) as u8);
+        entries.push(TableEntry::new(
+            format!("n{first}{second}1goeng1"),
+            format!("decoy-{index:03}"),
+            100.0,
+        ));
+    }
+    entries.push(TableEntry::new("nzz1goeng1", "TARGET-ZERO", 0.0));
+    let dictionary = TableDictionary::new(entries);
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "abbrev/^([a-z]).+$/$1/".to_owned(),
+    ];
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, 0x5904_b301, 0x5904_b302);
+
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone())
+                .expect("owned late-abbreviation prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_model(500);
+
+    let table_bytes = build_table_bin(&dictionary, 0x5904_b301);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed late-abbreviation table metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed late-abbreviation table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed late-abbreviation prism should parse");
+    let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_model(500);
+
+    for (storage, translator) in [("owned", owned), ("byte", byte_backed)] {
+        let candidates = translator.translate("ng");
+        let target = candidates
+            .iter()
+            .position(|candidate| candidate.text == "TARGET-ZERO")
+            .unwrap_or_else(|| panic!("{storage}: phrase-only zero row must remain reachable"));
+        assert!(
+            target > 128,
+            "{storage}: the fixture must prove reachability beyond the retired per-span cap"
+        );
+        assert_eq!(
+            candidates[target].source,
+            CandidateSource::Table,
+            "{storage}"
+        );
+    }
+}
+
+#[test]
+fn compiled_abbreviation_merge_preserves_librime_log_f32_tie_order() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml_with_imports_packs_and_vocabulary(
+        "---\nname: precise-abbrev\nversion: '1'\nsort: by_weight\nvocabulary: essay\n...\n\n柟\tnaam1\t5%\n恁\tnam2\t3%\n糅\tnau6\t5%\n",
+        std::iter::empty::<&str>(),
+        |_| None,
+        |name| {
+            (name == "essay").then(|| "柟\t519\n恁\t865\n糅\t519\n".to_owned())
+        },
+    )
+    .expect("percentage dictionary should parse");
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "abbrev/^([a-z]).+$/$1/".to_owned(),
+    ];
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let table_bytes = build_table_bin(&dictionary, 0x5904_b101);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("compiled table metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("compiled table should parse");
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, 0x5904_b101, 0x5904_b102);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("compiled abbreviation prism should parse");
+    let translator =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_spelling_algebra(&formulas)
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript);
+
+    for input in ["n", "nri"] {
+        let candidates = translator.translate(input);
+        assert_eq!(
+            candidates
+                .iter()
+                .take(3)
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["柟", "恁", "糅"],
+            "{input} must retain the pinned equal-log traversal order"
+        );
+    }
+    assert_eq!(
+        translator.translate("nri")[0].source,
+        CandidateSource::PartialTable {
+            consumed: 1,
+            recompose_on_default: true,
+        }
+    );
 }
 
 #[test]
@@ -4580,6 +5754,44 @@ fn replacing_initialized_algebra_with_empty_or_invalid_formulas_resets_surface_c
         "an invalid replacement algebra must invalidate the prior default index"
     );
     assert_surface_leading_single(&invalid, "longy", "\u{9577}", "long", 4);
+}
+
+#[test]
+fn replacing_compact_algebra_does_not_reuse_stale_upstream_script_prism_edges() {
+    let original_formulas = ["abbrev/^aa1$/a/".to_owned(), "abbrev/^bb1$/b/".to_owned()];
+    let replacement_formulas = ["abbrev/^aa1$/x/".to_owned(), "abbrev/^bb1$/y/".to_owned()];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("aa1", "A", 100.0),
+        TableEntry::new("bb1", "B", 100.0),
+        TableEntry::new("aa1bb1", "AB", 500.0),
+    ]);
+    let syllabary = ["aa1", "bb1", "aa1bb1"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(
+        &syllabary,
+        &original_formulas,
+        0x5904_b421,
+        0x5904_b422,
+    ))
+    .expect("original compact algebra prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_spelling_algebra(&original_formulas)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript);
+
+    let control = translator.translate("ab");
+    assert!(
+        control.iter().any(|candidate| candidate.text == "AB"),
+        "control must exercise the original prism-backed surface graph: {control:?}"
+    );
+
+    let replaced = translator.with_spelling_algebra(&replacement_formulas);
+    assert!(
+        replaced
+            .translate("ab")
+            .iter()
+            .all(|candidate| candidate.text != "AB"),
+        "a replaced algebra must not segment through the previous prism mapping"
+    );
 }
 
 #[test]
@@ -5748,7 +6960,7 @@ fn sort_original_materialized_compiled_reload_preserves_source_order_over_weight
     assert_eq!(syllabary_offset % 4, 0);
     assert_eq!(
         &table_bytes[68..syllabary_offset],
-        b"YUNE-TABLE-META\0\x01\x00\x00\x00\x04\x00\x00\x00\x01\x00\x00\x00"
+        b"YUNE-TABLE-META\0\x02\x00\x00\x00\x04\x00\x00\x00\x01\x01\x00\x00"
     );
     let reloaded =
         parse_rime_table_bin_dictionary(table_bytes).expect("compiled table should parse");
@@ -5771,7 +6983,7 @@ fn sort_original_byte_backed_compiled_reload_preserves_source_order_over_weight(
 }
 
 #[test]
-fn sort_by_weight_compiled_path_keeps_default_order_and_legacy_layout() {
+fn sort_by_weight_compiled_path_keeps_default_order_and_v2_weight_metadata() {
     let dictionary = TableDictionary::parse_rime_dict_yaml(
         &SORT_ORIGINAL_TEST_DICTIONARY.replace("sort: original", "sort: by_weight"),
     )
@@ -5782,14 +6994,14 @@ fn sort_by_weight_compiled_path_keeps_default_order_and_legacy_layout() {
             .try_into()
             .expect("syllabary offset should fit"),
     );
-    assert_eq!(44isize + relative as isize, 68);
-    assert!(!table_bytes
+    assert_eq!(44isize + relative as isize, 96);
+    assert!(table_bytes
         .windows(b"YUNE-TABLE-META\0".len())
         .any(|window| window == b"YUNE-TABLE-META\0"));
 
     let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
         .expect("compiled advanced data should parse");
-    assert_eq!(advanced.sort_by_weight, None);
+    assert_eq!(advanced.sort_by_weight, Some(true));
     let reloaded =
         parse_rime_table_bin_dictionary(table_bytes).expect("compiled table should parse");
     assert!(reloaded.sort_by_weight());

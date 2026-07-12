@@ -9,12 +9,13 @@ use std::time::{Duration, Instant};
 use crate::comment_format::CommentFormat;
 use crate::dictionary::{
     normalize_table_code, CompactTableStore, LookupCandidate, LookupCandidateEntry,
-    RimePrismBinPayload, RimePrismRuntimePayload, TableLookup,
+    RimePrismBinPayload, RimePrismRuntimePayload, TableEntryWeightDomain, TableLookup,
+    LIBRIME_NON_POSITIVE_COMPILED_LOG_WEIGHT_BITS,
 };
 use crate::filter::contains_extended_cjk;
 use crate::poet::{
     upstream_script_raw_candidate_quality, GrammarProvider, PoetByteSource,
-    RankedScriptPhraseCandidate, SentenceCodeSpan, UpstreamSentenceModel,
+    RankedScriptPhraseCandidate, SentenceCodeSpan, UpstreamSentenceModel, WeightedSentenceCodeSpan,
 };
 use crate::spelling_algebra::{DeployedSpellingType, ExpandedSpellingEntry, SpellingAlgebra};
 use crate::{
@@ -69,6 +70,7 @@ struct LookupCodeSpec {
     required_syllable_count: Option<usize>,
     tolerance: bool,
     spelling_correction: bool,
+    spelling_abbreviation: bool,
     spelling_credibility: f32,
 }
 
@@ -82,6 +84,7 @@ impl LookupCodeSpec {
             required_syllable_count: None,
             tolerance: false,
             spelling_correction: false,
+            spelling_abbreviation: false,
             spelling_credibility: 0.0,
         }
     }
@@ -97,6 +100,7 @@ impl LookupCodeSpec {
             required_syllable_count: None,
             tolerance: true,
             spelling_correction: false,
+            spelling_abbreviation: false,
             spelling_credibility: 0.0,
         }
     }
@@ -104,6 +108,7 @@ impl LookupCodeSpec {
     fn alias(
         code: impl Into<String>,
         lookup_code: impl Into<String>,
+        spelling_abbreviation: bool,
         spelling_correction: bool,
         spelling_credibility: f32,
     ) -> Self {
@@ -114,6 +119,7 @@ impl LookupCodeSpec {
             required_syllable_count: None,
             tolerance: false,
             spelling_correction,
+            spelling_abbreviation,
             spelling_credibility,
         }
     }
@@ -127,6 +133,7 @@ impl LookupCodeSpec {
             required_syllable_count: None,
             tolerance: false,
             spelling_correction: false,
+            spelling_abbreviation: false,
             spelling_credibility: 0.0,
         }
     }
@@ -144,6 +151,7 @@ impl LookupCodeSpec {
             required_syllable_count: Some(syllable_count),
             tolerance: false,
             spelling_correction: false,
+            spelling_abbreviation: false,
             spelling_credibility: 0.0,
         }
     }
@@ -152,7 +160,36 @@ impl LookupCodeSpec {
 #[derive(Clone, Debug)]
 struct SurfaceCodeChoice {
     code: String,
+    syllable_id: usize,
+    normal: bool,
+    abbreviation: bool,
     credibility: f32,
+}
+
+#[derive(Clone, Debug, Default)]
+struct SurfaceCodeChoices {
+    choices: Vec<SurfaceCodeChoice>,
+    indexes: HashMap<String, usize>,
+}
+
+impl SurfaceCodeChoices {
+    fn merge(&mut self, choice: SurfaceCodeChoice) {
+        if let Some(index) = self.indexes.get(&choice.code).copied() {
+            let existing = &mut self.choices[index];
+            // Mirrors deployed `SpellingProperties::Update`: a normal/fuzzy
+            // route outranks an abbreviation to the same canonical code. Keep
+            // the first traversal position for equal provenance.
+            if !choice.abbreviation {
+                existing.abbreviation = false;
+            }
+            existing.credibility = existing.credibility.max(choice.credibility);
+            existing.normal |= choice.normal;
+            existing.syllable_id = existing.syllable_id.min(choice.syllable_id);
+            return;
+        }
+        self.indexes.insert(choice.code.clone(), self.choices.len());
+        self.choices.push(choice);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -160,50 +197,67 @@ struct SurfaceSyllable {
     start: usize,
     end: usize,
     choices: Vec<SurfaceCodeChoice>,
-    path_credibility: f32,
-}
-
-#[derive(Clone, Debug)]
-struct SurfaceSegmentationPath {
-    credibility: f32,
-    syllables: Vec<SurfaceSyllable>,
-}
-
-impl SurfaceSegmentationPath {
-    fn extended(&self, syllable: SurfaceSyllable) -> Self {
-        let mut syllables = self.syllables.clone();
-        let credibility = self.credibility + syllable.path_credibility;
-        syllables.push(syllable);
-        Self {
-            credibility,
-            syllables,
-        }
-    }
-
-    fn precedes(&self, other: &Self) -> bool {
-        self.credibility
-            .partial_cmp(&other.credibility)
-            .unwrap_or(Ordering::Equal)
-            .then_with(|| other.syllables.len().cmp(&self.syllables.len()))
-            .then_with(|| {
-                self.syllables
-                    .iter()
-                    .map(|syllable| syllable.end - syllable.start)
-                    .cmp(
-                        other
-                            .syllables
-                            .iter()
-                            .map(|syllable| syllable.end - syllable.start),
-                    )
-            })
-            == Ordering::Greater
-    }
 }
 
 #[derive(Clone, Debug)]
 struct ConcatenatedSurfaceCode {
     code: String,
+    abbreviation: bool,
     credibility: f32,
+}
+
+#[derive(Clone, Debug)]
+struct UpstreamScriptSurfaceGraph {
+    boundaries: Vec<usize>,
+    edges_by_start: Vec<Vec<SurfaceSyllable>>,
+    direct_edges_by_start: Vec<Vec<SurfaceSyllable>>,
+    leading_prefix_syllables: Vec<SurfaceSyllable>,
+    one_syllable_prefix_ends: Vec<usize>,
+    interpreted_end: usize,
+}
+
+impl UpstreamScriptSurfaceGraph {
+    fn leading_syllables(&self) -> &[SurfaceSyllable] {
+        &self.leading_prefix_syllables
+    }
+
+    fn is_one_syllable_prefix_end(&self, end: usize) -> bool {
+        self.one_syllable_prefix_ends.binary_search(&end).is_ok()
+    }
+
+    fn preedit(&self, input: &str, delimiter: char) -> Option<String> {
+        let interpreted_index = self.boundaries.binary_search(&self.interpreted_end).ok()?;
+        let mut coverable = vec![false; self.boundaries.len()];
+        coverable[interpreted_index] = true;
+        for start_index in (0..interpreted_index).rev() {
+            coverable[start_index] = self.edges_by_start[start_index].iter().any(|syllable| {
+                self.boundaries
+                    .binary_search(&syllable.end)
+                    .is_ok_and(|end_index| coverable[end_index])
+            });
+        }
+        if !coverable[0] {
+            return None;
+        }
+
+        let mut pieces = Vec::new();
+        let mut start_index = 0usize;
+        while start_index < interpreted_index {
+            let syllable = self.edges_by_start[start_index]
+                .iter()
+                .filter(|syllable| {
+                    self.boundaries
+                        .binary_search(&syllable.end)
+                        .is_ok_and(|end_index| coverable[end_index])
+                })
+                .max_by_key(|syllable| syllable.end)?;
+            pieces.push(input[syllable.start..syllable.end].to_owned());
+            start_index = self.boundaries.binary_search(&syllable.end).ok()?;
+        }
+        let mut preedit = pieces.join(&delimiter.to_string());
+        preedit.push_str(&input[self.interpreted_end..]);
+        Some(preedit)
+    }
 }
 
 #[derive(Clone)]
@@ -225,28 +279,25 @@ impl PendingLookupCandidate {
         self.entry_code == self.lookup_code || self.limited_prediction
     }
 
-    fn raw_quality(&self) -> f32 {
-        let mut quality = self.candidate.quality + self.spelling_credibility;
+    fn comparison_weight(&self, weight_domain: TableEntryWeightDomain) -> f32 {
+        let mut quality = table_comparison_weight(self.candidate.quality, weight_domain)
+            + self.spelling_credibility;
         if let Some(distance) = self.correction_distance {
             quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
         }
         quality
     }
 
-    fn prediction_comparison_weight(&self) -> f32 {
-        let mut weight =
-            self.candidate.quality.max(f32::MIN_POSITIVE).ln() + self.spelling_credibility;
-        if let Some(distance) = self.correction_distance {
-            weight += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
-        }
-        weight
+    fn prediction_comparison_weight(&self, weight_domain: TableEntryWeightDomain) -> f32 {
+        self.comparison_weight(weight_domain)
     }
 
-    fn prediction_precedes(&self, ordinary: &Self) -> bool {
+    fn prediction_precedes(&self, ordinary: &Self, weight_domain: TableEntryWeightDomain) -> bool {
         let interpreted =
             complete_syllable_prefix_count(&self.candidate.comment, &self.lookup_code);
         let consumed = source_code_syllable_count(&ordinary.candidate.comment);
-        self.prediction_comparison_weight() > ordinary.prediction_comparison_weight()
+        self.prediction_comparison_weight(weight_domain)
+            > ordinary.prediction_comparison_weight(weight_domain)
             || interpreted
                 .zip(consumed)
                 .is_some_and(|(interpreted, consumed)| consumed < interpreted)
@@ -774,8 +825,41 @@ struct LeadingFetchIndexSeed {
     max_leading_single_surface_len: usize,
 }
 
-fn sentence_piece_quality(raw_quality: f32, word_penalty: f32) -> f32 {
-    raw_quality.max(1.0).ln() - word_penalty
+fn table_log_weight(weight: f32, domain: TableEntryWeightDomain) -> f32 {
+    match domain {
+        // Positive source dictionary weights are absolute weights and enter
+        // ranking in log space. Preserve the long-standing zero/negative
+        // source-score convention used by lightweight and test dictionaries:
+        // zero is the neutral log score (quality 1), while a negative value is
+        // already a penalty. Compiled tables encode non-positive source rows
+        // explicitly and take the NaturalLog arm below.
+        TableEntryWeightDomain::Raw if weight > 0.0 => weight.ln(),
+        TableEntryWeightDomain::Raw => weight,
+        TableEntryWeightDomain::NaturalLog => weight,
+    }
+}
+
+fn table_comparison_weight(weight: f32, domain: TableEntryWeightDomain) -> f32 {
+    match domain {
+        TableEntryWeightDomain::NaturalLog => weight,
+        TableEntryWeightDomain::Raw if weight > 0.0 => weight.ln(),
+        // Raw zero is an unweighted dictionary row and must remain below a
+        // positive weight of one. Offset non-positive source penalties from
+        // the smallest positive log so their relative credibility still
+        // participates without tying zero against ln(1).
+        TableEntryWeightDomain::Raw => f32::MIN_POSITIVE.ln() + weight,
+    }
+}
+
+fn table_raw_weight(weight: f32, domain: TableEntryWeightDomain) -> f32 {
+    match domain {
+        TableEntryWeightDomain::Raw => weight,
+        TableEntryWeightDomain::NaturalLog => weight.exp(),
+    }
+}
+
+fn sentence_piece_quality(weight: f32, word_penalty: f32, domain: TableEntryWeightDomain) -> f32 {
+    table_log_weight(weight, domain).max(0.0) - word_penalty
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -811,6 +895,7 @@ fn retain_winning_sentence_path_candidate<'a>(
     candidate: LookupCandidate<'a>,
     entry_code: &str,
     word_penalty: f32,
+    weight_domain: TableEntryWeightDomain,
 ) {
     let candidate_score = SentencePathScore {
         fuzzy_pieces: predecessor.fuzzy_pieces
@@ -820,8 +905,9 @@ fn retain_winning_sentence_path_candidate<'a>(
                 entry_code,
             )),
         quality: predecessor.quality
-            + sentence_piece_quality(candidate.raw_quality(), word_penalty),
-        raw_quality: predecessor.raw_quality + candidate.raw_quality(),
+            + sentence_piece_quality(candidate.raw_quality(), word_penalty, weight_domain),
+        raw_quality: predecessor.raw_quality
+            + table_raw_weight(candidate.raw_quality(), weight_domain),
     };
     if shadow_score.map_or(true, |existing| {
         sentence_path_score_replaces(candidate_score, existing)
@@ -876,6 +962,17 @@ impl TableStorage {
         match self {
             Self::Heap(entries) => entries.has_code(code),
             Self::Compact(store) => store.has_code(code),
+        }
+    }
+
+    fn has_strict_code_prefix(&self, prefix: &str) -> bool {
+        match self {
+            Self::Heap(entries) => entries
+                .range(prefix.to_owned()..)
+                .map(|(code, _)| code)
+                .take_while(|code| code.starts_with(prefix))
+                .any(|code| code.len() > prefix.len()),
+            Self::Compact(store) => store.has_strict_code_prefix(prefix),
         }
     }
 
@@ -1320,6 +1417,7 @@ pub struct StaticTableTranslator {
     /// RIME `sort:` policy of the backing dictionary; false (`sort: original`)
     /// disables the M59 tone-merge re-rank — source row order is the contract.
     sort_by_weight: bool,
+    entry_weight_domain: TableEntryWeightDomain,
     spelling_abbreviation_entries: HashSet<(String, String, String)>,
     spelling_correction_entries: HashSet<(String, String, String)>,
     spelling_correction_surfaces: HashSet<String>,
@@ -1385,6 +1483,7 @@ pub struct StaticTableTranslator {
     // A single entry bounds ownership independently of typing history.
     prefix_fallback_window_cache: Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,
     sentence_word_penalty: f32,
+    spelling_algebra: SpellingAlgebra,
     spelling_algebra_formulas: Vec<String>,
     preset_vocabulary: Vec<PresetVocabularyEntry>,
     abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry>,
@@ -1425,6 +1524,10 @@ impl StaticTableTranslator {
             spelling_algebra_configured: false,
             spelling_algebra_active: false,
             sort_by_weight: true,
+            // This convenience constructor stores the historical translator
+            // score directly. The Raw domain's non-positive convention keeps
+            // zero as the neutral score exported as weight 1.
+            entry_weight_domain: TableEntryWeightDomain::Raw,
             spelling_abbreviation_entries: HashSet::new(),
             spelling_correction_entries: HashSet::new(),
             spelling_correction_surfaces: HashSet::new(),
@@ -1460,6 +1563,7 @@ impl StaticTableTranslator {
             max_leading_prefix_len_cache: OnceLock::new(),
             prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
+            spelling_algebra: SpellingAlgebra::default(),
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary: Vec::new(),
             abbreviation_preset_vocabulary: Vec::new(),
@@ -1474,6 +1578,7 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn from_dictionary(dictionary: TableDictionary) -> Self {
         let sort_by_weight = dictionary.sort_by_weight();
+        let entry_weight_domain = dictionary.entry_weight_domain();
         let preset_vocabulary = dictionary.preset_vocabulary_entries().to_vec();
         let abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry> = Vec::new();
         let corrections = dictionary.corrections().to_vec();
@@ -1502,6 +1607,7 @@ impl StaticTableTranslator {
             spelling_algebra_configured: false,
             spelling_algebra_active: false,
             sort_by_weight,
+            entry_weight_domain,
             spelling_abbreviation_entries: HashSet::new(),
             spelling_correction_entries: HashSet::new(),
             spelling_correction_surfaces: HashSet::new(),
@@ -1537,6 +1643,7 @@ impl StaticTableTranslator {
             max_leading_prefix_len_cache: OnceLock::new(),
             prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
+            spelling_algebra: SpellingAlgebra::default(),
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
             abbreviation_preset_vocabulary,
@@ -1555,6 +1662,7 @@ impl StaticTableTranslator {
     ) -> Self {
         let direct_prism_surface_mapping_current = prism_payload.is_some();
         let sort_by_weight = dictionary.sort_by_weight();
+        let entry_weight_domain = dictionary.entry_weight_domain();
         let preset_vocabulary = dictionary.preset_vocabulary_entries().to_vec();
         let abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry> = Vec::new();
         let corrections = dictionary.corrections().to_vec();
@@ -1570,6 +1678,7 @@ impl StaticTableTranslator {
             spelling_algebra_configured: false,
             spelling_algebra_active: false,
             sort_by_weight,
+            entry_weight_domain,
             spelling_abbreviation_entries: HashSet::new(),
             spelling_correction_entries: HashSet::new(),
             spelling_correction_surfaces: HashSet::new(),
@@ -1605,6 +1714,7 @@ impl StaticTableTranslator {
             max_leading_prefix_len_cache: OnceLock::new(),
             prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
+            spelling_algebra: SpellingAlgebra::default(),
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
             abbreviation_preset_vocabulary,
@@ -1634,6 +1744,7 @@ impl StaticTableTranslator {
     ) -> Self {
         let direct_prism_surface_mapping_current = prism_payload.is_some();
         let sort_by_weight = store.sort_by_weight();
+        let entry_weight_domain = store.entry_weight_domain();
         let advanced = store.advanced_data();
         let preset_vocabulary = advanced.preset_vocabulary.clone();
         let abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry> = Vec::new();
@@ -1651,6 +1762,7 @@ impl StaticTableTranslator {
             spelling_algebra_configured: false,
             spelling_algebra_active: false,
             sort_by_weight,
+            entry_weight_domain,
             spelling_abbreviation_entries: HashSet::new(),
             spelling_correction_entries: HashSet::new(),
             spelling_correction_surfaces: HashSet::new(),
@@ -1686,6 +1798,7 @@ impl StaticTableTranslator {
             max_leading_prefix_len_cache: OnceLock::new(),
             prefix_fallback_window_cache: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
+            spelling_algebra: SpellingAlgebra::default(),
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
             abbreviation_preset_vocabulary,
@@ -1906,14 +2019,13 @@ impl StaticTableTranslator {
             && self.prism_payload.is_some()
             && self.single_letter_sentence_guard_enabled
             && !abbreviation_vocabulary.is_empty();
-        // Upstream librime's Marisa-backed `.table.bin` stores natural-log
-        // weights. Source dictionaries, Yune-authored compact tables, and
-        // poet-v3 artifacts retain raw weights. Keep that distinction local to
-        // the owned model reconstructed from the pinned upstream table.
-        let natural_log_table_weights = matches!(
-            &self.storage,
-            TableStorage::Compact(store) if store.is_marisa_backed()
-        );
+        // Every standard Rime::Table/4.0 stores natural-log weights, regardless
+        // of whether its index is Marisa-backed. Source dictionaries and
+        // identifiable legacy Yune tables retain raw weights. The explicit
+        // domain prevents both double-logging external non-Marisa tables and
+        // misreading source/legacy rows as compiled logs.
+        let natural_log_table_weights =
+            self.entry_weight_domain == TableEntryWeightDomain::NaturalLog;
         let model = if let Some((source, dictionary_checksum)) =
             self.upstream_sentence_poet_source.take()
         {
@@ -1924,11 +2036,19 @@ impl StaticTableTranslator {
                 .into_iter()
                 .map(|(code, candidate)| TableEntry::new(code, candidate.text, candidate.quality))
                 .collect::<Vec<_>>();
-            UpstreamSentenceModel::from_table_entries(
-                table_entries,
-                &self.preset_vocabulary,
-                max_candidates,
-            )
+            if natural_log_table_weights {
+                UpstreamSentenceModel::from_natural_log_table_entries(
+                    table_entries,
+                    &self.preset_vocabulary,
+                    max_candidates,
+                )
+            } else {
+                UpstreamSentenceModel::from_table_entries(
+                    table_entries,
+                    &self.preset_vocabulary,
+                    max_candidates,
+                )
+            }
         } else {
             let full_pinyin_vocabulary = self.preset_vocabulary.as_slice();
             if build_abbreviation_model && natural_log_table_weights {
@@ -2206,6 +2326,7 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn with_spelling_algebra(mut self, formulas: &[String]) -> Self {
         let algebra = SpellingAlgebra::parse(formulas);
+        self.spelling_algebra = algebra.clone();
         self.prefix_fallback_window_cache = Mutex::new(None);
         if self.spelling_algebra_configured {
             self.direct_prism_surface_mapping_current &=
@@ -2244,7 +2365,7 @@ impl StaticTableTranslator {
                 .take()
                 .unwrap_or_else(|| self.storage.owned_entries());
             let (entries, normal_codes, has_single_letter_abbreviations) =
-                algebra.expand_entries_with_normal_codes(source_entries);
+                algebra.expand_entries_with_normal_codes(source_entries, self.entry_weight_domain);
             self.spelling_correction_entries = spelling_correction_entries(&entries);
             self.spelling_correction_surfaces = self
                 .spelling_correction_entries
@@ -2331,6 +2452,7 @@ impl StaticTableTranslator {
                     specs.push(LookupCodeSpec::alias(
                         lookup.code.to_owned(),
                         lookup_code.to_owned(),
+                        lookup.abbreviation,
                         lookup.correction,
                         lookup.credibility,
                     ));
@@ -2441,7 +2563,9 @@ impl StaticTableTranslator {
         let mut exact = LookupCodeSpec::exact(lookup_code);
         exact.spelling_correction = self.exact_surface_is_correction_only(lookup_code);
         let mut specs = vec![exact];
-        if lookup_code.len() > MAX_SENTENCE_ALIAS_LOOKUP_BYTES {
+        if lookup_code.len() > MAX_SENTENCE_ALIAS_LOOKUP_BYTES
+            || !self.direct_prism_surface_mapping_current
+        {
             return specs;
         }
         let (Some(prism), Some(syllabary_codes)) =
@@ -2467,6 +2591,7 @@ impl StaticTableTranslator {
             specs.push(LookupCodeSpec::alias(
                 lookup.code.to_owned(),
                 lookup_code.to_owned(),
+                lookup.abbreviation,
                 lookup.correction,
                 lookup.credibility,
             ));
@@ -2477,8 +2602,11 @@ impl StaticTableTranslator {
     fn upstream_script_surface_segmentation(
         &self,
         input: &str,
-    ) -> Option<(Vec<SurfaceSyllable>, Vec<SurfaceSyllable>)> {
-        if self.sentence_policy != SentencePolicy::UpstreamScript || input.is_empty() {
+    ) -> Option<UpstreamScriptSurfaceGraph> {
+        if self.sentence_policy != SentencePolicy::UpstreamScript
+            || input.is_empty()
+            || !self.direct_prism_surface_mapping_current
+        {
             return None;
         }
         // A direct table code is already served by the ordinary exact path. In
@@ -2497,15 +2625,19 @@ impl StaticTableTranslator {
             .map(|(index, _)| index)
             .chain(std::iter::once(input.len()))
             .collect::<Vec<_>>();
-        let mut paths = vec![None::<SurfaceSegmentationPath>; boundaries.len()];
+        // `false` is a normal/fuzzy path and `true` is an abbreviation path.
+        // This is the part of librime's SpellingType ladder that changes the
+        // class-4 surface: a normal/fuzzy path to the farthest vertex prunes
+        // abbreviation edges, while a farthest vertex reachable only through
+        // abbreviation keeps them.  Credibility ranks candidates after graph
+        // construction; it does not choose the graph path.
+        let mut vertex_abbreviation = vec![None::<bool>; boundaries.len()];
         let mut edges_by_start = vec![Vec::<SurfaceSyllable>::new(); boundaries.len()];
-        paths[0] = Some(SurfaceSegmentationPath {
-            credibility: 0.0,
-            syllables: Vec::new(),
-        });
+        let mut derived_syllable_choices = HashMap::<String, SurfaceCodeChoices>::new();
+        vertex_abbreviation[0] = Some(false);
 
         for start_index in 0..boundaries.len().saturating_sub(1) {
-            let Some(path) = paths[start_index].clone() else {
+            let Some(path_abbreviation) = vertex_abbreviation[start_index] else {
                 continue;
             };
             let start = boundaries[start_index];
@@ -2516,81 +2648,265 @@ impl StaticTableTranslator {
                 }
                 let spelling = &input[start..end];
                 let prism_start = crate::m37_metrics_enabled().then(Instant::now);
-                let lookups = prism.lookup_canonical_codes_with_limit(
-                    spelling,
-                    syllabary_codes,
-                    MAX_SENTENCE_ALIAS_LOOKUP_CODES,
-                );
+                // Script translation consumes the complete deployed spelling
+                // family.  In particular a one-letter abbreviation such as
+                // `n` can fan out to substantially more than the ordinary
+                // sentence-alias cap; truncating that descriptor family makes
+                // its order depend on prism storage position instead of raw
+                // dictionary weight.
+                let lookups = prism.lookup_canonical_codes(spelling, syllabary_codes);
                 if let Some(start) = prism_start {
                     crate::m37_record_prism_lookup(start.elapsed(), lookups.len());
                 }
-                let mut choices = HashMap::<String, f32>::new();
+                let mut choices = derived_syllable_choices
+                    .get(spelling)
+                    .cloned()
+                    .unwrap_or_default();
                 for lookup in lookups {
-                    if lookup.abbreviation
-                        || lookup.correction
-                        || !self.lookup_code_has_syllable_count(lookup.code, 1)
-                    {
+                    if lookup.correction {
                         continue;
                     }
-                    choices
-                        .entry(lookup.code.to_owned())
-                        .and_modify(|credibility| {
-                            *credibility = credibility.max(lookup.credibility);
-                        })
-                        .or_insert(lookup.credibility);
+                    if lookup.abbreviation && end < input.len() {
+                        for syllable in source_code_syllables(lookup.code).skip(1) {
+                            for variant in self
+                                .spelling_algebra
+                                .expand_deployed_spelling_variants(syllable)
+                            {
+                                if variant.properties.is_correction
+                                    || variant.code.is_empty()
+                                    || !surface_spelling_occurs_after(input, end, &variant.code)
+                                {
+                                    continue;
+                                }
+                                let abbreviation = variant.properties.spelling_type
+                                    == DeployedSpellingType::Abbreviation;
+                                derived_syllable_choices
+                                    .entry(variant.code)
+                                    .or_default()
+                                    .merge(SurfaceCodeChoice {
+                                        code: syllable.to_owned(),
+                                        // The flattened descriptor's ID belongs
+                                        // to the complete phrase, not this
+                                        // recovered suffix syllable. Keep it
+                                        // after real prism syllable IDs; a later
+                                        // direct descriptor merge supplies the
+                                        // canonical ID when one exists.
+                                        syllable_id: usize::MAX,
+                                        normal: variant.properties.spelling_type
+                                            == DeployedSpellingType::Normal,
+                                        abbreviation,
+                                        credibility: variant.properties.credibility as f32,
+                                    });
+                            }
+                        }
+                    }
+                    let (choice_code, choice_syllable_id) =
+                        if source_code_syllable_count(lookup.code) == Some(1) {
+                            (lookup.code, lookup.syllable_id)
+                        } else if lookup.abbreviation {
+                            // Yune's compact prism is built from flattened table
+                            // codes, whereas librime's prism descriptors point at
+                            // syllable IDs and Table::Query walks the remaining
+                            // syllables through the dictionary trie. Recover that
+                            // first live syllable from a multi-syllable abbreviation
+                            // descriptor so phrase-only readings remain traversable
+                            // without admitting the whole phrase as a one-span row.
+                            let Some(prefix) = first_toned_syllable_prefix(lookup.code) else {
+                                continue;
+                            };
+                            if self.storage.prefix_candidates(prefix).next().is_none() {
+                                continue;
+                            }
+                            (prefix, usize::MAX)
+                        } else {
+                            continue;
+                        };
+                    choices.merge(SurfaceCodeChoice {
+                        code: choice_code.to_owned(),
+                        syllable_id: choice_syllable_id,
+                        normal: lookup.normal,
+                        abbreviation: lookup.abbreviation,
+                        credibility: lookup.credibility,
+                    });
                 }
-                if choices.is_empty() {
+                if choices.choices.is_empty() {
                     continue;
                 }
-                let mut choices = choices
-                    .into_iter()
-                    .map(|(code, credibility)| SurfaceCodeChoice { code, credibility })
-                    .collect::<Vec<_>>();
-                choices.sort_by(|left, right| left.code.cmp(&right.code));
-                let path_credibility = choices
-                    .iter()
-                    .map(|choice| choice.credibility)
-                    .max_by(|left, right| left.total_cmp(right))
-                    .unwrap_or_default();
+                // librime's `Syllabary` is a `std::set<string>` and
+                // `SyllableGraph::indices` is traversed by the resulting
+                // lexical syllable IDs. Yune's compact artifacts retain full
+                // source codes in source order, so their descriptor IDs are
+                // not the upstream traversal key (phrase-only recovery also
+                // has no descriptor ID at all). Canonical-code order restores
+                // the schema-generic Table::Query chunk order for both native
+                // librime artifacts and Yune-rebuilt compact artifacts.
+                choices
+                    .choices
+                    .sort_by(|left, right| left.code.cmp(&right.code));
+                let edge_abbreviation = choices.choices.iter().all(|choice| choice.abbreviation);
                 let syllable = SurfaceSyllable {
                     start,
                     end,
-                    choices,
-                    path_credibility,
+                    choices: choices.choices,
                 };
-                edges_by_start[start_index].push(syllable.clone());
-                let next = path.extended(syllable);
-                if paths[end_index]
-                    .as_ref()
-                    .map_or(true, |existing| next.precedes(existing))
-                {
-                    paths[end_index] = Some(next);
-                }
+                edges_by_start[start_index].push(syllable);
+                let next_abbreviation = path_abbreviation || edge_abbreviation;
+                vertex_abbreviation[end_index] = Some(
+                    vertex_abbreviation[end_index]
+                        .map_or(next_abbreviation, |current| current && next_abbreviation),
+                );
             }
         }
 
-        let path = paths.pop().flatten()?;
-        let selected_first_is_raw_spelling = path.syllables.first().is_some_and(|syllable| {
+        // librime's script translation owns the farthest recognized prefix,
+        // not only a graph that reaches the end of the raw input.  This is the
+        // load-bearing distinction for `nri`: `n` remains a live abbreviation
+        // segment and `ri` remains raw for default recomposition.
+        let interpreted_index = vertex_abbreviation.iter().rposition(Option::is_some)?;
+        if interpreted_index == 0 {
+            return None;
+        }
+        let allow_abbreviation = vertex_abbreviation[interpreted_index]?;
+
+        // `TableTranslator::MakeSentence` separately retains normal-spelling
+        // dictionary prefixes that start at zero, even when that prefix does
+        // not participate in a path to the farthest syllabifier vertex. Keep
+        // that collector surface apart from the pruned sentence graph so a
+        // dead prefix can still be offered for manual composition without
+        // becoming a sentence-model span.
+        let unpruned_edges_by_start = edges_by_start.clone();
+        let unpruned_leading_prefix_syllables = unpruned_edges_by_start
+            .first()
+            .into_iter()
+            .flatten()
+            .filter_map(|syllable| {
+                let mut syllable = syllable.clone();
+                syllable.choices.retain(|choice| choice.normal);
+                (!syllable.choices.is_empty()).then_some(syllable)
+            })
+            .collect::<Vec<_>>();
+
+        // Mirror Syllabifier::BuildSyllableGraph's reverse `good` walk.  Edges
+        // that cannot reach the farthest vertex are stale.  If a normal/fuzzy
+        // path reaches that vertex, abbreviation choices and abbreviation-only
+        // vertices are worse spellings and are removed.  This is what keeps
+        // `bein` on `be in` and `ngohaigo` on `ngo hai go`, while preserving
+        // the required abbreviation graph for `n`, `nri`, and `ngohaig`.
+        let mut good = vec![false; boundaries.len()];
+        good[interpreted_index] = true;
+        for start_index in (0..interpreted_index).rev() {
+            if vertex_abbreviation[start_index].is_none()
+                || (vertex_abbreviation[start_index] == Some(true) && !allow_abbreviation)
+            {
+                edges_by_start[start_index].clear();
+                continue;
+            }
+            edges_by_start[start_index].retain_mut(|syllable| {
+                let Some(end_index) = boundaries
+                    .binary_search(&syllable.end)
+                    .ok()
+                    .filter(|end_index| good[*end_index])
+                else {
+                    return false;
+                };
+                let _ = end_index;
+                if !allow_abbreviation {
+                    syllable.choices.retain(|choice| !choice.abbreviation);
+                }
+                !syllable.choices.is_empty()
+            });
+            if !edges_by_start[start_index].is_empty() {
+                good[start_index] = true;
+            }
+        }
+        if !good[0] {
+            return None;
+        }
+        let selected_first = edges_by_start
+            .first()
+            .and_then(|syllables| syllables.iter().max_by_key(|syllable| syllable.end));
+        let selected_first_is_raw_spelling = selected_first.is_some_and(|syllable| {
             let spelling = &input[syllable.start..syllable.end];
             syllable
                 .choices
                 .iter()
                 .any(|choice| normalized_original_code(&choice.code) == spelling)
         });
-        let leading = if selected_first_is_raw_spelling {
-            edges_by_start.into_iter().next().unwrap_or_default()
+        let eligible_leading_prefix_syllables = selected_first
+            .map(|selected| {
+                unpruned_leading_prefix_syllables
+                    .into_iter()
+                    // A disconnected shorter prefix remains available for
+                    // manual composition. A longer overlapping spelling is
+                    // not a prefix of the viable first segment and must not
+                    // leak into inputs such as `bein` (live `be`, dead `bei`).
+                    .filter(|syllable| syllable.end <= selected.end)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        // Reachability ownership follows surface syllables, including normal
+        // transformed spellings such as Bopomofo `cl3 -> hao3`. The independent
+        // prefix collector below remains raw-spelling-only; conflating the two
+        // lets its explicit-false control leak transformed leading singles.
+        let mut one_syllable_prefix_ends = eligible_leading_prefix_syllables
+            .iter()
+            .map(|syllable| syllable.end)
+            .collect::<Vec<_>>();
+        one_syllable_prefix_ends.sort_unstable();
+        one_syllable_prefix_ends.dedup();
+        let leading_prefix_syllables = if selected_first_is_raw_spelling {
+            eligible_leading_prefix_syllables
         } else {
             Vec::new()
         };
-        Some((path.syllables, leading))
+        let mut direct_edges_by_start = edges_by_start.clone();
+        if let Some(selected) = selected_first {
+            let selected_end_index = boundaries.binary_search(&selected.end).ok()?;
+            // Longest-recognized-prefix recomposition is allowed to branch
+            // after the viable first syllable. This retains a normal `ha`
+            // phrase below live `ngo` even when a later abbreviation cannot
+            // survive the reverse-good walk. It deliberately does not restore
+            // alternate first-syllable overlaps; those are owned by the
+            // shorter-only collector rule above.
+            for start_index in selected_end_index..interpreted_index {
+                for syllable in &unpruned_edges_by_start[start_index] {
+                    if syllable.end > boundaries[interpreted_index] {
+                        continue;
+                    }
+                    let mut syllable = syllable.clone();
+                    if !allow_abbreviation {
+                        syllable.choices.retain(|choice| !choice.abbreviation);
+                    }
+                    if !syllable.choices.is_empty() {
+                        direct_edges_by_start[start_index].push(syllable);
+                    }
+                }
+            }
+        }
+        Some(UpstreamScriptSurfaceGraph {
+            interpreted_end: boundaries[interpreted_index],
+            boundaries,
+            edges_by_start,
+            direct_edges_by_start,
+            leading_prefix_syllables,
+            one_syllable_prefix_ends,
+        })
     }
 
-    fn upstream_script_model_spans(syllables: &[SurfaceSyllable]) -> Vec<SentenceCodeSpan> {
-        syllables
+    fn upstream_script_model_spans(
+        graph: &UpstreamScriptSurfaceGraph,
+    ) -> Vec<WeightedSentenceCodeSpan> {
+        graph
+            .direct_edges_by_start
             .iter()
+            .flatten()
+            .filter(|syllable| syllable.end <= graph.interpreted_end)
             .flat_map(|syllable| {
                 syllable.choices.iter().map(|choice| {
-                    SentenceCodeSpan::new(syllable.start, syllable.end, choice.code.clone())
+                    WeightedSentenceCodeSpan::new(
+                        SentenceCodeSpan::new(syllable.start, syllable.end, choice.code.clone()),
+                        choice.credibility,
+                    )
                 })
             })
             .collect()
@@ -2604,140 +2920,206 @@ impl StaticTableTranslator {
         filter_by_charset: bool,
     ) -> Vec<RankedScriptPhraseCandidate> {
         let surface = &input[..end];
-        let specs = codes
-            .iter()
-            .filter(|candidate| self.storage.has_code(&candidate.code))
-            .map(|candidate| {
-                LookupCodeSpec::alias(
-                    candidate.code.clone(),
-                    surface.to_owned(),
-                    false,
-                    candidate.credibility,
-                )
-            })
-            .collect::<Vec<_>>();
-        let mut merge_rank_by_text = HashMap::<String, (f32, String)>::new();
-        for spec in &specs {
-            for candidate in self
+        let weight_domain = self.entry_weight_domain;
+        let mut chunks = Vec::<VecDeque<(Candidate, f64)>>::new();
+        for code in codes {
+            let mut rows = VecDeque::new();
+            for lookup in self
                 .storage
-                .exact_candidates(&spec.code)
+                .exact_candidates(&code.code)
                 .filter(|candidate| {
                     self.is_dictionary_text_allowed(candidate.text())
                         && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
                 })
             {
-                let quality = upstream_script_raw_candidate_quality(
-                    end,
-                    candidate.raw_quality(),
-                    spec.spelling_credibility,
+                let raw_quality = lookup.raw_quality();
+                let mut candidate = self.candidate_for_lookup_view(
+                    &code.code,
+                    &lookup,
+                    surface,
+                    None,
+                    code.credibility,
                 );
-                merge_rank_by_text
-                    .entry(candidate.text().to_owned())
-                    .and_modify(|existing| {
-                        if quality > existing.0 || (quality == existing.0 && spec.code < existing.1)
-                        {
-                            *existing = (quality, spec.code.clone());
-                        }
-                    })
-                    .or_insert_with(|| (quality, spec.code.clone()));
+                candidate.quality = upstream_script_raw_candidate_quality(
+                    end,
+                    raw_quality,
+                    code.credibility,
+                    weight_domain,
+                );
+                candidate.source = if end < input.len() {
+                    CandidateSource::PartialTable {
+                        consumed: end,
+                        recompose_on_default: true,
+                    }
+                } else {
+                    CandidateSource::Table
+                };
+                let comparison_weight = match weight_domain {
+                    TableEntryWeightDomain::Raw => f64::from(raw_quality).max(f64::EPSILON).ln(),
+                    TableEntryWeightDomain::NaturalLog => f64::from(raw_quality),
+                } + f64::from(code.credibility);
+                rows.push_back((candidate, comparison_weight));
+            }
+            if !rows.is_empty() {
+                chunks.push(rows);
             }
         }
-        let mut family = self
-            .candidates_for_lookup_codes_with_completion(&specs, filter_by_charset, false)
-            .candidates;
-        family.retain(|candidate| candidate.source == CandidateSource::Table);
-        let mut family = family
-            .into_iter()
-            .filter_map(|mut candidate| {
-                let (quality, code_order) = merge_rank_by_text.get(&candidate.text)?.clone();
-                candidate.quality = quality;
-                if end < input.len() {
-                    candidate.source = CandidateSource::PartialTable {
-                        consumed: end,
-                        recompose_on_default: false,
-                    };
+
+        // DictEntryIterator::Sort uses MSVC `partial_sort(first, first + 1,
+        // last)`.  With a one-item heap this keeps the first equal head, but a
+        // later strictly better head swaps its whole chunk into the active
+        // slot.  Replaying that mutable chunk order is load-bearing for the
+        // complete `n` family; a conventional stable heap does not reproduce
+        // the later equal-weight ties after such a swap.
+        let mut active = 0usize;
+        let mut emitted = 0usize;
+        let mut seen = HashSet::new();
+        let mut family = Vec::new();
+        while active < chunks.len() {
+            for index in active + 1..chunks.len() {
+                if chunks[index]
+                    .front()
+                    .zip(chunks[active].front())
+                    .is_some_and(|(candidate, current)| candidate.1 > current.1)
+                {
+                    // MSVC's one-item partial-sort heap moves the old active
+                    // chunk into every strictly-better visitor's slot.  A
+                    // single final swap with the best chunk leaves a different
+                    // residual permutation and therefore diverges at later
+                    // equal-weight ties.
+                    chunks.swap(active, index);
                 }
-                Some(RankedScriptPhraseCandidate {
+            }
+            let (candidate, _) = chunks[active]
+                .pop_front()
+                .expect("active script chunk should be nonempty");
+            if seen.insert(candidate.text.clone()) {
+                family.push(RankedScriptPhraseCandidate {
                     candidate,
-                    code_order,
-                })
-            })
-            .collect::<Vec<_>>();
-        family.sort_by(|left, right| {
-            right
-                .candidate
-                .quality
-                .partial_cmp(&left.candidate.quality)
-                .unwrap_or(Ordering::Equal)
-                .then_with(|| left.code_order.cmp(&right.code_order))
-        });
+                    code_order: format!("\0{emitted:020}"),
+                });
+                emitted += 1;
+            }
+            if chunks[active].is_empty() {
+                active += 1;
+            }
+        }
         family
     }
 
     fn upstream_script_direct_families(
         &self,
         input: &str,
-        syllables: &[SurfaceSyllable],
-        leading_syllables: &[SurfaceSyllable],
+        graph: &UpstreamScriptSurfaceGraph,
         filter_by_charset: bool,
     ) -> Option<(Vec<RankedScriptPhraseCandidate>, bool)> {
-        let mut concatenated = vec![ConcatenatedSurfaceCode {
+        let mut codes_by_boundary =
+            vec![Vec::<ConcatenatedSurfaceCode>::new(); graph.boundaries.len()];
+        let mut code_indexes_by_boundary =
+            vec![HashMap::<String, usize>::new(); graph.boundaries.len()];
+        let mut exact_codes_by_boundary =
+            vec![Vec::<ConcatenatedSurfaceCode>::new(); graph.boundaries.len()];
+        let mut exact_code_indexes_by_boundary =
+            vec![HashMap::<String, usize>::new(); graph.boundaries.len()];
+        codes_by_boundary[0].push(ConcatenatedSurfaceCode {
             code: String::new(),
+            abbreviation: false,
             credibility: 0.0,
-        }];
+        });
+        code_indexes_by_boundary[0].insert(String::new(), 0);
         let mut families = Vec::<(usize, Vec<RankedScriptPhraseCandidate>)>::new();
 
-        for syllable in syllables {
-            let mut next_by_code = HashMap::<String, f32>::new();
-            for prefix in &concatenated {
-                for choice in &syllable.choices {
-                    let mut code = String::with_capacity(prefix.code.len() + choice.code.len());
-                    code.push_str(&prefix.code);
-                    code.push_str(&choice.code);
-                    if self.storage.prefix_candidates(&code).next().is_none() {
-                        continue;
-                    }
-                    let credibility = prefix.credibility + choice.credibility;
-                    next_by_code
-                        .entry(code)
-                        .and_modify(|existing| *existing = existing.max(credibility))
-                        .or_insert(credibility);
-                }
-            }
-            if next_by_code.len() > MAX_ABBREVIATION_SENTENCE_TOTAL_SPANS {
-                return None;
-            }
-            concatenated = next_by_code
-                .into_iter()
-                .map(|(code, credibility)| ConcatenatedSurfaceCode { code, credibility })
-                .collect();
-            concatenated.sort_by(|left, right| left.code.cmp(&right.code));
-
-            let family = self.upstream_script_ranked_family(
-                input,
-                syllable.end,
-                &concatenated,
-                filter_by_charset,
-            );
-            families.push((syllable.end, family));
-        }
-
-        let selected_first_end = syllables.first().map(|syllable| syllable.end);
-        for leading in leading_syllables {
-            if selected_first_end == Some(leading.end) {
+        for start_index in 0..graph.boundaries.len().saturating_sub(1) {
+            let prefixes = codes_by_boundary[start_index].clone();
+            if prefixes.is_empty() {
                 continue;
             }
-            let codes = leading
+            for syllable in &graph.direct_edges_by_start[start_index] {
+                if syllable.end > graph.interpreted_end {
+                    continue;
+                }
+                let end_index = graph.boundaries.binary_search(&syllable.end).ok()?;
+                let destination = &mut codes_by_boundary[end_index];
+                let destination_indexes = &mut code_indexes_by_boundary[end_index];
+                let exact_destination = &mut exact_codes_by_boundary[end_index];
+                let exact_destination_indexes = &mut exact_code_indexes_by_boundary[end_index];
+                for prefix in &prefixes {
+                    for choice in &syllable.choices {
+                        let mut code = String::with_capacity(prefix.code.len() + choice.code.len());
+                        code.push_str(&prefix.code);
+                        code.push_str(&choice.code);
+                        let has_exact = self.storage.has_code(&code);
+                        let has_strict_prefix = self.storage.has_strict_code_prefix(&code);
+                        if !has_exact && !has_strict_prefix {
+                            continue;
+                        }
+                        let abbreviation = prefix.abbreviation || choice.abbreviation;
+                        let credibility = prefix.credibility + choice.credibility;
+                        if has_exact {
+                            if let Some(index) = exact_destination_indexes.get(&code).copied() {
+                                let existing = &mut exact_destination[index];
+                                if !abbreviation {
+                                    existing.abbreviation = false;
+                                }
+                                existing.credibility = existing.credibility.max(credibility);
+                            } else {
+                                exact_destination_indexes
+                                    .insert(code.clone(), exact_destination.len());
+                                exact_destination.push(ConcatenatedSurfaceCode {
+                                    code: code.clone(),
+                                    abbreviation,
+                                    credibility,
+                                });
+                            }
+                        }
+                        if has_strict_prefix {
+                            if let Some(index) = destination_indexes.get(&code).copied() {
+                                let existing = &mut destination[index];
+                                if !abbreviation {
+                                    existing.abbreviation = false;
+                                }
+                                existing.credibility = existing.credibility.max(credibility);
+                            } else {
+                                destination_indexes.insert(code.clone(), destination.len());
+                                destination.push(ConcatenatedSurfaceCode {
+                                    code,
+                                    abbreviation,
+                                    credibility,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (end_index, exact_codes) in exact_codes_by_boundary.iter().enumerate().skip(1) {
+            let end = graph.boundaries[end_index];
+            if end > graph.interpreted_end || exact_codes.is_empty() {
+                continue;
+            }
+            let codes = exact_codes.clone();
+            let family = self.upstream_script_ranked_family(input, end, &codes, filter_by_charset);
+            families.push((end, family));
+        }
+
+        // Prefix collectors in librime's `MakeSentence` are independent of
+        // the graph's reverse-good walk. Add only their normal-spelling rows;
+        // live graph families remain first and deduplication below makes this
+        // a no-op unless the prefix was disconnected from the farthest path.
+        for syllable in graph.leading_syllables() {
+            let codes = syllable
                 .choices
                 .iter()
                 .map(|choice| ConcatenatedSurfaceCode {
                     code: choice.code.clone(),
+                    abbreviation: false,
                     credibility: choice.credibility,
                 })
                 .collect::<Vec<_>>();
             let family =
-                self.upstream_script_ranked_family(input, leading.end, &codes, filter_by_charset);
-            families.push((leading.end, family));
+                self.upstream_script_ranked_family(input, syllable.end, &codes, filter_by_charset);
+            families.push((syllable.end, family));
         }
 
         let has_full_exact = families
@@ -2762,53 +3144,54 @@ impl StaticTableTranslator {
         filter_by_charset: bool,
         limit: Option<usize>,
     ) -> Option<PrefixFallbackBatch> {
-        let (syllables, leading_syllables) = self.upstream_script_surface_segmentation(input)?;
-        let (direct, _) = self.upstream_script_direct_families(
-            input,
-            &syllables,
-            &leading_syllables,
-            filter_by_charset,
-        )?;
-        let spans = Self::upstream_script_model_spans(&syllables);
-        let mut candidates = self
+        let graph = self.upstream_script_surface_segmentation(input)?;
+        let (direct, _) = self.upstream_script_direct_families(input, &graph, filter_by_charset)?;
+        let spans = Self::upstream_script_model_spans(&graph);
+        let model_candidates = self
             .upstream_sentence_model
             .as_ref()
-            .map(|model| model.ranked_script_phrase_candidates_for_code_spans(input, &spans))
+            .map(|model| {
+                model.ranked_script_phrase_candidates_for_weighted_code_spans(input, &spans)
+            })
             .unwrap_or_default();
-        candidates.retain(|ranked| {
-            self.upstream_script_partial_candidate_allowed(
-                &ranked.candidate,
-                &syllables,
-                &leading_syllables,
-            ) && self.is_dictionary_text_allowed(&ranked.candidate.text)
-                && (!filter_by_charset || !contains_extended_cjk(&ranked.candidate.text))
-        });
-        let mut candidate_indices = candidates
-            .iter()
-            .enumerate()
-            .map(|(index, ranked)| (ranked.candidate.text.clone(), index))
-            .collect::<HashMap<_, _>>();
+        let mut candidate_indices = HashMap::<String, usize>::new();
+        let mut candidates = Vec::<RankedScriptPhraseCandidate>::new();
+        for ranked in model_candidates {
+            if !self.upstream_script_partial_candidate_allowed(&ranked.candidate, &graph)
+                || !self.is_dictionary_text_allowed(&ranked.candidate.text)
+                || (filter_by_charset && contains_extended_cjk(&ranked.candidate.text))
+                || candidate_indices.contains_key(&ranked.candidate.text)
+            {
+                continue;
+            }
+            candidate_indices.insert(ranked.candidate.text.clone(), candidates.len());
+            candidates.push(ranked);
+        }
+        // Yune's compact table intentionally omits preset-vocabulary phrases
+        // that librime's DictCompiler materializes into the deployed Table.
+        // The model reconstructs that complete table surface and now applies
+        // DictEntryIterator's collector order, so it owns ordering. Enrich a
+        // reconstructed row with direct-table metadata when available, and add
+        // only direct rows that the reconstruction genuinely lacks.
         for mut direct in direct {
-            if !self.upstream_script_partial_candidate_allowed(
-                &direct.candidate,
-                &syllables,
-                &leading_syllables,
-            ) {
+            if !self.upstream_script_partial_candidate_allowed(&direct.candidate, &graph) {
                 continue;
             }
             if let Some(index) = candidate_indices.get(&direct.candidate.text).copied() {
-                let quality = candidates[index]
-                    .candidate
-                    .quality
-                    .max(direct.candidate.quality);
-                direct.candidate.quality = quality;
-                if candidates[index].code_order < direct.code_order {
-                    direct.code_order = candidates[index].code_order.clone();
-                }
-                candidates[index] = direct;
-            } else {
-                candidate_indices.insert(direct.candidate.text.clone(), candidates.len());
-                candidates.push(direct);
+                let ranked = &mut candidates[index];
+                direct.candidate.quality = ranked.candidate.quality;
+                ranked.candidate = direct.candidate;
+                continue;
+            }
+            candidate_indices.insert(direct.candidate.text.clone(), candidates.len());
+            candidates.push(direct);
+        }
+        for ranked in &mut candidates {
+            if let CandidateSource::PartialTable { consumed, .. } = ranked.candidate.source {
+                ranked.candidate.source = CandidateSource::PartialTable {
+                    consumed,
+                    recompose_on_default: true,
+                };
             }
         }
         candidates.sort_by(|left, right| {
@@ -2829,7 +3212,7 @@ impl StaticTableTranslator {
             let model_limit = limit.map(|limit| limit.saturating_add(1)).unwrap_or(100);
             let sentence = self.upstream_sentence_model.as_ref().and_then(|model| {
                 model
-                    .candidates_for_surface_code_spans_with_limit_excluding(
+                    .candidates_for_weighted_surface_code_spans_with_limit_excluding(
                         input,
                         &spans,
                         model_limit,
@@ -2861,6 +3244,12 @@ impl StaticTableTranslator {
         if candidates.is_empty() {
             return None;
         }
+        if let Some(preedit) = graph.preedit(input, self.delimiters.chars().next().unwrap_or(' ')) {
+            let preedit = self.preedit_format.apply(&preedit);
+            for candidate in &mut candidates {
+                candidate.preedit = Some(preedit.clone());
+            }
+        }
         self.assign_ordered_candidate_qualities(&mut candidates);
         let mut truncated = false;
         if let Some(limit) = limit {
@@ -2879,8 +3268,7 @@ impl StaticTableTranslator {
     fn upstream_script_partial_candidate_allowed(
         &self,
         candidate: &Candidate,
-        syllables: &[SurfaceSyllable],
-        leading_syllables: &[SurfaceSyllable],
+        graph: &UpstreamScriptSurfaceGraph,
     ) -> bool {
         // The script policy owns sentence/phrase ordering, but it must not
         // silently re-enable M59's independently configurable leading-single
@@ -2893,12 +3281,7 @@ impl StaticTableTranslator {
         let CandidateSource::PartialTable { consumed, .. } = candidate.source else {
             return true;
         };
-        let consumes_one_leading_syllable = syllables
-            .first()
-            .is_some_and(|syllable| syllable.end == consumed)
-            || leading_syllables
-                .iter()
-                .any(|syllable| syllable.end == consumed);
+        let consumes_one_leading_syllable = graph.is_one_syllable_prefix_end(consumed);
         !consumes_one_leading_syllable || candidate.text.chars().count() != 1
     }
 
@@ -3097,9 +3480,9 @@ impl StaticTableTranslator {
         }
         let threshold_applies = limited_prediction || self.prediction_candidate_limit.is_none();
         !threshold_applies
-            || self
-                .prediction_weight_threshold
-                .map_or(true, |threshold| candidate.raw_quality() >= threshold)
+            || self.prediction_weight_threshold.map_or(true, |threshold| {
+                table_raw_weight(candidate.raw_quality(), self.entry_weight_domain) >= threshold
+            })
     }
 
     fn is_spelling_abbreviation_view(&self, code: &str, candidate: &LookupCandidate<'_>) -> bool {
@@ -3175,8 +3558,8 @@ impl StaticTableTranslator {
             .cmp(&self.lookup_candidate_category(right))
             .then_with(|| {
                 right
-                    .raw_quality()
-                    .partial_cmp(&left.raw_quality())
+                    .comparison_weight(self.entry_weight_domain)
+                    .partial_cmp(&left.comparison_weight(self.entry_weight_domain))
                     .unwrap_or(Ordering::Equal)
             })
             .then_with(|| left.entry_code.cmp(&right.entry_code))
@@ -3191,7 +3574,7 @@ impl StaticTableTranslator {
 
         // librime's table `sort: original` contract is per canonical code queue,
         // not a freeze of the flattened prism-alias stream. A heap merges the
-        // current group heads by raw weight while keeping every group's source
+        // current group heads by compiled-domain weight while keeping every group's source
         // order and source-earlier stability on equal heads. TypeDuck's selected
         // prediction stays behind the first ordinary row and uses its existing
         // entry-weight/span comparison. Partial-span candidates are produced by
@@ -3203,9 +3586,11 @@ impl StaticTableTranslator {
             |candidate| candidate.limited_prediction,
             |candidate| self.lookup_candidate_category(candidate),
             |candidate| candidate.fetch_group,
-            PendingLookupCandidate::raw_quality,
+            |candidate| candidate.comparison_weight(self.entry_weight_domain),
             |left, right| self.lookup_candidate_weight_order(left, right),
-            PendingLookupCandidate::prediction_precedes,
+            |prediction, ordinary| {
+                prediction.prediction_precedes(ordinary, self.entry_weight_domain)
+            },
         );
     }
 
@@ -3261,6 +3646,52 @@ impl StaticTableTranslator {
         )
     }
 
+    fn lookup_materialization_log_quality(
+        &self,
+        stored_quality: f32,
+        spelling_credibility: f32,
+        correction_distance: Option<usize>,
+    ) -> f32 {
+        // Candidate qualities live in Yune's historical outer `exp(score)`
+        // namespace. Reconstruct the effective raw dictionary weight after
+        // applying a live prism credibility, then use that raw value as the
+        // score passed to the outer exponent. This keeps source-expanded,
+        // compact-prism, and v2 NaturalLog tables in one merge namespace.
+        let mut log_quality = match self.entry_weight_domain {
+            // Preserve DictCompiler's exact non-positive sentinel in score
+            // space. Reconstructing its epsilon raw weight and then applying
+            // the outer exponent rounds both direct and correction-penalized
+            // rows to 1.0, erasing librime's observable order.
+            TableEntryWeightDomain::NaturalLog
+                if stored_quality.to_bits() == LIBRIME_NON_POSITIVE_COMPILED_LOG_WEIGHT_BITS =>
+            {
+                stored_quality + spelling_credibility
+            }
+            TableEntryWeightDomain::NaturalLog => (stored_quality + spelling_credibility).exp(),
+            // Raw/Yune-authored tables historically expose their numeric entry
+            // as a log score (`10 -> exp(10)`). Preserve that contract for an
+            // ordinary row and for heap algebra, where credibility is already
+            // baked into the expanded stored weight. A live compact-prism edge
+            // carries nonzero credibility separately and must apply it in the
+            // raw dictionary's log domain.
+            TableEntryWeightDomain::Raw if spelling_credibility == 0.0 => stored_quality,
+            // Zero/negative source values are already historical scores, not
+            // absolute weights. Apply a live prism credibility directly so a
+            // correction penalty remains below its neutral direct sibling.
+            TableEntryWeightDomain::Raw if stored_quality <= 0.0 => {
+                stored_quality + spelling_credibility
+            }
+            TableEntryWeightDomain::Raw => {
+                (table_log_weight(stored_quality, self.entry_weight_domain) + spelling_credibility)
+                    .exp()
+            }
+        };
+        if let Some(distance) = correction_distance {
+            log_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
+        }
+        log_quality
+    }
+
     fn candidate_for_lookup_view(
         &self,
         entry_code: &str,
@@ -3272,7 +3703,11 @@ impl StaticTableTranslator {
         let materialize_start = crate::m37_metrics_enabled().then(Instant::now);
         let text = candidate.text().to_owned();
         let source_hint = candidate.source_hint();
-        let mut raw_quality = candidate.raw_quality();
+        let log_quality = self.lookup_materialization_log_quality(
+            candidate.raw_quality(),
+            spelling_credibility,
+            correction_distance,
+        );
         if let Some(start) = materialize_start {
             crate::m37_record_owned_candidate_materialization(start.elapsed());
         }
@@ -3301,12 +3736,8 @@ impl StaticTableTranslator {
         } else {
             None
         };
-        raw_quality += spelling_credibility;
-        if let Some(distance) = correction_distance {
-            raw_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
-        }
         let mut source = source_hint;
-        let mut quality = raw_quality.exp() + self.initial_quality;
+        let mut quality = log_quality.exp() + self.initial_quality;
         if entry_code != lookup_code {
             source = CandidateSource::Completion;
             quality -= 1.0;
@@ -3350,11 +3781,12 @@ impl StaticTableTranslator {
                 candidate.preedit = Some(preedit);
             }
         }
-        let mut raw_quality = candidate.quality + spelling_credibility;
-        if let Some(distance) = correction_distance {
-            raw_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
-        }
-        candidate.quality = raw_quality.exp() + self.initial_quality;
+        let log_quality = self.lookup_materialization_log_quality(
+            candidate.quality,
+            spelling_credibility,
+            correction_distance,
+        );
+        candidate.quality = log_quality.exp() + self.initial_quality;
         if entry_code != lookup_code {
             candidate.source = CandidateSource::Completion;
             candidate.quality -= 1.0;
@@ -3405,24 +3837,26 @@ impl StaticTableTranslator {
         self.dynamic_correction_lookup && is_m44_track_b_short_key_prefix(lookup_code)
     }
 
-    fn lookup_candidate_ref_raw_quality(&self, candidate: &PendingLookupCandidateRef<'_>) -> f32 {
-        let mut raw_quality = candidate.candidate.raw_quality() + candidate.spelling_credibility;
+    fn lookup_candidate_ref_comparison_weight(
+        &self,
+        candidate: &PendingLookupCandidateRef<'_>,
+    ) -> f32 {
+        let mut log_quality =
+            table_comparison_weight(candidate.candidate.raw_quality(), self.entry_weight_domain)
+                + candidate.spelling_credibility;
         if let Some(distance) = candidate.correction_distance {
-            raw_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
+            log_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
         }
-        raw_quality
+        log_quality
     }
 
     fn lookup_candidate_ref_prediction_weight(
         &self,
         candidate: &PendingLookupCandidateRef<'_>,
     ) -> f32 {
-        let mut weight = candidate
-            .candidate
-            .raw_quality()
-            .max(f32::MIN_POSITIVE)
-            .ln()
-            + candidate.spelling_credibility;
+        let mut weight =
+            table_comparison_weight(candidate.candidate.raw_quality(), self.entry_weight_domain)
+                + candidate.spelling_credibility;
         if let Some(distance) = candidate.correction_distance {
             weight += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
         }
@@ -3483,8 +3917,8 @@ impl StaticTableTranslator {
         self.lookup_candidate_ref_category(left)
             .cmp(&self.lookup_candidate_ref_category(right))
             .then_with(|| {
-                self.lookup_candidate_ref_raw_quality(right)
-                    .partial_cmp(&self.lookup_candidate_ref_raw_quality(left))
+                self.lookup_candidate_ref_comparison_weight(right)
+                    .partial_cmp(&self.lookup_candidate_ref_comparison_weight(left))
                     .unwrap_or(Ordering::Equal)
             })
             .then_with(|| left.entry_code.as_ref().cmp(right.entry_code.as_ref()))
@@ -3513,7 +3947,7 @@ impl StaticTableTranslator {
             |candidate| candidate.limited_prediction,
             |candidate| self.lookup_candidate_ref_category(candidate),
             |candidate| candidate.fetch_group,
-            |candidate| self.lookup_candidate_ref_raw_quality(candidate),
+            |candidate| self.lookup_candidate_ref_comparison_weight(candidate),
             |left, right| self.lookup_candidate_ref_weight_order(left, right),
             |prediction, ordinary| self.lookup_prediction_ref_precedes(prediction, ordinary),
         );
@@ -3527,11 +3961,12 @@ impl StaticTableTranslator {
         correction_distance: Option<usize>,
         spelling_credibility: f32,
     ) -> f32 {
-        let mut raw_quality = candidate.raw_quality() + spelling_credibility;
-        if let Some(distance) = correction_distance {
-            raw_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
-        }
-        let mut quality = raw_quality.exp() + self.initial_quality;
+        let log_quality = self.lookup_materialization_log_quality(
+            candidate.raw_quality(),
+            spelling_credibility,
+            correction_distance,
+        );
+        let mut quality = log_quality.exp() + self.initial_quality;
         if entry_code != lookup_code {
             quality -= 1.0;
         }
@@ -3852,8 +4287,8 @@ impl StaticTableTranslator {
                     has_reliable_exact_system_phrase |=
                         self.is_reliable_exact_system_phrase(lookup_spec, &candidate);
                 }
-                let spelling_abbreviation =
-                    self.is_spelling_abbreviation_view(spec_lookup_code, &candidate);
+                let spelling_abbreviation = lookup_spec.spelling_abbreviation
+                    || self.is_spelling_abbreviation_view(spec_lookup_code, &candidate);
                 let spelling_correction = lookup_spec.spelling_correction
                     || self.is_spelling_correction_view(spec_lookup_code, &candidate);
                 let fetch_group = if self.sort_by_weight {
@@ -3924,8 +4359,8 @@ impl StaticTableTranslator {
                         && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
                     {
                         prefix_candidates += 1;
-                        let spelling_abbreviation =
-                            self.is_spelling_abbreviation_view(entry_code.as_ref(), &candidate);
+                        let spelling_abbreviation = lookup_spec.spelling_abbreviation
+                            || self.is_spelling_abbreviation_view(entry_code.as_ref(), &candidate);
                         let spelling_correction = lookup_spec.spelling_correction
                             || self.is_spelling_correction_view(spec_lookup_code, &candidate);
                         let fetch_group = if self.sort_by_weight {
@@ -4095,6 +4530,12 @@ impl StaticTableTranslator {
             prefix_fallback_owned = batch.owns_reachability;
             let full_count = batch.candidates.len();
             if !batch.candidates.is_empty() {
+                // The direct fallback fast path bypasses the common ordered
+                // tail below. Export positional qualities here as well so the
+                // Engine's global quality merge preserves the fallback's
+                // longest-consumed-span order instead of re-sorting the rows
+                // by source dictionary weight.
+                self.assign_ordered_candidate_qualities(&mut batch.candidates);
                 batch.candidates.truncate(limit);
                 let result_full_count = if batch.truncated || full_count >= limit {
                     batch.candidates.len().saturating_add(1)
@@ -4454,8 +4895,8 @@ impl StaticTableTranslator {
                             lookup_code: lookup_code.to_owned(),
                             candidate: candidate.to_candidate(),
                             correction_distance: lookup_spec.correction_distance,
-                            spelling_abbreviation: self
-                                .is_spelling_abbreviation_view(lookup_code, &candidate),
+                            spelling_abbreviation: lookup_spec.spelling_abbreviation
+                                || self.is_spelling_abbreviation_view(lookup_code, &candidate),
                             limited_prediction: false,
                             tolerance: lookup_spec.tolerance,
                             spelling_correction: lookup_spec.spelling_correction
@@ -4501,8 +4942,8 @@ impl StaticTableTranslator {
                         continue;
                     }
                     prefix_lookup_candidates += 1;
-                    let spelling_abbreviation =
-                        self.is_spelling_abbreviation_view(entry_code.as_ref(), &candidate);
+                    let spelling_abbreviation = lookup_spec.spelling_abbreviation
+                        || self.is_spelling_abbreviation_view(entry_code.as_ref(), &candidate);
                     let fetch_group = if self.sort_by_weight {
                         0
                     } else {
@@ -4609,7 +5050,7 @@ impl StaticTableTranslator {
                 if !is_true_exact(pending) {
                     continue;
                 }
-                let quality = pending.raw_quality();
+                let quality = pending.comparison_weight(self.entry_weight_domain);
                 if prev_exact_quality.is_some_and(|prev| quality > prev) {
                     needs_reorder = true;
                     break 'detector;
@@ -4626,7 +5067,11 @@ impl StaticTableTranslator {
                 .collect();
             let mut exact_rows: Vec<PendingLookupCandidate> =
                 slots.iter().map(|&index| pooled[index].clone()).collect();
-            exact_rows.sort_by(|left, right| right.raw_quality().total_cmp(&left.raw_quality()));
+            exact_rows.sort_by(|left, right| {
+                right
+                    .comparison_weight(self.entry_weight_domain)
+                    .total_cmp(&left.comparison_weight(self.entry_weight_domain))
+            });
             for (slot, row) in slots.into_iter().zip(exact_rows) {
                 pooled[slot] = row;
             }
@@ -5542,8 +5987,8 @@ impl StaticTableTranslator {
                 .cmp(&right.deferred_surface_phrase)
                 .then_with(|| right.consumed_input_len.cmp(&left.consumed_input_len))
                 .then_with(|| {
-                    self.lookup_candidate_ref_raw_quality(&right.pending)
-                        .partial_cmp(&self.lookup_candidate_ref_raw_quality(&left.pending))
+                    self.lookup_candidate_ref_comparison_weight(&right.pending)
+                        .partial_cmp(&self.lookup_candidate_ref_comparison_weight(&left.pending))
                         .unwrap_or(Ordering::Equal)
                 })
                 .then_with(|| {
@@ -6650,6 +7095,7 @@ impl StaticTableTranslator {
                             candidate,
                             entry_code,
                             self.sentence_word_penalty,
+                            self.entry_weight_domain,
                         );
                         if entry_matches_examined >= max_candidates_per_span {
                             break 'specs;
@@ -6684,6 +7130,7 @@ impl StaticTableTranslator {
                             candidate,
                             entry_code,
                             self.sentence_word_penalty,
+                            self.entry_weight_domain,
                         );
                     }
                     if let Some(start) = prefix_start {
@@ -7211,8 +7658,42 @@ fn dictionary_is_untoned(storage: &TableStorage) -> bool {
 
 fn source_code_syllable_count(raw_code: &str) -> Option<usize> {
     let code = typeduck_rich_comment_code(raw_code).unwrap_or(raw_code);
-    let count = code.chars().filter(char::is_ascii_digit).count();
+    let mut count = 0usize;
+    let mut alphabetic_after_last_tone = false;
+    for ch in code.chars() {
+        if ch.is_ascii_digit() {
+            count += 1;
+            alphabetic_after_last_tone = false;
+        } else if count > 0 && ch.is_ascii_alphabetic() {
+            // Source table whitespace is normalized out of compiled codes.
+            // A Latin tail after a completed toned syllable still represents
+            // another syllable (`ngaam1 feel`), even when that tail carries no
+            // tone digit. Treating digit count alone as the segmentation count
+            // incorrectly admits such two-syllable lettered rows into bare `n`.
+            alphabetic_after_last_tone = true;
+        }
+    }
+    count += usize::from(alphabetic_after_last_tone);
     (count > 0).then_some(count)
+}
+
+fn first_toned_syllable_prefix(code: &str) -> Option<&str> {
+    let mut syllables = source_code_syllables(code);
+    let first = syllables.next()?;
+    syllables.next().map(|_| first)
+}
+
+fn source_code_syllables(code: &str) -> impl Iterator<Item = &str> {
+    code.split_inclusive(|ch: char| ch.is_ascii_digit())
+        .filter(|syllable| !syllable.is_empty())
+}
+
+fn surface_spelling_occurs_after(input: &str, after: usize, spelling: &str) -> bool {
+    input.get(after..).is_some_and(|suffix| {
+        suffix
+            .char_indices()
+            .any(|(offset, _)| suffix[offset..].starts_with(spelling))
+    })
 }
 
 fn raw_candidate_syllable_count(raw_comment: &str, text: &str) -> Option<usize> {
@@ -7854,7 +8335,8 @@ impl ReverseLookupData {
                 (code, candidate)
             })
             .collect::<Vec<_>>();
-        let (expanded, _, _) = algebra.expand_entries_with_normal_codes(entries);
+        let (expanded, _, _) =
+            algebra.expand_entries_with_normal_codes(entries, TableEntryWeightDomain::Raw);
         self.entries = expanded
             .into_iter()
             .map(|entry| TableEntry::new(entry.code, entry.candidate.text, entry.candidate.quality))

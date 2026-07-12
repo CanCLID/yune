@@ -1,21 +1,23 @@
 use super::{
     compiled_table::{
-        RIME_TABLE_HEADER_LEN, YUNE_TABLE_METADATA_MARKER, YUNE_TABLE_METADATA_PAYLOAD,
-        YUNE_TABLE_METADATA_VERSION,
+        RIME_TABLE_HEADER_LEN, YUNE_TABLE_METADATA_MARKER, YUNE_TABLE_METADATA_PAYLOAD_LEN,
+        YUNE_TABLE_METADATA_VERSION, YUNE_TABLE_SORT_BY_WEIGHT, YUNE_TABLE_SORT_ORIGINAL,
+        YUNE_TABLE_WEIGHT_NATURAL_LOG,
     },
     RimeCorrectionEntry, RimeToleranceRule, TableDictionary, TableEncodingRule,
+    TableEntryWeightDomain,
 };
 
 pub fn build_table_bin(dict: &TableDictionary, dict_file_checksum: u32) -> Vec<u8> {
-    let mut entries_by_code: Vec<(&str, Vec<&super::TableEntry>)> = Vec::new();
-    for entry in dict.entries() {
+    let mut entries_by_code: Vec<(&str, Vec<usize>)> = Vec::new();
+    for (entry_index, entry) in dict.entries().iter().enumerate() {
         if let Some((_, entries)) = entries_by_code
             .iter_mut()
             .find(|(code, _)| *code == entry.code)
         {
-            entries.push(entry);
+            entries.push(entry_index);
         } else {
-            entries_by_code.push((&entry.code, vec![entry]));
+            entries_by_code.push((&entry.code, vec![entry_index]));
         }
     }
 
@@ -25,9 +27,7 @@ pub fn build_table_bin(dict: &TableDictionary, dict_file_checksum: u32) -> Vec<u
     put_u32_le(&mut bytes, 36, entries_by_code.len() as u32);
     put_u32_le(&mut bytes, 40, dict.entries().len() as u32);
 
-    if !dict.sort_by_weight() {
-        append_table_metadata(&mut bytes);
-    }
+    append_table_metadata(&mut bytes, dict.sort_by_weight());
 
     let syllabary_offset = bytes.len();
     bytes.resize(syllabary_offset + 4 + entries_by_code.len() * 4, 0);
@@ -48,11 +48,18 @@ pub fn build_table_bin(dict: &TableDictionary, dict_file_checksum: u32) -> Vec<u
         put_u32_le(&mut bytes, node_offset, entries.len() as u32);
         let entry_offset = bytes.len();
         bytes.resize(entry_offset + entries.len() * 8, 0);
-        for (entry_index, entry) in entries.iter().enumerate() {
-            let current_entry_offset = entry_offset + entry_index * 8;
+        for (row_index, entry_index) in entries.iter().copied().enumerate() {
+            let entry = &dict.entries()[entry_index];
+            let current_entry_offset = entry_offset + row_index * 8;
             let text_offset = append_c_string(&mut bytes, &entry.text);
             put_offset(&mut bytes, current_entry_offset, text_offset);
-            put_f32_le(&mut bytes, current_entry_offset + 4, entry.weight);
+            let compiled_weight = match dict.entry_weight_domain() {
+                TableEntryWeightDomain::Raw => {
+                    dict.compiler_weight(entry_index).max(f64::EPSILON).ln() as f32
+                }
+                TableEntryWeightDomain::NaturalLog => entry.weight,
+            };
+            put_f32_le(&mut bytes, current_entry_offset + 4, compiled_weight);
         }
         put_offset(&mut bytes, node_offset + 4, entry_offset);
     }
@@ -63,14 +70,26 @@ pub fn build_table_bin(dict: &TableDictionary, dict_file_checksum: u32) -> Vec<u
     bytes
 }
 
-fn append_table_metadata(bytes: &mut Vec<u8>) {
+fn append_table_metadata(bytes: &mut Vec<u8>, sort_by_weight: bool) {
     // `Rime::Table/4.0` readers follow the syllabary offset at header field 44,
     // so this optional gap is invisible to librime and legacy Yune readers.
-    // Emit only the non-default policy so by-weight artifacts stay byte-identical.
+    // v2 declares both sort policy and the standard natural-log table weight
+    // domain. Emitting it for by-weight tables too makes new Yune artifacts
+    // distinguishable from the legacy raw-weight writer without changing the
+    // Rime::Table/4.0 ABI or any offset-following reader.
     bytes.extend_from_slice(YUNE_TABLE_METADATA_MARKER);
     put_u32_le_extend(bytes, YUNE_TABLE_METADATA_VERSION);
-    put_u32_le_extend(bytes, YUNE_TABLE_METADATA_PAYLOAD.len() as u32);
-    bytes.extend_from_slice(&YUNE_TABLE_METADATA_PAYLOAD);
+    put_u32_le_extend(bytes, YUNE_TABLE_METADATA_PAYLOAD_LEN as u32);
+    bytes.extend_from_slice(&[
+        if sort_by_weight {
+            YUNE_TABLE_SORT_BY_WEIGHT
+        } else {
+            YUNE_TABLE_SORT_ORIGINAL
+        },
+        YUNE_TABLE_WEIGHT_NATURAL_LOG,
+        0,
+        0,
+    ]);
     debug_assert_eq!(bytes.len() % 4, 0);
 }
 

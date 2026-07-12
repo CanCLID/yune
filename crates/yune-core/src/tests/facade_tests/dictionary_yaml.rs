@@ -225,6 +225,46 @@ encoder:
     }
 
     #[test]
+    fn rule_encoder_keeps_the_inclusive_exact_five_percent_reading() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml_with_imports_packs_and_vocabulary(
+            r#"
+---
+name: encoder_five_percent_boundary
+version: "0.1"
+sort: by_weight
+use_preset_vocabulary: true
+max_phrase_length: 2
+encoder:
+  rules:
+    - length_equal: 2
+      formula: "AaBa"
+...
+
+A	x94	94
+A	y05	5
+A	z01	1
+B	beta	100
+"#,
+            std::iter::empty::<&str>(),
+            |_| None,
+            |name| (name == "essay").then(|| "AB\t10\n".to_owned()),
+        )
+        .expect("five-percent boundary dictionary should parse");
+
+        let phrase_codes = dictionary
+            .entries()
+            .iter()
+            .filter(|entry| entry.text == "AB")
+            .map(|entry| entry.code.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            phrase_codes,
+            ["xb", "yb"],
+            "librime's inclusive 5/100 reading survives while the 1/100 reading is excluded"
+        );
+    }
+
+    #[test]
     fn table_encoder_parses_librime_formula_settings() {
         let mut encoder = TableEncoder::new();
         encoder

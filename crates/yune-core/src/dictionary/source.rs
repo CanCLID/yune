@@ -10,6 +10,10 @@ use std::sync::Arc;
 ///
 /// Source: <https://github.com/rime/librime/blob/33e78140250125871856cdc5b42ddc6a5fcd3cd4/src/rime/dict/entry_collector.cc#L223-L244>
 pub(crate) const LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE: f32 = 0.05;
+pub(crate) const LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE_F64: f64 = 0.05;
+// `DictCompiler` serializes every non-positive source weight as
+// `ln(DBL_EPSILON)`, narrowed to `float`.
+pub(crate) const LIBRIME_NON_POSITIVE_COMPILED_LOG_WEIGHT_BITS: u32 = 0xc210_2cb3;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableEntry {
@@ -33,6 +37,17 @@ impl TableEntry {
 pub struct PresetVocabularyEntry {
     pub text: String,
     pub weight: f32,
+}
+
+/// Numeric domain carried by dictionary entries at runtime.
+///
+/// Source YAML and legacy Yune-authored tables expose raw weights. Standard
+/// librime `Rime::Table/4.0` payloads store natural logarithms narrowed to f32.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum TableEntryWeightDomain {
+    #[default]
+    Raw,
+    NaturalLog,
 }
 
 impl PresetVocabularyEntry {
@@ -367,6 +382,10 @@ impl RimeToleranceRule {
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableDictionary {
     pub(crate) entries: Vec<TableEntry>,
+    /// DictCompiler retains source/preset weights as `double` until it writes
+    /// the final log-f32 table field. Keep that compiler-only precision beside
+    /// the public, source-compatible [`TableEntry`] values.
+    pub(crate) compiler_weights: Vec<f64>,
     pub(crate) stems: HashMap<String, Vec<String>>,
     pub(crate) dict_settings: BTreeMap<String, String>,
     pub(crate) encoder: TableEncoder,
@@ -379,6 +398,7 @@ pub struct TableDictionary {
     /// the ranking contract. Byte-backed reloads without a parsed header keep the
     /// default (true).
     pub(crate) sort_by_weight: bool,
+    pub(crate) entry_weight_domain: TableEntryWeightDomain,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -414,8 +434,14 @@ impl TableDictionary {
         entries: impl IntoIterator<Item = TableEntry>,
         advanced: TableDictionaryAdvancedData,
     ) -> Self {
+        let entries = entries.into_iter().collect::<Vec<_>>();
+        let compiler_weights = entries
+            .iter()
+            .map(|entry| f64::from(entry.weight))
+            .collect();
         Self {
-            entries: entries.into_iter().collect(),
+            entries,
+            compiler_weights,
             stems: advanced.stems,
             dict_settings: advanced.dict_settings,
             encoder: advanced.encoder,
@@ -425,7 +451,15 @@ impl TableDictionary {
             byte_backed_lookup_records: advanced.byte_backed_lookup_records,
             sort_by_weight: advanced.sort_by_weight.unwrap_or(true),
             preset_vocabulary: advanced.preset_vocabulary,
+            entry_weight_domain: TableEntryWeightDomain::Raw,
         }
+    }
+
+    pub(crate) fn compiler_weight(&self, index: usize) -> f64 {
+        self.compiler_weights
+            .get(index)
+            .copied()
+            .unwrap_or_else(|| f64::from(self.entries[index].weight))
     }
 
     #[must_use]
@@ -527,6 +561,9 @@ impl TableDictionary {
             pack_dictionary.preset_vocabulary = preset_vocabulary;
             dictionary.entries.append(&mut pack_dictionary.entries);
             dictionary
+                .compiler_weights
+                .append(&mut pack_dictionary.compiler_weights);
+            dictionary
                 .preset_vocabulary
                 .append(&mut pack_dictionary.preset_vocabulary);
             merge_rime_table_stems(&mut dictionary.stems, pack_dictionary.stems);
@@ -539,7 +576,7 @@ impl TableDictionary {
                 .extend(pack_dictionary.dict_settings);
         }
 
-        sort_rime_table_entries(&metadata, &mut dictionary.entries);
+        sort_table_dictionary_entries(&metadata, &mut dictionary);
         Ok(dictionary)
     }
 
@@ -588,6 +625,7 @@ impl TableDictionary {
 
         Ok(Self {
             entries: Vec::new(),
+            compiler_weights: Vec::new(),
             stems: HashMap::new(),
             dict_settings: metadata.dict_settings,
             encoder: metadata.encoder,
@@ -597,6 +635,7 @@ impl TableDictionary {
             byte_backed_lookup_records: None,
             preset_vocabulary: Vec::new(),
             sort_by_weight: metadata.sort_by_weight,
+            entry_weight_domain: TableEntryWeightDomain::Raw,
         })
     }
 
@@ -620,6 +659,10 @@ impl TableDictionary {
         }
     }
 
+    pub(crate) fn set_entry_weight_domain(&mut self, domain: TableEntryWeightDomain) {
+        self.entry_weight_domain = domain;
+    }
+
     #[must_use]
     pub fn stems(&self) -> &HashMap<String, Vec<String>> {
         &self.stems
@@ -639,6 +682,11 @@ impl TableDictionary {
     #[must_use]
     pub fn sort_by_weight(&self) -> bool {
         self.sort_by_weight
+    }
+
+    #[must_use]
+    pub fn entry_weight_domain(&self) -> TableEntryWeightDomain {
+        self.entry_weight_domain
     }
 
     #[must_use]
@@ -801,13 +849,14 @@ fn finalize_rime_table_entries(
     let stems = collect_rime_table_stems(&entries);
     let lookup_records = collect_dictionary_lookup_records(&entries);
     dedupe_rime_table_entries(&mut entries);
-    let mut entries = entries
-        .into_iter()
-        .map(|entry| entry.entry)
-        .collect::<Vec<_>>();
     sort_rime_table_entries(metadata, &mut entries);
+    let (entries, compiler_weights): (Vec<_>, Vec<_>) = entries
+        .into_iter()
+        .map(|entry| (entry.entry, entry.compiler_weight))
+        .unzip();
     TableDictionary {
         entries,
+        compiler_weights,
         stems,
         dict_settings: metadata.dict_settings.clone(),
         encoder: metadata.encoder.clone(),
@@ -817,6 +866,7 @@ fn finalize_rime_table_entries(
         byte_backed_lookup_records: None,
         preset_vocabulary: Vec::new(),
         sort_by_weight: metadata.sort_by_weight,
+        entry_weight_domain: TableEntryWeightDomain::Raw,
     }
 }
 
@@ -899,9 +949,11 @@ fn apply_rime_preset_vocabulary_weights(
             continue;
         };
         if weight.is_empty() {
-            entry.entry.weight = vocabulary_weight;
+            entry.set_compiler_weight(vocabulary_weight);
         } else if weight.ends_with('%') {
-            entry.entry.weight = vocabulary_weight * parse_rime_entry_weight_percentage(weight);
+            entry.set_compiler_weight(
+                vocabulary_weight * parse_rime_entry_weight_percentage(weight),
+            );
         }
     }
     Some(vocabulary)
@@ -925,12 +977,12 @@ fn apply_rime_table_encoder_phrase_entries(
         .iter()
         .filter(|entry| entry.entry.code.is_empty())
         .flat_map(|entry| {
-            phrase_encoder.encode_phrase_entries(&entry.entry.text, entry.entry.weight)
+            phrase_encoder.encode_phrase_entries(&entry.entry.text, entry.compiler_weight)
         })
         .collect::<Vec<_>>();
 
     if let Some(vocabulary) = vocabulary {
-        for entry in parse_rime_preset_vocabulary_entries(vocabulary) {
+        for entry in parse_rime_preset_vocabulary_entries_precise(vocabulary) {
             if source_collection.contains(&entry.text)
                 || !metadata.is_qualified_preset_phrase(&entry.text, entry.weight)
             {
@@ -947,8 +999,8 @@ fn apply_rime_table_encoder_phrase_entries(
 struct RimeTablePhraseEncoder<'a> {
     metadata: &'a RimeTableMetadata,
     stems: HashMap<String, Vec<String>>,
-    words: HashMap<String, Vec<(String, f32)>>,
-    total_weight: HashMap<String, f32>,
+    words: HashMap<String, Vec<(String, f64)>>,
+    total_weight: HashMap<String, f64>,
 }
 
 impl<'a> RimeTablePhraseEncoder<'a> {
@@ -956,8 +1008,8 @@ impl<'a> RimeTablePhraseEncoder<'a> {
 
     fn new(metadata: &'a RimeTableMetadata, entries: &[RimeParsedTableEntry]) -> Self {
         let stems = collect_rime_table_stems(entries);
-        let mut words: HashMap<String, Vec<(String, f32)>> = HashMap::new();
-        let mut total_weight: HashMap<String, f32> = HashMap::new();
+        let mut words: HashMap<String, Vec<(String, f64)>> = HashMap::new();
+        let mut total_weight: HashMap<String, f64> = HashMap::new();
         let mut seen_words = HashSet::new();
         for entry in entries {
             if entry.entry.code.is_empty() || entry.single_syllable_duplicate_key.is_none() {
@@ -970,8 +1022,8 @@ impl<'a> RimeTablePhraseEncoder<'a> {
             words
                 .entry(entry.entry.text.clone())
                 .or_default()
-                .push((entry.entry.code.clone(), entry.entry.weight));
-            *total_weight.entry(entry.entry.text.clone()).or_default() += entry.entry.weight;
+                .push((entry.entry.code.clone(), entry.compiler_weight));
+            *total_weight.entry(entry.entry.text.clone()).or_default() += entry.compiler_weight;
         }
 
         Self {
@@ -982,11 +1034,12 @@ impl<'a> RimeTablePhraseEncoder<'a> {
         }
     }
 
-    fn encode_phrase_entries(&self, phrase: &str, weight: f32) -> Vec<RimeParsedTableEntry> {
+    fn encode_phrase_entries(&self, phrase: &str, weight: f64) -> Vec<RimeParsedTableEntry> {
         self.encode_phrase(phrase)
             .into_iter()
             .map(|code| RimeParsedTableEntry {
-                entry: TableEntry::new(code, phrase, weight),
+                entry: TableEntry::new(code, phrase, weight as f32),
+                compiler_weight: weight,
                 raw_weight: weight.to_string(),
                 raw_stem: None,
                 raw_fields: Vec::new(),
@@ -1046,7 +1099,7 @@ impl<'a> RimeTablePhraseEncoder<'a> {
             return Vec::new();
         };
         let min_weight = self.total_weight.get(word).copied().unwrap_or_default()
-            * LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE;
+            * LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE_F64;
         let mut codes = words
             .iter()
             .filter(|(_, weight)| *weight >= min_weight)
@@ -1057,17 +1110,35 @@ impl<'a> RimeTablePhraseEncoder<'a> {
     }
 }
 
-fn sort_rime_table_entries(metadata: &RimeTableMetadata, entries: &mut [TableEntry]) {
+fn sort_rime_table_entries(metadata: &RimeTableMetadata, entries: &mut [RimeParsedTableEntry]) {
     if metadata.sort_by_weight {
         entries.sort_by(|left, right| {
-            left.code.cmp(&right.code).then_with(|| {
+            left.entry.code.cmp(&right.entry.code).then_with(|| {
                 right
-                    .weight
-                    .partial_cmp(&left.weight)
+                    .compiler_weight
+                    .partial_cmp(&left.compiler_weight)
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
         });
     }
+}
+
+fn sort_table_dictionary_entries(metadata: &RimeTableMetadata, dictionary: &mut TableDictionary) {
+    if !metadata.sort_by_weight {
+        return;
+    }
+    let mut paired = std::mem::take(&mut dictionary.entries)
+        .into_iter()
+        .zip(std::mem::take(&mut dictionary.compiler_weights))
+        .collect::<Vec<_>>();
+    paired.sort_by(|(left, left_weight), (right, right_weight)| {
+        left.code.cmp(&right.code).then_with(|| {
+            right_weight
+                .partial_cmp(left_weight)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+    });
+    (dictionary.entries, dictionary.compiler_weights) = paired.into_iter().unzip();
 }
 
 fn dedupe_rime_table_entries(entries: &mut Vec<RimeParsedTableEntry>) {
@@ -1111,7 +1182,7 @@ struct RimeTableMetadata {
     use_preset_vocabulary: bool,
     vocabulary: Option<String>,
     max_phrase_length: usize,
-    min_phrase_weight: f32,
+    min_phrase_weight: f64,
     dict_settings: BTreeMap<String, String>,
     dict_settings_stack: Vec<String>,
     corrections: Vec<RimeCorrectionEntry>,
@@ -1128,10 +1199,18 @@ struct RimeTableMetadata {
 #[derive(Clone, Debug)]
 struct RimeParsedTableEntry {
     entry: TableEntry,
+    compiler_weight: f64,
     raw_weight: String,
     raw_stem: Option<String>,
     raw_fields: Vec<String>,
     single_syllable_duplicate_key: Option<(String, String)>,
+}
+
+impl RimeParsedTableEntry {
+    fn set_compiler_weight(&mut self, weight: f64) {
+        self.compiler_weight = weight;
+        self.entry.weight = weight as f32;
+    }
 }
 
 impl Default for RimeTableMetadata {
@@ -1284,7 +1363,7 @@ impl RimeTableMetadata {
         }
 
         if let Some(min_phrase_weight) = rime_header_value(trimmed, "min_phrase_weight") {
-            self.min_phrase_weight = parse_yaml_f32(min_phrase_weight).unwrap_or(0.0);
+            self.min_phrase_weight = parse_yaml_f64(min_phrase_weight).unwrap_or(0.0);
             return;
         }
 
@@ -1325,7 +1404,7 @@ impl RimeTableMetadata {
             .unwrap_or("essay")
     }
 
-    fn is_qualified_preset_phrase(&self, phrase: &str, weight: f32) -> bool {
+    fn is_qualified_preset_phrase(&self, phrase: &str, weight: f64) -> bool {
         if self.max_phrase_length > 0 && phrase.chars().count() > self.max_phrase_length {
             return false;
         }
@@ -1348,7 +1427,7 @@ impl RimeTableMetadata {
             .and_then(|column| fields.get(column))
             .copied()
             .unwrap_or("");
-        let weight = self
+        let compiler_weight = self
             .column_index("weight")
             .and_then(|column| fields.get(column))
             .map(|value| parse_rime_entry_weight(value))
@@ -1366,7 +1445,8 @@ impl RimeTableMetadata {
         let single_syllable_duplicate_key =
             (rime_code_syllable_count(code) == 1).then(|| (text.to_owned(), code.to_owned()));
         Some(RimeParsedTableEntry {
-            entry: TableEntry::new(code, text, weight),
+            entry: TableEntry::new(code, text, compiler_weight as f32),
+            compiler_weight,
             raw_weight,
             raw_stem,
             raw_fields: fields.into_iter().map(str::to_owned).collect(),
@@ -1736,7 +1816,7 @@ fn parse_yaml_usize(input: &str) -> Option<usize> {
     parse_yaml_scalar_node(input)?.parse().ok()
 }
 
-fn parse_yaml_f32(input: &str) -> Option<f32> {
+fn parse_yaml_f64(input: &str) -> Option<f64> {
     parse_yaml_scalar_node(input)?.parse().ok()
 }
 
@@ -1837,7 +1917,7 @@ fn parse_yaml_import_table_scalar(input: &str) -> Option<String> {
     parse_yaml_scalar_node(input)
 }
 
-fn parse_rime_entry_weight(input: &str) -> f32 {
+fn parse_rime_entry_weight(input: &str) -> f64 {
     let value = input.trim();
     if value.ends_with('%') {
         return 0.0;
@@ -1848,28 +1928,33 @@ fn parse_rime_entry_weight(input: &str) -> f32 {
         .map(|(index, _)| index)
         .chain(std::iter::once(value.len()))
         .rev()
-        .find_map(|end| value[..end].parse::<f32>().ok())
+        .find_map(|end| value[..end].parse::<f64>().ok())
         .unwrap_or(0.0)
 }
 
-fn parse_rime_entry_weight_percentage(input: &str) -> f32 {
+fn parse_rime_entry_weight_percentage(input: &str) -> f64 {
     input
         .trim()
         .strip_suffix('%')
         .map(str::trim)
-        .and_then(|value| value.parse::<f32>().ok())
+        .and_then(|value| value.parse::<f64>().ok())
         .unwrap_or(100.0)
         / 100.0
 }
 
-fn parse_rime_preset_vocabulary(input: &str) -> HashMap<String, f32> {
-    parse_rime_preset_vocabulary_entries(input)
+fn parse_rime_preset_vocabulary(input: &str) -> HashMap<String, f64> {
+    parse_rime_preset_vocabulary_entries_precise(input)
         .into_iter()
         .map(|entry| (entry.text, entry.weight))
         .collect()
 }
 
-pub fn parse_rime_preset_vocabulary_entries(input: &str) -> Vec<PresetVocabularyEntry> {
+struct PrecisePresetVocabularyEntry {
+    text: String,
+    weight: f64,
+}
+
+fn parse_rime_preset_vocabulary_entries_precise(input: &str) -> Vec<PrecisePresetVocabularyEntry> {
     let mut vocabulary = Vec::new();
     let mut comments_enabled = true;
     for line in input.lines() {
@@ -1892,9 +1977,19 @@ pub fn parse_rime_preset_vocabulary_entries(input: &str) -> Vec<PresetVocabulary
             .get(1)
             .map(|value| parse_rime_entry_weight(value))
             .unwrap_or(0.0);
-        vocabulary.push(PresetVocabularyEntry::new(phrase, weight));
+        vocabulary.push(PrecisePresetVocabularyEntry {
+            text: phrase.to_owned(),
+            weight,
+        });
     }
     vocabulary
+}
+
+pub fn parse_rime_preset_vocabulary_entries(input: &str) -> Vec<PresetVocabularyEntry> {
+    parse_rime_preset_vocabulary_entries_precise(input)
+        .into_iter()
+        .map(|entry| PresetVocabularyEntry::new(entry.text, entry.weight as f32))
+        .collect()
 }
 
 fn rime_code_syllable_count(code: &str) -> usize {

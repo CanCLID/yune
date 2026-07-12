@@ -213,6 +213,16 @@ fn dictionary_translator_cache() -> &'static Mutex<HashMap<String, SharedTransla
     DICTIONARY_TRANSLATOR_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+pub(crate) fn clear_dictionary_translator_cache() {
+    let Some(cache) = DICTIONARY_TRANSLATOR_CACHE.get() else {
+        return;
+    };
+    cache
+        .lock()
+        .expect("dictionary translator cache should not be poisoned")
+        .clear();
+}
+
 fn install_schema_dictionary_translator_from_config(
     session: &mut SessionState,
     schema_config: &Value,

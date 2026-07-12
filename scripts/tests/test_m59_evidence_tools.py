@@ -3049,10 +3049,18 @@ $results | ConvertTo-Json -Depth 5 -Compress
 class NativeRatchetTests(unittest.TestCase):
     provenance = {
         "source_commit": "a" * 40,
+        "source_tree": "e" * 40,
         "yune_git_head": "a" * 40,
+        "source_clean": "True",
+        "allow_dirty": "False",
+        "source_content_binding_sha256": "3" * 64,
         "measured_yune_dll_sha256": "b" * 64,
         "upstream_rime_dll_sha256": "c" * 64,
+        "upstream_shared_tree_sha256": "e" * 64,
+        "upstream_build_tree_sha256": "f" * 64,
         "product_schema_tree_sha256": "d" * 64,
+        "native_benchmark_executable_sha256": "1" * 64,
+        "benchmark_script_sha256": "2" * 64,
         "track_a_inputs": "x",
         "track_b_inputs": "trackb",
         "iterations": "9",
@@ -3128,6 +3136,10 @@ class NativeRatchetTests(unittest.TestCase):
         environment = dict(self.provenance)
         if provenance_override:
             environment.update(provenance_override)
+        (run / "run-status.txt").write_text(
+            "status=complete\ndate_utc=2026-01-01T00:00:00Z\ndetail=\n",
+            encoding="utf-8",
+        )
         (run / "environment.txt").write_text(
             "".join(f"{key}={value}\n" for key, value in environment.items()),
             encoding="utf-8",
@@ -3570,6 +3582,23 @@ namespace['_write_output_pair'](
         self.assertFalse(self.output.exists())
         self.assertFalse(self.sidecar.exists())
 
+    def test_incomplete_or_failed_run_status_is_structural_failure(self):
+        for case_number, status in enumerate(("in-progress", "failed"), start=1):
+            with self.subTest(status=status):
+                runs = [
+                    self.write_run(case_number * 10 + index, 1)
+                    for index in range(1, 6)
+                ]
+                (runs[-1] / "run-status.txt").write_text(
+                    f"status={status}\ndate_utc=2026-01-01T00:00:00Z\ndetail=boom\n",
+                    encoding="utf-8",
+                )
+                result, stderr = self.run_tool(runs, return_stderr=True)
+                self.assertEqual(result, 2)
+                self.assertIn("benchmark run status must be complete", stderr)
+                self.assertFalse(self.output.exists())
+                self.assertFalse(self.sidecar.exists())
+
     def test_summary_and_threshold_check_disagreement_is_structural(self):
         runs = [self.write_run(index, 1) for index in range(1, 5)]
         runs.append(self.write_run(5, 1, checked_observed=1.1))
@@ -3579,6 +3608,8 @@ namespace['_write_output_pair'](
         bad_cases = [
             {"measured_yune_dll_sha256": "not-a-hash"},
             {"yune_git_head": "f" * 40},
+            {"source_clean": "False"},
+            {"allow_dirty": "True"},
             {"deploy_product_before_benchmark": "False"},
             {"skip_track_b": "True"},
         ]

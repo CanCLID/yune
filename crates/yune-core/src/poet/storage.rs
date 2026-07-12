@@ -499,6 +499,10 @@ impl ByteBackedPoetStore {
         Some(row.entry_start as usize..row.entry_end as usize)
     }
 
+    pub(super) fn has_entry_code_prefix(&self, prefix: &str) -> bool {
+        self.prefix_index_row(prefix.as_bytes()).is_some()
+    }
+
     pub(super) fn walk_from_prefix_index(
         &self,
         input: &str,
@@ -962,7 +966,8 @@ fn compile_poet_inputs(
             weight: entry.weight,
         })
         .collect::<Vec<_>>();
-    let script_vocabulary = script_encoder_phrase_vocabulary(&entries, vocabulary);
+    let script_vocabulary =
+        script_encoder_phrase_vocabulary(&entries, vocabulary, EntryWeightDomain::Raw);
     let mut owned_entries = Vec::new();
     let mut script_encoder_codes = Vec::new();
     let mut abbreviation_character_codes: HashMap<char, Vec<String>> = HashMap::new();

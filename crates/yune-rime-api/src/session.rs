@@ -253,6 +253,10 @@ pub extern "C" fn RimeCleanupAllSessions() {
             .expect("session registry should not be poisoned")
             .sessions
             .clear();
+        // Shared translators may own mmap-backed compiled artifacts. Once all
+        // sessions are gone, retaining those cache entries needlessly pins the
+        // files and prevents same-path deployment replacement on Windows.
+        crate::schema_install::clear_dictionary_translator_cache();
     });
 }
 

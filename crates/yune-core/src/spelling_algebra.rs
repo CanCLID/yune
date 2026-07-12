@@ -1,4 +1,4 @@
-use super::Candidate;
+use super::{Candidate, TableEntryWeightDomain};
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
@@ -74,6 +74,7 @@ impl SpellingAlgebra {
     pub(crate) fn expand_entries_with_normal_codes(
         &self,
         entries: Vec<(String, Candidate)>,
+        weight_domain: TableEntryWeightDomain,
     ) -> (Vec<ExpandedSpellingEntry>, HashSet<String>, bool) {
         let mut variant_cache = HashMap::<String, Vec<ExpandedSpellingCode>>::new();
         let mut deployed_correction_cache = HashMap::<String, HashMap<String, bool>>::new();
@@ -93,12 +94,16 @@ impl SpellingAlgebra {
             expanded_entries.reserve(variants.len());
             for variant in variants {
                 let mut candidate = candidate.clone();
-                candidate.quality += variant.quality_penalty;
+                candidate.quality = apply_spelling_credibility(
+                    candidate.quality,
+                    variant.quality_penalty,
+                    weight_domain,
+                );
                 expanded_entries.push(SpellingAlgebraEntry {
                     code: variant.code.clone(),
                     candidate,
                     normal: variant.normal,
-                    abbreviation: variant.abbreviation,
+                    spelling_type: variant.spelling_type,
                     correction: deployed_corrections
                         .get(&variant.code)
                         .copied()
@@ -112,7 +117,7 @@ impl SpellingAlgebra {
             .iter()
             .any(SpellingAlgebraFormula::is_abbreviation)
         {
-            entries.extend(leading_syllable_abbreviations(&entries));
+            entries.extend(mixed_syllable_abbreviations(&entries, weight_domain));
             entries = dedupe_spelling_algebra_entries(entries);
         }
         let normal_codes = entries
@@ -120,15 +125,18 @@ impl SpellingAlgebra {
             .filter(|entry| entry.normal)
             .map(|entry| entry.code.clone())
             .collect::<HashSet<_>>();
-        let has_single_letter_abbreviations = entries
-            .iter()
-            .any(|entry| entry.abbreviation && !entry.normal && entry.code.len() == 1);
+        let has_single_letter_abbreviations = entries.iter().any(|entry| {
+            entry.spelling_type == DeployedSpellingType::Abbreviation
+                && !entry.normal
+                && entry.code.len() == 1
+        });
         let entries = entries
             .into_iter()
             .map(|entry| ExpandedSpellingEntry {
                 code: entry.code,
                 candidate: entry.candidate,
-                abbreviation: entry.abbreviation && !entry.normal,
+                abbreviation: entry.spelling_type == DeployedSpellingType::Abbreviation
+                    && !entry.normal,
                 correction: entry.correction,
             })
             .collect();
@@ -140,7 +148,7 @@ impl SpellingAlgebra {
             code: code.to_owned(),
             quality_penalty: 0.0,
             normal: true,
-            abbreviation: false,
+            spelling_type: DeployedSpellingType::Normal,
             correction: false,
         }];
         for formula in &self.formulas {
@@ -157,7 +165,9 @@ impl SpellingAlgebra {
                             code: transformed,
                             quality_penalty: entry.quality_penalty + formula.quality_penalty(),
                             normal: entry.normal && formula.transformed_is_normal(),
-                            abbreviation: entry.abbreviation || formula.is_abbreviation(),
+                            spelling_type: entry
+                                .spelling_type
+                                .max(formula.deployed_properties_delta().spelling_type),
                             correction: entry.correction || formula.is_correction(),
                         });
                     }
@@ -171,12 +181,28 @@ impl SpellingAlgebra {
     }
 }
 
+fn apply_spelling_credibility(
+    stored_weight: f32,
+    credibility: f32,
+    weight_domain: TableEntryWeightDomain,
+) -> f32 {
+    match weight_domain {
+        TableEntryWeightDomain::Raw if stored_weight > 0.0 => {
+            (stored_weight.ln() + credibility).exp()
+        }
+        // Source zero/negative rows retain the translator's historical
+        // neutral-or-penalty log-score convention; see `table_log_weight`.
+        TableEntryWeightDomain::Raw => stored_weight + credibility,
+        TableEntryWeightDomain::NaturalLog => stored_weight + credibility,
+    }
+}
+
 #[derive(Clone)]
 pub(crate) struct ExpandedSpellingCode {
     pub(crate) code: String,
     pub(crate) quality_penalty: f32,
     pub(crate) normal: bool,
-    pub(crate) abbreviation: bool,
+    pub(crate) spelling_type: DeployedSpellingType,
     pub(crate) correction: bool,
 }
 
@@ -231,7 +257,7 @@ struct SpellingAlgebraEntry {
     code: String,
     candidate: Candidate,
     normal: bool,
-    abbreviation: bool,
+    spelling_type: DeployedSpellingType,
     correction: bool,
 }
 
@@ -670,60 +696,87 @@ fn replace_by_syllable(
     modified.then_some(output)
 }
 
-fn leading_syllable_abbreviations(entries: &[SpellingAlgebraEntry]) -> Vec<SpellingAlgebraEntry> {
-    entries
+fn mixed_syllable_abbreviations(
+    entries: &[SpellingAlgebraEntry],
+    weight_domain: TableEntryWeightDomain,
+) -> Vec<SpellingAlgebraEntry> {
+    let mut output = Vec::new();
+    for entry in entries
         .iter()
-        .filter(|entry| !entry.abbreviation)
-        .filter_map(|entry| {
-            if toned_syllable_count(&entry.candidate.comment) != Some(2) {
-                return None;
+        .filter(|entry| entry.spelling_type != DeployedSpellingType::Abbreviation)
+    {
+        let Some(syllables) = toned_syllable_letters(&entry.candidate.comment) else {
+            continue;
+        };
+        if syllables.len() < 2 {
+            continue;
+        }
+
+        // Heap/source dictionaries do not retain the prism graph, so recover
+        // the safe one-abbreviated-syllable projections from the canonical
+        // toned comment.  This is linear in phrase length (rather than a
+        // Cartesian power set) and removes the historical `m`/two-syllable
+        // product fixture restriction.  Compact Standard schemas use the live
+        // prism graph and therefore compose any number of abbreviation edges.
+        let mut ranges = Vec::with_capacity(syllables.len());
+        let mut cursor = 0;
+        for syllable in &syllables {
+            let end = cursor + syllable.len();
+            if entry.code.get(cursor..end) != Some(*syllable) {
+                ranges.clear();
+                break;
             }
-            let first_syllable = first_toned_syllable_letters(&entry.candidate.comment)?;
-            if first_syllable.len() <= 1 || !entry.code.starts_with(first_syllable) {
-                return None;
+            ranges.push((cursor, end));
+            cursor = end;
+        }
+        if ranges.len() != syllables.len() || cursor != entry.code.len() {
+            continue;
+        }
+
+        for (start, end) in ranges {
+            let syllable = &entry.code[start..end];
+            if syllable.len() <= 1 {
+                continue;
             }
-            let suffix = &entry.code[first_syllable.len()..];
-            if suffix.is_empty() {
-                return None;
-            }
-            let initial = first_syllable.chars().next()?;
-            if initial != 'm' {
-                return None;
-            }
-            let code = format!("{initial}{suffix}");
-            if code == entry.code {
-                return None;
-            }
+            let Some(initial) = syllable.chars().next() else {
+                continue;
+            };
+            let mut code = String::with_capacity(entry.code.len() - syllable.len() + 1);
+            code.push_str(&entry.code[..start]);
+            code.push(initial);
+            code.push_str(&entry.code[end..]);
             let mut candidate = entry.candidate.clone();
-            candidate.quality += SPELLING_ALGEBRA_ABBREVIATION_PENALTY;
-            Some(SpellingAlgebraEntry {
+            candidate.quality = apply_spelling_credibility(
+                candidate.quality,
+                SPELLING_ALGEBRA_ABBREVIATION_PENALTY,
+                weight_domain,
+            );
+            output.push(SpellingAlgebraEntry {
                 code,
                 candidate,
                 normal: false,
-                abbreviation: true,
+                spelling_type: DeployedSpellingType::Abbreviation,
                 correction: entry.correction,
-            })
-        })
-        .collect()
-}
-
-fn first_toned_syllable_letters(raw_code: &str) -> Option<&str> {
-    let mut start = None;
-    for (index, ch) in raw_code.char_indices() {
-        if ch.is_ascii_alphabetic() {
-            start.get_or_insert(index);
-        } else if ch.is_ascii_digit() {
-            return start.map(|start| &raw_code[start..index]);
-        } else if start.is_some() {
-            return None;
+            });
         }
     }
-    None
+    output
 }
 
-fn toned_syllable_count(raw_code: &str) -> Option<usize> {
-    let count = raw_code.chars().filter(char::is_ascii_digit).count();
-    (count > 0).then_some(count)
+fn toned_syllable_letters(raw_code: &str) -> Option<Vec<&str>> {
+    let mut syllables = Vec::new();
+    let mut start = 0;
+    for (index, ch) in raw_code.char_indices() {
+        if ch.is_ascii_alphabetic() {
+            continue;
+        }
+        if !ch.is_ascii_digit() || index == start {
+            return None;
+        }
+        syllables.push(&raw_code[start..index]);
+        start = index + ch.len_utf8();
+    }
+    (start == raw_code.len() && !syllables.is_empty()).then_some(syllables)
 }
 
 fn parse_lookahead_pattern(pattern: &str) -> Option<(Regex, Regex, bool)> {
@@ -811,8 +864,12 @@ fn dedupe_spelling_algebra_entries(
         if let Some(index) = indexes.get(&key).copied() {
             let existing_entry = &mut deduped[index];
             existing_entry.normal |= entry.normal;
-            existing_entry.abbreviation |= entry.abbreviation;
-            existing_entry.correction &= entry.correction;
+            if existing_entry.spelling_type == entry.spelling_type {
+                existing_entry.correction &= entry.correction;
+            } else if entry.spelling_type < existing_entry.spelling_type {
+                existing_entry.spelling_type = entry.spelling_type;
+                existing_entry.correction = entry.correction;
+            }
             if entry.candidate.quality > existing_entry.candidate.quality {
                 existing_entry.candidate = entry.candidate;
             }
@@ -831,8 +888,12 @@ fn dedupe_spelling_algebra_codes(entries: Vec<ExpandedSpellingCode>) -> Vec<Expa
         if let Some(index) = indexes.get(&entry.code).copied() {
             let existing_entry = &mut deduped[index];
             existing_entry.normal |= entry.normal;
-            existing_entry.abbreviation |= entry.abbreviation;
-            existing_entry.correction &= entry.correction;
+            if existing_entry.spelling_type == entry.spelling_type {
+                existing_entry.correction &= entry.correction;
+            } else if entry.spelling_type < existing_entry.spelling_type {
+                existing_entry.spelling_type = entry.spelling_type;
+                existing_entry.correction = entry.correction;
+            }
             if entry.quality_penalty > existing_entry.quality_penalty {
                 existing_entry.quality_penalty = entry.quality_penalty;
             }

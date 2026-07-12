@@ -14,12 +14,13 @@ use crate::{
     parse_rime_prism_bin_payload, parse_rime_prism_runtime_payload,
     parse_rime_reverse_bin_dictionary, parse_rime_table_bin_advanced_data,
     parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
-    parse_rime_table_bin_metadata, Candidate, CandidateSource, CompactTableByteSource,
-    CompactTableStore, DartsDoubleArray, DictionaryLookupRecord, MemoryOwnerClass,
-    RimeCorrectionEntry, RimeDictArtifactStatus, RimeDictRebuildExecutionReport,
-    RimeDictRebuildPlan, RimeDictRebuildSources, RimePrismBinParseError,
-    RimePrismSpellingDescriptor, RimeTableBinAdvancedDataOptions, RimeTableBinParseError,
-    RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData, TableEncoder, TableEntry,
+    parse_rime_table_bin_metadata, rime_table_bin_requires_weight_upgrade, Candidate,
+    CandidateSource, CompactTableByteSource, CompactTableStore, DartsDoubleArray,
+    DictionaryLookupRecord, MemoryOwnerClass, RimeCorrectionEntry, RimeDictArtifactStatus,
+    RimeDictRebuildExecutionReport, RimeDictRebuildPlan, RimeDictRebuildSources,
+    RimePrismBinParseError, RimePrismSpellingDescriptor, RimeTableBinAdvancedDataOptions,
+    RimeTableBinParseError, RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData,
+    TableEncoder, TableEntry, TableEntryWeightDomain,
 };
 
 #[derive(Debug)]
@@ -258,7 +259,7 @@ fn compact_table_lookup_matches_heap_exact_prefix_and_all_code_queries() {
             .map(|candidate| (
                 candidate.text().to_owned(),
                 candidate.raw_comment().to_owned(),
-                candidate.raw_quality()
+                candidate.raw_quality().exp()
             ))
             .collect::<Vec<_>>(),
         heap.exact_candidates("ni")
@@ -311,6 +312,17 @@ fn compact_table_lookup_resolves_marisa_backed_upstream_table_entries() {
     assert!(compact.has_code("zhongguorenmin"));
     assert!(!compact.has_code("zhongguoa"));
     assert!(!compact.has_code("zhongguorenmina"));
+    assert!(compact.has_strict_code_prefix("zhongguo"));
+    assert!(!compact.has_strict_code_prefix("zhongguorenmin"));
+
+    let mut legacy_yune_marisa = build_marisa_table_fixture();
+    replace_table_header_gap(
+        &mut legacy_yune_marisa,
+        &independent_sort_original_metadata(),
+    );
+    let legacy = parse_compact_table_bin_lookup(&legacy_yune_marisa)
+        .expect("v1 Yune metadata should remain consistent on Marisa storage");
+    assert_eq!(legacy.entry_weight_domain(), TableEntryWeightDomain::Raw);
 
     let single = compact
         .exact_candidates("a")
@@ -428,6 +440,28 @@ fn compact_table_lookup_resolves_marisa_backed_upstream_table_entries() {
     assert_eq!(compact.distinct_code_count(), 7);
     assert_eq!(compact.stored_entry_count(), 9);
     assert_eq!(compact.expanded_entry_count(), 11);
+}
+
+#[test]
+fn compact_strict_prefix_predicate_matches_owned_and_byte_backed_storage() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("zhongguo", "中國", 10.0),
+        TableEntry::new("zhongguorenmin", "中國人民", 9.0),
+    ]);
+    let owned = CompactTableStore::from_dictionary(dictionary.clone());
+    let table_bytes = build_table_bin(&dictionary, 0x5904_b007);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("strict-prefix table metadata should parse");
+    let byte = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("strict-prefix byte table should parse");
+
+    for (storage, compact) in [("owned", owned), ("byte", byte)] {
+        assert!(compact.has_strict_code_prefix("zhongguo"), "{storage}");
+        assert!(
+            !compact.has_strict_code_prefix("zhongguorenmin"),
+            "{storage}"
+        );
+    }
 }
 
 #[test]
@@ -919,7 +953,17 @@ fn table_and_reverse_writers_round_trip_through_existing_readers() {
     assert_eq!(metadata.dict_file_checksum, 0x1234_5678);
     let table_round_trip =
         parse_rime_table_bin_dictionary(&table_bytes).expect("table should round-trip");
-    assert_eq!(table_round_trip.entries(), dictionary.entries());
+    assert_eq!(
+        table_round_trip.entry_weight_domain(),
+        TableEntryWeightDomain::NaturalLog
+    );
+    assert_eq!(
+        code_text_pairs(table_round_trip.entries()),
+        code_text_pairs(dictionary.entries())
+    );
+    for (compiled, source) in table_round_trip.entries().iter().zip(dictionary.entries()) {
+        assert!((compiled.weight.exp() - source.weight).abs() < 1.0e-5);
+    }
     assert_eq!(
         table_round_trip.stems_for("明"),
         Some(&["m'ing".to_owned()][..])
@@ -951,6 +995,151 @@ fn table_and_reverse_writers_round_trip_through_existing_readers() {
     );
 }
 
+#[test]
+fn table_writer_preserves_f64_percentage_precision_until_log_f32_serialization() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml_with_imports_packs_and_vocabulary(
+        "---\nname: precise\nversion: '1'\nsort: by_weight\nvocabulary: essay\n...\n\n柟\tnaam1\t5%\n恁\tnam2\t3%\n糅\tnau6\t5%\n",
+        std::iter::empty::<&str>(),
+        |_| None,
+        |name| {
+            (name == "essay").then(|| "柟\t519\n恁\t865\n糅\t519\n".to_owned())
+        },
+    )
+    .expect("percentage dictionary should parse");
+
+    // These controls are the premature-f32 values that previously invented a
+    // strict one-ULP order before compilation.
+    assert_eq!((519.0_f32 * 0.05).to_bits(), 0x41cf_999a);
+    assert_eq!((865.0_f32 * 0.03).to_bits(), 0x41cf_9999);
+
+    let bytes = build_table_bin(&dictionary, 0x5904_b001);
+    let reparsed = parse_rime_table_bin_dictionary(&bytes).expect("table should parse");
+    assert_eq!(
+        reparsed.entry_weight_domain(),
+        TableEntryWeightDomain::NaturalLog
+    );
+    let compact = parse_compact_table_bin_lookup(bytes).expect("compact table should parse");
+    for (code, text) in [("naam1", "柟"), ("nam2", "恁"), ("nau6", "糅")] {
+        let candidate = compact
+            .exact_candidates(code)
+            .find(|candidate| candidate.text() == text)
+            .expect("compiled row should be present");
+        assert_eq!(candidate.raw_quality().to_bits(), 0x4050_651e, "{code}");
+    }
+}
+
+#[test]
+fn table_writer_honors_public_weight_mutation_after_construction() {
+    let mut entry = TableEntry::new("na", "mutated", 1.0);
+    entry.weight = 9.0;
+    let bytes = build_table_bin(&TableDictionary::new([entry]), 0x5904_b005);
+    let compact = parse_compact_table_bin_lookup(bytes).expect("mutated table should parse");
+    let stored = compact
+        .exact_candidates("na")
+        .next()
+        .expect("mutated row should exist")
+        .raw_quality();
+
+    assert_eq!(stored.to_bits(), 9.0_f32.ln().to_bits());
+}
+
+#[test]
+fn compiled_table_weight_domain_matrix_distinguishes_v2_external_and_legacy_yune() {
+    let by_weight = TableDictionary::new([TableEntry::new("na", "row", 25.95)]);
+    let v2 = build_table_bin(&by_weight, 0x5904_b002);
+    assert_eq!(
+        parse_rime_table_bin_dictionary(&v2)
+            .expect("v2 table should parse")
+            .entry_weight_domain(),
+        TableEntryWeightDomain::NaturalLog
+    );
+    assert!(!rime_table_bin_requires_weight_upgrade(&v2).expect("v2 should classify"));
+
+    // A standard non-Marisa Rime::Table/4.0 has no Yune marker and stores
+    // natural-log weights. Remove only Yune's namespaced metadata/payload from
+    // a structurally valid table to exercise that independent classification.
+    let mut external = v2.clone();
+    let advanced = external
+        .windows(b"YUNE-TABLE-ADV\0".len())
+        .position(|window| window == b"YUNE-TABLE-ADV\0")
+        .expect("writer should append advanced marker");
+    external.truncate(advanced);
+    replace_table_header_gap(&mut external, &[]);
+    assert_eq!(
+        parse_rime_table_bin_dictionary(&external)
+            .expect("external table should parse")
+            .entry_weight_domain(),
+        TableEntryWeightDomain::NaturalLog
+    );
+
+    let marker_text = TableDictionary::new([TableEntry::new("marker", "YUNE-TABLE-ADV", 25.95)]);
+    let mut external_marker_text = build_table_bin(&marker_text, 0x5904_b006);
+    let advanced = external_marker_text
+        .windows(b"YUNE-TABLE-ADV\0".len())
+        .rposition(|window| window == b"YUNE-TABLE-ADV\0")
+        .expect("the final namespaced marker should be the advanced payload");
+    external_marker_text.truncate(advanced);
+    replace_table_header_gap(&mut external_marker_text, &[]);
+    assert_eq!(
+        parse_rime_table_bin_dictionary(&external_marker_text)
+            .expect("candidate text must not impersonate Yune provenance")
+            .entry_weight_domain(),
+        TableEntryWeightDomain::NaturalLog
+    );
+    assert!(
+        !rime_table_bin_requires_weight_upgrade(&external_marker_text)
+            .expect("candidate marker text must remain external NaturalLog")
+    );
+    assert!(
+        byte_backed_lookup_records_from_table_bin_bytes(external_marker_text.clone())
+            .expect("candidate marker text must not corrupt compact lookup loading")
+            .is_none()
+    );
+
+    let mut legacy_gapless = v2.clone();
+    replace_table_header_gap(&mut legacy_gapless, &[]);
+    assert_eq!(
+        parse_rime_table_bin_dictionary(&legacy_gapless)
+            .expect("legacy Yune table should parse")
+            .entry_weight_domain(),
+        TableEntryWeightDomain::Raw
+    );
+    assert!(rime_table_bin_requires_weight_upgrade(&legacy_gapless)
+        .expect("legacy Yune table should classify"));
+
+    let external_advanced =
+        parse_rime_table_bin_advanced_data(&external).expect("external advanced data should parse");
+    let legacy_compact =
+        CompactTableStore::from_table_bin_bytes(legacy_gapless.clone(), external_advanced)
+            .expect("legacy Yune compact table should parse");
+    assert_eq!(
+        legacy_compact.entry_weight_domain(),
+        TableEntryWeightDomain::Raw,
+        "legacy provenance must be derived from the table bytes"
+    );
+
+    let legacy_advanced = parse_rime_table_bin_advanced_data(&legacy_gapless)
+        .expect("legacy advanced data should parse");
+    let external_compact =
+        CompactTableStore::from_table_bin_bytes(external.clone(), legacy_advanced)
+            .expect("external compact table should parse");
+    assert_eq!(
+        external_compact.entry_weight_domain(),
+        TableEntryWeightDomain::NaturalLog,
+        "caller metadata must not spoof Yune provenance for external bytes"
+    );
+
+    let original = TableDictionary::parse_rime_dict_yaml(
+        "---\nname: original\nversion: '1'\nsort: original\n...\n\nrow\tna\t25.95\n",
+    )
+    .expect("sort-original source should parse");
+    let mut v1 = build_table_bin(&original, 0x5904_b003);
+    replace_table_header_gap(&mut v1, &independent_sort_original_metadata());
+    let parsed_v1 = parse_rime_table_bin_dictionary(&v1).expect("v1 table should parse");
+    assert!(!parsed_v1.sort_by_weight());
+    assert_eq!(parsed_v1.entry_weight_domain(), TableEntryWeightDomain::Raw);
+}
+
 fn independent_sort_original_metadata() -> Vec<u8> {
     let mut metadata = b"YUNE-TABLE-META\0".to_vec();
     metadata.extend_from_slice(&1u32.to_le_bytes());
@@ -971,12 +1160,15 @@ fn replace_table_header_gap(table_bytes: &mut Vec<u8>, replacement: &[u8]) {
     table_bytes.splice(68..old_syllabary_offset, replacement.iter().copied());
     let delta = isize::try_from(replacement.len()).expect("replacement should fit")
         - isize::try_from(old_gap_len).expect("old gap should fit");
-    for field_offset in [44usize, 48] {
+    for field_offset in [44usize, 48, 60] {
         let old = i32::from_le_bytes(
             table_bytes[field_offset..field_offset + 4]
                 .try_into()
                 .expect("offset field should contain i32"),
         );
+        if old == 0 {
+            continue;
+        }
         let updated = i32::try_from(old as isize + delta).expect("updated pointer should fit");
         table_bytes[field_offset..field_offset + 4].copy_from_slice(&updated.to_le_bytes());
     }
@@ -1032,11 +1224,11 @@ fn compiled_table_rejects_malformed_yune_sort_metadata() {
             "version",
             {
                 let mut gap = independent_sort_original_metadata();
-                gap[16..20].copy_from_slice(&2u32.to_le_bytes());
+                gap[16..20].copy_from_slice(&3u32.to_le_bytes());
                 gap
             },
             RimeTableBinParseError::UnsupportedSection {
-                role: "Yune table metadata version 2".to_owned(),
+                role: "Yune table metadata version 3".to_owned(),
             },
         ),
         (
@@ -1057,7 +1249,9 @@ fn compiled_table_rejects_malformed_yune_sort_metadata() {
             "reserved bytes",
             {
                 let mut gap = independent_sort_original_metadata();
+                gap[16..20].copy_from_slice(&2u32.to_le_bytes());
                 gap[25] = 1;
+                gap[26] = 1;
                 gap
             },
             RimeTableBinParseError::UnsupportedSection {
@@ -1068,7 +1262,9 @@ fn compiled_table_rejects_malformed_yune_sort_metadata() {
             "policy",
             {
                 let mut gap = independent_sort_original_metadata();
+                gap[16..20].copy_from_slice(&2u32.to_le_bytes());
                 gap[24] = 7;
+                gap[25] = 1;
                 gap
             },
             RimeTableBinParseError::UnsupportedSection {
@@ -1101,21 +1297,27 @@ fn compiled_table_tolerates_unrelated_legacy_header_padding() {
     ]);
     let mut table_bytes = build_table_bin(&dictionary, 0x1234_5678);
     let padding = b"EXT-PAD";
-    table_bytes.splice(68..68, padding.iter().copied());
-    for field_offset in [44usize, 48] {
-        let old = i32::from_le_bytes(
-            table_bytes[field_offset..field_offset + 4]
-                .try_into()
-                .expect("offset field should contain i32"),
-        );
-        table_bytes[field_offset..field_offset + 4]
-            .copy_from_slice(&(old + padding.len() as i32).to_le_bytes());
-    }
+    let advanced = table_bytes
+        .windows(b"YUNE-TABLE-ADV\0".len())
+        .position(|window| window == b"YUNE-TABLE-ADV\0")
+        .expect("writer should append advanced marker");
+    table_bytes.truncate(advanced);
+    replace_table_header_gap(&mut table_bytes, padding);
 
     let reloaded =
         parse_rime_table_bin_dictionary(table_bytes).expect("legacy padding should be tolerated");
     assert!(reloaded.sort_by_weight());
-    assert_eq!(reloaded.entries(), dictionary.entries());
+    assert_eq!(
+        reloaded.entry_weight_domain(),
+        TableEntryWeightDomain::NaturalLog
+    );
+    assert_eq!(
+        code_text_pairs(reloaded.entries()),
+        code_text_pairs(dictionary.entries())
+    );
+    for (compiled, source) in reloaded.entries().iter().zip(dictionary.entries()) {
+        assert!((compiled.weight.exp() - source.weight).abs() < 1.0e-5);
+    }
 }
 
 #[test]

@@ -14,9 +14,9 @@ use yune_core::{
     byte_backed_lookup_records_from_table_bin_bytes, execute_rebuild_plan, memory_probe_mark,
     parse_poet_bin_dictionary_checksum, parse_rime_prism_bin_metadata,
     parse_rime_prism_bin_payload, parse_rime_reverse_bin_metadata, parse_rime_table_bin_metadata,
-    rime_checksum_bytes, rime_dict_rebuild_plan, RimeDictArtifactStatus,
-    RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildSources,
-    RimePrismChecksumMetadata, TableDictionary,
+    rime_checksum_bytes, rime_dict_rebuild_plan, rime_table_bin_declared_weight_upgrade,
+    rime_table_bin_metadata_probe_len, RimeDictArtifactStatus, RimeDictRebuildExecutionReport,
+    RimeDictRebuildInput, RimeDictRebuildSources, RimePrismChecksumMetadata, TableDictionary,
 };
 
 use crate::{
@@ -981,6 +981,14 @@ fn workspace_update_dictionary_artifact(
         } else {
             true
         };
+    let selected_table_path = if table_exists {
+        &table_path
+    } else {
+        &prebuilt_table_path
+    };
+    let legacy_yune_raw_table = source_available
+        && selected_table_path.is_file()
+        && table_path_requires_weight_upgrade(selected_table_path).unwrap_or(true);
 
     let schema_checksum =
         schema_dictionary_checksum(schema_config_signature(schema_config, &dictionary_id));
@@ -1003,7 +1011,9 @@ fn workspace_update_dictionary_artifact(
         prebuilt_poet_available: prebuilt_poet_path.is_file(),
         prebuilt_prism_available: prebuilt_prism_path.is_file(),
         prebuilt_reverse_available: prebuilt_reverse_path.is_file(),
-        force_rebuild_table: request.force_rebuild_table || typeduck_lookup_table_missing,
+        force_rebuild_table: request.force_rebuild_table
+            || typeduck_lookup_table_missing
+            || legacy_yune_raw_table,
         force_rebuild_prism: request.force_rebuild_prism,
     };
     let plan = match rime_dict_rebuild_plan(input) {
@@ -1115,6 +1125,38 @@ fn table_dict_file_checksum_from_path(path: &Path) -> Option<u32> {
     read_file_prefix(path, 68)
         .and_then(|bytes| parse_rime_table_bin_metadata(bytes).ok())
         .map(|metadata| metadata.dict_file_checksum)
+}
+
+fn table_path_requires_weight_upgrade(path: &Path) -> Result<bool, ()> {
+    const TABLE_HEADER_LEN: usize = 68;
+    const MAX_METADATA_PROBE_LEN: usize = 1024 * 1024;
+
+    let header = read_file_prefix(path, TABLE_HEADER_LEN).ok_or(())?;
+    let probe_len = rime_table_bin_metadata_probe_len(&header).map_err(|_| ())?;
+    let file_len = fs::metadata(path)
+        .ok()
+        .and_then(|metadata| usize::try_from(metadata.len()).ok())
+        .ok_or(())?;
+    if !(TABLE_HEADER_LEN..=file_len).contains(&probe_len) || probe_len > MAX_METADATA_PROBE_LEN {
+        return Err(());
+    }
+    let prefix = if probe_len == TABLE_HEADER_LEN {
+        header.clone()
+    } else {
+        read_file_prefix(path, probe_len).ok_or(())?
+    };
+    if let Some(requires_upgrade) =
+        rime_table_bin_declared_weight_upgrade(&prefix).map_err(|_| ())?
+    {
+        return Ok(requires_upgrade);
+    }
+
+    let string_table_size = u32::from_le_bytes(header[64..68].try_into().map_err(|_| ())?);
+    // The legacy Yune raw writer only emitted the non-Marisa layout. A
+    // source-backed gapless non-Marisa table is therefore normalized once;
+    // upstream Marisa tables remain external NaturalLog artifacts and avoid a
+    // full payload read during every deployment.
+    Ok(string_table_size == 0)
 }
 
 fn poet_dict_file_checksum_from_path(path: &Path) -> Option<u32> {
@@ -1789,6 +1831,58 @@ mod tests {
 
         fs::write(&path, b"not a poet").expect("bad bytes should be written");
         assert_eq!(poet_dict_file_checksum_from_path(&path), None);
+
+        fs::remove_dir_all(root).expect("temp dir should be removed");
+    }
+
+    #[test]
+    fn table_weight_upgrade_probe_reads_only_declared_header_metadata() {
+        let root = std::env::temp_dir().join(format!(
+            "yune-table-weight-probe-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock should be after Unix epoch")
+                .as_nanos()
+        ));
+        fs::create_dir_all(&root).expect("temp dir should be created");
+        let path = root.join("sample.table.bin");
+        let current = yune_core::build_table_bin(
+            &TableDictionary::new([yune_core::TableEntry::new("a", "A", 1.0)]),
+            0x1357_2468,
+        );
+        fs::write(&path, &current).expect("current table should be written");
+        assert_eq!(table_path_requires_weight_upgrade(&path), Ok(false));
+
+        let mut legacy = current.clone();
+        let syllabary_relative = i32::from_le_bytes(
+            legacy[44..48]
+                .try_into()
+                .expect("syllabary offset should fit"),
+        );
+        let syllabary_offset = usize::try_from(44isize + syllabary_relative as isize)
+            .expect("syllabary offset should be nonnegative");
+        let metadata_len = syllabary_offset - 68;
+        legacy.drain(68..syllabary_offset);
+        for field_offset in [44usize, 48] {
+            let old = i32::from_le_bytes(
+                legacy[field_offset..field_offset + 4]
+                    .try_into()
+                    .expect("table offset should fit"),
+            );
+            legacy[field_offset..field_offset + 4]
+                .copy_from_slice(&(old - metadata_len as i32).to_le_bytes());
+        }
+        fs::write(&path, legacy).expect("legacy table should be written");
+        assert_eq!(table_path_requires_weight_upgrade(&path), Ok(true));
+
+        let mut malformed = current;
+        malformed[68 + b"YUNE-TABLE-META".len()] = b'X';
+        fs::write(&path, malformed).expect("malformed table should be written");
+        assert_eq!(
+            table_path_requires_weight_upgrade(&path),
+            Err(()),
+            "a namespaced metadata parse failure must force a source-backed rebuild"
+        );
 
         fs::remove_dir_all(root).expect("temp dir should be removed");
     }

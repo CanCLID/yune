@@ -30,8 +30,10 @@ pub use compiled_table::{
     byte_backed_lookup_records_from_table_bin_byte_source,
     byte_backed_lookup_records_from_table_bin_bytes, parse_rime_table_bin_advanced_data,
     parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
-    rime_table_bin_dict_file_checksum, CompactMarisaStringTable, CompactTableByteSource,
-    CompactTableStore, RimeTableBinAdvancedDataOptions, RimeTableBinParseError,
+    rime_table_bin_declared_weight_upgrade, rime_table_bin_dict_file_checksum,
+    rime_table_bin_metadata_probe_len, rime_table_bin_requires_weight_upgrade,
+    CompactMarisaStringTable, CompactTableByteSource, CompactTableStore,
+    RimeTableBinAdvancedDataOptions, RimeTableBinParseError,
 };
 pub use double_array::{DartsDoubleArray, DartsDoubleArrayError, DartsMatch};
 pub use encoder::{CodeCoords, TableEncoder, TableEncoderFormulaError, TableEncodingRule};
@@ -41,11 +43,14 @@ pub use rebuild_executor::{
     execute_rebuild_plan, RimeDictRebuildExecuteError, RimeDictRebuildSources,
 };
 pub use reverse_writer::build_reverse_bin;
-pub(crate) use source::{normalize_table_code, LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE};
+pub(crate) use source::{
+    normalize_table_code, LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE,
+    LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE_F64, LIBRIME_NON_POSITIVE_COMPILED_LOG_WEIGHT_BITS,
+};
 pub use source::{
     parse_rime_preset_vocabulary_entries, ByteBackedDictionaryLookupRecords,
     DictionaryLookupByteSource, DictionaryLookupByteStoreError, DictionaryLookupRecord,
     PresetVocabularyEntry, RimeCorrectionEntry, RimeToleranceRule, TableDictionary,
-    TableDictionaryAdvancedData, TableDictionaryParseError, TableEntry,
+    TableDictionaryAdvancedData, TableDictionaryParseError, TableEntry, TableEntryWeightDomain,
 };
 pub use table_writer::build_table_bin;

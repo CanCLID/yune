@@ -10,12 +10,175 @@ param(
     [switch]$DeployProductBeforeBenchmark,
     [switch]$SkipTrackB,
     [string]$TrackAThresholds,
-    [switch]$FailOnRegression
+    [switch]$FailOnRegression,
+    [string]$ProductSchemaRoot,
+    [string]$WorkRoot,
+    [switch]$AllowDirty
 )
 
 $ErrorActionPreference = "Stop"
 
-$RepoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
+function Assert-PlainFileSystemPath([string]$Path, [string]$Label) {
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        throw "$Label must not be empty"
+    }
+    $Normalized = $Path.Replace("/", "\")
+    if ($Normalized.StartsWith("\\?\", [System.StringComparison]::OrdinalIgnoreCase) -or
+        $Normalized.StartsWith("\\.\", [System.StringComparison]::OrdinalIgnoreCase) -or
+        $Normalized.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Label must not use a Windows device or extended path: $Path"
+    }
+}
+
+function Get-FinalPhysicalPath([string]$Path) {
+    if ($null -eq ("Yune.BenchmarkNativePath" -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
+
+namespace Yune {
+    public static class BenchmarkNativePath {
+        private const uint OpenExisting = 3;
+        private const uint BackupSemantics = 0x02000000;
+        private const uint ShareReadWriteDelete = 0x00000007;
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern SafeFileHandle CreateFileW(
+            string path,
+            uint desiredAccess,
+            uint shareMode,
+            IntPtr securityAttributes,
+            uint creationDisposition,
+            uint flagsAndAttributes,
+            IntPtr templateFile
+        );
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint GetFinalPathNameByHandleW(
+            SafeFileHandle file,
+            StringBuilder path,
+            uint pathLength,
+            uint flags
+        );
+
+        public static string Resolve(string path) {
+            using (SafeFileHandle handle = CreateFileW(
+                path,
+                0,
+                ShareReadWriteDelete,
+                IntPtr.Zero,
+                OpenExisting,
+                BackupSemantics,
+                IntPtr.Zero
+            )) {
+                if (handle.IsInvalid) {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+                var buffer = new StringBuilder(512);
+                uint length = GetFinalPathNameByHandleW(
+                    handle, buffer, (uint)buffer.Capacity, 0
+                );
+                if (length == 0) {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+                if (length >= buffer.Capacity) {
+                    buffer.Capacity = checked((int)length + 1);
+                    length = GetFinalPathNameByHandleW(
+                        handle, buffer, (uint)buffer.Capacity, 0
+                    );
+                    if (length == 0 || length >= buffer.Capacity) {
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    }
+                }
+                return buffer.ToString();
+            }
+        }
+    }
+}
+'@
+    }
+    $Final = [Yune.BenchmarkNativePath]::Resolve($Path)
+    if ($Final.StartsWith("\\?\UNC\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        return "\\" + $Final.Substring(8)
+    }
+    if ($Final.StartsWith("\\?\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $Final.Substring(4)
+    }
+    if ($Final.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $Final.Substring(4)
+    }
+    return $Final
+}
+
+function Get-CanonicalSafePath([string]$Path, [string]$Label) {
+    Assert-PlainFileSystemPath $Path $Label
+    $Full = [System.IO.Path]::GetFullPath($Path)
+    $Root = [System.IO.Path]::GetPathRoot($Full)
+    if ([string]::IsNullOrWhiteSpace($Root)) {
+        throw "$Label has no filesystem root: $Path"
+    }
+    if ($Full.Substring($Root.Length).Contains(":")) {
+        throw "$Label must not use an alternate data stream: $Path"
+    }
+
+    $MissingParts = [System.Collections.Generic.Stack[string]]::new()
+    $Probe = $Full
+    while (-not (Test-Path -LiteralPath $Probe)) {
+        $Leaf = Split-Path -Leaf $Probe
+        $Parent = Split-Path -Parent $Probe
+        if ([string]::IsNullOrWhiteSpace($Leaf) -or
+            [string]::IsNullOrWhiteSpace($Parent) -or
+            $Parent.Equals($Probe, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "$Label has no existing filesystem ancestor: $Path"
+        }
+        $MissingParts.Push($Leaf)
+        $Probe = $Parent
+    }
+
+    $Existing = Get-Item -LiteralPath $Probe -Force
+    if ($MissingParts.Count -gt 0 -and -not $Existing.PSIsContainer) {
+        throw "$Label descends from a file rather than a directory: $($Existing.FullName)"
+    }
+    $Ancestor = $Existing
+    while ($null -ne $Ancestor) {
+        if (($Ancestor.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "$Label has a reparse-point ancestor: $($Ancestor.FullName)"
+        }
+        $ParentPath = Split-Path -Parent $Ancestor.FullName
+        if ([string]::IsNullOrWhiteSpace($ParentPath) -or
+            $ParentPath.Equals($Ancestor.FullName, [System.StringComparison]::OrdinalIgnoreCase)) {
+            break
+        }
+        $Ancestor = Get-Item -LiteralPath $ParentPath -Force
+    }
+
+    $Canonical = Get-FinalPhysicalPath $Existing.FullName
+    while ($MissingParts.Count -gt 0) {
+        $Canonical = Join-Path $Canonical $MissingParts.Pop()
+    }
+    return [System.IO.Path]::GetFullPath($Canonical)
+}
+
+function Assert-BenchmarkSourcePolicy(
+    [string[]]$StatusRows,
+    [bool]$AllowDirtyRequested,
+    [string]$SignedThresholdPath
+) {
+    if ($AllowDirtyRequested -and -not [string]::IsNullOrWhiteSpace($SignedThresholdPath)) {
+        throw "-AllowDirty is diagnostic-only and cannot be combined with signed -TrackAThresholds"
+    }
+    if ($StatusRows.Count -gt 0 -and -not $AllowDirtyRequested) {
+        throw "Benchmark source must be clean; use -AllowDirty only for an unsigned diagnostic run without thresholds. Dirty state: $($StatusRows -join ' | ')"
+    }
+}
+
+$RepoRoot = Get-CanonicalSafePath (Join-Path $PSScriptRoot "..") "repository root"
+$OutputRootWasProvided = -not [string]::IsNullOrWhiteSpace($OutputRoot)
+$WorkRootWasProvided = -not [string]::IsNullOrWhiteSpace($WorkRoot)
+$YuneDllWasProvided = -not [string]::IsNullOrWhiteSpace($YuneDll)
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path $RepoRoot "docs\reports\evidence\m36-product-path\phase-0-native-inprocess"
 }
@@ -25,24 +188,186 @@ if ([string]::IsNullOrWhiteSpace($UpstreamOracleRoot)) {
 if ([string]::IsNullOrWhiteSpace($YuneDll)) {
     $YuneDll = Join-Path $RepoRoot "target\release\yune_rime_api.dll"
 }
+if ([string]::IsNullOrWhiteSpace($ProductSchemaRoot)) {
+    $ProductSchemaRoot = Join-Path $RepoRoot "apps\yune-web\public\schema"
+}
 
-$OutputRoot = [System.IO.Path]::GetFullPath($OutputRoot)
-$EvidenceRoot = [System.IO.Path]::GetFullPath((Join-Path $RepoRoot "docs\reports\evidence"))
-$WorkRoot = Join-Path $RepoRoot ("target\native-inprocess\" + (Split-Path -Leaf $OutputRoot))
-$UpstreamOracleRoot = [System.IO.Path]::GetFullPath($UpstreamOracleRoot)
-$YuneDll = [System.IO.Path]::GetFullPath($YuneDll)
-$SharedSource = Join-Path $UpstreamOracleRoot "rime-shared"
-$BuildSource = Join-Path $UpstreamOracleRoot "rime-user\build"
-$UpstreamDll = Join-Path $UpstreamOracleRoot "extract\dist\lib\rime.dll"
-$UpstreamDistLib = Join-Path $UpstreamOracleRoot "extract\dist\lib"
-$UpstreamBin = Join-Path $UpstreamOracleRoot "extract\bin"
-$UpstreamDistBin = Join-Path $UpstreamOracleRoot "extract\dist\bin"
-$ProductSchemaRoot = Join-Path $RepoRoot "apps\yune-web\source\public\schema"
+$OutputRoot = Get-CanonicalSafePath $OutputRoot "OutputRoot"
+$EvidenceRoot = Get-CanonicalSafePath (Join-Path $RepoRoot "docs\reports\evidence") "legacy evidence root"
+$LegacyWorkRoot = Get-CanonicalSafePath (Join-Path $RepoRoot "target\native-inprocess") "legacy work root"
+if ([string]::IsNullOrWhiteSpace($WorkRoot)) {
+    $WorkRoot = Join-Path $LegacyWorkRoot (Split-Path -Leaf $OutputRoot)
+}
+$WorkRoot = Get-CanonicalSafePath $WorkRoot "WorkRoot"
+$UpstreamOracleRoot = Get-CanonicalSafePath $UpstreamOracleRoot "UpstreamOracleRoot"
+$YuneDll = Get-CanonicalSafePath $YuneDll "YuneDll"
+$ProductSchemaRoot = Get-CanonicalSafePath $ProductSchemaRoot "ProductSchemaRoot"
+if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) {
+    $TrackAThresholds = Get-CanonicalSafePath $TrackAThresholds "TrackAThresholds"
+}
+$SharedSource = Get-CanonicalSafePath (Join-Path $UpstreamOracleRoot "rime-shared") "upstream shared data"
+$BuildSource = Get-CanonicalSafePath (Join-Path $UpstreamOracleRoot "rime-user\build") "upstream build data"
+$UpstreamDll = Get-CanonicalSafePath (Join-Path $UpstreamOracleRoot "extract\dist\lib\rime.dll") "upstream rime.dll"
+$UpstreamDistLib = Get-CanonicalSafePath (Join-Path $UpstreamOracleRoot "extract\dist\lib") "upstream dist lib"
+$UpstreamBin = Get-CanonicalSafePath (Join-Path $UpstreamOracleRoot "extract\bin") "upstream bin"
+$UpstreamDistBin = Get-CanonicalSafePath (Join-Path $UpstreamOracleRoot "extract\dist\bin") "upstream dist bin"
 
 function Assert-Path($Path, $Label) {
     if (-not (Test-Path -LiteralPath $Path)) {
         throw "Missing $Label`: $Path"
     }
+}
+
+function File-Sha256([string]$Path) {
+    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+
+function Bytes-Sha256([byte[]]$Bytes) {
+    $Hasher = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return ([System.BitConverter]::ToString($Hasher.ComputeHash($Bytes))).Replace("-", "").ToLowerInvariant()
+    }
+    finally {
+        $Hasher.Dispose()
+    }
+}
+
+function Tree-Sha256([string]$Root) {
+    $RootFull = (Get-CanonicalSafePath $Root "tree hash root").TrimEnd("\", "/")
+    if (-not (Test-Path -LiteralPath $RootFull -PathType Container)) {
+        throw "Cannot hash non-directory tree: $Root"
+    }
+    $Rows = [System.Collections.Generic.List[string]]::new()
+    $Pending = [System.Collections.Generic.Stack[string]]::new()
+    $Pending.Push($RootFull)
+    while ($Pending.Count -gt 0) {
+        $Directory = $Pending.Pop()
+        foreach ($Item in Get-ChildItem -LiteralPath $Directory -Force) {
+            if (($Item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "Tree hash input contains a reparse point: $($Item.FullName)"
+            }
+            if ($Item.PSIsContainer) {
+                $Pending.Push($Item.FullName)
+                continue
+            }
+            $Relative = $Item.FullName.Substring($RootFull.Length + 1).Replace("\", "/")
+            $Rows.Add("$Relative`t$(File-Sha256 $Item.FullName)")
+        }
+    }
+    $Ordered = $Rows.ToArray()
+    [Array]::Sort($Ordered, [System.StringComparer]::Ordinal)
+    $Payload = (($Ordered -join "`n") + "`n")
+    return Bytes-Sha256 ([System.Text.Encoding]::UTF8.GetBytes($Payload))
+}
+
+function Get-RepositorySourceSnapshot {
+    $Head = (& git -C $RepoRoot rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "Unable to inspect repository HEAD" }
+    $Tree = (& git -C $RepoRoot rev-parse 'HEAD^{tree}').Trim()
+    if ($LASTEXITCODE -ne 0) { throw "Unable to inspect repository source tree" }
+    $StatusRows = @(& git -C $RepoRoot status --porcelain=v1 --untracked-files=all)
+    if ($LASTEXITCODE -ne 0) { throw "Unable to inspect repository source status" }
+    $DiffRows = @(& git -C $RepoRoot diff --no-ext-diff --no-textconv --binary HEAD --)
+    if ($LASTEXITCODE -ne 0) { throw "Unable to bind repository source diff" }
+    $Untracked = @(& git -C $RepoRoot ls-files --others --exclude-standard)
+    if ($LASTEXITCODE -ne 0) { throw "Unable to enumerate untracked source files" }
+    $UntrackedRows = foreach ($Relative in $Untracked) {
+        $Full = Join-Path $RepoRoot $Relative
+        if (-not (Test-Path -LiteralPath $Full -PathType Leaf)) {
+            throw "Untracked source entry is not a regular file: $Relative"
+        }
+        "$($Relative.Replace('\', '/'))`t$(File-Sha256 $Full)"
+    }
+    $BindingRows = [System.Collections.Generic.List[string]]::new()
+    $BindingRows.Add("head=$Head")
+    $BindingRows.Add("tree=$Tree")
+    $BindingRows.Add("status:")
+    foreach ($Row in $StatusRows) { $BindingRows.Add([string]$Row) }
+    $BindingRows.Add("diff:")
+    foreach ($Row in $DiffRows) { $BindingRows.Add([string]$Row) }
+    $BindingRows.Add("untracked:")
+    foreach ($Row in $UntrackedRows) { $BindingRows.Add([string]$Row) }
+    $BindingPayload = $BindingRows.ToArray() -join "`n"
+    return [pscustomobject]@{
+        Head = $Head
+        Tree = $Tree
+        StatusRows = @($StatusRows)
+        Clean = $StatusRows.Count -eq 0
+        ContentBindingSha256 = Bytes-Sha256 ([System.Text.Encoding]::UTF8.GetBytes($BindingPayload))
+    }
+}
+
+function Assert-RepositorySourceSnapshot($Expected, [string]$Stage) {
+    $Observed = Get-RepositorySourceSnapshot
+    $ExpectedStatus = @($Expected.StatusRows)
+    $ObservedStatus = @($Observed.StatusRows)
+    $StatusMatches = $ExpectedStatus.Count -eq $ObservedStatus.Count
+    if ($StatusMatches) {
+        for ($Index = 0; $Index -lt $ExpectedStatus.Count; $Index++) {
+            if (-not $ExpectedStatus[$Index].Equals(
+                $ObservedStatus[$Index],
+                [System.StringComparison]::Ordinal
+            )) {
+                $StatusMatches = $false
+                break
+            }
+        }
+    }
+    if (-not $Expected.Head.Equals($Observed.Head, [System.StringComparison]::OrdinalIgnoreCase) -or
+        -not $Expected.Tree.Equals($Observed.Tree, [System.StringComparison]::OrdinalIgnoreCase) -or
+        -not $StatusMatches -or
+        -not $Expected.ContentBindingSha256.Equals(
+            $Observed.ContentBindingSha256,
+            [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+        throw "Repository source drifted at $Stage. Expected HEAD/tree/binding [$($Expected.Head)/$($Expected.Tree)/$($Expected.ContentBindingSha256)] with status [$($ExpectedStatus -join ' | ')]; observed [$($Observed.Head)/$($Observed.Tree)/$($Observed.ContentBindingSha256)] with status [$($ObservedStatus -join ' | ')]"
+    }
+}
+
+function Quote-CommandArg([string]$Value) {
+    return "'" + $Value.Replace("'", "''") + "'"
+}
+
+function Test-PathWithinOrEqual([string]$Candidate, [string]$Root) {
+    $CandidateFull = [System.IO.Path]::GetFullPath($Candidate).TrimEnd("\", "/")
+    $RootFull = [System.IO.Path]::GetFullPath($Root).TrimEnd("\", "/")
+    return $CandidateFull.Equals($RootFull, [System.StringComparison]::OrdinalIgnoreCase) -or
+        $CandidateFull.StartsWith($RootFull + "\", [System.StringComparison]::OrdinalIgnoreCase)
+}
+
+function Assert-DirectoryRootsDisjoint([string]$First, [string]$FirstLabel, [string]$Second, [string]$SecondLabel) {
+    if ((Test-PathWithinOrEqual $First $Second) -or (Test-PathWithinOrEqual $Second $First)) {
+        throw "$FirstLabel and $SecondLabel must be disjoint: [$First] versus [$Second]"
+    }
+}
+
+function Assert-ExplicitRootOutsideRepo([string]$Path, [bool]$WasProvided, [string]$Label) {
+    if ($WasProvided -and
+        ((Test-PathWithinOrEqual $Path $RepoRoot) -or (Test-PathWithinOrEqual $RepoRoot $Path))) {
+        throw "Explicit $Label must be disjoint from the repository root: $Path"
+    }
+}
+
+function Assert-FileOutsideRoot([string]$FilePath, [string]$FileLabel, [string]$Root, [string]$RootLabel) {
+    if (Test-PathWithinOrEqual $FilePath $Root) {
+        throw "$FileLabel must not be inside $RootLabel`: $FilePath"
+    }
+}
+
+function Initialize-BenchmarkRoot([string]$Path, [string]$LegacyParent, [bool]$WasProvided, [string]$Label) {
+    $ResolvedPath = [System.IO.Path]::GetFullPath($Path)
+    $FileSystemRoot = [System.IO.Path]::GetPathRoot($ResolvedPath).TrimEnd("\", "/")
+    if ($ResolvedPath.TrimEnd("\", "/").Equals($FileSystemRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to use a filesystem root as $Label`: $ResolvedPath"
+    }
+    if ($WasProvided) {
+        if (Test-Path -LiteralPath $ResolvedPath) {
+            throw "Explicit $Label must be a new path; refusing to clear or reuse: $ResolvedPath"
+        }
+        New-Item -ItemType Directory -Path $ResolvedPath | Out-Null
+        return
+    }
+    Clear-DirectoryUnder $LegacyParent $ResolvedPath
 }
 
 # M59 provenance guard. Returns the schema-level `leading_syllable_reachability`
@@ -76,6 +401,15 @@ function Copy-DirectoryContents($Source, $Destination) {
     Get-ChildItem -LiteralPath $Source -Force | ForEach-Object {
         Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $Destination $_.Name) -Recurse -Force
     }
+}
+
+function Set-RunStatus([string]$Status, [string]$Detail = "") {
+    $SanitizedDetail = $Detail.Replace("`r", " ").Replace("`n", " ")
+    @(
+        "status=$Status",
+        "date_utc=$([DateTime]::UtcNow.ToString('o'))",
+        "detail=$SanitizedDetail"
+    ) | Set-Content -LiteralPath $RunStatusPath -Encoding UTF8
 }
 
 function Invoke-Logged($Description, [string[]]$ArgumentList, $LogPath, $ExtraPath = "") {
@@ -118,6 +452,105 @@ function Invoke-Logged($Description, [string[]]$ArgumentList, $LogPath, $ExtraPa
     }
 }
 
+function Build-NativeBenchmarkExecutable($LogPath) {
+    $Description = "cargo-build-native-inprocess-benchmark"
+    $LogDir = Split-Path -Parent $LogPath
+    New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+    $StdOut = Join-Path $LogDir "$Description.stdout.tmp"
+    $StdErr = Join-Path $LogDir "$Description.stderr.tmp"
+    Remove-Item -LiteralPath $StdOut, $StdErr -Force -ErrorAction SilentlyContinue
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    $PreviousCargoTargetDir = $env:CARGO_TARGET_DIR
+    try {
+        $env:CARGO_TARGET_DIR = $BenchmarkCargoTargetRoot
+        Push-Location $RepoRoot
+        try {
+            $ErrorActionPreference = "SilentlyContinue"
+            & cargo bench -p yune-rime-api --bench native_inprocess_benchmark --no-run --message-format=json-render-diagnostics 1> $StdOut 2> $StdErr
+            $ExitCode = $LASTEXITCODE
+        }
+        finally {
+            $ErrorActionPreference = $PreviousErrorActionPreference
+            Pop-Location
+        }
+        $StdOutLines = if (Test-Path -LiteralPath $StdOut) { @(Get-Content -LiteralPath $StdOut) } else { @() }
+        $StdErrLines = if (Test-Path -LiteralPath $StdErr) { @(Get-Content -LiteralPath $StdErr) } else { @() }
+        @($StdOutLines) + @($StdErrLines) | Set-Content -LiteralPath $LogPath -Encoding UTF8
+        if ($ExitCode -ne 0) {
+            throw "$Description failed with exit code $ExitCode"
+        }
+
+        $Executables = [System.Collections.Generic.List[string]]::new()
+        foreach ($Line in $StdOutLines) {
+            try {
+                $Message = $Line | ConvertFrom-Json
+            }
+            catch {
+                continue
+            }
+            if ($Message.reason -eq "compiler-artifact" -and
+                $Message.target.name -eq "native_inprocess_benchmark" -and
+                @($Message.target.kind) -contains "bench" -and
+                -not [string]::IsNullOrWhiteSpace($Message.executable)) {
+                $Executables.Add([string]$Message.executable)
+            }
+        }
+        $UniqueExecutables = @($Executables | Select-Object -Unique)
+        if ($UniqueExecutables.Count -ne 1) {
+            throw "$Description expected exactly one executable artifact, found $($UniqueExecutables.Count)"
+        }
+        $Executable = Get-CanonicalSafePath $UniqueExecutables[0] "native benchmark executable"
+        Assert-Path $Executable "native benchmark executable"
+        return $Executable
+    }
+    finally {
+        Remove-Item -LiteralPath $StdOut, $StdErr -Force -ErrorAction SilentlyContinue
+        $env:CARGO_TARGET_DIR = $PreviousCargoTargetDir
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
+}
+
+function Invoke-NativeBenchmarkLogged($Description, [string[]]$ArgumentList, $LogPath, $ExtraPath = "") {
+    if ([string]::IsNullOrWhiteSpace($NativeBenchmarkExecutable)) {
+        throw "Native benchmark executable has not been built"
+    }
+    $LogDir = Split-Path -Parent $LogPath
+    New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+    $StdOut = Join-Path $LogDir "$Description.stdout.tmp"
+    $StdErr = Join-Path $LogDir "$Description.stderr.tmp"
+    Remove-Item -LiteralPath $StdOut, $StdErr -Force -ErrorAction SilentlyContinue
+    $PreviousPath = $env:PATH
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    try {
+        if (-not [string]::IsNullOrWhiteSpace($ExtraPath)) {
+            $env:PATH = ($ExtraPath, $PreviousPath -join ";")
+        }
+        Push-Location $RepoRoot
+        try {
+            $ErrorActionPreference = "SilentlyContinue"
+            & $NativeBenchmarkExecutable @ArgumentList 1> $StdOut 2> $StdErr
+            $ExitCode = $LASTEXITCODE
+        }
+        finally {
+            $ErrorActionPreference = $PreviousErrorActionPreference
+            Pop-Location
+        }
+        $Output = @()
+        if (Test-Path -LiteralPath $StdOut) { $Output += Get-Content -LiteralPath $StdOut }
+        if (Test-Path -LiteralPath $StdErr) { $Output += Get-Content -LiteralPath $StdErr }
+        $Output | Set-Content -LiteralPath $LogPath -Encoding UTF8
+        $Output | ForEach-Object { Write-Host $_ }
+        if ($ExitCode -ne 0) {
+            throw "$Description failed with exit code $ExitCode"
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $StdOut, $StdErr -Force -ErrorAction SilentlyContinue
+        $env:PATH = $PreviousPath
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
+}
+
 function Prepare-UpstreamRun($EngineName, $DllPath) {
     $RunRoot = Join-Path $WorkRoot $EngineName
     Clear-DirectoryUnder $WorkRoot $RunRoot
@@ -152,7 +585,6 @@ function Run-NativeBench(
     Clear-DirectoryUnder $OutputRoot $EngineOutput
     $LogPath = Join-Path $EngineOutput "cargo-bench-native-inprocess.log"
     $BenchArgs = @(
-        "bench", "-p", "yune-rime-api", "--bench", "native_inprocess_benchmark", "--",
         "--engine", $EngineName,
         "--track", $Track,
         "--schema", $Schema,
@@ -169,7 +601,7 @@ function Run-NativeBench(
     if ($DeployBeforeBenchmark) {
         $BenchArgs += "--deploy-before-benchmark"
     }
-    Invoke-Logged "$OutputName-native-inprocess" $BenchArgs $LogPath (($RunRoot, $ExtraPath) -join ";")
+    Invoke-NativeBenchmarkLogged "$OutputName-native-inprocess" $BenchArgs $LogPath (($RunRoot, $ExtraPath) -join ";")
 }
 
 function Invoke-DeployPrep(
@@ -184,7 +616,6 @@ function Invoke-DeployPrep(
     Clear-DirectoryUnder $WorkRoot $PrepOutput
     $LogPath = Join-Path $OutputRoot "$OutputName-deploy-prep.log"
     $BenchArgs = @(
-        "bench", "-p", "yune-rime-api", "--bench", "native_inprocess_benchmark", "--",
         "--engine", $EngineName,
         "--track", $Track,
         "--schema", $Schema,
@@ -200,7 +631,7 @@ function Invoke-DeployPrep(
         "--deploy-before-benchmark",
         "--deploy-only"
     )
-    Invoke-Logged "$OutputName-deploy-prep" $BenchArgs $LogPath (($RunRoot, $ExtraPath) -join ";")
+    Invoke-NativeBenchmarkLogged "$OutputName-deploy-prep" $BenchArgs $LogPath (($RunRoot, $ExtraPath) -join ";")
 }
 
 function Invoke-TrackAPoetDeployPrep(
@@ -430,24 +861,90 @@ function Invoke-TrackAThresholdCheck($ComparisonRows, $SummaryRows, $MemoryOwner
     }
 }
 
-Clear-DirectoryUnder $EvidenceRoot $OutputRoot
-Clear-DirectoryUnder (Join-Path $RepoRoot "target\native-inprocess") $WorkRoot
-
 Assert-Path $UpstreamOracleRoot "upstream oracle root"
 Assert-Path $SharedSource "upstream shared data"
 Assert-Path $BuildSource "upstream prebuilt build data"
 Assert-Path $UpstreamDll "upstream rime.dll"
-if (-not $SkipTrackB) {
-    Assert-Path $ProductSchemaRoot "TypeDuck-Web product schema assets"
+Assert-Path $ProductSchemaRoot "Yune web product schema assets"
+if ($YuneDllWasProvided) {
+    Assert-Path $YuneDll "supplied Yune DLL"
+}
+if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) {
+    Assert-Path $TrackAThresholds "Track A thresholds"
+}
+$InitialSourceSnapshot = Get-RepositorySourceSnapshot
+$YuneHead = $InitialSourceSnapshot.Head
+$YuneTree = $InitialSourceSnapshot.Tree
+$YuneStatusRows = @($InitialSourceSnapshot.StatusRows)
+$SourceClean = $InitialSourceSnapshot.Clean
+$SourceContentBindingSha256 = $InitialSourceSnapshot.ContentBindingSha256
+$YuneStatus = $YuneStatusRows -join " | "
+Assert-BenchmarkSourcePolicy $YuneStatusRows $AllowDirty.IsPresent $TrackAThresholds
+
+Assert-DirectoryRootsDisjoint $OutputRoot "OutputRoot" $WorkRoot "WorkRoot"
+Assert-DirectoryRootsDisjoint $OutputRoot "OutputRoot" $UpstreamOracleRoot "UpstreamOracleRoot"
+Assert-DirectoryRootsDisjoint $WorkRoot "WorkRoot" $UpstreamOracleRoot "UpstreamOracleRoot"
+Assert-DirectoryRootsDisjoint $OutputRoot "OutputRoot" $ProductSchemaRoot "ProductSchemaRoot"
+Assert-DirectoryRootsDisjoint $WorkRoot "WorkRoot" $ProductSchemaRoot "ProductSchemaRoot"
+Assert-ExplicitRootOutsideRepo $OutputRoot $OutputRootWasProvided "OutputRoot"
+Assert-ExplicitRootOutsideRepo $WorkRoot $WorkRootWasProvided "WorkRoot"
+Assert-FileOutsideRoot $YuneDll "YuneDll" $OutputRoot "OutputRoot"
+Assert-FileOutsideRoot $YuneDll "YuneDll" $WorkRoot "WorkRoot"
+if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) {
+    Assert-FileOutsideRoot $TrackAThresholds "TrackAThresholds" $OutputRoot "OutputRoot"
+    Assert-FileOutsideRoot $TrackAThresholds "TrackAThresholds" $WorkRoot "WorkRoot"
 }
 
-Push-Location $RepoRoot
-try {
-    Invoke-Logged "cargo-build-release-yune-rime-api" @("build", "--release", "-p", "yune-rime-api") (Join-Path $OutputRoot "cargo-build-release-yune-rime-api.log")
-} finally {
-    Pop-Location
+Initialize-BenchmarkRoot $OutputRoot $EvidenceRoot $OutputRootWasProvided "OutputRoot"
+$OutputRootAfterCreate = Get-CanonicalSafePath $OutputRoot "created OutputRoot"
+if (-not $OutputRootAfterCreate.Equals($OutputRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "OutputRoot physical path changed during creation: [$OutputRoot] -> [$OutputRootAfterCreate]"
 }
-Assert-Path $YuneDll "Yune release DLL"
+$RunStatusPath = Join-Path $OutputRoot "run-status.txt"
+Set-RunStatus "in-progress"
+
+try {
+    Initialize-BenchmarkRoot $WorkRoot $LegacyWorkRoot $WorkRootWasProvided "WorkRoot"
+    $WorkRootAfterCreate = Get-CanonicalSafePath $WorkRoot "created WorkRoot"
+    if (-not $WorkRootAfterCreate.Equals($WorkRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "WorkRoot physical path changed during creation: [$WorkRoot] -> [$WorkRootAfterCreate]"
+    }
+    Assert-DirectoryRootsDisjoint $OutputRootAfterCreate "OutputRoot" $WorkRootAfterCreate "WorkRoot"
+    Assert-DirectoryRootsDisjoint $OutputRootAfterCreate "OutputRoot" $UpstreamOracleRoot "UpstreamOracleRoot"
+    Assert-DirectoryRootsDisjoint $WorkRootAfterCreate "WorkRoot" $UpstreamOracleRoot "UpstreamOracleRoot"
+    Assert-DirectoryRootsDisjoint $OutputRootAfterCreate "OutputRoot" $ProductSchemaRoot "ProductSchemaRoot"
+    Assert-DirectoryRootsDisjoint $WorkRootAfterCreate "WorkRoot" $ProductSchemaRoot "ProductSchemaRoot"
+
+    $BuildPerformed = -not $YuneDllWasProvided
+    if ($BuildPerformed) {
+        Push-Location $RepoRoot
+        try {
+            Invoke-Logged "cargo-build-release-yune-rime-api" @("build", "--release", "-p", "yune-rime-api") (Join-Path $OutputRoot "cargo-build-release-yune-rime-api.log")
+        }
+        finally {
+            Pop-Location
+        }
+    }
+    Assert-Path $YuneDll "Yune release DLL"
+    $YuneDllAfterBuild = Get-CanonicalSafePath $YuneDll "Yune release DLL"
+    if (-not $YuneDllAfterBuild.Equals($YuneDll, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Yune DLL physical path changed during build: [$YuneDll] -> [$YuneDllAfterBuild]"
+    }
+
+    $YuneDllSha256 = File-Sha256 $YuneDll
+    $UpstreamDllSha256 = File-Sha256 $UpstreamDll
+    $UpstreamSharedTreeSha256 = Tree-Sha256 $SharedSource
+    $UpstreamBuildTreeSha256 = Tree-Sha256 $BuildSource
+    $ProductSchemaTreeSha256 = Tree-Sha256 $ProductSchemaRoot
+    $BenchmarkScriptSha256 = File-Sha256 $PSCommandPath
+    $TrackAThresholdsSha256 = if ([string]::IsNullOrWhiteSpace($TrackAThresholds)) { "" } else { File-Sha256 $TrackAThresholds }
+
+    $BenchmarkCargoTargetRoot = Join-Path $WorkRoot "cargo-target"
+    $BenchmarkCargoCommand = "cargo bench -p yune-rime-api --bench native_inprocess_benchmark --no-run --message-format=json-render-diagnostics"
+    $BenchmarkBuildCommand = "`$env:CARGO_TARGET_DIR=$(Quote-CommandArg $BenchmarkCargoTargetRoot); $BenchmarkCargoCommand"
+    $NativeBenchmarkExecutable = Build-NativeBenchmarkExecutable (Join-Path $OutputRoot "cargo-build-native-inprocess-benchmark.log")
+    $NativeBenchmarkExecutableSha256 = File-Sha256 $NativeBenchmarkExecutable
+    Assert-RepositorySourceSnapshot $InitialSourceSnapshot "post-build"
 
 $TrackAYuneRun = Prepare-UpstreamRun "track-a-yune" $YuneDll
 $TrackALibrimeRun = Prepare-UpstreamRun "track-a-librime-1.17.0" $UpstreamDll
@@ -461,29 +958,75 @@ if (-not $SkipTrackB) {
 # this fails loudly the instant either side re-introduces a schema-level flag that
 # the other lacks. One assertion, no new inputs.
 $DeployedLuna = Join-Path $TrackAYuneRun "shared\luna_pinyin.schema.yaml"
-$ShippedLuna = Join-Path $RepoRoot "apps\yune-web\public\schema\luna_pinyin.schema.yaml"
+$ShippedLuna = Join-Path $ProductSchemaRoot "luna_pinyin.schema.yaml"
 $DeployedFlag = Get-ReachabilityFlagState $DeployedLuna
 $ShippedFlag = Get-ReachabilityFlagState $ShippedLuna
 if ($DeployedFlag -ne $ShippedFlag) {
-    throw "M59 provenance mismatch: benchmark luna leading_syllable_reachability=[$DeployedFlag] but shipped web product=[$ShippedFlag]. The ratchet would measure a different feature state than ships (the finding-#8 hole). Reconcile apps/yune-web/public/schema with the deployed luna before trusting these numbers."
+    throw "M59 provenance mismatch: benchmark luna leading_syllable_reachability=[$DeployedFlag] but selected product root=[$ShippedFlag]. The ratchet would measure a different feature state than ships (the finding-#8 hole). Reconcile $ProductSchemaRoot with the deployed luna before trusting these numbers."
 }
 
-$BenchmarkCommand = "powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot $OutputRoot -Iterations $Iterations -SessionIterations $SessionIterations -KeyIterations $KeyIterations -TrackAInputs $TrackAInputs -TrackBInputs $TrackBInputs$(if ($DeployProductBeforeBenchmark) { ' -DeployProductBeforeBenchmark' } else { '' })$(if ($SkipTrackB) { ' -SkipTrackB' } else { '' })$(if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) { " -TrackAThresholds $TrackAThresholds" } else { '' })$(if ($FailOnRegression) { ' -FailOnRegression' } else { '' })"
-$Commands = @(
-    "cargo build --release -p yune-rime-api",
-    $BenchmarkCommand
+$InvocationParts = @(
+    "powershell",
+    "-NoProfile",
+    "-ExecutionPolicy", "Bypass",
+    "-File", (Quote-CommandArg $PSCommandPath),
+    "-OutputRoot", (Quote-CommandArg $OutputRoot),
+    "-WorkRoot", (Quote-CommandArg $WorkRoot),
+    "-UpstreamOracleRoot", (Quote-CommandArg $UpstreamOracleRoot),
+    "-ProductSchemaRoot", (Quote-CommandArg $ProductSchemaRoot),
+    "-YuneDll", (Quote-CommandArg $YuneDll),
+    "-Iterations", "$Iterations",
+    "-SessionIterations", "$SessionIterations",
+    "-KeyIterations", "$KeyIterations",
+    "-TrackAInputs", (Quote-CommandArg $TrackAInputs),
+    "-TrackBInputs", (Quote-CommandArg $TrackBInputs)
 )
+if ($DeployProductBeforeBenchmark) { $InvocationParts += "-DeployProductBeforeBenchmark" }
+if ($SkipTrackB) { $InvocationParts += "-SkipTrackB" }
+if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) {
+    $InvocationParts += @("-TrackAThresholds", (Quote-CommandArg $TrackAThresholds))
+}
+if ($FailOnRegression) { $InvocationParts += "-FailOnRegression" }
+if ($AllowDirty) { $InvocationParts += "-AllowDirty" }
+$ActualInvocation = $InvocationParts -join " "
+$Commands = @()
+if ($BuildPerformed) {
+    $Commands += "cargo build --release -p yune-rime-api  # cwd=$(Quote-CommandArg $RepoRoot)"
+}
+$Commands += "$BenchmarkBuildCommand  # cwd=$(Quote-CommandArg $RepoRoot)"
+$Commands += $ActualInvocation
 $Commands | Set-Content -LiteralPath (Join-Path $OutputRoot "commands.txt") -Encoding UTF8
 
-$YuneHead = (& git -C $RepoRoot rev-parse HEAD).Trim()
-$YuneStatus = (& git -C $RepoRoot status --short) -join " | "
+@(
+    "command=$ActualInvocation",
+    "build_performed=$BuildPerformed",
+    "yune_dll_supplied=$YuneDllWasProvided"
+) | Set-Content -LiteralPath (Join-Path $OutputRoot "actual-invocation.txt") -Encoding UTF8
+
 $Identity = @(
     "date_utc=$([DateTime]::UtcNow.ToString('o'))",
     "repo_root=$RepoRoot",
     "yune_git_head=$YuneHead",
+    "yune_git_tree=$YuneTree",
     "yune_git_status_short=$YuneStatus",
+    "source_clean=$SourceClean",
+    "source_content_binding_sha256=$SourceContentBindingSha256",
+    "allow_dirty=$($AllowDirty.IsPresent)",
     "upstream_oracle_root=$UpstreamOracleRoot",
+    "product_schema_root=$ProductSchemaRoot",
+    "output_root=$OutputRoot",
+    "work_root=$WorkRoot",
     "transient_work_root=$WorkRoot",
+    "yune_dll=$YuneDll",
+    "yune_dll_supplied=$YuneDllWasProvided",
+    "build_performed=$BuildPerformed",
+    "native_benchmark_executable=$NativeBenchmarkExecutable",
+    "native_benchmark_executable_sha256=$NativeBenchmarkExecutableSha256",
+    "native_benchmark_cargo_target_root=$BenchmarkCargoTargetRoot",
+    "native_benchmark_build_command=$BenchmarkBuildCommand",
+    "benchmark_script_sha256=$BenchmarkScriptSha256",
+    "track_a_thresholds_sha256=$TrackAThresholdsSha256",
+    "actual_invocation=$ActualInvocation",
     "managed_runtime=false",
     "deploy_product_before_benchmark=$($DeployProductBeforeBenchmark.IsPresent)",
     "skip_track_b=$($SkipTrackB.IsPresent)",
@@ -496,6 +1039,19 @@ $Identity = @(
     "key_iterations=$KeyIterations"
 )
 $Identity | Set-Content -LiteralPath (Join-Path $OutputRoot "environment.txt") -Encoding UTF8
+
+@(
+    "source_commit=$YuneHead",
+    "source_tree=$YuneTree",
+    "source_content_binding_sha256=$SourceContentBindingSha256",
+    "measured_yune_dll_sha256=$YuneDllSha256",
+    "upstream_rime_dll_sha256=$UpstreamDllSha256",
+    "upstream_shared_tree_sha256=$UpstreamSharedTreeSha256",
+    "upstream_build_tree_sha256=$UpstreamBuildTreeSha256",
+    "product_schema_tree_sha256=$ProductSchemaTreeSha256",
+    "native_benchmark_executable_sha256=$NativeBenchmarkExecutableSha256",
+    "benchmark_script_sha256=$BenchmarkScriptSha256"
+) | Set-Content -LiteralPath (Join-Path $OutputRoot "external-provenance.txt") -Encoding UTF8
 
 $TrackAYuneBuild = Join-Path $TrackAYuneRun "user\build"
 $TrackAOriginalBuild = Join-Path $WorkRoot "track-a-yune-original-build"
@@ -599,3 +1155,59 @@ This run uses the Rust native_inprocess_benchmark bench and loads each engine DL
 - Summary comparison: summary-comparison.csv.
 - Threshold gate: $ThresholdReadme
 "@ | Set-Content -LiteralPath (Join-Path $OutputRoot "README.md") -Encoding UTF8
+
+$InputDrift = @()
+if ((File-Sha256 $YuneDll) -ne $YuneDllSha256) {
+    $InputDrift += "Yune DLL changed after its measured hash was recorded: $YuneDll"
+}
+if ((File-Sha256 $UpstreamDll) -ne $UpstreamDllSha256) {
+    $InputDrift += "upstream rime.dll changed during the benchmark: $UpstreamDll"
+}
+if ((Tree-Sha256 $SharedSource) -ne $UpstreamSharedTreeSha256) {
+    $InputDrift += "upstream shared tree changed during the benchmark: $SharedSource"
+}
+if ((Tree-Sha256 $BuildSource) -ne $UpstreamBuildTreeSha256) {
+    $InputDrift += "upstream build tree changed during the benchmark: $BuildSource"
+}
+if ((Tree-Sha256 $ProductSchemaRoot) -ne $ProductSchemaTreeSha256) {
+    $InputDrift += "product schema tree changed during the benchmark: $ProductSchemaRoot"
+}
+if ((File-Sha256 $NativeBenchmarkExecutable) -ne $NativeBenchmarkExecutableSha256) {
+    $InputDrift += "native benchmark executable changed during the benchmark: $NativeBenchmarkExecutable"
+}
+if ((File-Sha256 $PSCommandPath) -ne $BenchmarkScriptSha256) {
+    $InputDrift += "benchmark script changed during the benchmark: $PSCommandPath"
+}
+if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds) -and
+    (File-Sha256 $TrackAThresholds) -ne $TrackAThresholdsSha256) {
+    $InputDrift += "Track A thresholds changed during the benchmark: $TrackAThresholds"
+}
+if ($InputDrift.Count -gt 0) {
+    throw "Benchmark input immutability check failed: $($InputDrift -join '; ')"
+}
+foreach ($PathRecord in @(
+    [pscustomobject]@{ Path = $OutputRoot; Label = "OutputRoot" },
+    [pscustomobject]@{ Path = $WorkRoot; Label = "WorkRoot" },
+    [pscustomobject]@{ Path = $UpstreamOracleRoot; Label = "UpstreamOracleRoot" },
+    [pscustomobject]@{ Path = $ProductSchemaRoot; Label = "ProductSchemaRoot" },
+    [pscustomobject]@{ Path = $YuneDll; Label = "YuneDll" },
+    [pscustomobject]@{ Path = $NativeBenchmarkExecutable; Label = "native benchmark executable" }
+)) {
+    $CanonicalNow = Get-CanonicalSafePath $PathRecord.Path $PathRecord.Label
+    if (-not $CanonicalNow.Equals($PathRecord.Path, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "$($PathRecord.Label) physical path changed during the benchmark: [$($PathRecord.Path)] -> [$CanonicalNow]"
+    }
+}
+Assert-RepositorySourceSnapshot $InitialSourceSnapshot "final"
+Set-RunStatus "complete"
+}
+catch {
+    $FailureMessage = $_.Exception.Message
+    try {
+        Set-RunStatus "failed" $FailureMessage
+    }
+    catch {
+        Write-Warning "Unable to record failed benchmark status: $($_.Exception.Message)"
+    }
+    throw
+}

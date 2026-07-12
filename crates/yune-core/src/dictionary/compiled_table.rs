@@ -1,6 +1,6 @@
 use super::{
     DictionaryLookupRecord, RimeCorrectionEntry, RimeToleranceRule, TableDictionary,
-    TableDictionaryAdvancedData, TableEncoder, TableEntry,
+    TableDictionaryAdvancedData, TableEncoder, TableEntry, TableEntryWeightDomain,
 };
 use crate::dictionary::compiled::{
     parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le,
@@ -27,10 +27,13 @@ const MAX_LOOKUP_FIELD_COUNT: usize = 64;
 pub(super) const RIME_TABLE_HEADER_LEN: usize = 68;
 pub(super) const YUNE_TABLE_METADATA_MARKER: &[u8] = b"YUNE-TABLE-META\0";
 const YUNE_TABLE_METADATA_PREFIX: &[u8] = b"YUNE-TABLE-META";
-pub(super) const YUNE_TABLE_METADATA_VERSION: u32 = 1;
-pub(super) const YUNE_TABLE_METADATA_PAYLOAD: [u8; 4] = [1, 0, 0, 0];
-const YUNE_TABLE_METADATA_PAYLOAD_LEN: usize = YUNE_TABLE_METADATA_PAYLOAD.len();
-const YUNE_TABLE_SORT_ORIGINAL: u8 = YUNE_TABLE_METADATA_PAYLOAD[0];
+pub(super) const YUNE_TABLE_METADATA_VERSION: u32 = 2;
+pub(super) const YUNE_TABLE_METADATA_PAYLOAD_LEN: usize = 4;
+pub(super) const YUNE_TABLE_SORT_BY_WEIGHT: u8 = 0;
+pub(super) const YUNE_TABLE_SORT_ORIGINAL: u8 = 1;
+pub(super) const YUNE_TABLE_WEIGHT_NATURAL_LOG: u8 = 1;
+const YUNE_TABLE_METADATA_V1: u32 = 1;
+const YUNE_TABLE_ADVANCED_MARKER: &[u8] = b"YUNE-TABLE-ADV\0";
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RimeTableBinParseError {
@@ -146,6 +149,7 @@ pub struct CompactTableStore {
     syllabary_codes: Vec<String>,
     storage: CompactTableStorage,
     advanced: TableDictionaryAdvancedData,
+    entry_weight_domain: TableEntryWeightDomain,
 }
 
 #[derive(Debug)]
@@ -166,6 +170,16 @@ enum CompactTableStorage {
         entry_count: usize,
         syllable_ids_by_code: HashMap<String, usize>,
     },
+}
+
+#[derive(Clone, Copy, Debug)]
+struct MarisaTableLayout {
+    syllabary_offset: usize,
+    index_offset: usize,
+    string_table_offset: usize,
+    string_table_size: usize,
+    expected_syllable_count: usize,
+    entry_weight_domain: TableEntryWeightDomain,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -313,13 +327,15 @@ impl CompactMarisaStringTable for SafeReadMarisaStringTable {
 impl CompactTableStore {
     #[must_use]
     pub(crate) fn from_dictionary(dictionary: TableDictionary) -> Self {
+        let entry_weight_domain = dictionary.entry_weight_domain();
         let advanced = dictionary.advanced_data();
-        Self::from_entries_and_advanced(dictionary.entries, advanced)
+        Self::from_entries_and_advanced(dictionary.entries, advanced, entry_weight_domain)
     }
 
     fn from_entries_and_advanced(
         entries: Vec<TableEntry>,
         advanced: TableDictionaryAdvancedData,
+        entry_weight_domain: TableEntryWeightDomain,
     ) -> Self {
         let mut syllabary_codes = Vec::<String>::new();
         for entry in &entries {
@@ -371,6 +387,7 @@ impl CompactTableStore {
                 entries: compact_entries,
             },
             advanced,
+            entry_weight_domain,
         }
     }
 
@@ -396,11 +413,18 @@ impl CompactTableStore {
             usize::try_from(read_u32_le(bytes, 36).map_err(map_metadata_error)?)
                 .map_err(|_| RimeTableBinParseError::InvalidCount)?;
 
-        let syllabary_offset =
-            read_offset_ptr(bytes, 44)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
-        advanced.sort_by_weight = read_table_sort_by_weight(bytes, syllabary_offset)?;
         let index_offset =
             read_offset_ptr(bytes, 48)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+        let syllabary_offset =
+            read_offset_ptr(bytes, 44)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+        // Bind legacy weight-domain provenance to the table bytes. The
+        // separately supplied advanced data may have been merged with source
+        // metadata or constructed by a caller, so it cannot carry provenance
+        // for this byte source.
+        let yune_payload_present =
+            yune_advanced_marker_offset(bytes, total_index_end(bytes, index_offset)?)?.is_some();
+        let table_metadata = read_table_metadata(bytes, syllabary_offset, yune_payload_present)?;
+        advanced.sort_by_weight = table_metadata.sort_by_weight;
         let string_table_offset = read_offset_ptr(bytes, 60)?;
         let string_table_size = read_u32_le(bytes, 64).map_err(map_metadata_error)?;
         if string_table_offset.is_some() || string_table_size != 0 {
@@ -412,11 +436,14 @@ impl CompactTableStore {
             return Self::from_marisa_table_bin_byte_source(
                 source,
                 advanced,
-                syllabary_offset,
-                index_offset,
-                string_table_offset,
-                string_table_size as usize,
-                expected_syllable_count,
+                MarisaTableLayout {
+                    syllabary_offset,
+                    index_offset,
+                    string_table_offset,
+                    string_table_size: string_table_size as usize,
+                    expected_syllable_count,
+                    entry_weight_domain: table_metadata.entry_weight_domain,
+                },
             );
         }
 
@@ -436,21 +463,22 @@ impl CompactTableStore {
                 entries,
             },
             advanced,
+            entry_weight_domain: table_metadata.entry_weight_domain,
         })
     }
 
     fn from_marisa_table_bin_byte_source(
         source: Arc<dyn CompactTableByteSource>,
         advanced: TableDictionaryAdvancedData,
-        syllabary_offset: usize,
-        index_offset: usize,
-        string_table_offset: usize,
-        string_table_size: usize,
-        expected_syllable_count: usize,
+        layout: MarisaTableLayout,
     ) -> Result<Self, RimeTableBinParseError> {
-        let string_table = source.marisa_string_table(string_table_offset, string_table_size)?;
-        let syllable_ids =
-            read_marisa_syllabary_ids(source.bytes(), syllabary_offset, expected_syllable_count)?;
+        let string_table =
+            source.marisa_string_table(layout.string_table_offset, layout.string_table_size)?;
+        let syllable_ids = read_marisa_syllabary_ids(
+            source.bytes(),
+            layout.syllabary_offset,
+            layout.expected_syllable_count,
+        )?;
         let syllabary_codes = string_table.keys_for_ids(&syllable_ids)?;
         let syllable_ids_by_code = syllabary_codes
             .iter()
@@ -460,24 +488,62 @@ impl CompactTableStore {
         let entry_count =
             usize::try_from(read_u32_le(source.bytes(), 40).map_err(map_metadata_error)?)
                 .map_err(|_| RimeTableBinParseError::InvalidCount)?;
-        validate_marisa_head_index(source.bytes(), index_offset, syllabary_codes.len())?;
+        validate_marisa_head_index(source.bytes(), layout.index_offset, syllabary_codes.len())?;
 
         Ok(Self {
             syllabary_codes,
             storage: CompactTableStorage::MarisaBacked {
                 string_table,
                 source,
-                index_offset,
+                index_offset: layout.index_offset,
                 entry_count,
                 syllable_ids_by_code,
             },
             advanced,
+            entry_weight_domain: layout.entry_weight_domain,
         })
     }
 
     #[must_use]
     pub fn syllabary_codes(&self) -> &[String] {
         &self.syllabary_codes
+    }
+
+    pub(crate) fn has_strict_code_prefix(&self, prefix: &str) -> bool {
+        match &self.storage {
+            CompactTableStorage::Owned { code_groups, .. } => {
+                let mut index = self.group_index(prefix).unwrap_or_else(|index| index);
+                if code_groups
+                    .get(index)
+                    .is_some_and(|group| group.code == prefix)
+                {
+                    index += 1;
+                }
+                code_groups
+                    .get(index)
+                    .is_some_and(|group| group.code.starts_with(prefix))
+            }
+            CompactTableStorage::ByteBacked {
+                source,
+                code_groups,
+                ..
+            } => {
+                let bytes = source.bytes();
+                let mut index = self.group_index(prefix).unwrap_or_else(|index| index);
+                if code_groups
+                    .get(index)
+                    .is_some_and(|group| group.code.as_str(bytes) == prefix)
+                {
+                    index += 1;
+                }
+                code_groups
+                    .get(index)
+                    .is_some_and(|group| group.code.as_str(bytes).starts_with(prefix))
+            }
+            CompactTableStorage::MarisaBacked { .. } => self
+                .prefix_candidates(prefix)
+                .any(|entry| entry.into_parts().0.len() > prefix.len()),
+        }
     }
 
     #[must_use]
@@ -525,6 +591,11 @@ impl CompactTableStore {
     }
 
     #[must_use]
+    pub(crate) fn entry_weight_domain(&self) -> TableEntryWeightDomain {
+        self.entry_weight_domain
+    }
+
+    #[must_use]
     pub fn to_table_dictionary(&self) -> TableDictionary {
         let entries = self
             .all_codes()
@@ -537,7 +608,9 @@ impl CompactTableStore {
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>();
-        TableDictionary::with_advanced_data(entries, self.advanced.clone())
+        let mut dictionary = TableDictionary::with_advanced_data(entries, self.advanced.clone());
+        dictionary.set_entry_weight_domain(self.entry_weight_domain);
+        dictionary
     }
 
     #[must_use]
@@ -1826,7 +1899,8 @@ pub fn parse_rime_table_bin_advanced_data_with_options(
             role: "byte-backed advanced table entries".to_owned(),
         });
     }
-    advanced.data.sort_by_weight = read_table_sort_by_weight(bytes, syllabary_offset)?;
+    let table_metadata = read_table_metadata(bytes, syllabary_offset, advanced.present)?;
+    advanced.data.sort_by_weight = table_metadata.sort_by_weight;
     Ok(advanced.data)
 }
 
@@ -1862,21 +1936,13 @@ fn lookup_record_payload_offset_for_table_bin(
     ensure_len(bytes, 68)?;
     let index_offset =
         read_offset_ptr(bytes, 48)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
-    let marker = b"YUNE-TABLE-ADV\0";
     let advanced_offset = total_index_end(bytes, index_offset)?;
-    let Some(marker_offset) = bytes
-        .get(advanced_offset..)
-        .and_then(|tail| {
-            tail.windows(marker.len())
-                .position(|window| window == marker)
-        })
-        .map(|position| advanced_offset + position)
-    else {
+    let Some(marker_offset) = yune_advanced_marker_offset(bytes, advanced_offset)? else {
         return Ok(None);
     };
 
     let mut cursor = marker_offset
-        .checked_add(marker.len())
+        .checked_add(YUNE_TABLE_ADVANCED_MARKER.len())
         .ok_or(RimeTableBinParseError::OutOfBounds)?;
     let stem_count = read_count(bytes, cursor)?;
     cursor = cursor
@@ -2516,15 +2582,42 @@ pub fn parse_rime_table_bin_dictionary(
         total_index_end(bytes, index_offset)?,
         RimeTableBinAdvancedDataOptions::default(),
     )?;
-    advanced.data.sort_by_weight = read_table_sort_by_weight(bytes, syllabary_offset)?;
+    let table_metadata = read_table_metadata(bytes, syllabary_offset, advanced.present)?;
+    advanced.data.sort_by_weight = table_metadata.sort_by_weight;
     entries.extend(advanced.entries);
-    Ok(TableDictionary::with_advanced_data(entries, advanced.data))
+    let mut dictionary = TableDictionary::with_advanced_data(entries, advanced.data);
+    dictionary.set_entry_weight_domain(table_metadata.entry_weight_domain);
+    Ok(dictionary)
 }
 
-fn read_table_sort_by_weight(
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct ParsedTableMetadata {
+    sort_by_weight: Option<bool>,
+    entry_weight_domain: TableEntryWeightDomain,
+}
+
+fn read_table_metadata(
     bytes: &[u8],
     syllabary_offset: usize,
-) -> Result<Option<bool>, RimeTableBinParseError> {
+    yune_payload_present: bool,
+) -> Result<ParsedTableMetadata, RimeTableBinParseError> {
+    if let Some(metadata) = read_declared_table_metadata(bytes, syllabary_offset)? {
+        return Ok(metadata);
+    }
+    Ok(ParsedTableMetadata {
+        sort_by_weight: None,
+        entry_weight_domain: if yune_payload_present {
+            TableEntryWeightDomain::Raw
+        } else {
+            TableEntryWeightDomain::NaturalLog
+        },
+    })
+}
+
+fn read_declared_table_metadata(
+    bytes: &[u8],
+    syllabary_offset: usize,
+) -> Result<Option<ParsedTableMetadata>, RimeTableBinParseError> {
     if syllabary_offset < RIME_TABLE_HEADER_LEN || syllabary_offset > bytes.len() {
         return Err(RimeTableBinParseError::OutOfBounds);
     }
@@ -2549,12 +2642,6 @@ fn read_table_sort_by_weight(
     cursor = cursor
         .checked_add(4)
         .ok_or(RimeTableBinParseError::OutOfBounds)?;
-    if version != YUNE_TABLE_METADATA_VERSION {
-        return Err(RimeTableBinParseError::UnsupportedSection {
-            role: format!("Yune table metadata version {version}"),
-        });
-    }
-
     let payload_len = usize::try_from(read_u32_le(gap, cursor).map_err(map_metadata_error)?)
         .map_err(|_| RimeTableBinParseError::InvalidLength)?;
     cursor = cursor
@@ -2572,18 +2659,103 @@ fn read_table_sort_by_weight(
     let payload = gap
         .get(cursor..payload_end)
         .ok_or(RimeTableBinParseError::InvalidLength)?;
-    if payload[1..] != YUNE_TABLE_METADATA_PAYLOAD[1..] {
-        return Err(RimeTableBinParseError::UnsupportedSection {
-            role: "nonzero Yune table metadata reserved bytes".to_owned(),
-        });
-    }
-
-    match payload[0] {
-        YUNE_TABLE_SORT_ORIGINAL => Ok(Some(false)),
-        policy => Err(RimeTableBinParseError::UnsupportedSection {
-            role: format!("Yune table sort policy {policy}"),
+    match version {
+        YUNE_TABLE_METADATA_V1 => {
+            if payload != [YUNE_TABLE_SORT_ORIGINAL, 0, 0, 0] {
+                return Err(RimeTableBinParseError::UnsupportedSection {
+                    role: "invalid Yune table metadata v1 payload".to_owned(),
+                });
+            }
+            Ok(Some(ParsedTableMetadata {
+                sort_by_weight: Some(false),
+                entry_weight_domain: TableEntryWeightDomain::Raw,
+            }))
+        }
+        YUNE_TABLE_METADATA_VERSION => {
+            if payload[2..] != [0, 0] {
+                return Err(RimeTableBinParseError::UnsupportedSection {
+                    role: "nonzero Yune table metadata reserved bytes".to_owned(),
+                });
+            }
+            if payload[1] != YUNE_TABLE_WEIGHT_NATURAL_LOG {
+                return Err(RimeTableBinParseError::UnsupportedSection {
+                    role: format!("Yune table weight domain {}", payload[1]),
+                });
+            }
+            let sort_by_weight = match payload[0] {
+                YUNE_TABLE_SORT_BY_WEIGHT => true,
+                YUNE_TABLE_SORT_ORIGINAL => false,
+                policy => {
+                    return Err(RimeTableBinParseError::UnsupportedSection {
+                        role: format!("Yune table sort policy {policy}"),
+                    });
+                }
+            };
+            Ok(Some(ParsedTableMetadata {
+                sort_by_weight: Some(sort_by_weight),
+                entry_weight_domain: TableEntryWeightDomain::NaturalLog,
+            }))
+        }
+        _ => Err(RimeTableBinParseError::UnsupportedSection {
+            role: format!("Yune table metadata version {version}"),
         }),
     }
+}
+
+/// Byte length needed to inspect the optional Yune metadata gap without
+/// reading a table's dictionary payload.
+pub fn rime_table_bin_metadata_probe_len(
+    header: impl AsRef<[u8]>,
+) -> Result<usize, RimeTableBinParseError> {
+    let header = header.as_ref();
+    ensure_len(header, RIME_TABLE_HEADER_LEN)?;
+    let raw = read_i32_le(header, 44).map_err(map_metadata_error)?;
+    if raw == 0 {
+        return Err(RimeTableBinParseError::MissingRequiredSection);
+    }
+    44usize
+        .checked_add_signed(raw as isize)
+        .ok_or(RimeTableBinParseError::OutOfBounds)
+}
+
+/// Classifies a recognized Yune metadata gap from a header-sized prefix.
+/// `None` means the table has no declared Yune weight domain and needs the
+/// legacy payload classifier (or a conservative source-backed rebuild).
+pub fn rime_table_bin_declared_weight_upgrade(
+    prefix: impl AsRef<[u8]>,
+) -> Result<Option<bool>, RimeTableBinParseError> {
+    let prefix = prefix.as_ref();
+    let syllabary_offset = rime_table_bin_metadata_probe_len(prefix)?;
+    Ok(read_declared_table_metadata(prefix, syllabary_offset)?
+        .map(|metadata| metadata.entry_weight_domain == TableEntryWeightDomain::Raw))
+}
+
+/// Whether an identifiable table was emitted by Yune's pre-v2 raw-weight
+/// writer and should be rebuilt when its source dictionary is available.
+pub fn rime_table_bin_requires_weight_upgrade(
+    bytes: impl AsRef<[u8]>,
+) -> Result<bool, RimeTableBinParseError> {
+    let bytes = bytes.as_ref();
+    ensure_len(bytes, RIME_TABLE_HEADER_LEN)?;
+    let syllabary_offset =
+        read_offset_ptr(bytes, 44)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+    if let Some(metadata) = read_declared_table_metadata(bytes, syllabary_offset)? {
+        return Ok(metadata.entry_weight_domain == TableEntryWeightDomain::Raw);
+    }
+    let index_offset =
+        read_offset_ptr(bytes, 48)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+    let advanced = read_yune_table_advanced_payload(
+        bytes,
+        total_index_end(bytes, index_offset)?,
+        RimeTableBinAdvancedDataOptions {
+            load_lookup_records: false,
+            byte_back_lookup_records: false,
+        },
+    )?;
+    Ok(
+        read_table_metadata(bytes, syllabary_offset, advanced.present)?.entry_weight_domain
+            == TableEntryWeightDomain::Raw,
+    )
 }
 
 fn read_syllabary(bytes: &[u8], offset: usize) -> Result<Vec<String>, RimeTableBinParseError> {
@@ -2665,6 +2837,7 @@ fn read_head_index_entries(
 struct AdvancedTablePayload {
     entries: Vec<TableEntry>,
     data: TableDictionaryAdvancedData,
+    present: bool,
 }
 
 fn total_index_end(bytes: &[u8], offset: usize) -> Result<usize, RimeTableBinParseError> {
@@ -2680,18 +2853,12 @@ fn read_yune_table_advanced_payload(
     offset: usize,
     options: RimeTableBinAdvancedDataOptions,
 ) -> Result<AdvancedTablePayload, RimeTableBinParseError> {
-    let marker = b"YUNE-TABLE-ADV\0";
-    let Some(marker_offset) = bytes
-        .get(offset..)
-        .and_then(|tail| {
-            tail.windows(marker.len())
-                .position(|window| window == marker)
-        })
-        .map(|position| offset + position)
-    else {
+    let marker = YUNE_TABLE_ADVANCED_MARKER;
+    let Some(marker_offset) = yune_advanced_marker_offset(bytes, offset)? else {
         return Ok(AdvancedTablePayload {
             entries: Vec::new(),
             data: TableDictionaryAdvancedData::default(),
+            present: false,
         });
     };
 
@@ -2786,7 +2953,105 @@ fn read_yune_table_advanced_payload(
             byte_backed_lookup_records: None,
             ..TableDictionaryAdvancedData::default()
         },
+        present: true,
     })
+}
+
+fn yune_advanced_marker_offset(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<Option<usize>, RimeTableBinParseError> {
+    let Some(tail) = bytes.get(offset..) else {
+        return Ok(None);
+    };
+    let marker_position = tail
+        .windows(YUNE_TABLE_ADVANCED_MARKER.len())
+        .rposition(|window| window == YUNE_TABLE_ADVANCED_MARKER);
+    let Some(marker_position) = marker_position else {
+        return Ok(None);
+    };
+    let marker_offset = offset
+        .checked_add(marker_position)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+
+    match validate_yune_advanced_payload(bytes, marker_offset) {
+        Ok(()) => Ok(Some(marker_offset)),
+        Err(error) if table_claims_yune_metadata(bytes) => Err(error),
+        // A standard table may contain the marker bytes in candidate text.
+        // Without Yune header metadata, only a complete, tail-anchored payload
+        // establishes legacy Yune provenance.
+        Err(_) => Ok(None),
+    }
+}
+
+fn table_claims_yune_metadata(bytes: &[u8]) -> bool {
+    let Ok(Some(syllabary_offset)) = read_offset_ptr(bytes, 44) else {
+        return false;
+    };
+    bytes
+        .get(RIME_TABLE_HEADER_LEN..syllabary_offset)
+        .is_some_and(|gap| gap.starts_with(YUNE_TABLE_METADATA_PREFIX))
+}
+
+fn validate_yune_advanced_payload(
+    bytes: &[u8],
+    marker_offset: usize,
+) -> Result<(), RimeTableBinParseError> {
+    let mut cursor = marker_offset
+        .checked_add(YUNE_TABLE_ADVANCED_MARKER.len())
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let stem_count = read_count(bytes, cursor)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    for _ in 0..stem_count {
+        cursor = skip_len_string(bytes, cursor)?;
+        let value_count = read_count(bytes, cursor)?;
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        for _ in 0..value_count {
+            cursor = skip_len_string(bytes, cursor)?;
+        }
+    }
+
+    let entry_count = read_count(bytes, cursor)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    for _ in 0..entry_count {
+        cursor = skip_len_string(bytes, cursor)?;
+        cursor = skip_len_string(bytes, cursor)?;
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        if cursor > bytes.len() {
+            return Err(RimeTableBinParseError::OutOfBounds);
+        }
+    }
+
+    let rule_count = read_count(bytes, cursor)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    for _ in 0..rule_count {
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        if cursor > bytes.len() {
+            return Err(RimeTableBinParseError::OutOfBounds);
+        }
+        cursor = skip_len_string(bytes, cursor)?;
+    }
+
+    if cursor == bytes.len() {
+        return Ok(());
+    }
+    let (_, _, next_cursor) = read_correction_tolerance_payload(bytes, cursor)?;
+    if next_cursor >= bytes.len() {
+        return Err(RimeTableBinParseError::InvalidLength);
+    }
+    skip_lookup_record_payload(bytes, next_cursor)
 }
 
 fn read_correction_tolerance_payload(

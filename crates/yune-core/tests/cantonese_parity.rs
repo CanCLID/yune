@@ -1422,7 +1422,7 @@ fn dictionary_yaml_from_oracle_comments(name: &str, comments: &[&str]) -> String
 
 fn typeduck_public_schema_asset(relative_path: &str) -> String {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../apps/yune-web/source/public/schema")
+        .join("../../apps/yune-web/public/schema")
         .join(relative_path);
     std::fs::read_to_string(&path)
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
@@ -1660,7 +1660,17 @@ fn m28_followup_default_confirm_partial_candidate_recomposes() {
     engine.set_input(input);
 
     let selected = engine.context().candidates[0].clone();
-    assert_eq!(selected.text, "測");
+    assert_eq!(
+        selected.text,
+        "測",
+        "leading candidates: {:?}",
+        engine
+            .context()
+            .candidates
+            .iter()
+            .take(8)
+            .collect::<Vec<_>>()
+    );
     assert_eq!(engine.process_char(' ').as_deref(), Some("測"));
 
     assert_eq!(engine.context().composition.input, remaining_input);

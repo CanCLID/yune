@@ -191,7 +191,7 @@ impl RealSchema {
     }
 
     const fn asset_set(self) -> &'static str {
-        "apps/yune-web/source/public/schema"
+        "apps/yune-web/public/schema"
     }
 }
 
@@ -1343,7 +1343,7 @@ fn yaml_string_list(value: &Value, path: &str) -> Vec<String> {
 }
 
 fn browser_app_schema_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/source/public/schema")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public/schema")
 }
 
 fn real_per_key_name(

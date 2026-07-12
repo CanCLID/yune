@@ -2125,6 +2125,44 @@ schema:\n  schema_id: luna\n  name: Luna\n  version: '1'\nengine:\n  translators
         yune_core::RimeDictArtifactStatus::ReusedFresh
     );
 
+    let table_path = user.join("build").join("luna.table.bin");
+    let mut legacy_raw_marker_table =
+        fs::read(&table_path).expect("fresh v2 table should be readable");
+    let syllabary_relative = i32::from_le_bytes(
+        legacy_raw_marker_table[44..48]
+            .try_into()
+            .expect("syllabary offset should fit"),
+    );
+    let syllabary_offset = usize::try_from(44isize + syllabary_relative as isize)
+        .expect("syllabary offset should be nonnegative");
+    let metadata_len = syllabary_offset - 68;
+    legacy_raw_marker_table.drain(68..syllabary_offset);
+    for field_offset in [44usize, 48] {
+        let old = i32::from_le_bytes(
+            legacy_raw_marker_table[field_offset..field_offset + 4]
+                .try_into()
+                .expect("table offset should fit"),
+        );
+        legacy_raw_marker_table[field_offset..field_offset + 4]
+            .copy_from_slice(&(old - metadata_len as i32).to_le_bytes());
+    }
+    assert!(
+        yune_core::rime_table_bin_requires_weight_upgrade(&legacy_raw_marker_table)
+            .expect("legacy Yune marker table should classify")
+    );
+    fs::write(&table_path, legacy_raw_marker_table).expect("legacy table should be written");
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let upgraded_weight_domain = workspace_dictionary_rebuild_reports();
+    assert_eq!(
+        upgraded_weight_domain[0].report.table,
+        yune_core::RimeDictArtifactStatus::Rebuilt,
+        "a checksum-fresh legacy Yune raw-weight table must be migrated when source exists"
+    );
+    assert!(!yune_core::rime_table_bin_requires_weight_upgrade(
+        fs::read(&table_path).expect("upgraded table should read")
+    )
+    .expect("upgraded table should classify"));
+
     let poet_path = user.join("build").join("luna.poet.bin");
     let current_poet = fs::read(&poet_path).expect("poet should be readable");
     fs::create_dir_all(shared.join("build")).expect("prebuilt dir should be created");

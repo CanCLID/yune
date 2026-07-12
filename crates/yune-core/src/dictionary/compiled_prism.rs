@@ -38,6 +38,8 @@ pub struct RimePrismSpellingDescriptor {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PrismLookupCode<'a> {
     pub code: &'a str,
+    pub syllable_id: usize,
+    pub normal: bool,
     pub abbreviation: bool,
     pub correction: bool,
     pub credibility: f32,
@@ -161,6 +163,8 @@ impl RimePrismBinPayload {
             };
             match visitor(PrismLookupCode {
                 code,
+                syllable_id: syllable_index,
+                normal: descriptor.spelling_type == 0,
                 abbreviation: descriptor.spelling_type == 2,
                 correction: descriptor.is_correction,
                 credibility: descriptor.credibility,
@@ -187,6 +191,8 @@ impl RimePrismBinPayload {
                 let code = syllabary_codes.get(syllable_index)?;
                 Some(PrismLookupCode {
                     code,
+                    syllable_id: syllable_index,
+                    normal: descriptor.spelling_type == 0,
                     abbreviation: descriptor.spelling_type == 2,
                     correction: descriptor.is_correction,
                     credibility: descriptor.credibility,
@@ -572,6 +578,8 @@ impl ByteBackedRimePrismPayload {
             }
             return visitor(PrismLookupCode {
                 code: &syllabary_codes[spelling_index],
+                syllable_id: spelling_index,
+                normal: true,
                 abbreviation: false,
                 correction: false,
                 credibility: 0.0,
@@ -597,6 +605,8 @@ impl ByteBackedRimePrismPayload {
             };
             match visitor(PrismLookupCode {
                 code,
+                syllable_id: syllable_index,
+                normal: descriptor.spelling_type == 0,
                 abbreviation: descriptor.spelling_type == 2,
                 correction: descriptor.is_correction,
                 credibility: descriptor.credibility,
@@ -628,6 +638,8 @@ impl ByteBackedRimePrismPayload {
             }
             return vec![PrismLookupCode {
                 code: &syllabary_codes[spelling_index],
+                syllable_id: spelling_index,
+                normal: true,
                 abbreviation: false,
                 correction: false,
                 credibility: 0.0,
@@ -654,6 +666,8 @@ impl ByteBackedRimePrismPayload {
             };
             lookups.push(PrismLookupCode {
                 code,
+                syllable_id: syllable_index,
+                normal: descriptor.spelling_type == 0,
                 abbreviation: descriptor.spelling_type == 2,
                 correction: descriptor.is_correction,
                 credibility: descriptor.credibility,

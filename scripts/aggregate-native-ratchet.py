@@ -30,10 +30,18 @@ from typing import Any, Sequence
 
 PROVENANCE_KEYS = (
     "source_commit",
+    "source_tree",
     "yune_git_head",
+    "source_clean",
+    "allow_dirty",
+    "source_content_binding_sha256",
     "measured_yune_dll_sha256",
     "upstream_rime_dll_sha256",
+    "upstream_shared_tree_sha256",
+    "upstream_build_tree_sha256",
     "product_schema_tree_sha256",
+    "native_benchmark_executable_sha256",
+    "benchmark_script_sha256",
     "track_a_inputs",
     "track_b_inputs",
     "iterations",
@@ -43,10 +51,11 @@ PROVENANCE_KEYS = (
     "skip_track_b",
 )
 TOOL_NAME = "aggregate-native-ratchet.py"
-TOOL_VERSION = "6"
+TOOL_VERSION = "7"
 REQUIRED_RUN_COUNT = 5
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUN_FILES = (
+    "run-status.txt",
     "environment.txt",
     "external-provenance.txt",
     "summary-comparison.csv",
@@ -329,9 +338,14 @@ def read_environment(run_path: Path) -> dict[str, str]:
     if re.fullmatch(r"[0-9a-fA-F]{40}", environment["source_commit"]) is None:
         raise EvidenceError(f"{run_path} source_commit must be 40 hexadecimal characters")
     for key in (
+        "source_content_binding_sha256",
         "measured_yune_dll_sha256",
         "upstream_rime_dll_sha256",
+        "upstream_shared_tree_sha256",
+        "upstream_build_tree_sha256",
         "product_schema_tree_sha256",
+        "native_benchmark_executable_sha256",
+        "benchmark_script_sha256",
     ):
         if re.fullmatch(r"[0-9a-fA-F]{64}", environment[key]) is None:
             raise EvidenceError(f"{run_path} {key} must be 64 hexadecimal characters")
@@ -343,6 +357,12 @@ def read_environment(run_path: Path) -> dict[str, str]:
             f"{run_path} yune_git_head does not match source_commit: "
             f"{yune_git_head} != {environment['source_commit']}"
         )
+    if re.fullmatch(r"[0-9a-fA-F]{40}", environment["source_tree"]) is None:
+        raise EvidenceError(f"{run_path} source_tree must be 40 hexadecimal characters")
+    if environment["source_clean"] != "True":
+        raise EvidenceError(f"{run_path} signed benchmark source must be clean")
+    if environment["allow_dirty"] != "False":
+        raise EvidenceError(f"{run_path} signed benchmark must not allow dirty source")
     if environment["deploy_product_before_benchmark"] != "True":
         raise EvidenceError(
             f"{run_path} must record deploy_product_before_benchmark=True"
@@ -350,6 +370,15 @@ def read_environment(run_path: Path) -> dict[str, str]:
     if environment["skip_track_b"] != "False":
         raise EvidenceError(f"{run_path} must record skip_track_b=False")
     return environment
+
+
+def validate_run_status(run_path: Path) -> None:
+    status = _read_key_value_file(run_path / "run-status.txt", required=True)
+    if status.get("status") != "complete":
+        raise EvidenceError(
+            f"{run_path} benchmark run status must be complete; "
+            f"found {status.get('status')!r}"
+        )
 
 
 def _recorded_input_set(value: str, label: str) -> set[str]:
@@ -523,6 +552,7 @@ def _read_track_a_ratios(
 def read_run(path: Path, thresholds: Sequence[Threshold]) -> RunEvidence:
     if not path.is_dir():
         raise EvidenceError(f"run directory does not exist: {path}")
+    validate_run_status(path)
     threshold_map = {threshold.key: threshold for threshold in thresholds}
     checked = _read_threshold_check(path / "threshold-check.csv", threshold_map)
     expected_ratio_keys = {

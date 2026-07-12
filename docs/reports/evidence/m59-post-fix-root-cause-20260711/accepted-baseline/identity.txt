@@ -1,0 +1,12 @@
+yune_commit=afb7079b71f7f9353845114ff3e310c0a38b9b87
+yune_status=
+librime_source_commit=33e78140250125871856cdc5b42ddc6a5fcd3cd4
+librime_source_status=
+librime_build_commit=33e78140250125871856cdc5b42ddc6a5fcd3cd4
+librime_build_status=?? deps/boost_1_89_0.tar.gz
+track_a=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu
+track_b=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80
+product_deployment=enabled

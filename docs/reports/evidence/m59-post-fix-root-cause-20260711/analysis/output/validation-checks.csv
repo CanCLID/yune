@@ -1,0 +1,122 @@
+check,scope,status,severity,expected,observed,source
+run_directory_exists,run-1,pass,error,True,True,
+track_a_ratio_count_and_set,run-1,pass,error,17 exact Track A rows,"17 rows; b,ceshi,ceshiyixiachangjushuruxingnengzenyang,che,chuang,cszysmsrsd,dazisudu,hao,j,n,ni,yi,zh,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,zhongdengchangdu,zhongguo,zybfshmsru",/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/summary-comparison.csv
+summary_total_rows,run-1,pass,error,41,41,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/summary.csv
+summary_track_a_engine_rows,run-1,pass,error,34 rows (17 inputs x 2 engines),34,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/summary.csv
+samples_total_rows,run-1,pass,error,3007,3007,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/samples.csv
+track_a_sample_grain,run-1/yune,pass,error,17 inputs x 80 samples,1360 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/samples.csv
+track_a_sample_grain,run-1/librime-1.17.0,pass,error,17 inputs x 80 samples,1360 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/samples.csv
+track_b_sample_grain,run-1,pass,error,80,80,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/samples.csv
+startup_or_session_sample_grain,run-1/track-a-comparison/yune/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/samples.csv
+startup_or_session_sample_grain,run-1/track-a-comparison/librime-1.17.0/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/samples.csv
+startup_or_session_sample_grain,run-1/track-a-comparison/yune/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/samples.csv
+startup_or_session_sample_grain,run-1/track-a-comparison/librime-1.17.0/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/samples.csv
+startup_or_session_sample_grain,run-1/track-b-product/yune/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/samples.csv
+startup_or_session_sample_grain,run-1/track-b-product/yune/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/samples.csv
+m37_key_sample_grain,run-1,pass,error,18 inputs x 80 samples,1440 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/m37_metrics.csv
+raw_lookup_track_a_set,run-1,pass,error,17 exact Track A inputs,17 rows,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/raw_lookup_microbench.csv
+candidate_snapshot_grain,run-1,pass,error,175 rows (17 x 2 x 5 + 1 x 5),175 rows; per-key counts=[5],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1/candidate_snapshots.csv
+yune_commit,run-1,pass,error,afb7079b71f7f9353845114ff3e310c0a38b9b87,afb7079b71f7f9353845114ff3e310c0a38b9b87,
+librime_commit,run-1,pass,error,33e78140250125871856cdc5b42ddc6a5fcd3cd4,33e78140250125871856cdc5b42ddc6a5fcd3cd4,
+yune_binary_hash,run-1,pass,error,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,
+librime_binary_hash,run-1,pass,error,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,
+yune_worktree_clean,run-1,pass,error,clean detached,[],
+run_directory_exists,run-2,pass,error,True,True,
+track_a_ratio_count_and_set,run-2,pass,error,17 exact Track A rows,"17 rows; b,ceshi,ceshiyixiachangjushuruxingnengzenyang,che,chuang,cszysmsrsd,dazisudu,hao,j,n,ni,yi,zh,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,zhongdengchangdu,zhongguo,zybfshmsru",/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/summary-comparison.csv
+summary_total_rows,run-2,pass,error,41,41,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/summary.csv
+summary_track_a_engine_rows,run-2,pass,error,34 rows (17 inputs x 2 engines),34,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/summary.csv
+samples_total_rows,run-2,pass,error,3007,3007,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/samples.csv
+track_a_sample_grain,run-2/yune,pass,error,17 inputs x 80 samples,1360 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/samples.csv
+track_a_sample_grain,run-2/librime-1.17.0,pass,error,17 inputs x 80 samples,1360 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/samples.csv
+track_b_sample_grain,run-2,pass,error,80,80,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/samples.csv
+startup_or_session_sample_grain,run-2/track-a-comparison/yune/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/samples.csv
+startup_or_session_sample_grain,run-2/track-a-comparison/librime-1.17.0/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/samples.csv
+startup_or_session_sample_grain,run-2/track-a-comparison/yune/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/samples.csv
+startup_or_session_sample_grain,run-2/track-a-comparison/librime-1.17.0/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/samples.csv
+startup_or_session_sample_grain,run-2/track-b-product/yune/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/samples.csv
+startup_or_session_sample_grain,run-2/track-b-product/yune/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/samples.csv
+m37_key_sample_grain,run-2,pass,error,18 inputs x 80 samples,1440 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/m37_metrics.csv
+raw_lookup_track_a_set,run-2,pass,error,17 exact Track A inputs,17 rows,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/raw_lookup_microbench.csv
+candidate_snapshot_grain,run-2,pass,error,175 rows (17 x 2 x 5 + 1 x 5),175 rows; per-key counts=[5],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2/candidate_snapshots.csv
+yune_commit,run-2,pass,error,afb7079b71f7f9353845114ff3e310c0a38b9b87,afb7079b71f7f9353845114ff3e310c0a38b9b87,
+librime_commit,run-2,pass,error,33e78140250125871856cdc5b42ddc6a5fcd3cd4,33e78140250125871856cdc5b42ddc6a5fcd3cd4,
+yune_binary_hash,run-2,pass,error,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,
+librime_binary_hash,run-2,pass,error,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,
+yune_worktree_clean,run-2,pass,error,clean detached,[],
+run_directory_exists,run-3,pass,error,True,True,
+track_a_ratio_count_and_set,run-3,pass,error,17 exact Track A rows,"17 rows; b,ceshi,ceshiyixiachangjushuruxingnengzenyang,che,chuang,cszysmsrsd,dazisudu,hao,j,n,ni,yi,zh,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,zhongdengchangdu,zhongguo,zybfshmsru",/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/summary-comparison.csv
+summary_total_rows,run-3,pass,error,41,41,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/summary.csv
+summary_track_a_engine_rows,run-3,pass,error,34 rows (17 inputs x 2 engines),34,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/summary.csv
+samples_total_rows,run-3,pass,error,3007,3007,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/samples.csv
+track_a_sample_grain,run-3/yune,pass,error,17 inputs x 80 samples,1360 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/samples.csv
+track_a_sample_grain,run-3/librime-1.17.0,pass,error,17 inputs x 80 samples,1360 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/samples.csv
+track_b_sample_grain,run-3,pass,error,80,80,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/samples.csv
+startup_or_session_sample_grain,run-3/track-a-comparison/yune/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/samples.csv
+startup_or_session_sample_grain,run-3/track-a-comparison/librime-1.17.0/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/samples.csv
+startup_or_session_sample_grain,run-3/track-a-comparison/yune/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/samples.csv
+startup_or_session_sample_grain,run-3/track-a-comparison/librime-1.17.0/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/samples.csv
+startup_or_session_sample_grain,run-3/track-b-product/yune/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/samples.csv
+startup_or_session_sample_grain,run-3/track-b-product/yune/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/samples.csv
+m37_key_sample_grain,run-3,pass,error,18 inputs x 80 samples,1440 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/m37_metrics.csv
+raw_lookup_track_a_set,run-3,pass,error,17 exact Track A inputs,17 rows,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/raw_lookup_microbench.csv
+candidate_snapshot_grain,run-3,pass,error,175 rows (17 x 2 x 5 + 1 x 5),175 rows; per-key counts=[5],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3/candidate_snapshots.csv
+yune_commit,run-3,pass,error,afb7079b71f7f9353845114ff3e310c0a38b9b87,afb7079b71f7f9353845114ff3e310c0a38b9b87,
+librime_commit,run-3,pass,error,33e78140250125871856cdc5b42ddc6a5fcd3cd4,33e78140250125871856cdc5b42ddc6a5fcd3cd4,
+yune_binary_hash,run-3,pass,error,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,
+librime_binary_hash,run-3,pass,error,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,
+yune_worktree_clean,run-3,pass,error,clean detached,[],
+run_directory_exists,run-4,pass,error,True,True,
+track_a_ratio_count_and_set,run-4,pass,error,17 exact Track A rows,"17 rows; b,ceshi,ceshiyixiachangjushuruxingnengzenyang,che,chuang,cszysmsrsd,dazisudu,hao,j,n,ni,yi,zh,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,zhongdengchangdu,zhongguo,zybfshmsru",/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/summary-comparison.csv
+summary_total_rows,run-4,pass,error,41,41,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/summary.csv
+summary_track_a_engine_rows,run-4,pass,error,34 rows (17 inputs x 2 engines),34,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/summary.csv
+samples_total_rows,run-4,pass,error,3007,3007,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/samples.csv
+track_a_sample_grain,run-4/yune,pass,error,17 inputs x 80 samples,1360 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/samples.csv
+track_a_sample_grain,run-4/librime-1.17.0,pass,error,17 inputs x 80 samples,1360 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/samples.csv
+track_b_sample_grain,run-4,pass,error,80,80,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/samples.csv
+startup_or_session_sample_grain,run-4/track-a-comparison/yune/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/samples.csv
+startup_or_session_sample_grain,run-4/track-a-comparison/librime-1.17.0/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/samples.csv
+startup_or_session_sample_grain,run-4/track-a-comparison/yune/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/samples.csv
+startup_or_session_sample_grain,run-4/track-a-comparison/librime-1.17.0/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/samples.csv
+startup_or_session_sample_grain,run-4/track-b-product/yune/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/samples.csv
+startup_or_session_sample_grain,run-4/track-b-product/yune/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/samples.csv
+m37_key_sample_grain,run-4,pass,error,18 inputs x 80 samples,1440 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/m37_metrics.csv
+raw_lookup_track_a_set,run-4,pass,error,17 exact Track A inputs,17 rows,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/raw_lookup_microbench.csv
+candidate_snapshot_grain,run-4,pass,error,175 rows (17 x 2 x 5 + 1 x 5),175 rows; per-key counts=[5],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4/candidate_snapshots.csv
+yune_commit,run-4,pass,error,afb7079b71f7f9353845114ff3e310c0a38b9b87,afb7079b71f7f9353845114ff3e310c0a38b9b87,
+librime_commit,run-4,pass,error,33e78140250125871856cdc5b42ddc6a5fcd3cd4,33e78140250125871856cdc5b42ddc6a5fcd3cd4,
+yune_binary_hash,run-4,pass,error,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,
+librime_binary_hash,run-4,pass,error,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,
+yune_worktree_clean,run-4,pass,error,clean detached,[],
+run_directory_exists,run-5,pass,error,True,True,
+track_a_ratio_count_and_set,run-5,pass,error,17 exact Track A rows,"17 rows; b,ceshi,ceshiyixiachangjushuruxingnengzenyang,che,chuang,cszysmsrsd,dazisudu,hao,j,n,ni,yi,zh,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,zhongdengchangdu,zhongguo,zybfshmsru",/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/summary-comparison.csv
+summary_total_rows,run-5,pass,error,41,41,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/summary.csv
+summary_track_a_engine_rows,run-5,pass,error,34 rows (17 inputs x 2 engines),34,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/summary.csv
+samples_total_rows,run-5,pass,error,3007,3007,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/samples.csv
+track_a_sample_grain,run-5/yune,pass,error,17 inputs x 80 samples,1360 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/samples.csv
+track_a_sample_grain,run-5/librime-1.17.0,pass,error,17 inputs x 80 samples,1360 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/samples.csv
+track_b_sample_grain,run-5,pass,error,80,80,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/samples.csv
+startup_or_session_sample_grain,run-5/track-a-comparison/yune/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/samples.csv
+startup_or_session_sample_grain,run-5/track-a-comparison/librime-1.17.0/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/samples.csv
+startup_or_session_sample_grain,run-5/track-a-comparison/yune/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/samples.csv
+startup_or_session_sample_grain,run-5/track-a-comparison/librime-1.17.0/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/samples.csv
+startup_or_session_sample_grain,run-5/track-b-product/yune/startup_warm_shared_assets_runtime_ready,pass,error,9,9,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/samples.csv
+startup_or_session_sample_grain,run-5/track-b-product/yune/session_create_select_destroy,pass,error,60,60,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/samples.csv
+m37_key_sample_grain,run-5,pass,error,18 inputs x 80 samples,1440 rows; per-input counts=[80],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/m37_metrics.csv
+raw_lookup_track_a_set,run-5,pass,error,17 exact Track A inputs,17 rows,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/raw_lookup_microbench.csv
+candidate_snapshot_grain,run-5,pass,error,175 rows (17 x 2 x 5 + 1 x 5),175 rows; per-key counts=[5],/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5/candidate_snapshots.csv
+yune_commit,run-5,pass,error,afb7079b71f7f9353845114ff3e310c0a38b9b87,afb7079b71f7f9353845114ff3e310c0a38b9b87,
+librime_commit,run-5,pass,error,33e78140250125871856cdc5b42ddc6a5fcd3cd4,33e78140250125871856cdc5b42ddc6a5fcd3cd4,
+yune_binary_hash,run-5,pass,error,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,
+librime_binary_hash,run-5,pass,error,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,
+yune_worktree_clean,run-5,pass,error,clean detached,[],
+candidate_files_identical_across_runs,accepted-baseline,pass,error,single SHA-256,"1e79ecf566e3ed3f17907ddfed588b869fd5200094a8e5085b57a02f4bb32a88,1e79ecf566e3ed3f17907ddfed588b869fd5200094a8e5085b57a02f4bb32a88,1e79ecf566e3ed3f17907ddfed588b869fd5200094a8e5085b57a02f4bb32a88,1e79ecf566e3ed3f17907ddfed588b869fd5200094a8e5085b57a02f4bb32a88,1e79ecf566e3ed3f17907ddfed588b869fd5200094a8e5085b57a02f4bb32a88",
+frozen_yune_hash,accepted-baseline,pass,error,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710,
+frozen_librime_hash,accepted-baseline,pass,error,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6,
+pinned_librime_source_checkout_clean,accepted-baseline,pass,error,clean,,
+isolated_librime_build_checkout_only_known_tarball,accepted-baseline,pass,warning,only untracked dependency tarball,?? deps/boost_1_89_0.tar.gz,
+reference_track_a_set,windows_signed_increment0,pass,error,"n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu","n,ni,hao,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,zhongguo,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu",/Users/laufei/Documents/GitHub/yune/docs/reports/evidence/m59-closeout-baseline/gate-verdict.csv
+reference_track_a_set,windows_increment4a,pass,error,"n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu","n,ni,hao,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,zhongguo,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu",/Users/laufei/Documents/GitHub/yune/docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/gate-verdict.csv
+signed_ceilings_unchanged_between_windows_sources,references,pass,error,all 17 ceiling strings equal,17,
+outer_component_row_count,accepted-baseline,pass,error,18 inputs x 80 samples x 5 runs,7200,
+component_partition_nonnegative,accepted-baseline,pass,error,nonnegative process-key and outer residuals,min process-key-other=0.791; min outer=0.25,
+component_partition_reconstructs_elapsed,accepted-baseline,pass,error,maximum absolute reconstruction error < 1e-8 us,exact after recorded precision,

@@ -1,0 +1,19 @@
+track,input,yune_geometry_deterministic,yune_text_deterministic,yune_comments_deterministic,yune_preedit_deterministic,yune_full_semantics_deterministic,yune_first_page_text,librime_first_page_text,yune_vs_librime_geometry_exact_all_five_runs,yune_vs_librime_text_exact_all_five_runs,yune_vs_librime_comments_exact_all_five_runs,yune_vs_librime_preedit_exact_all_five_runs,yune_vs_librime_full_exact_all_five_runs,librime_full_semantics_deterministic,text_mismatch_candidate_indexes,comment_mismatch_candidate_indexes
+track-a-comparison,n,yes,yes,yes,yes,yes,你 | 那 | 拿 | 哪 | 納,你 | 那 | 呢 | 能 | 年,yes,no,no,yes,no,yes,2|3|4,1|2|3|4
+track-a-comparison,ni,yes,yes,yes,yes,yes,你 | 擬 | 尼 | 泥 | 呢,你 | 擬 | 尼 | 泥 | 呢,yes,yes,no,yes,no,yes,,0|1|2|3|4
+track-a-comparison,hao,yes,yes,yes,yes,yes,好 | 號 | 浩 | 豪 | 耗,好 | 號 | 浩 | 豪 | 耗,yes,yes,no,yes,no,yes,,0|1|2|3|4
+track-a-comparison,zhongguo,yes,yes,yes,yes,yes,中國 | 中國版 | 中國北方 | 中國菜 | 種過,中國 | 種過 | 種果 | 忠果 | 中古,yes,no,no,no,no,yes,1|2|3|4,0|1|2|3|4
+track-a-comparison,ceshiyixiachangjushuruxingnengzenyang,yes,yes,yes,yes,yes,測試一下長句輸入性能怎樣 | 測試一下 | 測試儀 | 測試 | 側室,測試一下長句輸入性能怎樣 | 測試一下 | 測試儀 | 測試 | 側室,yes,yes,yes,no,no,yes,,
+track-a-comparison,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,yes,yes,yes,yes,yes,這個引擎其實應該支持超長句子輸入才能用 | 這個 | 這歌 | 這格 | 這,這個引擎其實應該支持超長句子輸入才能用 | 這個 | 這歌 | 這格 | 這,yes,yes,yes,no,no,yes,,
+track-a-comparison,cszysmsrsd,yes,yes,yes,yes,yes,重商主義什麼是認識到 | 重商主義 | 催生作用 | 產生爭議 | 測試資源,重商主義什麼是認識到 | 重商主義 | 催生作用 | 產生爭議 | 測試資源,yes,yes,yes,yes,yes,yes,,
+track-a-comparison,zybfshmsru,yes,yes,yes,yes,yes,自有辦法什麼收入 | 自有辦法 | 重要部分 | 晝夜不分 | 主要部分,自有辦法什麼收入 | 自有辦法 | 重要部分 | 晝夜不分 | 主要部分,yes,yes,yes,yes,yes,yes,,
+track-a-comparison,zh,yes,yes,yes,yes,yes,中 | 炸 | 渣 | 扎 | 紮,中 | 這 | 之後 | 最後 | 着,yes,no,no,yes,no,yes,1|2|3|4,1|2|3|4
+track-a-comparison,j,yes,yes,yes,yes,yes,就 | 及 | 機 | 級 | 即,就 | 將 | 及 | 叫 | 家,yes,no,no,yes,no,yes,1|2|3|4,1|2|3|4
+track-a-comparison,yi,yes,yes,yes,yes,yes,一 | 以 | 已 | 億 | 易,一 | 以 | 已 | 億 | 易,yes,yes,no,yes,no,yes,,0|1|2|3|4
+track-a-comparison,che,yes,yes,yes,yes,yes,車 | 扯 | 撤 | 徹 | 澈,車 | 扯 | 撤 | 徹 | 澈,yes,yes,no,yes,no,yes,,0|1|2|3|4
+track-a-comparison,chuang,yes,yes,yes,yes,yes,牀 | 創 | 撞 | 窗 | 闖,牀 | 創 | 撞 | 窗 | 闖,yes,yes,no,yes,no,yes,,0|1|2|3|4
+track-a-comparison,b,yes,yes,yes,yes,yes,不 | 吧 | 把 | 八 | 爸,不 | 吧 | 把 | 被 | 比,yes,no,no,yes,no,yes,3|4,1|2|3|4
+track-a-comparison,ceshi,yes,yes,yes,yes,yes,測試 | 測試版 | 測試點 | 測試法 | 側室,測試 | 側室 | 側視 | 測時 | 策士,yes,no,no,no,no,yes,1|2|3|4,0|1|2|3|4
+track-a-comparison,zhongdengchangdu,yes,yes,yes,yes,yes,中等長度 | 中等 | 中的 | 種的 | 重的,中等長度 | 中等 | 中 | 種 | 重,yes,no,yes,no,no,yes,2|3|4,
+track-a-comparison,dazisudu,yes,yes,yes,yes,yes,打字速度 | 打 | 大 | 達 | 答,打字速度 | 打字 | 大字 | 達孜 | 韃子,yes,no,no,no,no,yes,1|2|3|4,0|1|2|3|4
+track-b-product,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,yes,yes,yes,yes,yes,你個人經其實應該支援超場句子輸入先可以用 | 你個 | 你 | 呢 | 尼,not measured on Track B,not applicable,not applicable,not applicable,not applicable,not applicable,not applicable,not applicable,not applicable

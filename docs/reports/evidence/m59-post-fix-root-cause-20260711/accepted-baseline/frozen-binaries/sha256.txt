@@ -1,0 +1,2 @@
+3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710  /Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/libyune_rime_api.dylib
+743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6  /Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/librime.dylib

@@ -1,7 +1,7 @@
 # Current Yune Performance Dashboard
 
-Date: 2026-07-06 (M58 corrective closeout at `f780410c`; standing gate remains
-the 2026-07-04 corrective re-baseline and was re-run green for M58)
+Date: 2026-07-11 (current-main post-fix macOS diagnosis at `afb7079b`;
+standing gate remains the signed Windows corrective/M59 ratchet)
 
 This dashboard shows the current benchmark state only. Older milestone closeout
 narrative and superseded benchmark rows remain in
@@ -26,6 +26,16 @@ keeps compact storage active, and restores the expected model shape
 abbreviation vocabulary). Evidence:
 [`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
 
+> **Current-main macOS supersession:** the M57 cross-platform table formerly
+> carried by this dashboard is historical. The five-round `afb7079b` packet
+> supersedes its performance interpretation. Current Mac Yune is 37-53% slower
+> than near-code Windows on `n`/`ni`/`hao`, while current long aggregate wins
+> are dominated by intermediate prefixes with different candidate text. Final
+> 37/59 page text/order is repaired, but no complete long-prefix snapshot is
+> oracle-exact. See
+> [`evidence/m59-post-fix-root-cause-20260711/`](./evidence/m59-post-fix-root-cause-20260711/).
+> This is diagnostic only and changes no signed Windows gate.
+
 **M58 Jyutping/profile note:** M58 completed the upstream Jyutping oracle
 rebase at `f780410c`. Canonical `jyut6ping3` candidate behavior now uses
 upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; the
@@ -42,8 +52,14 @@ explicit sign-off.
 
 ## Technical Summary
 
-- **Native Track A (`luna_pinyin`)**: M55 closes with real, honestly measured
-  improvements and corrected claims. Versus the pre-M55 record the long
+- **Current-main Mac diagnostic**: Yune wins 6/17 aggregate Track A rows and
+  loses 11. The 37/59 aggregate ratios (`0.399x`/`0.205x`) are not behavior-
+  normalized; text-matched prefix sensitivity is `1.420x`/`1.204x`. `n`/`zh`
+  use `8.682x`/`4.092x` librime's instructions. Allocator/platform effects are
+  partial rather than a complete explanation.
+
+- **Signed Windows Track A (`luna_pinyin`)**: M55 closes with real, honestly
+  measured improvements and corrected claims. Versus the pre-M55 record the long
   sentence rows improved ~35% (37-char `3.05x -> 1.91x`, 59-char
   `2.25x -> 1.53x`), `ni`/`hao` improved (`3.14x -> 2.43x`,
   `2.15x -> 1.57x`), startup and session lifecycle are measured **faster than
@@ -70,20 +86,16 @@ explicit sign-off.
   `compact_expanded_table_entries=513353`, and match local librime first-page
   candidates for `cszysmsrsd` and `zybfshmsru`. This is a comparability repair,
   not a new cross-platform performance headline.
-- **Native memory disposition**: the shipping default is the owned poet path
-  at `185.7 MB` Track A peak (the latency ceilings bind). The `YUNE-POET/2`
-  byte-backed path is a working, parity-preserving **opt-in**
-  (`YUNE_POET_BYTE_BACKED=1`) at `~113.2 MB`, but it currently costs
-  `4.6x`/`3.2x` on the long rows because the incremental sentence scratch only
-  works on owned storage — porting it is the named future owner for
-  reclaiming the memory win.
-- **Candidate-output disclosure**: Yune matches librime's first candidate page
-  on `ni`, `hao`, and both abbreviation rows; it **differs** on `n` and
-  `zhongguo` (completion ranking) and on both long-sentence top candidates
-  (sentence lattice; see the captured candidate snapshots). These are
-  pre-existing gaps exposed by the M55 Phase 3R-0 oracle fixtures (13 rows are
-  named blocked `#[ignore]` tests), not regressions from the corrective
-  series. The oracle parity suites pass on their captured rows.
+- **Native memory disposition**: the signed Windows gate retains the
+  `185.7 MB` default / `113.2 MB` historical `/2` opt-in record. Current Mac
+  max RSS is `11.5-18.3x` and peak footprint `23.5-26.4x` librime in the
+  high-iteration controls. The deployed `/3` byte-backed lane emits zero
+  candidates on all 99 prefixes, so it carries no speed or memory claim.
+- **Candidate-output disclosure**: current reconciled evidence preserves the
+  repaired final 37/59 text/order, but intermediate prefixes and preedit/
+  comments still differ. Final-page text/order matches on 9/17 Track A rows;
+  only two complete captured snapshots are exact. `n` and `zh` remain visibly
+  different beyond their first candidates.
 - **Browser fair lane (`luna_pinyin`, carried 2026-06-28)**: Yune public demo
   uses `64.0 MiB` WASM peak versus My RIME `16.0 MiB` (`4.0x`). Yune is slower
   to ready (`1000 ms` vs `634 ms`), but faster on first input (`74 ms` vs
@@ -100,6 +112,9 @@ M57 macOS verification repair evidence:
 M58 Jyutping/profile corrective closeout evidence:
 [`evidence/m58-jyutping-exact-before-fuzzy/`](./evidence/m58-jyutping-exact-before-fuzzy/).
 
+Current-main post-fix macOS diagnostic:
+[`evidence/m59-post-fix-root-cause-20260711/`](./evidence/m59-post-fix-root-cause-20260711/).
+
 Standing gate artifact:
 [`evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv).
 
@@ -109,7 +124,7 @@ corrective root. Latest closeout proof:
 Browser rows are carried from
 [`evidence/current-performance-dashboard-2026-06-29/`](./evidence/current-performance-dashboard-2026-06-29/).
 
-## Native Track A
+## Native Track A — signed Windows standing gate
 
 Corrective gate run D, same-run against upstream librime 1.17.0, context read
 after every keypress:
@@ -131,70 +146,49 @@ The visualization below is regenerated from the corrective gate run D:
 
 ![Native Track A latency across all input dimensions, Yune vs librime 1.17.0](./evidence/dashboard-visuals-2026-07-04/native-track-a-latency-ratios.svg)
 
-## Native Track A — Windows vs macOS (cross-platform, post-M57)
+## Native Track A — current Mac vs near-code Windows
 
-With M57's macOS repair landed, macOS is a fair Track A lane and can be shown
-next to the Windows standing gate. **This is a two-machine comparison** — a
-Windows x86 desktop (M55 corrective gate run D) versus an Apple Silicon MacBook
-Air (M57 full-pass-1; full-pass-2 gives the reproducibility range) — so any
-difference is dominated by hardware and toolchain, not by the OS name.
+The current diagnostic compares Mac `afb7079b` with Windows Increment 4a at
+`ca52ec42`. This is a machine/source/compiler comparison, not an OS-only
+experiment: CPU, compiler, linker, allocator, OS, payload metadata, background
+load, and the commits differ.
 
-| Dimension | Yune Win | librime Win | Win ratio | Yune mac | librime mac | mac ratio |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| startup (runtime-ready) | `22,428 us` | `25,062 us` | `0.895x` | `18,111 us` | `31,463 us` | `0.576x` |
-| session lifecycle | `22,468 us` | `26,020 us` | `0.864x` | `18,818 us` | `30,066 us` | `0.626x` |
-| `zhongguo` (common word) † | `44.3 us` | `173.8 us` | `0.255x` | `42.9 us` | `110.6 us` | `0.388x` (`0.16–0.39x`) |
-| `cszysmsrsd` (10-char abbr) | `454.0 us` | `1,190.2 us` | `0.381x` | `419.8 us` | `834.0 us` | `0.503x` |
-| `zybfshmsru` (8-char abbr) | `469.3 us` | `832.1 us` | `0.564x` | `461.0 us` | `576.7 us` | `0.799x` |
-| `hao` (short key) † | `24.2 us` | `15.4 us` | `1.574x` | `26.0 us` | `15.3 us` | `1.697x` (`1.15–1.70x`) |
-| `ni` (short key) † | `42.5 us` | `17.5 us` | `2.433x` | `46.1 us` | `18.3 us` | `2.522x` (`2.52–4.10x`) |
-| `n` (short key) † | `55.1 us` | `20.9 us` | `2.636x` | `64.5 us` | `27.0 us` | `2.385x` (`2.39–4.32x`) |
-| 59-char pinyin | `1,017.5 us` | `665.7 us` | `1.528x` | `943.7 us` | `402.3 us` | `2.346x` |
-| 37-char pinyin | `571.7 us` | `298.9 us` | `1.913x` | `512.6 us` | `174.6 us` | `2.936x` |
+| Input | Mac Yune | Win 4a Yune | Mac vs Win Yune | Mac librime | Win 4a librime | Mac vs Win librime | Mac ratio | Win ratio |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `n` | `90.333 us` | `59.100 us` | `+52.8%` | `22.375 us` | `21.000 us` | `+6.5%` | `4.123x` | `2.804x` |
+| `ni` | `50.041 us` | `34.800 us` | `+43.8%` | `16.916 us` | `17.450 us` | `-3.1%` | `2.978x` | `2.000x` |
+| `hao` | `27.722 us` | `20.267 us` | `+36.8%` | `13.958 us` | `15.333 us` | `-9.0%` | `2.019x` | `1.328x` |
+| 37-char | `66.940 us` | `68.062 us` | `-1.6%` | `166.470 us` | `298.692 us` | `-44.3%` | `0.399x` | `0.229x` |
+| 59-char | `80.233 us` | `85.341 us` | `-6.0%` | `391.385 us` | `673.254 us` | `-41.9%` | `0.205x` | `0.126x` |
 
-`†` the macOS *ratio* on these rows is noise-affected and shown as a range
-(pass-1↔pass-2): for `hao`/`ni`/`n` librime's absolute sits at the
-microbenchmark noise floor (single-digit-to-low-tens of `us`), and for
-`zhongguo` librime's own median swings run-to-run (`111 → 264 us`). Only the
-sentence, abbreviation, and lifecycle rows have a stable enough librime baseline
-to compare cross-platform.
+The short and long directions differ. On long rows, Yune's absolute cost is
+close while librime is about 42-44% faster on the Mac. On `n`/`ni`/`hao`,
+librime is similar while Yune is 37-53% slower on the Mac. Therefore a blanket
+“Yune is not slower on macOS” or “only librime speeds up” conclusion is false.
 
-![Native Track A latency ratio, Windows vs macOS](./evidence/dashboard-visuals-2026-07-05-cross-platform/native-track-a-latency-windows-vs-macos.svg)
+The long aggregate ratios are also not same-behavior comparisons. Candidate
+text matches librime on only 19/37 and 30/59 prefixes; text-different prefixes
+consume 82.0%/90.1% of librime's reconstructed time. On text-matched prefixes,
+Yune is `1.420x`/`1.204x`; final-key ratios are `1.713x`/`1.139x`. Comments and
+preedit still differ, so even those are diagnostic sensitivity results.
 
-How to read the cross-platform rows:
+Allocator controls identify one partial Mac component: Nano-off slows librime
+more on stable medium/long rows and lowers the ratio around 6-14%. Hardware
+counters identify a separate engine-path component: Yune executes 4-9x the
+instructions on `n`/`zh` and has 1.24-1.41x worse CPI in the four inspected
+lanes. Thermal/noise affects precision but cannot explain the stable work-
+volume direction. Exact platform attribution remains open until the same
+current commit and payload run on both systems.
 
-- **Yune's own per-key latency is comparable across the two machines** and
-  reproduces between the macOS passes — 37-char `572 us` (Win) → `513 us` (mac);
-  `cszysmsrsd` `454 us` → `420 us`; `zybfshmsru` `469 us` → `461 us`. Yune is
-  not slower on macOS.
-- **The ratio widens on the sentence rows** (37-char `1.913x` → `2.936x`)
-  because **librime is faster on the Apple Silicon machine** (37-char librime
-  `299 us` (Win) → `175 us` (mac)), not because Yune slowed down. Dividing by a
-  faster librime inflates the ratio.
-- **The win rows stay wins on both machines** (`zhongguo`, `cszysmsrsd`,
-  `zybfshmsru` all `<1.00x`), and startup/session stay faster than librime on
-  both (run-noisy, as flagged).
-- **Candidate parity holds on macOS post-M57**: Yune matches librime's first
-  page on `ni`, `hao`, and both abbreviation rows; `zhongguo`, `n`, and the two
-  long-sentence tops differ (for `zhongguo` only the top candidate matches — the
-  rest of the page differs) — the same pre-existing lattice/completion gaps
-  disclosed for Windows, not a macOS regression.
+**Memory is diagnostic only across platforms.** Current Mac high-iteration
+controls report Yune max RSS `11.5-18.3x` and peak footprint `23.5-26.4x`
+librime. These are whole-process peaks and are not interchangeable with the
+signed Windows working-set/private counters.
 
-**Memory (indicative only — the counters differ across platforms).** Windows
-reports working-set / private bytes; macOS reports resident size. Track A peak:
-Yune `185.7 MB` (Win working set) / `~228 MB` (mac resident); librime `17.2 MB`
-(Win) / `~16 MB` (mac) — the same order-of-magnitude peer-scale direction on
-both (`~11x` Win, `~14x` mac), but the absolute megabytes are not directly
-comparable.
-
-**Track B (TypeDuck profile product path) on macOS post-M57.** Key-sequence
-latency `~289 us` (mac) vs `315 us` (Win); session/startup `~29 ms` (mac) vs
-`~35 ms` (Win). Track B memory is not compared cross-platform (macOS resident
-plus deploy/compile transient is not the Windows working-set metric). This is
-profile/product guard evidence, not canonical `rime-cantonese` candidate-order
-oracle evidence. M58 completed the schema/profile blast-radius
-audit and did not implement a split; the preferred future TypeDuck multilingual
-id remains `jyut6ping3_typeduck` pending explicit sign-off.
+**Track B remains a product guard, not a peer lane.** Its current candidate
+page/comments/page state and checksums are byte-identical to M57. Median is
+`264.941 us/key`, run-median spread 1.8%; internal materialization and bounded
+selection increased, so exact behavior does not imply unchanged work shape.
 
 ## Native Track A Guardrails
 
@@ -238,6 +232,13 @@ powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess
 
 ## Native Track A Memory
 
+The table below is the signed historical Windows `/2` gate context. Current
+`YUNE-POET/3` does not inherit the opt-in claim: its deployed byte-backed
+control emits zero candidates on all 99 prefixes and is rejected for behavior.
+The behavior-valid fixture multiplies table, graph, and DP work, so future work
+must recover behavior plus incremental/lazy indexing before re-deciding the
+default.
+
 | Measurement | Current value | Current read |
 | --- | ---: | --- |
 | Track A peak working set (shipping default, owned poet) | `185.7 MB` | latency ceilings bind; guarded at `195.0 MB` |
@@ -262,7 +263,7 @@ and future schema-split work should present that lane as
 `jyut6ping3_typeduck` only after explicit sign-off. M58 completed the
 blast-radius audit and did not implement the split.
 It is mode-independent for the poet default (sentence is off in the mobile
-profile). Latest M58 final-pass ratchet:
+profile). Standing Windows M58 final-pass ratchet:
 
 | Dimension | Observed | Ceiling | Status |
 | --- | ---: | ---: | --- |
@@ -299,12 +300,14 @@ Browser visuals are carried unchanged from the 2026-06-28 Playwright run under
 
 | Rank | Gap | Current value | Next diagnostic target |
 | ---: | --- | --- | --- |
-| 1 | Native sentence-lattice candidate divergence | 37/59-char top candidates and `n`/`zhongguo` pages differ from librime (pre-existing; 13 blocked oracle fixture rows) | future parity milestone over the Phase 3R-0 expanded fixtures |
-| 2 | Browser `luna_pinyin` memory | `64.0 MiB` vs My RIME `16.0 MiB` | WASM runtime floor and public-demo resource/heap split |
-| 3 | Browser `luna_pinyin` startup | `1000 ms` vs My RIME `634 ms` | startup asset/runtime phases after current public-demo build |
-| 4 | Native long-row latency | 37-char `1.913x`, 59-char `1.528x` | poet graph constant factors; original Tier M bar was `1.50x` |
-| 5 | Native short keys | `n` `2.636x`, `ni` `2.433x`, `hao` `1.574x` (`+9-34 us` absolute) | compile-time short-key index without retained heap or output change |
-| 6 | Native Track A memory peer gap | default `185.7 MB` vs librime `13.5 MB`; opt-in byte-backed `113.2 MB` | port the incremental sentence scratch to byte-backed storage, then re-decide the default |
+| 1 | Incremental native behavior comparability | No complete 37/59 prefix snapshot is exact; `n`/`zh` pages differ | lock candidate/order/comments/preedit/pagination/selection to the governing oracle |
+| 2 | Native translator residual | Translation is ~90-99% of inspected Track A time; producer/direct-family work is incompletely attributed | lower-perturbation producer and translator-residual attribution |
+| 3 | Native eager page work | Yune owns/filters/sorts surplus candidates while librime drains lazy streams | behavior-locked, filter-aware, resumable page-fill prototype |
+| 4 | Native short-key work | `n`/`zh` use `8.682x`/`4.092x` librime's instructions | remove duplicate MARISA/abbreviation work after behavior lock |
+| 5 | Native Track A memory | Mac max RSS `11.5-18.3x`; deployed `/3` byte-backed lane is behavior-invalid | recover correct byte-backed behavior, then measure memory and CPU separately |
+| 6 | Exact-current cross-platform attribution | Mac/Windows source, build, CPU, OS, and allocator remain confounded | same commit, payload, iterations, hashes, and allocator declarations on both systems |
+| 7 | Track B overfetch | Exact M57 behavior, but materialization +95.2% and bounded selection +110.9% | preserve product page/comments/checksums while reducing work |
+| 8 | Browser `luna_pinyin` memory/startup | `64.0 MiB` vs `16.0 MiB`; `1000 ms` vs `634 ms` (carried) | separate browser runtime-floor/startup plan |
 
 ## History
 

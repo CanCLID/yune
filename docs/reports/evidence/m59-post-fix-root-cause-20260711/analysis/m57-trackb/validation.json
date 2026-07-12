@@ -1,0 +1,10 @@
+{
+  "all_candidates_match_m57": true,
+  "candidate_observations": 7,
+  "current_non_process_owner_rows_consistent": true,
+  "current_non_timing_counters_identical": true,
+  "current_product_rounds_consistent": true,
+  "m57_non_process_owner_rows_consistent": true,
+  "m57_non_timing_counters_identical": true,
+  "m57_product_passes_consistent": true
+}

@@ -1,0 +1,55 @@
+binary=/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/libyune_rime_api.dylib
+/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/libyune_rime_api.dylib: Mach-O 64-bit dynamically linked shared library arm64
+UUID: BF5A05B6-4F23-3734-92B0-BA2208BE6E79 (arm64) /Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/libyune_rime_api.dylib
+/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/libyune_rime_api.dylib:
+	/Users/laufei/Documents/GitHub/yune-m59-post-fix-root-cause/target/release/deps/libyune_rime_api.dylib (compatibility version 0.0.0, current version 0.0.0)
+	/usr/lib/libiconv.2.dylib (compatibility version 7.0.0, current version 7.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1356.0.0)
+Segment __TEXT: 3227648
+	Section __text: 2631256
+	Section __stubs: 972
+	Section __stub_helper: 996
+	Section __const: 489188
+	Section __cstring: 48676
+	Section __gcc_except_tab: 4260
+	Section __unwind_info: 12648
+	Section __eh_frame: 31176
+	total 3219172
+Segment __DATA_CONST: 212992
+	Section __got: 16
+	Section __const: 207256
+	total 207272
+Segment __DATA: 16384
+	Section __la_symbol_ptr: 648
+	Section __data: 4672
+	Section __thread_vars: 192
+	Section __thread_data: 32
+	Section __thread_bss: 96 (zerofill)
+	Section __bss: 152 (zerofill)
+	Section __common: 80 (zerofill)
+	total 5872
+Segment __LINKEDIT: 65536
+total 3522560
+Executable=/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/libyune_rime_api.dylib
+Identifier=libyune_rime_api.dylib
+Format=Mach-O thin (arm64)
+CodeDirectory v=20400 size=27320 flags=0x20002(adhoc,linker-signed) hashes=850+0 location=embedded
+VersionPlatform=1
+VersionMin=720896
+VersionSDK=1705216
+Hash type=sha256 size=32
+CandidateCDHash sha256=ca3039be08052c04cc7c0b9f137a2fbf9d148327
+CandidateCDHashFull sha256=ca3039be08052c04cc7c0b9f137a2fbf9d148327e715a8b893282f1da3e76c73
+Hash choices=sha256
+CMSDigest=ca3039be08052c04cc7c0b9f137a2fbf9d148327e715a8b893282f1da3e76c73
+CMSDigestType=2
+Executable Segment base=0
+Executable Segment limit=3227648
+Executable Segment flags=0x0
+Page size=4096
+CDHash=ca3039be08052c04cc7c0b9f137a2fbf9d148327
+Signature=adhoc
+Info.plist=not bound
+TeamIdentifier=not set
+Sealed Resources=none
+Internal requirements=none

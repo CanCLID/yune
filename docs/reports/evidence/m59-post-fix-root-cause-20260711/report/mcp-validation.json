@@ -1,0 +1,12 @@
+{
+  "status": "pass",
+  "validator": "mcp__dataAnalyticsWidgets__validate_artifact",
+  "validated_artifact_sha256": "0d6a7e7c19a6c4b526a10c0894baad6fd08081f0a587a027dde8cbfd9009f03e",
+  "artifact_generated_at": "2026-07-12T00:46:56Z",
+  "surface": "report",
+  "manifest_title": "M59 post-fix macOS performance root-cause diagnostic",
+  "dataset_count": 19,
+  "source_count": 26,
+  "snapshot_status": "ready",
+  "message": "Artifact payload is valid. Follow the selected delivery surface for rendering or export."
+}

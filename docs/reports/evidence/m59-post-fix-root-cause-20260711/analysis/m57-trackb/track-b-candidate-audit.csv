@@ -1,0 +1,8 @@
+evidence,candidate_rows,candidate_count,page_size,page_no,is_last_page,highlighted_index,texts,raw_sha256,normalized_sha256,byte_identical_to_m57_full_pass_1,row_identical_to_m57_full_pass_1
+m57-full-pass-1,5,5,5,0,0,0,你個人經其實應該支援超場句子輸入先可以用 | 你個 | 你 | 呢 | 尼,5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9,cae9eebc051b3136054998fdfab2d6cdec27b57ada3a9936de3696dfdb0adc40,yes,yes
+m57-full-pass-2,5,5,5,0,0,0,你個人經其實應該支援超場句子輸入先可以用 | 你個 | 你 | 呢 | 尼,5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9,cae9eebc051b3136054998fdfab2d6cdec27b57ada3a9936de3696dfdb0adc40,yes,yes
+current-run-1,5,5,5,0,0,0,你個人經其實應該支援超場句子輸入先可以用 | 你個 | 你 | 呢 | 尼,5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9,cae9eebc051b3136054998fdfab2d6cdec27b57ada3a9936de3696dfdb0adc40,yes,yes
+current-run-2,5,5,5,0,0,0,你個人經其實應該支援超場句子輸入先可以用 | 你個 | 你 | 呢 | 尼,5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9,cae9eebc051b3136054998fdfab2d6cdec27b57ada3a9936de3696dfdb0adc40,yes,yes
+current-run-3,5,5,5,0,0,0,你個人經其實應該支援超場句子輸入先可以用 | 你個 | 你 | 呢 | 尼,5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9,cae9eebc051b3136054998fdfab2d6cdec27b57ada3a9936de3696dfdb0adc40,yes,yes
+current-run-4,5,5,5,0,0,0,你個人經其實應該支援超場句子輸入先可以用 | 你個 | 你 | 呢 | 尼,5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9,cae9eebc051b3136054998fdfab2d6cdec27b57ada3a9936de3696dfdb0adc40,yes,yes
+current-run-5,5,5,5,0,0,0,你個人經其實應該支援超場句子輸入先可以用 | 你個 | 你 | 呢 | 尼,5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9,cae9eebc051b3136054998fdfab2d6cdec27b57ada3a9936de3696dfdb0adc40,yes,yes

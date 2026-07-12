@@ -1,0 +1,299 @@
+check,status,detail
+surface,pass,report
+snapshot_ready,pass,ready
+title,pass,M59 post-fix macOS performance root-cause diagnostic
+first_title_block,pass,# M59 post-fix macOS performance root-cause diagnostic
+executive_summary_second,pass,executive_summary
+chart_count,pass,charts=3
+table_count,pass,tables=17
+payload_bound,pass,bytes=215349
+dataset_count_bound,pass,datasets=19
+row_bound,pass,"{'headline': 1, 'track_a': 17, 'prefix_curve': 96, 'behavior_strata': 2, 'time_l': 4, 'reconciliation': 2, 'allocator': 9, 'api_modes': 4, 'cross_platform': 5, 'candidates': 17, 'cpu_owners': 23, 'model_memory': 4, 'track_b': 5, 'track_b_counters': 8, 'track_b_m57_status': 13, 'logical_volume': 2, 'findings': 15, 'priorities': 7, 'setup_failures': 6}"
+unique_source_ids,pass,sources=26
+unique_asset_ids,pass,assets=26
+source_cards_row_split_card,pass,headline_sql
+dataset_cards_row_split_card,pass,headline
+source_cards_long_37_card,pass,headline_sql
+dataset_cards_long_37_card,pass,headline
+source_cards_long_59_card,pass,headline_sql
+dataset_cards_long_59_card,pass,headline
+source_cards_short_work_card,pass,headline_sql
+dataset_cards_short_work_card,pass,headline
+source_cards_track_b_card,pass,headline_sql
+dataset_cards_track_b_card,pass,headline
+source_cards_rounds_card,pass,headline_sql
+dataset_cards_rounds_card,pass,headline
+source_charts_track_a_ratio_chart,pass,track_a_sql
+dataset_charts_track_a_ratio_chart,pass,track_a
+source_charts_prefix_ratio_chart,pass,prefix_sql
+dataset_charts_prefix_ratio_chart,pass,prefix_curve
+source_charts_instruction_ratio_chart,pass,time_l_sql
+dataset_charts_instruction_ratio_chart,pass,time_l
+source_tables_track_a_table,pass,track_a_sql
+dataset_tables_track_a_table,pass,track_a
+source_tables_behavior_strata_table,pass,behavior_strata_sql
+dataset_tables_behavior_strata_table,pass,behavior_strata
+source_tables_reconciliation_table,pass,reconciliation_sql
+dataset_tables_reconciliation_table,pass,reconciliation
+source_tables_time_l_table,pass,time_l_sql
+dataset_tables_time_l_table,pass,time_l
+source_tables_cpu_owner_table,pass,cpu_owner_sql
+dataset_tables_cpu_owner_table,pass,cpu_owners
+source_tables_cross_platform_table,pass,cross_platform_sql
+dataset_tables_cross_platform_table,pass,cross_platform
+source_tables_allocator_table,pass,allocator_sql
+dataset_tables_allocator_table,pass,allocator
+source_tables_api_table,pass,api_sql
+dataset_tables_api_table,pass,api_modes
+source_tables_model_memory_table,pass,memory_sql
+dataset_tables_model_memory_table,pass,model_memory
+source_tables_logical_volume_table,pass,logical_sql
+dataset_tables_logical_volume_table,pass,logical_volume
+source_tables_candidate_table,pass,candidate_sql
+dataset_tables_candidate_table,pass,candidates
+source_tables_track_b_table,pass,track_b_sql
+dataset_tables_track_b_table,pass,track_b
+source_tables_track_b_counter_table,pass,track_b_counter_sql
+dataset_tables_track_b_counter_table,pass,track_b_counters
+source_tables_track_b_m57_status_table,pass,track_b_m57_status_sql
+dataset_tables_track_b_m57_status_table,pass,track_b_m57_status
+source_tables_finding_table,pass,findings_sql
+dataset_tables_finding_table,pass,findings
+source_tables_priority_table,pass,priorities_sql
+dataset_tables_priority_table,pass,priorities
+source_tables_failure_table,pass,failures_sql
+dataset_tables_failure_table,pass,setup_failures
+block_source_reconciliation_heading,pass,reconciliation_sql
+block_table_reconciliation_evidence,pass,reconciliation_table
+block_source_behavior_heading,pass,behavior_strata_sql
+block_chart_prefix_chart,pass,prefix_ratio_chart
+block_table_behavior_strata_evidence,pass,behavior_strata_table
+block_source_row_split_heading,pass,track_a_sql
+block_chart_track_a_chart,pass,track_a_ratio_chart
+block_table_track_a_evidence,pass,track_a_table
+block_source_short_work_heading,pass,time_l_sql
+block_chart_instruction_chart,pass,instruction_ratio_chart
+block_table_time_l_evidence,pass,time_l_table
+block_table_cpu_owner_evidence,pass,cpu_owner_table
+block_table_cross_platform_evidence,pass,cross_platform_table
+block_table_allocator_evidence,pass,allocator_table
+block_table_api_evidence,pass,api_table
+block_table_memory_evidence,pass,model_memory_table
+block_table_logical_volume_evidence,pass,logical_volume_table
+block_source_behavior_boundary_heading,pass,candidate_sql
+block_table_candidate_evidence,pass,candidate_table
+block_table_track_b_evidence,pass,track_b_table
+block_table_track_b_counter_evidence,pass,track_b_counter_table
+block_table_track_b_m57_status_evidence,pass,track_b_m57_status_table
+block_table_failure_evidence,pass,failure_table
+block_table_finding_evidence,pass,finding_table
+block_table_priority_evidence,pass,priority_table
+dataset_count_headline,pass,observed=1 expected=1
+dataset_count_track_a,pass,observed=17 expected=17
+dataset_count_prefix_curve,pass,observed=96 expected=96
+dataset_count_behavior_strata,pass,observed=2 expected=2
+dataset_count_time_l,pass,observed=4 expected=4
+dataset_count_reconciliation,pass,observed=2 expected=2
+dataset_count_allocator,pass,observed=9 expected=9
+dataset_count_api_modes,pass,observed=4 expected=4
+dataset_count_cross_platform,pass,observed=5 expected=5
+dataset_count_candidates,pass,observed=17 expected=17
+dataset_count_model_memory,pass,observed=4 expected=4
+dataset_count_track_b,pass,observed=5 expected=5
+dataset_count_track_b_counters,pass,observed=8 expected=8
+dataset_count_track_b_m57_status,pass,observed=13 expected=13
+dataset_count_logical_volume,pass,observed=2 expected=2
+dataset_count_findings,pass,observed=15 expected=15
+dataset_count_priorities,pass,observed=7 expected=7
+dataset_count_setup_failures,pass,observed=6 expected=6
+cpu_owner_nonempty,pass,rows=23
+query_source_set,pass,"['allocator_sql', 'api_sql', 'behavior_strata_sql', 'candidate_sql', 'cpu_owner_sql', 'cross_platform_sql', 'failures_sql', 'findings_sql', 'headline_sql', 'logical_sql', 'memory_sql', 'prefix_sql', 'priorities_sql', 'reconciliation_sql', 'time_l_sql', 'track_a_sql', 'track_b_counter_sql', 'track_b_m57_status_sql', 'track_b_sql']"
+query_portable_path_headline_sql,pass,report/snapshot.sqlite
+query_database_headline_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_headline_sql,pass,['One derived decision-headline row; formulas are in build_report_artifact.py.']
+query_raw_sources_headline_sql,pass,['report/build_report_artifact.py']
+query_row_count_headline_sql,pass,query=1 dataset=1
+query_portable_path_track_a_sql,pass,report/snapshot.sqlite
+query_database_track_a_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_track_a_sql,pass,"['track = track-a-comparison', 'All 17 inputs and all five measured rounds retained.']"
+query_raw_sources_track_a_sql,pass,['analysis/output/track-a-ratio-comparison.csv']
+query_row_count_track_a_sql,pass,query=17 dataset=17
+query_portable_path_prefix_sql,pass,report/snapshot.sqlite
+query_database_prefix_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_prefix_sql,pass,"['input IN (ceshiyixiachangjushuruxingnengzenyang, zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong)', 'The n/zh focus traces are excluded; every one of the 96 long-input prefixes is retained.']"
+query_raw_sources_prefix_sql,pass,['analysis/controls/output/prefix-latency-payload-curve.csv']
+query_row_count_prefix_sql,pass,query=96 dataset=96
+query_portable_path_behavior_strata_sql,pass,report/snapshot.sqlite
+query_database_behavior_strata_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_behavior_strata_sql,pass,['The complete 37- and 59-character behavior-strata summary; no row filter.']
+query_raw_sources_behavior_strata_sql,pass,['analysis/controls/behavior-strata/long-prefix-behavior-strata.csv']
+query_row_count_behavior_strata_sql,pass,query=2 dataset=2
+query_portable_path_time_l_sql,pass,report/snapshot.sqlite
+query_database_time_l_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_time_l_sql,pass,"['input IN (n, zh, ceshiyixiachangjushuruxingnengzenyang, zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong)', 'All five paired processes retained.']"
+query_raw_sources_time_l_sql,pass,['analysis/controls/time-l-output/time-l-engine-summary.csv']
+query_row_count_time_l_sql,pass,query=4 dataset=4
+query_portable_path_reconciliation_sql,pass,report/snapshot.sqlite
+query_database_reconciliation_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_reconciliation_sql,pass,['37- and 59-character rows only; both five-run source packets retained.']
+query_raw_sources_reconciliation_sql,pass,['analysis/reconciliation-delta/long-input-reconciliation-delta.csv']
+query_row_count_reconciliation_sql,pass,query=2 dataset=2
+query_portable_path_allocator_sql,pass,report/snapshot.sqlite
+query_database_allocator_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_allocator_sql,pass,"['Nine designated inputs; default, Nano-off, and forced-Nano observations retained across all five rounds.']"
+query_raw_sources_allocator_sql,pass,"['analysis/controls/output/allocator-ratio-effects.csv', 'analysis/controls/output/allocator-effects.csv']"
+query_row_count_allocator_sql,pass,query=9 dataset=9
+query_portable_path_api_sql,pass,report/snapshot.sqlite
+query_database_api_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_api_sql,pass,"['input IN (n, zh, ceshiyixiachangjushuruxingnengzenyang, zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong)', 'Reference, process-only, fresh-context, and stable-context modes retained.']"
+query_raw_sources_api_sql,pass,['analysis/controls/output/api-engine-ratios.csv']
+query_row_count_api_sql,pass,query=4 dataset=4
+query_portable_path_cross_platform_sql,pass,report/snapshot.sqlite
+query_database_cross_platform_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_cross_platform_sql,pass,"['input IN (n, ni, hao, ceshiyixiachangjushuruxingnengzenyang, zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong)', 'Fixed diagnostic subset; medians use all five runs on each platform.']"
+query_raw_sources_cross_platform_sql,pass,"['report/build_report_artifact.py', 'accepted-baseline', 'repository/docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet']"
+query_row_count_cross_platform_sql,pass,query=5 dataset=5
+query_portable_path_candidate_sql,pass,report/snapshot.sqlite
+query_database_candidate_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_candidate_sql,pass,"['track = track-a-comparison', 'Track B is excluded here and reported in its dedicated M57 status table.']"
+query_raw_sources_candidate_sql,pass,['analysis/output/candidate-behavior-matrix.csv']
+query_row_count_candidate_sql,pass,query=17 dataset=17
+query_portable_path_cpu_owner_sql,pass,report/snapshot.sqlite
+query_database_cpu_owner_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_cpu_owner_sql,pass,"['allocator = default', 'scope = RimeProcessKey', 'input IN (n, zh, 37-char, 59-char)', 'observed_samples > 0', 'Yune owners IN (marisa lookup, abbreviation sentence, sentence word graph); librime owners IN (dictionary table query, table query access, allocator leaf).']"
+query_raw_sources_cpu_owner_sql,pass,['analysis/cpu-samples/owner-tags.csv']
+query_row_count_cpu_owner_sql,pass,query=23 dataset=23
+query_portable_path_memory_sql,pass,report/snapshot.sqlite
+query_database_memory_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_memory_sql,pass,"['Track A run-1 owner profile from each source packet.', 'owner_id IN (POET entries_by_code, lookup_index, vocabulary, abbreviation_vocabulary).']"
+query_raw_sources_memory_sql,pass,"['report/build_report_artifact.py', 'historical/m59-luna-page-order-parity-verification-20260711/post-review-fix/run-1/memory-owner-profile.csv', 'accepted-baseline/run-1/memory-owner-profile.csv']"
+query_row_count_memory_sql,pass,query=4 dataset=4
+query_portable_path_track_b_sql,pass,report/snapshot.sqlite
+query_database_track_b_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_track_b_sql,pass,['All five accepted current Track B observations retained; no row filter.']
+query_raw_sources_track_b_sql,pass,['analysis/output/track-b-five-observations.csv']
+query_row_count_track_b_sql,pass,query=5 dataset=5
+query_portable_path_track_b_counter_sql,pass,report/snapshot.sqlite
+query_database_track_b_counter_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_track_b_counter_sql,pass,"['Focused eight-counter subset: Track-B spelling/exact/prefix/materialization plus bounded-selection, global owned-materialization, and sorting counters.', 'The complete 46-row counter ledger remains in track-b-counter-diff.csv.']"
+query_raw_sources_track_b_counter_sql,pass,['analysis/m57-trackb/track-b-counter-diff.csv']
+query_row_count_track_b_counter_sql,pass,query=8 dataset=8
+query_portable_path_track_b_m57_status_sql,pass,report/snapshot.sqlite
+query_database_track_b_m57_status_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_track_b_m57_status_sql,pass,"['Selected identity, candidate, checksum, storage, owner, memory-proxy, and provenance facts from three complete M57 audit ledgers.']"
+query_raw_sources_track_b_m57_status_sql,pass,"['analysis/m57-trackb', 'analysis/m57-trackb/track-b-candidate-audit.csv', 'analysis/m57-trackb/track-b-product-status-diff.csv', 'analysis/m57-trackb/track-b-memory-owner-diff.csv', 'analysis/m57-trackb/README.md']"
+query_row_count_track_b_m57_status_sql,pass,query=13 dataset=13
+query_portable_path_logical_sql,pass,report/snapshot.sqlite
+query_database_logical_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_logical_sql,pass,['37- and 59-character owned-versus-byte-backed fixture rows; timing fields intentionally excluded.']
+query_raw_sources_logical_sql,pass,['analysis/logical-volume/output/full-input-logical-work.csv']
+query_row_count_logical_sql,pass,query=2 dataset=2
+query_portable_path_findings_sql,pass,report/snapshot.sqlite
+query_database_findings_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_findings_sql,pass,['All builder-authored evidence classifications retained; no row filter.']
+query_raw_sources_findings_sql,pass,['report/build_report_artifact.py']
+query_row_count_findings_sql,pass,query=15 dataset=15
+query_portable_path_priorities_sql,pass,report/snapshot.sqlite
+query_database_priorities_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_priorities_sql,pass,['All seven evidence-backed future-work priorities retained; no milestone created.']
+query_raw_sources_priorities_sql,pass,['report/build_report_artifact.py']
+query_row_count_priorities_sql,pass,query=7 dataset=7
+query_portable_path_failures_sql,pass,report/snapshot.sqlite
+query_database_failures_sql,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/report/snapshot.sqlite
+query_filters_failures_sql,pass,"['All setup failures, rejected lanes, and skipped-profiler limitations retained.']"
+query_raw_sources_failures_sql,pass,['report/build_report_artifact.py']
+query_row_count_failures_sql,pass,query=6 dataset=6
+manifest_source_path_headline_sql,pass,report/snapshot.sqlite
+manifest_source_path_track_a_sql,pass,report/snapshot.sqlite
+manifest_source_path_prefix_sql,pass,report/snapshot.sqlite
+manifest_source_path_behavior_strata_sql,pass,report/snapshot.sqlite
+manifest_source_path_time_l_sql,pass,report/snapshot.sqlite
+manifest_source_path_reconciliation_sql,pass,report/snapshot.sqlite
+manifest_source_path_allocator_sql,pass,report/snapshot.sqlite
+manifest_source_path_api_sql,pass,report/snapshot.sqlite
+manifest_source_path_cross_platform_sql,pass,report/snapshot.sqlite
+manifest_source_path_candidate_sql,pass,report/snapshot.sqlite
+manifest_source_path_cpu_owner_sql,pass,report/snapshot.sqlite
+manifest_source_path_memory_sql,pass,report/snapshot.sqlite
+manifest_source_path_track_b_sql,pass,report/snapshot.sqlite
+manifest_source_path_track_b_counter_sql,pass,report/snapshot.sqlite
+manifest_source_path_track_b_m57_status_sql,pass,report/snapshot.sqlite
+manifest_source_path_logical_sql,pass,report/snapshot.sqlite
+manifest_source_path_findings_sql,pass,report/snapshot.sqlite
+manifest_source_path_priorities_sql,pass,report/snapshot.sqlite
+manifest_source_path_failures_sql,pass,report/snapshot.sqlite
+manifest_source_path_accepted_packet,pass,accepted-baseline
+manifest_source_path_old_post_fix_packet,pass,historical/m59-luna-page-order-parity-verification-20260711/post-review-fix
+manifest_source_path_windows_signed,pass,repository/docs/reports/evidence/m59-closeout-baseline/gate-verdict.csv
+manifest_source_path_windows_4a,pass,repository/docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet
+manifest_source_path_m57_macos,pass,repository/docs/reports/evidence/m57-macos-track-a-sentence-model-parity
+manifest_source_path_source_audit,pass,analysis/source-audit/README.md
+manifest_source_path_build_provenance,pass,analysis/build-provenance/README.md
+track_a_faster_count,pass,6
+track_a_slower_count,pass,11
+newly_signed_rows,pass,"['b', 'ceshi', 'che', 'chuang', 'dazisudu', 'j', 'yi', 'zh', 'zhongdengchangdu']"
+ratio_37,pass,0.399
+ratio_59,pass,0.205
+ratio_n,pass,4.123
+ratio_zh,pass,3.261
+strata_37,pass,"observed=(19, 18, 1.42, 0.23, 82.0, 0, 1.713) expected=(19, 18, 1.42, 0.23, 82.0, 0, 1.713)"
+no_full_snapshot_37,pass,0
+strata_59,pass,"observed=(30, 29, 1.204, 0.127, 90.1, 1, 1.139) expected=(30, 29, 1.204, 0.127, 90.1, 1, 1.139)"
+no_full_snapshot_59,pass,0
+time_l_n,pass,"{'input_label': 'n', 'input': 'n', 'driver_latency_ratio': 7.686, 'cpu_ratio': 10.704, 'instructions_ratio': 8.682, 'cycles_ratio': 10.73, 'cpi_ratio': 1.236, 'max_rss_ratio': 18.283, 'peak_footprint_ratio': 23.451, 'classification': 'verified', 'boundary': 'instruction/cycle/CPU counters include startup and warmups; high iteration counts amortize but do not subtract them'}"
+time_l_zh,pass,"{'input_label': 'zh', 'input': 'zh', 'driver_latency_ratio': 3.811, 'cpu_ratio': 5.048, 'instructions_ratio': 4.092, 'cycles_ratio': 5.061, 'cpi_ratio': 1.237, 'max_rss_ratio': 17.441, 'peak_footprint_ratio': 24.421, 'classification': 'verified', 'boundary': 'instruction/cycle/CPU counters include startup and warmups; high iteration counts amortize but do not subtract them'}"
+time_l_37,pass,"{'input_label': '37-character', 'input': 'ceshiyixiachangjushuruxingnengzenyang', 'driver_latency_ratio': 0.448, 'cpu_ratio': 0.586, 'instructions_ratio': 0.417, 'cycles_ratio': 0.585, 'cpi_ratio': 1.405, 'max_rss_ratio': 13.483, 'peak_footprint_ratio': 26.445, 'classification': 'verified', 'boundary': 'instruction/cycle/CPU counters include startup and warmups; high iteration counts amortize but do not subtract them'}"
+time_l_59,pass,"{'input_label': '59-character', 'input': 'zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong', 'driver_latency_ratio': 0.232, 'cpu_ratio': 0.291, 'instructions_ratio': 0.212, 'cycles_ratio': 0.293, 'cpi_ratio': 1.383, 'max_rss_ratio': 11.461, 'peak_footprint_ratio': 23.613, 'classification': 'verified', 'boundary': 'instruction/cycle/CPU counters include startup and warmups; high iteration counts amortize but do not subtract them'}"
+reconciliation_37-character,pass,"observed=(2.428, 0.399, 358.63, 4.605)"
+reconciliation_59-character,pass,"observed=(1.809, 0.205, 646.191, 5.328)"
+candidate_text_exact_count,pass,9
+candidate_full_exact_count,pass,2
+track_b_exact_input,pass,{'neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung'}
+track_b_median,pass,264.941
+track_b_worst,pass,642.907
+track_b_candidate_hash,pass,5fe17ccb53dd8ee40d9ceeb00dc9c7aab0cc30e3dfdf8216914cf675b7e597e9
+track_b_main_checksum,pass,0xf6589c0c
+track_b_scolar_checksum,pass,0x822bccba
+track_b_poet_owner_zero,pass,6 normalized occurrences; 0 retained bytes; 0 items; mapping none
+allocator_37_per_engine,pass,"{'input_label': '37-character', 'default_ratio': 0.439, 'nano_off_ratio': 0.392, 'nano_on_ratio': 0.445, 'nano_off_vs_default_ratio_change_pct': -10.7, 'yune_nano_off_effect_pct': 7.0, 'librime_nano_off_effect_pct': 19.4, 'yune_nano_off_classification': 'verified', 'librime_nano_off_classification': 'verified', 'classification': 'verified'}"
+allocator_59_per_engine,pass,"{'input_label': '59-character', 'default_ratio': 0.236, 'nano_off_ratio': 0.202, 'nano_on_ratio': 0.236, 'nano_off_vs_default_ratio_change_pct': -14.4, 'yune_nano_off_effect_pct': 4.4, 'librime_nano_off_effect_pct': 22.9, 'yune_nano_off_classification': 'verified', 'librime_nano_off_classification': 'verified', 'classification': 'verified'}"
+horizontal_reference_axes,pass,"{'track_a_ratio_chart': [{'axis': 'x', 'value': 1.0, 'color': 'neutral', 'label': 'Parity'}], 'instruction_ratio_chart': [{'axis': 'x', 'value': 1.0, 'color': 'neutral', 'label': 'Parity'}]}"
+prefix_chart_behavior_visible,pass,"{'id': 'prefix_ratio_chart', 'title': 'Per-prefix log2 latency ratio and candidate-text agreement', 'subtitle': 'Zero is parity; the four visible series separate 37/59-character prefixes by candidate-text match.', 'intent': 'relationship', 'question': 'Where do long-sequence latency ratios coincide with candidate-text agreement?', 'rationale': 'A log2 scatter keeps first-prefix outliers from flattening the remaining observations and makes behavior strata visible rather than hover-dependent.', 'comparisonContext': {'baseline': 'Yune/librime parity at 1.0', 'denominator': 'librime five-round prefix median', 'grain': 'one captured first-page prefix', 'unit': 'log2 ratio'}, 'type': 'scatter', 'dataset': 'prefix_curve', 'sourceId': 'prefix_sql', 'encodings': {'x': {'field': 'key_index', 'type': 'quantitative', 'label': 'Prefix key index'}, 'y': {'field': 'log2_ratio', 'type': 'quantitative', 'label': 'log2(Yune/librime ratio)'}, 'color': {'field': 'chart_series', 'type': 'nominal', 'label': 'Input · behavior'}}, 'palette': {'kind': 'categorical'}, 'legend': {'position': 'bottom', 'sort': 'spec'}, 'labels': {'values': 'none'}, 'referenceLines': [{'axis': 'y', 'value': 0.0, 'color': 'neutral', 'label': 'Parity'}], 'valueFormat': 'number', 'layout': 'full', 'maxRows': 120}"
+charts_do_not_promise_unsupported_tooltips,pass,[]
+track_b_counter_subset_disclosed,pass,Focused Track B work-shape counters versus M57 full-pass-1 | Selected 8 of 46 counters; complete ledger retained; behavior is byte-identical and current counters are deterministic
+cpu_owner_grouped_default,pass,"{'field': 'engine', 'direction': 'asc'}"
+methodology_run_path_1,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1
+methodology_run_path_2,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2
+methodology_run_path_3,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3
+methodology_run_path_4,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4
+methodology_run_path_5,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5
+signed_source_commit_visible,pass,"## Eleven Track A rows still favor librime on current-main macOS
+
+Across the exact 17-input set, Yune wins six aggregate rows and loses eleven. The largest deficits remain tiny inputs (`j` 7.462×, `b` 6.213×, `n` 4.123×, `yi` 4.102×, `zh` 3.261×). Ratios with very small librime denominators are naturally noise-sensitive, but five-run leave-one-out checks and the independent instruction controls preserve the direction.
+
+The signed Windows Increment-0 medians and ceilings below are diagnostic context only. Their exact source commit is `457751824b8944676dc44912b9ce31ff29d78403`; current main is not that commit, macOS absolute counters are not Windows counters, and no row is re-baselined or excused. The table explicitly marks the nine newly signed rows (`zh`, `j`, `yi`, `che`, `chuang`, `b`, `ceshi`, `zhongdengchangdu`, and `dazisudu`)."
+worktree_commit,pass,afb7079b71f7f9353845114ff3e310c0a38b9b87
+worktree_clean,pass,
+librime_commit,pass,33e78140250125871856cdc5b42ddc6a5fcd3cd4
+librime_clean,pass,
+primary_only_user_config_dirty,pass,M .codex/config.toml
+yune_hash,pass,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710
+librime_hash,pass,743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6
+run_1_exists,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-1
+run_1_yune_hash,pass,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710
+run_2_exists,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-2
+run_2_yune_hash,pass,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710
+run_3_exists,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-3
+run_3_yune_hash,pass,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710
+run_4_exists,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-4
+run_4_yune_hash,pass,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710
+run_5_exists,pass,/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-5
+run_5_yune_hash,pass,3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710
+receipt_output_validation-checks.csv,pass,rows=121 failures=0
+receipt_output_validation-checks.csv,pass,rows=394 failures=0
+receipt_time-l-output_time-l-validation.csv,pass,rows=246 failures=0
+json_receipt_build-provenance,pass,55
+json_receipt_cpu-samples,pass,108
+json_receipt_output,pass,30
+json_receipt_behavior-strata,pass,8
+all_numbers_finite,pass,recursive finite-number check

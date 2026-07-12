@@ -1,0 +1,6 @@
+cargo build --release -p yune-rime-api
+shasum -a 256 target/release/libyune_rime_api.dylib
+for run in 1 2 3 4 5; do
+  scripts/benchmark-native-rime-inprocess-macos.sh --output-root "/Users/laufei/Documents/GitHub/yune-m59-post-fix-root-cause/docs/reports/evidence/test-results/m59-external/post-fix-root-cause/accepted-baseline/run-$run" --librime-source "/Users/laufei/librime-m59-pinned" --iterations 9 --session-iterations 60 --key-iterations 80 --track-a-inputs "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu" --track-b-inputs "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung"
+  shasum -a 256 target/release/libyune_rime_api.dylib > "/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/run-$run/yune-dylib-post-run.sha256"
+done

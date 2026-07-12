@@ -57,6 +57,19 @@ weight semantics and the inclusive 5% pronunciation boundary across stored
 source-scoped diagnostic, not a combined-source measurement or a new Mac
 performance gate, threshold, milestone, or change to the independently recorded
 Windows disposition. It did not cause or supersede that disposition.
+The current-main post-fix root-cause diagnostic at `afb7079b` now supersedes
+that packet's performance interpretation while retaining its repair evidence.
+Across all 17 Track A rows, Yune wins six aggregate rows and loses eleven. The
+apparent 37/59 wins (`0.399x` / `0.205x`) are concentrated in intermediate
+prefixes whose candidate text differs from librime; on candidate-text-matched
+prefixes Yune is `1.420x` / `1.204x`, and no complete long-prefix snapshot is
+oracle-exact. Short rows also execute materially more work (`n` `8.682x`, `zh`
+`4.092x` librime's instructions). macOS Nano allocation contributes to the
+ratio but does not explain the behavior or work-volume gaps. The durable
+diagnosis is
+[`reports/evidence/m59-post-fix-root-cause-20260711/`](./reports/evidence/m59-post-fix-root-cause-20260711/).
+It is diagnostic only: no signed Windows ceiling, baseline, exception, or
+milestone changes.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -84,6 +97,9 @@ Windows disposition. It did not cause or supersede that disposition.
 - [`reports/yune-vs-librime-performance.md`](./reports/yune-vs-librime-performance.md)
   and [`reports/yune-vs-librime-root-cause-analysis.md`](./reports/yune-vs-librime-root-cause-analysis.md)
   - current performance comparison and diagnosis.
+- [`reports/evidence/m59-post-fix-root-cause-20260711/`](./reports/evidence/m59-post-fix-root-cause-20260711/)
+  - current-main macOS post-fix behavior/performance diagnosis and bounded
+    five-round evidence packet.
 - [`reports/ios-memory-budget.md`](./reports/ios-memory-budget.md) - native
   single-active-schema memory versus the iOS keyboard-extension budget; current
   values are Windows proxies, not Apple `phys_footprint`.
@@ -119,7 +135,7 @@ Windows disposition. It did not cause or supersede that disposition.
 
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
-| Engine performance | M55 is closed under the 2026-07-04 corrective re-baseline. Real wins: 37-char Luna `3.05x -> 1.913x`, 59-char `2.25x -> 1.528x`, `ni` `3.14x -> 2.433x`, `hao` `2.15x -> 1.574x`, startup `0.895x` and session `0.864x` (faster than librime, run-noisy), win rows locked `<1.00x`, Track B guard rows all green with startup/session ~3x better than their Phase 0 sources. Removed as measurement artifacts: the `luna_pinyin` key deferral, the `n`/`h` benchmark-input aliases, and the uninvalidated config cache; the benchmark now reads context per keypress. M55's byte-backed `YUNE-POET/2` result remains historical (`113.2 MB`, latency-blocked) while the shipping default stays owned (`185.7 MB`); M59's current `YUNE-POET/3` format adds sentence/phrase indexes and rejects `/2` so it can be rebuilt under the expanded layout. M57 repaired the macOS Track A verification anomaly in the 37-char, 59-char, `cszysmsrsd`, and `zybfshmsru` rows by restoring compact compiled-table sentence-model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary). | The signed M59 expanded ceilings are now the standing native ratchet while M59 is active; `/3` performance and memory claims require fresh M59 evidence rather than inheritance from `/2`. M57's two macOS passes remain comparability evidence for the repaired macOS bundle, not a replacement performance gate. Future engine performance work: port the incremental sentence scratch to byte-backed storage (reclaims the memory win), then poet graph constants / short keys - each with fresh owner evidence and no ABI widening. |
+| Engine performance | M55 remains closed under the 2026-07-04 corrective Windows re-baseline and the signed M59 ceilings remain authoritative. M57 repaired the macOS compact-table sentence-model construction defect. The current-main macOS post-fix packet at `afb7079b` supersedes the earlier `89875ee2` performance read: aggregate 37/59 ratios are `0.399x` / `0.205x`, but the wins are dominated by behavior-different prefixes; the text-matched sensitivity ratios are `1.420x` / `1.204x`. Current main wins 6/17 aggregate Track A rows, while `n`/`zh` use `8.682x`/`4.092x` librime's instructions. Track B behavior/checksums remain M57-exact while its work shape moved. | Keep the signed Windows ratchet unchanged. Before optimizing, lock incremental Luna prefix/page behavior to the named oracle. Then attribute the translator residual and test behavior-preserving lazy page fill; follow with short MARISA/abbreviation work, byte-backed POET behavior/memory, and an exact-current matched Windows/macOS lane. No milestone is created by the diagnostic. |
 | TypeDuck/Jyutping product memory | M47's portable scope is complete. The comments-intact `jyut6ping3_mobile` keyboard profile reached about `67 MB` working set / `22 MB` private on Windows proxy evidence, with table, prism, and rich lookup/comment payloads byte-backed from compiled storage. | Apple `phys_footprint` proof remains unnumbered far-future platform validation. Optional RED-09/10/11-style polish needs a fresh owner-ranked plan. |
 | Web harness startup and memory | WEB-03 fixed the launch compiled-asset contract and the stale Jyutping source-fallback owner. WEB-04 adds a default-off `luna_pinyin_octagram` debug profile that fetches a pinned lotem `.gram` locally, delivers it only for the octagram profile, exposes delivered/fallback/checksum/schema-select high-water memory diagnostics, proves all four named ranking rows versus plain Luna in Playwright, and proves browser fail-closed behavior. Current dashboard fair `luna_pinyin` browser comparison is `64.0 MiB` peak versus My RIME `16.0 MiB`; old Jyutping `893.1 MiB` remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another freshly measured owner, not another payload-only or stale-asset branch. Broader contextual suggestions or non-debug octagram product UX needs a new scoped plan. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
@@ -187,10 +203,14 @@ performance research, not launch-readiness cleanup. It should:
 - close as partial/no-go if the owner is not real or the win requires
   unacceptable parity risk.
 
-Likely future structural owners are the browser `luna_pinyin` runtime floor,
-browser startup phases, the optional native `n` micro-gap, and the remaining
-native Track A memory peer gap. Each needs fresh evidence and must preserve
-oracle behavior and the M51 ABI contract.
+The current native order is behavior-first: lock incremental Luna prefix/page
+semantics, attribute the translator residual, then test filter-aware lazy page
+fill and short MARISA/abbreviation reductions. Native memory must recover
+behavior-valid `/3` byte-backed output before it can claim or optimize a memory
+lane. Exact-current Windows/macOS attribution and Track B overfetch follow.
+Browser `luna_pinyin` runtime-floor/startup work remains a separate plan. Every
+lane needs fresh evidence and must preserve oracle behavior and the M51 ABI
+contract.
 
 ## Closing The 188 MB Native Track A Memory Gap
 
@@ -210,14 +230,14 @@ Current decision:
 1. **The corrective M55 artifact is the standing native Track A gate**
    (startup, session, eight key rows, peak memory, win rows `<1.00x`, Track B
    absolutes; green twice on 2026-07-04).
-2. **Byte-backed Luna poet consumption is an explicit opt-in**
-   (`YUNE_POET_BYTE_BACKED=1`). The named path to flipping it: port the
-   incremental sentence scratch to byte-backed storage, then re-run the
-   default decision under the standing per-key gate.
-3. **The memory result is lane-specific and conditional.** `113.2 MB` is real,
-   parity-preserving, and currently latency-blocked; it is not a shipping
-   default claim, browser memory parity, or a match to librime's `13.5 MB`
-   peer process.
+2. **The `/2` byte-backed result is historical.** `113.2 MB` is a valid M55
+   opt-in record, but `/3` cannot inherit it. The current deployed `/3` control
+   emits zero candidates on all 99 prefixes and is rejected for behavior.
+3. **Behavior precedes the next memory decision.** Recover identical `/3`
+   prefix/page output first, then design incremental/lazy indexing and measure
+   memory and CPU separately under the standing gate. Do not assume a direct
+   scratch port is sufficient: the behavior-valid fixture multiplies logical
+   table/graph/DP work.
 
 ## Authoritative Sequence
 

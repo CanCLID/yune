@@ -1,0 +1,19 @@
+engine,input,run1_default_us,run1_nano-off_effect_pct,run1_nano-on_effect_pct,run2_default_us,run2_nano-off_effect_pct,run2_nano-on_effect_pct,run3_default_us,run3_nano-off_effect_pct,run3_nano-on_effect_pct,run4_default_us,run4_nano-off_effect_pct,run4_nano-on_effect_pct,run5_default_us,run5_nano-off_effect_pct,run5_nano-on_effect_pct,nano-off_median_effect_pct,nano-off_mad_effect_pct,nano-off_positive_rounds,nano-on_median_effect_pct,nano-on_mad_effect_pct,nano-on_positive_rounds,default_round_spread_pct,nano_off_classification,nano_on_interpretation
+yune,n,81.000,10.3,2.2,87.938,-0.4,-7.1,80.541,11.7,2.3,81.791,9.2,0.9,81.959,8.7,-1.4,9.2,1.1,4/5,0.9,1.4,3/5,9.2,likely,consistent with default Nano state
+yune,ni,44.385,9.1,-1.0,44.281,11.6,-0.8,44.073,10.7,0.2,44.261,9.4,-0.9,44.927,6.4,0.3,9.4,1.2,5/5,-0.8,0.3,2/5,1.9,verified,consistent with default Nano state
+yune,zh,127.136,8.3,-0.6,126.208,6.4,-0.7,125.240,9.4,-0.5,126.625,7.0,0.7,126.854,6.4,0.2,7.0,0.6,5/5,-0.5,0.2,2/5,1.5,verified,consistent with default Nano state
+yune,j,65.604,13.8,0.5,65.834,11.5,-0.0,66.042,13.8,-0.5,65.666,14.8,0.7,66.209,13.0,-1.6,13.8,0.8,5/5,-0.0,0.5,2/5,0.9,verified,consistent with default Nano state
+yune,zhongguo,97.880,10.9,0.5,99.776,6.5,3.5,99.089,9.0,1.0,99.586,8.9,-0.7,100.758,7.7,-1.8,8.9,1.3,5/5,0.5,1.3,3/5,2.9,verified,consistent with default Nano state
+yune,cszysmsrsd,463.258,8.6,-1.0,459.235,7.6,3.3,465.788,4.2,-1.7,460.529,6.3,0.5,471.435,6.1,-2.5,6.3,1.3,5/5,-1.0,1.5,2/5,2.7,verified,consistent with default Nano state
+yune,zhongdengchangdu,72.095,9.4,1.2,71.698,9.5,5.2,72.204,19.3,1.1,71.676,8.9,1.3,72.268,7.8,1.9,9.4,0.5,5/5,1.3,0.3,5/5,0.8,verified,consistent with default Nano state
+yune,ceshiyixiachangjushuruxingnengzenyang,60.385,7.2,1.1,60.514,7.4,-0.1,61.275,6.2,0.5,61.438,6.0,-0.8,60.730,7.0,0.4,7.0,0.4,5/5,0.4,0.5,3/5,1.7,verified,consistent with default Nano state
+yune,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,76.222,3.0,-2.5,74.198,6.5,-0.1,74.149,6.1,0.8,75.162,4.0,-1.2,74.776,4.4,-0.6,4.4,1.4,5/5,-0.6,0.5,1/5,2.8,verified,consistent with default Nano state
+librime,n,28.333,-49.9,-51.2,20.875,-31.5,1.4,20.438,15.3,4.7,14.334,-1.5,45.2,23.000,-38.8,-10.7,-31.5,18.4,1/5,1.4,12.1,3/5,97.7,noise-sensitive,consistent with default Nano state
+librime,ni,13.625,36.1,28.3,13.416,-16.4,24.2,16.750,-28.1,13.3,19.666,-13.4,-41.3,18.927,-7.7,-13.8,-13.4,5.7,1/5,13.3,15.0,3/5,46.6,noise-sensitive,unresolved
+librime,zh,47.521,33.0,0.1,45.823,17.0,21.2,56.135,8.6,-13.8,60.541,-8.9,-11.5,61.541,-0.0,-13.5,8.6,8.7,3/5,-11.5,2.4,2/5,34.3,noise-sensitive,unresolved
+librime,j,12.313,48.4,-5.9,10.959,3.4,-3.2,10.958,41.3,49.1,11.084,15.0,17.3,11.542,-5.4,-3.6,15.0,20.4,4/5,-3.2,2.7,2/5,12.4,likely,unresolved
+librime,zhongguo,90.503,20.6,5.2,89.698,23.1,8.3,95.451,16.0,-0.9,95.805,15.3,-3.1,103.628,9.0,-6.7,16.0,4.6,5/5,-0.9,5.8,2/5,15.5,verified,consistent with default Nano state
+librime,cszysmsrsd,675.110,18.8,0.7,683.181,17.8,7.5,681.669,16.4,-0.3,677.415,17.7,2.6,683.985,15.7,-0.1,17.7,1.2,5/5,0.7,1.1,3/5,1.3,verified,consistent with default Nano state
+librime,zhongdengchangdu,172.115,17.6,-3.2,176.310,14.7,-4.0,168.768,20.7,-0.5,168.990,20.2,-1.1,167.096,20.8,1.6,20.2,0.7,5/5,-1.1,2.0,1/5,5.5,verified,consistent with default Nano state
+librime,ceshiyixiachangjushuruxingnengzenyang,137.573,21.7,-0.3,138.845,19.4,-0.8,137.217,19.1,0.1,137.677,22.5,0.1,138.396,19.3,-1.9,19.4,0.3,5/5,-0.3,0.4,2/5,1.2,verified,consistent with default Nano state
+librime,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,315.113,22.9,-0.4,316.784,23.6,-0.8,318.512,22.0,-1.1,318.173,22.9,-0.2,317.065,22.2,-0.6,22.9,0.7,5/5,-0.6,0.2,0/5,1.1,verified,consistent with default Nano state

@@ -1,0 +1,10 @@
+input,run1_default_ratio,run2_default_ratio,run3_default_ratio,run4_default_ratio,run5_default_ratio,default_median_ratio,default_spread_pct,run1_nano-off_ratio,run2_nano-off_ratio,run3_nano-off_ratio,run4_nano-off_ratio,run5_nano-off_ratio,nano-off_median_ratio,nano-off_spread_pct,run1_nano-on_ratio,run2_nano-on_ratio,run3_nano-on_ratio,run4_nano-on_ratio,run5_nano-on_ratio,nano-on_median_ratio,nano-on_spread_pct,nano_off_vs_default_ratio_change_pct,nano_on_vs_default_ratio_change_pct,classification
+n,2.859,4.213,3.941,5.706,3.563,3.941,99.6,6.297,6.130,3.818,6.322,6.325,6.297,65.7,5.986,3.860,3.852,3.967,3.935,3.935,55.4,59.8,-0.1,noise-sensitive
+ni,3.258,3.301,2.631,2.251,2.374,2.631,46.7,2.612,4.403,4.050,2.843,2.735,2.843,68.6,2.513,2.636,2.328,3.801,2.759,2.636,63.3,8.1,0.2,noise-sensitive
+zh,2.675,2.754,2.231,2.092,2.061,2.231,33.6,2.179,2.503,2.246,2.457,2.194,2.246,14.9,2.657,2.257,2.578,2.378,2.387,2.387,17.8,0.7,7.0,noise-sensitive
+j,5.328,6.007,6.027,5.925,5.736,5.925,13.1,4.087,6.474,4.853,5.910,6.853,5.910,67.7,5.693,6.206,4.023,5.085,5.854,5.693,54.3,-0.2,-3.9,noise-sensitive
+zhongguo,1.082,1.112,1.038,1.039,0.972,1.039,14.4,0.994,0.963,0.976,0.982,0.960,0.976,3.5,1.034,1.064,1.059,1.064,1.023,1.059,4.1,-6.1,1.8,verified
+cszysmsrsd,0.686,0.672,0.683,0.680,0.689,0.683,2.5,0.627,0.614,0.612,0.614,0.632,0.614,3.2,0.675,0.646,0.674,0.666,0.672,0.672,4.5,-10.1,-1.6,verified
+zhongdengchangdu,0.419,0.407,0.428,0.424,0.432,0.424,6.4,0.390,0.388,0.423,0.385,0.386,0.388,10.0,0.438,0.445,0.435,0.435,0.434,0.435,2.7,-8.5,2.5,verified
+ceshiyixiachangjushuruxingnengzenyang,0.439,0.436,0.447,0.446,0.439,0.439,2.5,0.387,0.392,0.398,0.386,0.393,0.392,3.2,0.445,0.439,0.448,0.442,0.449,0.445,2.3,-10.7,1.5,verified
+zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,0.242,0.234,0.233,0.236,0.236,0.236,3.9,0.203,0.202,0.202,0.200,0.201,0.202,1.4,0.237,0.236,0.237,0.234,0.236,0.236,1.5,-14.4,0.1,verified

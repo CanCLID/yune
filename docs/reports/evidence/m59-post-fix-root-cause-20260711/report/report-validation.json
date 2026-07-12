@@ -1,0 +1,16 @@
+{
+  "status": "pass",
+  "assessment": "ready_to_validate_with_mcp",
+  "checks": 294,
+  "failed": 0,
+  "artifact_sha256": "0d6a7e7c19a6c4b526a10c0894baad6fd08081f0a587a027dde8cbfd9009f03e",
+  "artifact_bytes": 215349,
+  "claim_boundaries": [
+    "diagnostic only; no threshold or baseline authority",
+    "candidate-text matching is not full semantic parity",
+    "prefix sums are reconstructed sensitivity results",
+    "whole-process counters retain amortized startup",
+    "CPU samples are qualitative only",
+    "Windows comparison is source/platform confounded"
+  ]
+}

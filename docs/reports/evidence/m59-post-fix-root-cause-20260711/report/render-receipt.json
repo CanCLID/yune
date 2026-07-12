@@ -1,0 +1,8 @@
+{
+  "status": "pass",
+  "renderer": "mcp__dataAnalyticsWidgets__render_artifact",
+  "rendered_artifact_sha256": "0d6a7e7c19a6c4b526a10c0894baad6fd08081f0a587a027dde8cbfd9009f03e",
+  "widget_type": "artifact",
+  "surface": "report",
+  "manifest_title": "M59 post-fix macOS performance root-cause diagnostic"
+}

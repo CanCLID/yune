@@ -1,0 +1,30 @@
+kind,workload,input,observed_ratio,expected,status
+latency_direction,key_sequence_process_with_context,b,7.057,,not-classified
+latency_direction,key_sequence_process_with_context,ceshi,1.452,,not-classified
+latency_direction,key_sequence_process_with_context,ceshiyixiachangjushuruxingnengzenyang,0.411,yune slower than librime,contradicted
+latency_direction,key_sequence_process_with_context,che,3.002,,not-classified
+latency_direction,key_sequence_process_with_context,chuang,2.565,,not-classified
+latency_direction,key_sequence_process_with_context,cszysmsrsd,0.625,yune faster than librime,confirmed
+latency_direction,key_sequence_process_with_context,dazisudu,1.469,,not-classified
+latency_direction,key_sequence_process_with_context,hao,2.764,yune slower than librime,confirmed
+latency_direction,key_sequence_process_with_context,j,6.817,,not-classified
+latency_direction,key_sequence_process_with_context,n,4.427,yune slower than librime,confirmed
+latency_direction,key_sequence_process_with_context,ni,2.978,yune slower than librime,confirmed
+latency_direction,key_sequence_process_with_context,yi,4.558,,not-classified
+latency_direction,key_sequence_process_with_context,zh,3.209,,not-classified
+latency_direction,key_sequence_process_with_context,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,0.207,yune slower than librime,contradicted
+latency_direction,key_sequence_process_with_context,zhongdengchangdu,0.390,,not-classified
+latency_direction,key_sequence_process_with_context,zhongguo,1.075,yune faster than librime,contradicted
+latency_direction,key_sequence_process_with_context,zybfshmsru,0.876,yune faster than librime,confirmed
+latency_noise_caveat,startup_warm_shared_assets_runtime_ready,,0.571,report says measured faster on Windows but run-noisy/platform-specific,confirmed-on-this-run
+latency_noise_caveat,session_create_select_destroy,,0.651,report says measured faster on Windows but run-noisy/platform-specific,confirmed-on-this-run
+candidate_snapshot,candidate_first_page,ceshiyixiachangjushuruxingnengzenyang,,first page may differ as disclosed,allowed-but-unexpected-match
+candidate_snapshot,candidate_first_page,cszysmsrsd,,first page matches,confirmed
+candidate_snapshot,candidate_first_page,hao,,first page matches,confirmed
+candidate_snapshot,candidate_first_page,n,,first page may differ as disclosed,confirmed
+candidate_snapshot,candidate_first_page,ni,,first page matches,confirmed
+candidate_snapshot,candidate_first_page,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,,first page may differ as disclosed,allowed-but-unexpected-match
+candidate_snapshot,candidate_first_page,zhongguo,,first page may differ as disclosed,confirmed
+candidate_snapshot,candidate_first_page,zybfshmsru,,first page matches,confirmed
+memory_direction,track-a-peak-resident,,11.728,Yune Track A peak resident memory remains above librime on native peer lane,confirmed
+browser,browser-peer-dashboard,,,browser rows are carried evidence,not-rerun

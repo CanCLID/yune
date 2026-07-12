@@ -1,0 +1,55 @@
+binary=/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/librime.dylib
+/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/librime.dylib: Mach-O 64-bit dynamically linked shared library arm64
+UUID: CD461F61-D3AE-3324-80CC-07AAF241F5DB (arm64) /Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/librime.dylib
+/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/librime.dylib:
+	@rpath/librime.1.dylib (compatibility version 1.0.0, current version 1.17.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1356.0.0)
+	/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2100.43.0)
+Segment __TEXT: 2129920
+	Section __text: 1755964
+	Section __stubs: 3828
+	Section __stub_helper: 3696
+	Section __gcc_except_tab: 151304
+	Section __cstring: 68688
+	Section __const: 98143
+	Section __unwind_info: 32712
+	total 2114335
+Segment __DATA_CONST: 65536
+	Section __got: 1512
+	Section __mod_init_func: 328
+	Section __const: 55920
+	total 57760
+Segment __DATA: 114688
+	Section __la_symbol_ptr: 2448
+	Section __data: 5416
+	Section __thread_vars: 48
+	Section __thread_data: 1
+	Section __thread_bss: 30336 (zerofill)
+	Section __bss: 69232 (zerofill)
+	Section __common: 977 (zerofill)
+	total 108458
+Segment __LINKEDIT: 1310720
+total 3620864
+Executable=/Users/laufei/yune-m59-post-fix-root-cause-20260711/accepted-baseline/frozen-binaries/librime.dylib
+Identifier=librime.1.dylib
+Format=Mach-O thin (arm64)
+CodeDirectory v=20400 size=27304 flags=0x20002(adhoc,linker-signed) hashes=850+0 location=embedded
+VersionPlatform=1
+VersionMin=720896
+VersionSDK=1705216
+Hash type=sha256 size=32
+CandidateCDHash sha256=741e0f13124e36709ee3a51ffd8a2909a905a6ad
+CandidateCDHashFull sha256=741e0f13124e36709ee3a51ffd8a2909a905a6ad3f2b360161cdc73bf9e1f626
+Hash choices=sha256
+CMSDigest=741e0f13124e36709ee3a51ffd8a2909a905a6ad3f2b360161cdc73bf9e1f626
+CMSDigestType=2
+Executable Segment base=0
+Executable Segment limit=1755964
+Executable Segment flags=0x0
+Page size=4096
+CDHash=741e0f13124e36709ee3a51ffd8a2909a905a6ad
+Signature=adhoc
+Info.plist=not bound
+TeamIdentifier=not set
+Sealed Resources=none
+Internal requirements=none

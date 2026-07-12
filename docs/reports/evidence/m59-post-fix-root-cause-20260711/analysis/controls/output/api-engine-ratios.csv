@@ -1,0 +1,5 @@
+input,reference_yune_us,reference_librime_us,reference_yune_librime_ratio,process_only_yune_us,process_only_librime_us,process_only_yune_librime_ratio,context_end_yune_us,context_end_librime_us,context_end_yune_librime_ratio,stable_context_yune_us,stable_context_librime_us,stable_context_yune_librime_ratio,interpretation
+n,81.792,14.896,5.491,81.209,10.000,8.121,0.542,6.208,0.087,0.500,0.667,0.750,context export favors Yune; process-only does not uncover a hidden Yune advantage
+zh,125.208,49.365,2.536,126.010,50.312,2.505,0.583,9.708,0.060,0.500,0.625,0.800,context export favors Yune; process-only does not uncover a hidden Yune advantage
+ceshiyixiachangjushuruxingnengzenyang,61.169,136.426,0.448,61.769,133.114,0.464,0.666,4.375,0.152,0.458,0.833,0.550,context export favors Yune; process-only does not uncover a hidden Yune advantage
+zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,74.229,316.403,0.235,73.366,310.893,0.236,0.667,4.792,0.139,0.458,0.750,0.611,context export favors Yune; process-only does not uncover a hidden Yune advantage

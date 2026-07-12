@@ -1,0 +1,45 @@
+dictionary_id,field,m57_full_pass_1,m57_full_pass_2,m57_passes_consistent,current_run_1,current_run_2,current_run_3,current_run_4,current_run_5,current_runs_consistent,status,note
+jyut6ping3,prism_id,jyut6ping3_mobile,jyut6ping3_mobile,yes,jyut6ping3_mobile,jyut6ping3_mobile,jyut6ping3_mobile,jyut6ping3_mobile,jyut6ping3_mobile,yes,unchanged,
+jyut6ping3,source_checksum,0xf6589c0c,0xf6589c0c,yes,0xf6589c0c,0xf6589c0c,0xf6589c0c,0xf6589c0c,0xf6589c0c,yes,unchanged,model/checksum identity
+jyut6ping3,table_checksum,0xf6589c0c,0xf6589c0c,yes,0xf6589c0c,0xf6589c0c,0xf6589c0c,0xf6589c0c,0xf6589c0c,yes,unchanged,model/checksum identity
+jyut6ping3,checksum_status,fresh,fresh,yes,fresh,fresh,fresh,fresh,fresh,yes,unchanged,model/checksum identity
+jyut6ping3,table_parse,ok,ok,yes,ok,ok,ok,ok,ok,yes,unchanged,
+jyut6ping3,prism_parse,ok,ok,yes,ok,ok,ok,ok,ok,yes,unchanged,
+jyut6ping3,reverse_parse,ok,ok,yes,ok,ok,ok,ok,ok,yes,unchanged,
+jyut6ping3,compiled_ready,true,true,yes,true,true,true,true,true,yes,unchanged,
+jyut6ping3,selected_storage,byte_backed,byte_backed,yes,byte_backed,byte_backed,byte_backed,byte_backed,byte_backed,yes,unchanged,storage-owner shape
+jyut6ping3,table_format,yune_no_marisa_compact,yune_no_marisa_compact,yes,yune_no_marisa_compact,yune_no_marisa_compact,yune_no_marisa_compact,yune_no_marisa_compact,yune_no_marisa_compact,yes,unchanged,
+jyut6ping3,table_mapping_mode,mmap,mmap,yes,mmap,mmap,mmap,mmap,mmap,yes,unchanged,storage-owner shape
+jyut6ping3,prism_mapping_mode,mmap,mmap,yes,mmap,mmap,mmap,mmap,mmap,yes,unchanged,storage-owner shape
+jyut6ping3,source_fallback,false,false,yes,false,false,false,false,false,yes,unchanged,
+jyut6ping3,byte_source_len,15248382,15248382,yes,15248410,15248410,15248410,15248410,15248410,yes,changed_since_m57,compiled byte length changed; checksums/entry counts decide model identity
+jyut6ping3,stored_entries,127143,127143,yes,127143,127143,127143,127143,127143,yes,unchanged,
+jyut6ping3,compact_all_codes_count,114653,114653,yes,114653,114653,114653,114653,114653,yes,unchanged,
+jyut6ping3,compact_expanded_table_entries,127143,127143,yes,127143,127143,127143,127143,127143,yes,unchanged,
+jyut6ping3,compact_expansion_status,ok:expanded_minus_stored=0,ok:expanded_minus_stored=0,yes,ok:expanded_minus_stored=0,ok:expanded_minus_stored=0,ok:expanded_minus_stored=0,ok:expanded_minus_stored=0,ok:expanded_minus_stored=0,yes,unchanged,
+jyut6ping3,table_heap_mirror_bytes,0,0,yes,0,0,0,0,0,yes,unchanged,
+jyut6ping3,prism_heap_mirror_bytes,0,0,yes,0,0,0,0,0,yes,unchanged,
+jyut6ping3,rsmarisa_status,missing_string_table,missing_string_table,yes,missing_string_table,missing_string_table,missing_string_table,missing_string_table,missing_string_table,yes,unchanged,
+jyut6ping3,rsmarisa_mapping_mode,unavailable,unavailable,yes,unavailable,unavailable,unavailable,unavailable,unavailable,yes,unchanged,
+jyut6ping3_scolar,prism_id,jyut6ping3_scolar,jyut6ping3_scolar,yes,jyut6ping3_scolar,jyut6ping3_scolar,jyut6ping3_scolar,jyut6ping3_scolar,jyut6ping3_scolar,yes,unchanged,
+jyut6ping3_scolar,source_checksum,0x822bccba,0x822bccba,yes,0x822bccba,0x822bccba,0x822bccba,0x822bccba,0x822bccba,yes,unchanged,model/checksum identity
+jyut6ping3_scolar,table_checksum,0x822bccba,0x822bccba,yes,0x822bccba,0x822bccba,0x822bccba,0x822bccba,0x822bccba,yes,unchanged,model/checksum identity
+jyut6ping3_scolar,checksum_status,fresh,fresh,yes,fresh,fresh,fresh,fresh,fresh,yes,unchanged,model/checksum identity
+jyut6ping3_scolar,table_parse,ok,ok,yes,ok,ok,ok,ok,ok,yes,unchanged,
+jyut6ping3_scolar,prism_parse,ok,ok,yes,ok,ok,ok,ok,ok,yes,unchanged,
+jyut6ping3_scolar,reverse_parse,ok,ok,yes,ok,ok,ok,ok,ok,yes,unchanged,
+jyut6ping3_scolar,compiled_ready,true,true,yes,true,true,true,true,true,yes,unchanged,
+jyut6ping3_scolar,selected_storage,byte_backed,byte_backed,yes,byte_backed,byte_backed,byte_backed,byte_backed,byte_backed,yes,unchanged,storage-owner shape
+jyut6ping3_scolar,table_format,yune_no_marisa_compact,yune_no_marisa_compact,yes,yune_no_marisa_compact,yune_no_marisa_compact,yune_no_marisa_compact,yune_no_marisa_compact,yune_no_marisa_compact,yes,unchanged,
+jyut6ping3_scolar,table_mapping_mode,mmap,mmap,yes,mmap,mmap,mmap,mmap,mmap,yes,unchanged,storage-owner shape
+jyut6ping3_scolar,prism_mapping_mode,mmap,mmap,yes,mmap,mmap,mmap,mmap,mmap,yes,unchanged,storage-owner shape
+jyut6ping3_scolar,source_fallback,false,false,yes,false,false,false,false,false,yes,unchanged,
+jyut6ping3_scolar,byte_source_len,12478842,12478842,yes,12478870,12478870,12478870,12478870,12478870,yes,changed_since_m57,compiled byte length changed; checksums/entry counts decide model identity
+jyut6ping3_scolar,stored_entries,0,0,yes,0,0,0,0,0,yes,unchanged,
+jyut6ping3_scolar,compact_all_codes_count,0,0,yes,0,0,0,0,0,yes,unchanged,
+jyut6ping3_scolar,compact_expanded_table_entries,0,0,yes,0,0,0,0,0,yes,unchanged,
+jyut6ping3_scolar,compact_expansion_status,ok,ok,yes,ok,ok,ok,ok,ok,yes,unchanged,
+jyut6ping3_scolar,table_heap_mirror_bytes,0,0,yes,0,0,0,0,0,yes,unchanged,
+jyut6ping3_scolar,prism_heap_mirror_bytes,0,0,yes,0,0,0,0,0,yes,unchanged,
+jyut6ping3_scolar,rsmarisa_status,missing_string_table,missing_string_table,yes,missing_string_table,missing_string_table,missing_string_table,missing_string_table,missing_string_table,yes,unchanged,
+jyut6ping3_scolar,rsmarisa_mapping_mode,unavailable,unavailable,yes,unavailable,unavailable,unavailable,unavailable,unavailable,yes,unchanged,

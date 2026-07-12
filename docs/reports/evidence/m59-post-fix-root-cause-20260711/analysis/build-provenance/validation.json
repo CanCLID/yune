@@ -1,0 +1,281 @@
+{
+  "overall_passed": true,
+  "scope": "read-only artifact/source/build/deployment provenance; no benchmark execution",
+  "checks": [
+    {
+      "check": "yune_commit_exact",
+      "passed": true,
+      "detail": "afb7079b71f7f9353845114ff3e310c0a38b9b87"
+    },
+    {
+      "check": "yune_worktree_pristine",
+      "passed": true,
+      "detail": "clean"
+    },
+    {
+      "check": "pinned_librime_commit_exact",
+      "passed": true,
+      "detail": "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
+    },
+    {
+      "check": "pinned_librime_pristine",
+      "passed": true,
+      "detail": "clean"
+    },
+    {
+      "check": "isolated_librime_commit_exact",
+      "passed": true,
+      "detail": "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
+    },
+    {
+      "check": "isolated_librime_tracked_clean",
+      "passed": true,
+      "detail": "?? deps/boost_1_89_0.tar.gz"
+    },
+    {
+      "check": "isolated_librime_only_expected_cache_untracked",
+      "passed": true,
+      "detail": "?? deps/boost_1_89_0.tar.gz"
+    },
+    {
+      "check": "frozen_yune_hash_exact",
+      "passed": true,
+      "detail": "3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710"
+    },
+    {
+      "check": "frozen_librime_hash_exact",
+      "passed": true,
+      "detail": "743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    },
+    {
+      "check": "final_yune_target_matches_frozen",
+      "passed": true,
+      "detail": "3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710"
+    },
+    {
+      "check": "final_librime_target_matches_frozen",
+      "passed": true,
+      "detail": "743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    },
+    {
+      "check": "five_run_stability:candidate_snapshots",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=1e79ecf566e3ed3f17907ddfed588b869fd5200094a8e5085b57a02f4bb32a88"
+    },
+    {
+      "check": "five_run_stability:track_a_librime_dylib",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    },
+    {
+      "check": "five_run_normalized_prism_stability:track_a_librime_prism",
+      "passed": true,
+      "detail": "raw_unique_hashes=5 normalized_unique_hashes=1 normalized_sha256=d804724b7dbc4e03c6a968e28fe60eb21af6be4dc550f45d540dc4c16068ecac"
+    },
+    {
+      "check": "five_run_stability:track_a_librime_reverse",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=793ac07b0f3bfd559d7b641c3f2fad617de25829c457b24fce7170f4394806e8"
+    },
+    {
+      "check": "five_run_stability:track_a_librime_shared_tree",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=1462353ebe27a3aefa8099c584c693ba06336912ecbc6eba2464c4df927409be"
+    },
+    {
+      "check": "five_run_stability:track_a_librime_table",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=f02167fd4b3abe4277e0723cf8f3f3a5bfb040583662f73b1056caeedb0a0edd"
+    },
+    {
+      "check": "five_run_stability:track_a_yune_dylib",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710"
+    },
+    {
+      "check": "five_run_stability:track_a_yune_poet",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=de2720500f6d6c5cb4a7df9128253ef3fa3edf830b1355804a5403f382e12ca6"
+    },
+    {
+      "check": "five_run_normalized_prism_stability:track_a_yune_prism",
+      "passed": true,
+      "detail": "raw_unique_hashes=5 normalized_unique_hashes=1 normalized_sha256=d804724b7dbc4e03c6a968e28fe60eb21af6be4dc550f45d540dc4c16068ecac"
+    },
+    {
+      "check": "five_run_stability:track_a_yune_reverse",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=793ac07b0f3bfd559d7b641c3f2fad617de25829c457b24fce7170f4394806e8"
+    },
+    {
+      "check": "five_run_stability:track_a_yune_shared_tree",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=1462353ebe27a3aefa8099c584c693ba06336912ecbc6eba2464c4df927409be"
+    },
+    {
+      "check": "five_run_stability:track_a_yune_staged_poet",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=de2720500f6d6c5cb4a7df9128253ef3fa3edf830b1355804a5403f382e12ca6"
+    },
+    {
+      "check": "five_run_normalized_prism_stability:track_a_yune_staged_prism",
+      "passed": true,
+      "detail": "raw_unique_hashes=5 normalized_unique_hashes=1 normalized_sha256=d804724b7dbc4e03c6a968e28fe60eb21af6be4dc550f45d540dc4c16068ecac"
+    },
+    {
+      "check": "five_run_stability:track_a_yune_staged_reverse",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=793ac07b0f3bfd559d7b641c3f2fad617de25829c457b24fce7170f4394806e8"
+    },
+    {
+      "check": "five_run_stability:track_a_yune_staged_table",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=f02167fd4b3abe4277e0723cf8f3f3a5bfb040583662f73b1056caeedb0a0edd"
+    },
+    {
+      "check": "five_run_stability:track_a_yune_table",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=f02167fd4b3abe4277e0723cf8f3f3a5bfb040583662f73b1056caeedb0a0edd"
+    },
+    {
+      "check": "five_run_stability:track_b_jyut6ping3_poet",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=bc22c2b39e34470590391a095babfcdb1ec394cc7f068410371e1e62ecaa1c65"
+    },
+    {
+      "check": "five_run_stability:track_b_jyut6ping3_prism",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=26d30c52ea35c6d72e63f0e8261f2ca4a6b6e43a82e1572b0a3c803ec29fe6b2"
+    },
+    {
+      "check": "five_run_stability:track_b_jyut6ping3_reverse",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=081085514b906a8e8d7d809468afa8226636b1e3d1a3c14fe70c58a987c9cba5"
+    },
+    {
+      "check": "five_run_stability:track_b_jyut6ping3_table",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=f68034879840f5e3b4877f44a2f5c13decf9ed2d58c6129726e2589b1c8102a9"
+    },
+    {
+      "check": "five_run_stability:track_b_product_shared_source_tree",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=62bcb9c0b657d2e8e128618643db7eb2f4889427dd7365f51e02ee40a298d93c"
+    },
+    {
+      "check": "five_run_stability:track_b_scolar_poet",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=cbd8afa31c75106d4aba4d0a5a0a60e15a7e52d45ea80838eba11cacf148ca35"
+    },
+    {
+      "check": "five_run_stability:track_b_scolar_prism",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=b4d4e49868b08e7784b633abe6c8d28a19489ff4246b56a661a3da23f6e42c76"
+    },
+    {
+      "check": "five_run_stability:track_b_scolar_reverse",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=f23e0c2a30862898ae9857962a232fa18fb19a34dd45031f80470a641bbefd18"
+    },
+    {
+      "check": "five_run_stability:track_b_scolar_table",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=4d448169c39a752cfac6c960c68443d18b1cd62638a23e3b446c342ce5cf4818"
+    },
+    {
+      "check": "five_run_stability:track_b_shared_jyut6ping3_prism",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=26d30c52ea35c6d72e63f0e8261f2ca4a6b6e43a82e1572b0a3c803ec29fe6b2"
+    },
+    {
+      "check": "five_run_stability:track_b_shared_jyut6ping3_reverse",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=081085514b906a8e8d7d809468afa8226636b1e3d1a3c14fe70c58a987c9cba5"
+    },
+    {
+      "check": "five_run_stability:track_b_shared_jyut6ping3_table",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=f68034879840f5e3b4877f44a2f5c13decf9ed2d58c6129726e2589b1c8102a9"
+    },
+    {
+      "check": "five_run_stability:track_b_shared_scolar_prism",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=4c136a1dfb37e68b97a0571c09c24ac01417cc31ac87ad26b09bb38c754d7738"
+    },
+    {
+      "check": "five_run_stability:track_b_shared_scolar_reverse",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=f23e0c2a30862898ae9857962a232fa18fb19a34dd45031f80470a641bbefd18"
+    },
+    {
+      "check": "five_run_stability:track_b_shared_scolar_table",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=4d448169c39a752cfac6c960c68443d18b1cd62638a23e3b446c342ce5cf4818"
+    },
+    {
+      "check": "five_run_stability:track_b_yune_dylib",
+      "passed": true,
+      "detail": "unique_hashes=1 sha256=3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710"
+    },
+    {
+      "check": "track_a_yune_librime_table_byte_identical",
+      "passed": true,
+      "detail": "five paired runs"
+    },
+    {
+      "check": "track_a_yune_staged_table_byte_identical",
+      "passed": true,
+      "detail": "five paired runs"
+    },
+    {
+      "check": "track_a_yune_librime_prism_byte_identical",
+      "passed": true,
+      "detail": "five paired runs"
+    },
+    {
+      "check": "track_a_yune_staged_prism_byte_identical",
+      "passed": true,
+      "detail": "five paired runs"
+    },
+    {
+      "check": "track_a_yune_librime_reverse_byte_identical",
+      "passed": true,
+      "detail": "five paired runs"
+    },
+    {
+      "check": "track_a_yune_staged_reverse_byte_identical",
+      "passed": true,
+      "detail": "five paired runs"
+    },
+    {
+      "check": "track_a_yune_staged_poet_byte_identical",
+      "passed": true,
+      "detail": "five paired runs"
+    },
+    {
+      "check": "deployment_logical_stability:track-a-comparison:luna_pinyin",
+      "passed": true,
+      "detail": "source=0xb3d4e98e table=0x29d56c89 status=accepted_upstream_marisa_import_checksum"
+    },
+    {
+      "check": "deployment_logical_stability:track-b-product:jyut6ping3",
+      "passed": true,
+      "detail": "source=0xf6589c0c table=0xf6589c0c status=fresh"
+    },
+    {
+      "check": "deployment_logical_stability:track-b-product:jyut6ping3_scolar",
+      "passed": true,
+      "detail": "source=0x822bccba table=0x822bccba status=fresh"
+    },
+    {
+      "check": "recorded_post_run_yune_hashes_exact",
+      "passed": true,
+      "detail": "3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710 | 3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710 | 3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710 | 3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710 | 3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710"
+    },
+    {
+      "check": "recorded_post_run_librime_hashes_exact",
+      "passed": true,
+      "detail": "743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6 | 743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6 | 743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6 | 743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6 | 743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    }
+  ]
+}

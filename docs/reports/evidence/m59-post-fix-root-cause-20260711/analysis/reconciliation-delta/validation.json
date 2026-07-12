@@ -1,0 +1,10 @@
+{
+  "status": "pass",
+  "old_commit": "89875ee2f812d070b43d12e6700407dccbb78435",
+  "current_commit": "afb7079b71f7f9353845114ff3e310c0a38b9b87",
+  "old_runs": 5,
+  "current_runs": 5,
+  "old_ratio_source_sha256": "fbeab8938d59e68a49fffe4fd9775fc6509c3da415cb1c24bbe0190c2b3a8d57",
+  "current_ratio_source_sha256": "eae1b28447b0227a0f68263695f2ca01527e9639778c476594b344c1a4da2891",
+  "boundary": "descriptive before/after comparison across different commits; not single-change causal attribution"
+}

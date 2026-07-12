@@ -33,3 +33,10 @@
 # as byte payloads and suppress the false blank-at-EOL diff warning.
 docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/performance-ratchet/candidate-snapshots.csv -text whitespace=-blank-at-eol
 docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/performance-ratchet/**/candidate_snapshots.csv -text whitespace=-blank-at-eol
+
+# Preserve the imported M59 macOS diagnostic CSVs byte-for-byte. The packet's
+# provenance manifests intentionally hash the original measured evidence bytes.
+docs/reports/evidence/m59-post-fix-root-cause-20260711/*.csv -text whitespace=-blank-at-eol
+docs/reports/evidence/m59-post-fix-root-cause-20260711/**/*.csv -text whitespace=-blank-at-eol
+docs/reports/evidence/m59-post-fix-root-cause-20260711/accepted-baseline/environment-*.txt whitespace=-blank-at-eol
+docs/reports/evidence/m59-post-fix-root-cause-20260711/accepted-baseline/run-*/environment.txt whitespace=-blank-at-eol

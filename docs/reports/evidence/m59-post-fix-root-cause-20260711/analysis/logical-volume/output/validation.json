@@ -1,0 +1,15 @@
+{
+  "status": "pass",
+  "checks": 30,
+  "failed": 0,
+  "source_hashes": {
+    "full-input-model.csv": "5a6ff6ac9c989f26c3600d0c0c6b86b6bdac22fd298b2393f0dbdee04387f680",
+    "full-input-product.csv": "39e86485ae552c6167a81bf4375aabf00aa576c7acf99fb61468bdb591156e32",
+    "per-key-product.csv": "fa3846767fde48e3b22e7c9ea39c3b25fc772b97e196bee85ad072b71b405b8a"
+  },
+  "limits": [
+    "fixture-backed counters, not deployed ABI measurements",
+    "candidate counts do not prove candidate text/order parity",
+    "debug nanoseconds excluded from conclusions"
+  ]
+}

@@ -1,0 +1,554 @@
+{
+  "overall_structural_validation_passed": true,
+  "checks_passed": 108,
+  "checks_total": 108,
+  "analytical_quality": {
+    "stable_qualitative_rank_cases": 10,
+    "partial_window_usable_cases": 1,
+    "insufficient_for_stable_ranking_cases": 1,
+    "timing_evidence": false,
+    "cross_engine_percentage_comparability": false
+  },
+  "checks": [
+    {
+      "check": "packet_status_complete",
+      "passed": true,
+      "detail": "{\"cases\": \"12\", \"status\": \"complete\"}"
+    },
+    {
+      "check": "packet_case_count",
+      "passed": true,
+      "detail": "directories=12; status=12"
+    },
+    {
+      "check": "sequence_exact",
+      "passed": true,
+      "detail": "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
+    },
+    {
+      "check": "runner_hash_exact",
+      "passed": true,
+      "detail": "recorded=c42e993e369bd1b4b910db7dbdde1a53252789d16cdf1f6b26bb698c6893dd24; actual=c42e993e369bd1b4b910db7dbdde1a53252789d16cdf1f6b26bb698c6893dd24"
+    },
+    {
+      "check": "symbolized_yune_hash_exact",
+      "passed": true,
+      "detail": "2b71a3a2374a2340d5489f9c94a3522d93d15df76fd1687c76ed67f503c36c0b"
+    },
+    {
+      "check": "symbolized_yune_differs_from_production",
+      "passed": true,
+      "detail": "symbol=2b71a3a2374a2340d5489f9c94a3522d93d15df76fd1687c76ed67f503c36c0b; production=3dd5a414c68f7884884c5dc172b3f0b088d1f5ae19cb983eb0eeb2f95bc6c710"
+    },
+    {
+      "check": "frozen_librime_hash_exact",
+      "passed": true,
+      "detail": "743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    },
+    {
+      "check": "coverage_shape_expected",
+      "passed": true,
+      "detail": "[('01-yune-default-n', 3876), ('02-librime-default-n', 65), ('03-yune-default-zh', 3901), ('04-librime-default-zh', 2599), ('05-yune-default-ceshiyixiachangjushuruxingnengzenyang', 3872), ('06-librime-default-ceshiyixiachangjushuruxingnengzenyang', 3872), ('07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong', 3875), ('08-librime-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong', 3874), ('09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang', 3873), ('10-librime-nano-off-ceshiyixiachangjushuruxingnengzenyang', 3898), ('11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong', 3888), ('12-librime-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong', 3876)]"
+    },
+    {
+      "check": "natural_completions_expected",
+      "passed": true,
+      "detail": "[(1, 0), (2, 1), (3, 0), (4, 1), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0)]"
+    },
+    {
+      "check": "yune_setup_overlap_present",
+      "passed": true,
+      "detail": "[('01-yune-default-n', 20.356), ('03-yune-default-zh', 24.225), ('05-yune-default-ceshiyixiachangjushuruxingnengzenyang', 22.417), ('07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong', 21.884), ('09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang', 26.104), ('11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong', 19.084)]"
+    },
+    {
+      "check": "spotlight_active_before",
+      "passed": true,
+      "detail": "(18, 12, 60.599999999999994, 10.0)"
+    },
+    {
+      "check": "spotlight_idle_after_snapshot",
+      "passed": true,
+      "detail": "(19, 0, 0.0, 0.0)"
+    },
+    {
+      "check": "01-yune-default-n:pid_matches",
+      "passed": true,
+      "detail": "metadata=45935; report=45935"
+    },
+    {
+      "check": "01-yune-default-n:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 45935 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 45935 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/01-yune-default-n/sample.txt"
+    },
+    {
+      "check": "01-yune-default-n:one_thread_root",
+      "passed": true,
+      "detail": "thread=3876; root=3876"
+    },
+    {
+      "check": "01-yune-default-n:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=3876; root=3876"
+    },
+    {
+      "check": "01-yune-default-n:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=56; computed_ge5=56"
+    },
+    {
+      "check": "01-yune-default-n:binary_hash",
+      "passed": true,
+      "detail": "2b71a3a2374a2340d5489f9c94a3522d93d15df76fd1687c76ed67f503c36c0b"
+    },
+    {
+      "check": "01-yune-default-n:binary_uuid",
+      "passed": true,
+      "detail": "AE0FE639-71DF-320C-84EA-FA1EFAE5781C"
+    },
+    {
+      "check": "01-yune-default-n:sample_structure",
+      "passed": true,
+      "detail": "bytes=232061"
+    },
+    {
+      "check": "02-librime-default-n:pid_matches",
+      "passed": true,
+      "detail": "metadata=46032; report=46032"
+    },
+    {
+      "check": "02-librime-default-n:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 46032 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 46032 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/02-librime-default-n/sample.txt"
+    },
+    {
+      "check": "02-librime-default-n:one_thread_root",
+      "passed": true,
+      "detail": "thread=65; root=65"
+    },
+    {
+      "check": "02-librime-default-n:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=65; root=65"
+    },
+    {
+      "check": "02-librime-default-n:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=2; computed_ge5=2"
+    },
+    {
+      "check": "02-librime-default-n:binary_hash",
+      "passed": true,
+      "detail": "743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    },
+    {
+      "check": "02-librime-default-n:binary_uuid",
+      "passed": true,
+      "detail": "CD461F61-D3AE-3324-80CC-07AAF241F5DB"
+    },
+    {
+      "check": "02-librime-default-n:sample_structure",
+      "passed": true,
+      "detail": "bytes=53774"
+    },
+    {
+      "check": "03-yune-default-zh:pid_matches",
+      "passed": true,
+      "detail": "metadata=46116; report=46116"
+    },
+    {
+      "check": "03-yune-default-zh:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 46116 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 46116 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/03-yune-default-zh/sample.txt"
+    },
+    {
+      "check": "03-yune-default-zh:one_thread_root",
+      "passed": true,
+      "detail": "thread=3901; root=3901"
+    },
+    {
+      "check": "03-yune-default-zh:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=3901; root=3901"
+    },
+    {
+      "check": "03-yune-default-zh:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=60; computed_ge5=60"
+    },
+    {
+      "check": "03-yune-default-zh:binary_hash",
+      "passed": true,
+      "detail": "2b71a3a2374a2340d5489f9c94a3522d93d15df76fd1687c76ed67f503c36c0b"
+    },
+    {
+      "check": "03-yune-default-zh:binary_uuid",
+      "passed": true,
+      "detail": "AE0FE639-71DF-320C-84EA-FA1EFAE5781C"
+    },
+    {
+      "check": "03-yune-default-zh:sample_structure",
+      "passed": true,
+      "detail": "bytes=280302"
+    },
+    {
+      "check": "04-librime-default-zh:pid_matches",
+      "passed": true,
+      "detail": "metadata=46491; report=46491"
+    },
+    {
+      "check": "04-librime-default-zh:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 46491 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 46491 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/04-librime-default-zh/sample.txt"
+    },
+    {
+      "check": "04-librime-default-zh:one_thread_root",
+      "passed": true,
+      "detail": "thread=2599; root=2599"
+    },
+    {
+      "check": "04-librime-default-zh:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=2599; root=2599"
+    },
+    {
+      "check": "04-librime-default-zh:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=58; computed_ge5=58"
+    },
+    {
+      "check": "04-librime-default-zh:binary_hash",
+      "passed": true,
+      "detail": "743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    },
+    {
+      "check": "04-librime-default-zh:binary_uuid",
+      "passed": true,
+      "detail": "CD461F61-D3AE-3324-80CC-07AAF241F5DB"
+    },
+    {
+      "check": "04-librime-default-zh:sample_structure",
+      "passed": true,
+      "detail": "bytes=306560"
+    },
+    {
+      "check": "05-yune-default-ceshiyixiachangjushuruxingnengzenyang:pid_matches",
+      "passed": true,
+      "detail": "metadata=46534; report=46534"
+    },
+    {
+      "check": "05-yune-default-ceshiyixiachangjushuruxingnengzenyang:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 46534 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 46534 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/05-yune-default-ceshiyixiachangjushuruxingnengzenyang/sample.txt"
+    },
+    {
+      "check": "05-yune-default-ceshiyixiachangjushuruxingnengzenyang:one_thread_root",
+      "passed": true,
+      "detail": "thread=3872; root=3872"
+    },
+    {
+      "check": "05-yune-default-ceshiyixiachangjushuruxingnengzenyang:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=3872; root=3872"
+    },
+    {
+      "check": "05-yune-default-ceshiyixiachangjushuruxingnengzenyang:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=53; computed_ge5=53"
+    },
+    {
+      "check": "05-yune-default-ceshiyixiachangjushuruxingnengzenyang:binary_hash",
+      "passed": true,
+      "detail": "2b71a3a2374a2340d5489f9c94a3522d93d15df76fd1687c76ed67f503c36c0b"
+    },
+    {
+      "check": "05-yune-default-ceshiyixiachangjushuruxingnengzenyang:binary_uuid",
+      "passed": true,
+      "detail": "AE0FE639-71DF-320C-84EA-FA1EFAE5781C"
+    },
+    {
+      "check": "05-yune-default-ceshiyixiachangjushuruxingnengzenyang:sample_structure",
+      "passed": true,
+      "detail": "bytes=387538"
+    },
+    {
+      "check": "06-librime-default-ceshiyixiachangjushuruxingnengzenyang:pid_matches",
+      "passed": true,
+      "detail": "metadata=46821; report=46821"
+    },
+    {
+      "check": "06-librime-default-ceshiyixiachangjushuruxingnengzenyang:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 46821 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 46821 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/06-librime-default-ceshiyixiachangjushuruxingnengzenyang/sample.txt"
+    },
+    {
+      "check": "06-librime-default-ceshiyixiachangjushuruxingnengzenyang:one_thread_root",
+      "passed": true,
+      "detail": "thread=3872; root=3872"
+    },
+    {
+      "check": "06-librime-default-ceshiyixiachangjushuruxingnengzenyang:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=3872; root=3872"
+    },
+    {
+      "check": "06-librime-default-ceshiyixiachangjushuruxingnengzenyang:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=56; computed_ge5=56"
+    },
+    {
+      "check": "06-librime-default-ceshiyixiachangjushuruxingnengzenyang:binary_hash",
+      "passed": true,
+      "detail": "743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    },
+    {
+      "check": "06-librime-default-ceshiyixiachangjushuruxingnengzenyang:binary_uuid",
+      "passed": true,
+      "detail": "CD461F61-D3AE-3324-80CC-07AAF241F5DB"
+    },
+    {
+      "check": "06-librime-default-ceshiyixiachangjushuruxingnengzenyang:sample_structure",
+      "passed": true,
+      "detail": "bytes=484858"
+    },
+    {
+      "check": "07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:pid_matches",
+      "passed": true,
+      "detail": "metadata=46879; report=46879"
+    },
+    {
+      "check": "07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 46879 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 46879 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong/sample.txt"
+    },
+    {
+      "check": "07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:one_thread_root",
+      "passed": true,
+      "detail": "thread=3875; root=3875"
+    },
+    {
+      "check": "07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=3875; root=3875"
+    },
+    {
+      "check": "07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=52; computed_ge5=52"
+    },
+    {
+      "check": "07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:binary_hash",
+      "passed": true,
+      "detail": "2b71a3a2374a2340d5489f9c94a3522d93d15df76fd1687c76ed67f503c36c0b"
+    },
+    {
+      "check": "07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:binary_uuid",
+      "passed": true,
+      "detail": "AE0FE639-71DF-320C-84EA-FA1EFAE5781C"
+    },
+    {
+      "check": "07-yune-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:sample_structure",
+      "passed": true,
+      "detail": "bytes=392560"
+    },
+    {
+      "check": "08-librime-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:pid_matches",
+      "passed": true,
+      "detail": "metadata=46935; report=46935"
+    },
+    {
+      "check": "08-librime-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 46935 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 46935 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/08-librime-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong/sample.txt"
+    },
+    {
+      "check": "08-librime-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:one_thread_root",
+      "passed": true,
+      "detail": "thread=3874; root=3874"
+    },
+    {
+      "check": "08-librime-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=3874; root=3874"
+    },
+    {
+      "check": "08-librime-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=46; computed_ge5=46"
+    },
+    {
+      "check": "08-librime-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:binary_hash",
+      "passed": true,
+      "detail": "743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    },
+    {
+      "check": "08-librime-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:binary_uuid",
+      "passed": true,
+      "detail": "CD461F61-D3AE-3324-80CC-07AAF241F5DB"
+    },
+    {
+      "check": "08-librime-default-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:sample_structure",
+      "passed": true,
+      "detail": "bytes=443235"
+    },
+    {
+      "check": "09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang:pid_matches",
+      "passed": true,
+      "detail": "metadata=47040; report=47040"
+    },
+    {
+      "check": "09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 47040 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 47040 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang/sample.txt"
+    },
+    {
+      "check": "09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang:one_thread_root",
+      "passed": true,
+      "detail": "thread=3873; root=3873"
+    },
+    {
+      "check": "09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=3873; root=3873"
+    },
+    {
+      "check": "09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=49; computed_ge5=49"
+    },
+    {
+      "check": "09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang:binary_hash",
+      "passed": true,
+      "detail": "2b71a3a2374a2340d5489f9c94a3522d93d15df76fd1687c76ed67f503c36c0b"
+    },
+    {
+      "check": "09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang:binary_uuid",
+      "passed": true,
+      "detail": "AE0FE639-71DF-320C-84EA-FA1EFAE5781C"
+    },
+    {
+      "check": "09-yune-nano-off-ceshiyixiachangjushuruxingnengzenyang:sample_structure",
+      "passed": true,
+      "detail": "bytes=380523"
+    },
+    {
+      "check": "10-librime-nano-off-ceshiyixiachangjushuruxingnengzenyang:pid_matches",
+      "passed": true,
+      "detail": "metadata=47234; report=47234"
+    },
+    {
+      "check": "10-librime-nano-off-ceshiyixiachangjushuruxingnengzenyang:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 47234 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 47234 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/10-librime-nano-off-ceshiyixiachangjushuruxingnengzenyang/sample.txt"
+    },
+    {
+      "check": "10-librime-nano-off-ceshiyixiachangjushuruxingnengzenyang:one_thread_root",
+      "passed": true,
+      "detail": "thread=3898; root=3898"
+    },
+    {
+      "check": "10-librime-nano-off-ceshiyixiachangjushuruxingnengzenyang:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=3898; root=3898"
+    },
+    {
+      "check": "10-librime-nano-off-ceshiyixiachangjushuruxingnengzenyang:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=50; computed_ge5=50"
+    },
+    {
+      "check": "10-librime-nano-off-ceshiyixiachangjushuruxingnengzenyang:binary_hash",
+      "passed": true,
+      "detail": "743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    },
+    {
+      "check": "10-librime-nano-off-ceshiyixiachangjushuruxingnengzenyang:binary_uuid",
+      "passed": true,
+      "detail": "CD461F61-D3AE-3324-80CC-07AAF241F5DB"
+    },
+    {
+      "check": "10-librime-nano-off-ceshiyixiachangjushuruxingnengzenyang:sample_structure",
+      "passed": true,
+      "detail": "bytes=479670"
+    },
+    {
+      "check": "11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:pid_matches",
+      "passed": true,
+      "detail": "metadata=47556; report=47556"
+    },
+    {
+      "check": "11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 47556 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 47556 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong/sample.txt"
+    },
+    {
+      "check": "11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:one_thread_root",
+      "passed": true,
+      "detail": "thread=3888; root=3888"
+    },
+    {
+      "check": "11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=3888; root=3888"
+    },
+    {
+      "check": "11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=52; computed_ge5=52"
+    },
+    {
+      "check": "11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:binary_hash",
+      "passed": true,
+      "detail": "2b71a3a2374a2340d5489f9c94a3522d93d15df76fd1687c76ed67f503c36c0b"
+    },
+    {
+      "check": "11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:binary_uuid",
+      "passed": true,
+      "detail": "AE0FE639-71DF-320C-84EA-FA1EFAE5781C"
+    },
+    {
+      "check": "11-yune-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:sample_structure",
+      "passed": true,
+      "detail": "bytes=423834"
+    },
+    {
+      "check": "12-librime-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:pid_matches",
+      "passed": true,
+      "detail": "metadata=47714; report=47714"
+    },
+    {
+      "check": "12-librime-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:sample_completed",
+      "passed": true,
+      "detail": "Sampling process 47714 for 5 seconds with 1 millisecond of run time between samples | Sampling completed, processing symbols... | Sample analysis of process 47714 written to file /Users/laufei/yune-m59-post-fix-root-cause-20260711/controls/cpu-samples/cases/12-librime-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong/sample.txt"
+    },
+    {
+      "check": "12-librime-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:one_thread_root",
+      "passed": true,
+      "detail": "thread=3876; root=3876"
+    },
+    {
+      "check": "12-librime-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:exclusive_partition",
+      "passed": true,
+      "detail": "exclusive=3876; root=3876"
+    },
+    {
+      "check": "12-librime-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:reported_top_reproduced",
+      "passed": true,
+      "detail": "reported=45; computed_ge5=45"
+    },
+    {
+      "check": "12-librime-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:binary_hash",
+      "passed": true,
+      "detail": "743acf3e3a0b64f94680a2f822b00ae42d35ce1e2ab3c8994441bc305adaf8f6"
+    },
+    {
+      "check": "12-librime-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:binary_uuid",
+      "passed": true,
+      "detail": "CD461F61-D3AE-3324-80CC-07AAF241F5DB"
+    },
+    {
+      "check": "12-librime-nano-off-zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong:sample_structure",
+      "passed": true,
+      "detail": "bytes=475716"
+    }
+  ]
+}

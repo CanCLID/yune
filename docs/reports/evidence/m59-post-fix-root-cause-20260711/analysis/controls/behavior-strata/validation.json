@@ -1,0 +1,11 @@
+{
+  "status": "pass",
+  "checks": 8,
+  "failed": 0,
+  "source": "/Users/laufei/yune-m59-post-fix-root-cause-20260711/analysis/controls/output/prefix-latency-payload-curve.csv",
+  "source_sha256": "54e5b794c3a40cc1af4533e1f354a1838e1e4c83fa977e39a644292ca44dd485",
+  "limits": [
+    "text equivalence is captured first-page text hash equivalence, not full semantic parity",
+    "summed prefix medians are a diagnostic reconstruction, not an acceptance metric"
+  ]
+}

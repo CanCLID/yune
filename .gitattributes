@@ -45,3 +45,7 @@ docs/reports/evidence/m59-post-fix-root-cause-20260711/accepted-baseline/run-*/e
 # Its manifest binds the original source-current measurement receipts, including
 # their Windows CRLF bytes, so Git must not normalize this raw evidence subtree.
 docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4b-abbreviation-segmentation/performance-ratchet/** -text whitespace=-blank-at-eol
+
+# Preserve the imported M59 Increment 4c performance packet byte-for-byte.
+# The aggregate provenance binds the original Windows measurement receipts.
+docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/** -text whitespace=-blank-at-eol

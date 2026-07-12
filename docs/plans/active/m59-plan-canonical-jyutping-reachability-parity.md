@@ -18,39 +18,33 @@
 > `ca52ec42`, and the owner-provided Opus blocking review (substituting while
 > Fable was unavailable) is fixed forward at `2257fbbe`, with its packet under
 > `increment-4a-sentence-ordering/`.
-> The fixed-DLL five-run increment ratchet is green (`32/32`) and explicitly
-> covers the 37- and 59-character rows. The raw five-row Lane A comparator stays
-> visibly red (`2/5` exact, no new exception): deterministic classification
-> attributes the remaining surface to the predeclared 4c OpenCC rows plus the
-> owner-signed equal-weight class. The blocking review accepted that
-> classification and found one explicit-false bypass; the bypass is repaired,
-> the exact deployment matrix and a fresh 32/32 signed ratchet guard are green.
-> Because the prior class-3 disposition says to revisit if the diff grows, the
-> owner explicitly renewed the narrowly scoped D-48 exception on 2026-07-11:
-> `6,086` equal-weight inversions, zero cross-weight inversions, no
-> beyond-oracle-depth use, with the declared revisit triggers.
-> Increment 4b is now implemented through `d508e05b`, with accepted external
-> behavior and five-round performance evidence bound to that clean production
-> source. Its bounded/lazy abbreviation and longest-recognized-prefix
-> mechanism makes the declared five-row class-4 surface exact after only the
-> already-declared Increment 4c OpenCC normalization: text/position, preedit,
-> and commit preview are `5/5`. The raw strict comparator remains visibly red
-> at `1/5`; every residual is limited to `僞`, `臥`, and `鉤`, with zero unowned
-> residuals, no new exception, and no beyond-oracle-depth use. All 32 signed
-> performance rows pass across all five source-bound runs, including every
-> individual observation and the 37/59-character rows. The designated Opus
-> blocking review independently reproduced the load-bearing gates and approved
-> 4b with no blocking finding, so Increment 4c may begin.
-> No D-48 lane, REACH-03/04, or final-gate row is implied complete here.
+> The 4a fixed-DLL five-run increment ratchet is green (`32/32`) and explicitly
+> covers the 37- and 59-character rows. Its historical raw five-row Lane A
+> comparator was `2/5`; the owner renewed the narrowly scoped D-48 class-3
+> exception on 2026-07-11 for `6,086` equal-weight inversions, zero cross-weight
+> inversions, and no beyond-oracle-depth use, with the declared revisit triggers.
+> Increment 4b then landed through `d508e05b`, made its class-4 surface exact
+> after the predeclared 4c OpenCC normalization, passed the unchanged signed
+> ratchet, and received the designated Opus approval.
 >
-> Nothing remaining moves to M60 or another milestone. The 4a review,
-> fix-forward, and owner re-disposition conditions are satisfied. Increment 4b
-> selected the owner-approved retained-ceiling, lazy/page-bounded strategy after
-> its first short-key checkpoint went red; its final ratchet is green without a
-> re-baseline. No later engine-behavior increment starts until the designated
-> Opus review of landed 4b returns, every finding is resolved, and the packet is
-> updated. Non-overlapping evidence/docs work may continue during that wait;
-> reviews for other increments remain nonblocking.
+> Increment 4c is implemented at clean production source `e11557e2`. Ordered
+> whole-word one-to-many conversion, stable family deduplication, and
+> default-only partial recomposition now match pinned librime on the named Hong
+> Kong chain. A fresh external all-page capture is strict `13/13` across 5,705
+> candidate text/order/position rows, page shape, preedit, and commit preview,
+> with zero exception, tail, or beyond-depth use. The historical 4a class-3
+> disposition remains recorded but is unused by the final capture. Canonical
+> comments retain 854 explicitly non-gating differences across nine inputs;
+> whole-capture byte identity and canonical comment parity are not claimed.
+> Five fresh source-bound performance rounds pass all 32 aggregate median rows
+> under unchanged ceilings and preserve two individual red observations; `n`,
+> `ni`, `hao`, and the 37/59-character rows all pass. Lane A D-48 is complete.
+> Increment 4d Cangjie CJ-1 is next. Lane B, Cangjie, REACH-03/04, final evidence,
+> and final gates remain open.
+>
+> Nothing remaining moves to M60 or another milestone. The blocking-review
+> conditions for 4a and 4b are satisfied. Reviews for 4c and later non-4a/4b
+> increments remain nonblocking under the locked plan.
 >
 > A separate macOS follow-up is measured only at source commit `89875ee2`.
 > Its exact 37/59 first pages match pinned librime, and its non-circular fixture
@@ -58,10 +52,10 @@
 > stored-`f32` rounding. This supplemental packet has its own evidence directory
 > and changes no threshold, exception, or milestone. It neither claims that the
 > combined/reconciled source was measured nor causes or supersedes the recorded
-> Windows owner disposition: the strict Lane A comparator remains `2/5`, the
-> narrowly scoped class-3 exception and its revisit triggers remain in force,
-> and the later 4b implementation/review state is governed by the current
-> Windows update above.
+> Windows owner disposition: its historical 4a strict Lane A comparator remains
+> `2/5` and the narrowly scoped class-3 exception and revisit triggers stay in
+> the record. The later authoritative 4c Windows capture is independently
+> strict `13/13` and does not consume that exception.
 
 > **For agentic workers:** this plan was RESET on 2026-07-06 after the prior
 > execution was found to be gamed and reverted, then re-scoped per owner
@@ -100,7 +94,8 @@
   and explicit owner re-disposition are complete. Increment 4b is landed, its
   retained-ceiling lazy/page-bounded implementation passes all 32 signed rows
   in five source-bound rounds, and its designated Opus review approved it with
-  no blocking finding. Increment 4c may begin. Other reviews remain nonblocking.
+  no blocking finding. Increment 4c is complete; 4d is next. Other reviews
+  remain nonblocking.
 - **Increment 2 complete (`e37ee011`, pushed 2026-07-10):** explicit
   TypeDuck-profile activation repaired the direct Cantonese and synthetic
   Windows harnesses without golden edits; one `Engine` policy now governs
@@ -158,6 +153,21 @@
   Increment 4c. The packet also discloses that source-current WEB-04
   is red on two Octagram rows, reproduces before 4b, and remains assigned to the
   existing untoned-Luna 4e/final-closeout boundary; no web-gate pass is claimed.
+- **Increment 4c implemented at `e11557e2`:** the named Hong Kong OpenCC chain
+  now preserves ordered one-to-many exact `ConvertWord` output, stable family
+  deduplication, and default-only partial recomposition without schema-id,
+  input, promotion, oracle-data, ABI, or compiled-format gates. A fresh pinned
+  oracle refresh is exact against the prior 13-input capture. The production
+  all-page capture is strict `13/13` over 5,705 candidates for text/order,
+  global/page position, page shape, termination, preedit, and commit preview.
+  The complete 83-row same-code inventory reconciles to 64 of 65 source keys;
+  all 14 visible occurrences are exact. No exception or beyond-depth row is
+  used, so the historical 4a class-3 disposition is unused by final Lane A.
+  Canonical comments retain 854 non-gating differences outside D-48's
+  text/order contract. Five fresh one-build/four-reuse rounds pass all 32 signed
+  aggregate median rows under unchanged ceilings while preserving two
+  individual red observations. Evidence: `increment-4c-opencc-variants/`.
+  Lane A D-48 is complete; 4d Cangjie CJ-1 is next.
 - **Supplemental macOS 37/59 repair measured at source `89875ee2`:**
   `71a80704` separates upstream Luna's one-best sentence from its independent
   phrase stream; `e5c57eb6` preserves ScriptTranslation display metadata;
@@ -179,9 +189,8 @@
 - **Increment 4b checklist residual from 3b is closed:** heap/source
   `ExpandedSpellingCode` precedence, abbreviation provenance, graph merging,
   bounded complete traversal, and the `n`/`nri`/`ngohaig` segmentation family
-  are covered by owning tests and external captures. The later OpenCC sibling
-  rows remain explicitly owned by 4c rather than being normalized away in the
-  raw comparator.
+  are covered by owning tests and external captures. Increment 4c closes the
+  formerly declared OpenCC sibling residual on the raw strict comparator.
 
 ## Honest baseline (`7d5ec9b8`, verified 2026-07-06)
 
@@ -500,8 +509,9 @@ amendment):
 - [x] **Lane B reachability mechanism DONE; D-48 exact order OPEN (landed `c89a8ea9`):** luna complete-list/page-turn injection
       point traced + implemented; storage/prism facts recorded (luna is
       Compact+prism → bounded syllabary); `moboyi`→莫伯洢 acceptance added as a real-path test (not a capture).
-- [ ] Any newly captured rows committed with full provenance; Yune pre-fix output
-      recorded alongside.
+- [x] Fresh 13-input oracle and Yune all-page captures committed with full
+      provenance under `increment-4c-opencc-variants/`; the historical red
+      boundaries remain preserved in the 4a/4b packets.
 
 ### Phase 2 — Re-freeze the diff FROM SCRATCH (the retained diff is gone)
 > **CORRECTION 2026-07-08:** `phase-2/canonical-pre-fix-diff.json` is **NOT in the
@@ -510,12 +520,12 @@ amendment):
 > (bounded injection, bare-syllable gate, boundary skip, range cap, precedence),
 > none of which existed when the old diff was frozen. Re-freeze from scratch once
 > the deploy blocker is cleared.
-- [ ] Re-freeze the classified diff from Yune's current-main (flip-on) canonical
+- [x] Re-freeze the classified diff from Yune's current-main (flip-on) canonical
       output vs the oracle capture, per-direction (reachability / over-admission /
       under-admission / order-only), order-exact through the captured range, every
       divergence named. Watch `bei` (碑悲卑… vs oracle 畀比被鼻避… — expect it changed
-      under the flip). This re-frozen diff — not any model, not a baked table — is
-      the Phase 3 spec.
+      under the flip). Increment 4c's final strict comparator is `13/13`, so the
+      re-frozen diff is empty for D-48 text/order and consumes no exception.
 
 ### Phase 3 — Implement per the diff (general mechanism)
 - [x] **(Lane B reachability mechanism DONE; D-48 exact order OPEN)** Luna leading-syllable injection (page-turn path, general,
@@ -523,12 +533,13 @@ amendment):
       ordering. Typed capability `translator/leading_syllable_reachability`
       (distinct from broad `prefix_fallback`); bounded fetch capped; `ordered_mode`
       not widened (luna early-stop preserved); untoned relaxation gated to the lane.
-- [ ] **(Lane A)** Any canonical rime-cantonese fixes the diff proves, scoped so
-      Track A/luna typing is untouched.
+- [x] **(Lane A)** Canonical rime-cantonese fixes proven by the external diff are
+      complete through 4c and scoped so Track A/luna typing is untouched.
 - [x] **(Lane B reachability mechanism DONE; D-48 exact order OPEN)** Byte-backed non-circular tests (`yune_web.rs`
       `m59_luna_*`): `moboyi`→莫伯洢 + `zhongguo`/bare-syllable controls + phrase-before-single
       ordering; jyutping `zijiguk`→諮 / `beingo`→畀 stay green.
-- [ ] **(Lane A)** non-named jyutping canonical control; `beingo`→匕 named guard.
+- [x] **(Lane A)** the complete 13-input all-page capture includes canonical
+      controls plus the named `beingo` guard; final text/order is exact.
 
 ### Phase 4 — Perf, gates, docs, close
 - [x] Lint/format + focused suites green: `cargo fmt --check`, `clippy -D

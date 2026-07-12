@@ -1,0 +1,700 @@
+{
+  "applicable_inventory_occurrences": [
+    {
+      "actual_text_order": [
+        "偽",
+        "僞"
+      ],
+      "exact_text_order_position": true,
+      "input": "ngohaig",
+      "inventory_identity": {
+        "code": "ngai6",
+        "key": "僞",
+        "source_line": 1
+      },
+      "oracle_text_order": [
+        "偽",
+        "僞"
+      ],
+      "outputs": [
+        "偽",
+        "僞"
+      ],
+      "positions": [
+        913,
+        914
+      ]
+    },
+    {
+      "actual_text_order": [
+        "偽",
+        "僞"
+      ],
+      "exact_text_order_position": true,
+      "input": "n",
+      "inventory_identity": {
+        "code": "ngai6",
+        "key": "僞",
+        "source_line": 1
+      },
+      "oracle_text_order": [
+        "偽",
+        "僞"
+      ],
+      "outputs": [
+        "偽",
+        "僞"
+      ],
+      "positions": [
+        70,
+        71
+      ]
+    },
+    {
+      "actual_text_order": [
+        "偽",
+        "僞"
+      ],
+      "exact_text_order_position": true,
+      "input": "nri",
+      "inventory_identity": {
+        "code": "ngai6",
+        "key": "僞",
+        "source_line": 1
+      },
+      "oracle_text_order": [
+        "偽",
+        "僞"
+      ],
+      "outputs": [
+        "偽",
+        "僞"
+      ],
+      "positions": [
+        70,
+        71
+      ]
+    },
+    {
+      "actual_text_order": [
+        "只",
+        "衹"
+      ],
+      "exact_text_order_position": true,
+      "input": "zijiguk",
+      "inventory_identity": {
+        "code": "zi2",
+        "key": "只",
+        "source_line": 4
+      },
+      "oracle_text_order": [
+        "只",
+        "衹"
+      ],
+      "outputs": [
+        "只",
+        "衹"
+      ],
+      "positions": [
+        31,
+        32
+      ]
+    },
+    {
+      "actual_text_order": [
+        "秘",
+        "祕"
+      ],
+      "exact_text_order_position": true,
+      "input": "bei",
+      "inventory_identity": {
+        "code": "bei3",
+        "key": "祕",
+        "source_line": 36
+      },
+      "oracle_text_order": [
+        "秘",
+        "祕"
+      ],
+      "outputs": [
+        "秘",
+        "祕"
+      ],
+      "positions": [
+        8,
+        9
+      ]
+    },
+    {
+      "actual_text_order": [
+        "秘",
+        "祕"
+      ],
+      "exact_text_order_position": true,
+      "input": "being",
+      "inventory_identity": {
+        "code": "bei3",
+        "key": "祕",
+        "source_line": 36
+      },
+      "oracle_text_order": [
+        "秘",
+        "祕"
+      ],
+      "outputs": [
+        "秘",
+        "祕"
+      ],
+      "positions": [
+        9,
+        10
+      ]
+    },
+    {
+      "actual_text_order": [
+        "秘",
+        "祕"
+      ],
+      "exact_text_order_position": true,
+      "input": "beingo",
+      "inventory_identity": {
+        "code": "bei3",
+        "key": "祕",
+        "source_line": 36
+      },
+      "oracle_text_order": [
+        "秘",
+        "祕"
+      ],
+      "outputs": [
+        "秘",
+        "祕"
+      ],
+      "positions": [
+        11,
+        12
+      ]
+    },
+    {
+      "actual_text_order": [
+        "卧",
+        "臥"
+      ],
+      "exact_text_order_position": true,
+      "input": "ngohaig",
+      "inventory_identity": {
+        "code": "ngo6",
+        "key": "臥",
+        "source_line": 45
+      },
+      "oracle_text_order": [
+        "卧",
+        "臥"
+      ],
+      "outputs": [
+        "卧",
+        "臥"
+      ],
+      "positions": [
+        50,
+        51
+      ]
+    },
+    {
+      "actual_text_order": [
+        "卧",
+        "臥"
+      ],
+      "exact_text_order_position": true,
+      "input": "ngohaigo",
+      "inventory_identity": {
+        "code": "ngo6",
+        "key": "臥",
+        "source_line": 45
+      },
+      "oracle_text_order": [
+        "卧",
+        "臥"
+      ],
+      "outputs": [
+        "卧",
+        "臥"
+      ],
+      "positions": [
+        9,
+        10
+      ]
+    },
+    {
+      "actual_text_order": [
+        "卧",
+        "臥"
+      ],
+      "exact_text_order_position": true,
+      "input": "n",
+      "inventory_identity": {
+        "code": "ngo6",
+        "key": "臥",
+        "source_line": 45
+      },
+      "oracle_text_order": [
+        "卧",
+        "臥"
+      ],
+      "outputs": [
+        "卧",
+        "臥"
+      ],
+      "positions": [
+        87,
+        88
+      ]
+    },
+    {
+      "actual_text_order": [
+        "卧",
+        "臥"
+      ],
+      "exact_text_order_position": true,
+      "input": "nri",
+      "inventory_identity": {
+        "code": "ngo6",
+        "key": "臥",
+        "source_line": 45
+      },
+      "oracle_text_order": [
+        "卧",
+        "臥"
+      ],
+      "outputs": [
+        "卧",
+        "臥"
+      ],
+      "positions": [
+        87,
+        88
+      ]
+    },
+    {
+      "actual_text_order": [
+        "鈎",
+        "鉤"
+      ],
+      "exact_text_order_position": true,
+      "input": "ngohaig",
+      "inventory_identity": {
+        "code": "ngau1",
+        "key": "鉤",
+        "source_line": 61
+      },
+      "oracle_text_order": [
+        "鈎",
+        "鉤"
+      ],
+      "outputs": [
+        "鈎",
+        "鉤"
+      ],
+      "positions": [
+        1105,
+        1106
+      ]
+    },
+    {
+      "actual_text_order": [
+        "鈎",
+        "鉤"
+      ],
+      "exact_text_order_position": true,
+      "input": "n",
+      "inventory_identity": {
+        "code": "ngau1",
+        "key": "鉤",
+        "source_line": 61
+      },
+      "oracle_text_order": [
+        "鈎",
+        "鉤"
+      ],
+      "outputs": [
+        "鈎",
+        "鉤"
+      ],
+      "positions": [
+        299,
+        300
+      ]
+    },
+    {
+      "actual_text_order": [
+        "鈎",
+        "鉤"
+      ],
+      "exact_text_order_position": true,
+      "input": "nri",
+      "inventory_identity": {
+        "code": "ngau1",
+        "key": "鉤",
+        "source_line": 61
+      },
+      "oracle_text_order": [
+        "鈎",
+        "鉤"
+      ],
+      "outputs": [
+        "鈎",
+        "鉤"
+      ],
+      "positions": [
+        299,
+        300
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "actual_count": 4,
+      "commit_text_preview": "啤",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "be",
+      "oracle_count": 4,
+      "page_count": 1,
+      "page_size": 5,
+      "preedit": "be",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 139,
+      "commit_text_preview": "畀",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "bei",
+      "oracle_count": 139,
+      "page_count": 28,
+      "page_size": 5,
+      "preedit": "bei",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 5,
+      "commit_text_preview": "啤In",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "bein",
+      "oracle_count": 5,
+      "page_count": 1,
+      "page_size": 5,
+      "preedit": "be in",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 140,
+      "commit_text_preview": "畀嗯",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "being",
+      "oracle_count": 140,
+      "page_count": 28,
+      "page_size": 5,
+      "preedit": "bei ng",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 142,
+      "commit_text_preview": "比我",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "beingo",
+      "oracle_count": 142,
+      "page_count": 29,
+      "page_size": 5,
+      "preedit": "bei ngo",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 36,
+      "commit_text_preview": "畀",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "beix",
+      "oracle_count": 36,
+      "page_count": 8,
+      "page_size": 5,
+      "preedit": "bei2",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 38,
+      "commit_text_preview": "比我",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "beixngoxx",
+      "oracle_count": 38,
+      "page_count": 8,
+      "page_size": 5,
+      "preedit": "bei2 ngo5",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 2050,
+      "commit_text_preview": "我係噉",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "ngohaig",
+      "oracle_count": 2050,
+      "page_count": 410,
+      "page_size": 5,
+      "preedit": "ngo hai g",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 113,
+      "commit_text_preview": "我繫個",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "ngohaigo",
+      "oracle_count": 113,
+      "page_count": 23,
+      "page_size": 5,
+      "preedit": "ngo hai go",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 1309,
+      "commit_text_preview": "我",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "n",
+      "oracle_count": 1309,
+      "page_count": 262,
+      "page_size": 5,
+      "preedit": "n",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 1309,
+      "commit_text_preview": "我ri",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "nri",
+      "oracle_count": 1309,
+      "page_count": 262,
+      "page_size": 5,
+      "preedit": "nri",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 4,
+      "commit_text_preview": "唔該",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "mgoi",
+      "oracle_count": 4,
+      "page_count": 1,
+      "page_size": 5,
+      "preedit": "m goi",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    },
+    {
+      "actual_count": 416,
+      "commit_text_preview": "諮議局",
+      "exact_count_pages_termination_preedit_commit": true,
+      "input": "zijiguk",
+      "oracle_count": 416,
+      "page_count": 84,
+      "page_size": 5,
+      "preedit": "zi ji guk",
+      "termination_reason": "last_page",
+      "verdict": "pass"
+    }
+  ],
+  "classification_complete": true,
+  "comment_field_comparison": {
+    "acceptance_gating": false,
+    "acceptance_scope": "D-48 Lane A accepts candidate text/order/position; canonical comment byte identity is not claimed. OpenCC-owned rows still require code provenance independently.",
+    "affected_case_count": 9,
+    "affected_inputs": [
+      "bein",
+      "being",
+      "beingo",
+      "beix",
+      "beixngoxx",
+      "ngohaig",
+      "ngohaigo",
+      "mgoi",
+      "zijiguk"
+    ],
+    "mismatch_count": 854,
+    "ordered_mismatch_tuple_encoding": "UTF-8 compact JSON array, ensure_ascii=false, no terminal newline",
+    "ordered_mismatch_tuple_fields": [
+      "input",
+      "candidate_index",
+      "oracle_comment",
+      "actual_comment"
+    ],
+    "ordered_mismatch_tuples_sha256": "c68be6b33cd519962b09037e7bbca144ebce9b80aa00510551fc6ecc704793b1",
+    "total_candidates_compared": 5705
+  },
+  "inventory_reconciliation": {
+    "inventory_rows": 83,
+    "mapping_mismatches": 0,
+    "order_mismatches": 0,
+    "represented_mapping_keys": 64,
+    "source_mapping_keys": 65,
+    "unrepresented_mapping": {
+      "key": "叄",
+      "outputs": [
+        "叁",
+        "叄"
+      ],
+      "reason": "no exact-code sibling group in pinned dictionary inventory",
+      "source_line": 3
+    },
+    "unrepresented_mapping_keys": 1
+  },
+  "milestone": "M59 Increment 4c",
+  "opencc_oracle_fixture": {
+    "fixture_cases": 5,
+    "manifest_rows": 1,
+    "partial_segmentation_default_only": true,
+    "pass_through_control": true,
+    "stable_dedup": true,
+    "whole_word_one_to_many": true
+  },
+  "policy": {
+    "beyond_oracle_depth": false,
+    "candidate_order": "strict-exact",
+    "exceptions": null,
+    "opencc_inventory": "complete-pinned-source-reconciliation",
+    "opencc_residual": null
+  },
+  "provenance": {
+    "actual": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/behavior/lane-a-13-yune.json",
+      "sha256": "28baf32eeade77b54b0c8208c32b7f6a072ad4ccf66454cf61a38b351280d099"
+    },
+    "capture_identity": {
+      "actual_source_clean": true,
+      "actual_source_commit": "e11557e2bbb05e3598e2d96dd6eb669ded88d33d",
+      "actual_source_tree": "48bf8dbad8811e8c23e90af683a4c2bbcd9831cc",
+      "actual_yune_dll_sha256": "5a95705fa33e74dc7954d356339621c1462ddd9198eccf51dbb9b9abbd0f5eb7",
+      "oracle_engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+      "oracle_schema_commit": "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+      "source_shared_tree_sha256": "96261d02bc7319dc599aa15aa8bc56176aacae1a8e4b75f73d8abfd148d09978",
+      "staged_shared_tree_sha256": "5c2831482c2aa63bedfac7178a94d210c5218c5b474051f1a4a2386e077aa51e"
+    },
+    "effective_argv": [
+      "--oracle",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json",
+      "--expected-oracle-sha256",
+      "56e7aafabcfac7eb7d3b209d5929eff88c65aeaa1b98fee0464e6b1fcda8c1ca",
+      "--actual",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/behavior/lane-a-13-yune.json",
+      "--expected-actual-sha256",
+      "28baf32eeade77b54b0c8208c32b7f6a072ad4ccf66454cf61a38b351280d099",
+      "--strict-comparator",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/behavior/lane-a-13-exact.json",
+      "--expected-strict-comparator-sha256",
+      "5ca42ab5f3330db2f3ee330d3cdc139a28de0b3e5162b7dc06e98bde5eabfb3b",
+      "--opencc-inventory",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/opencc-same-code-inventory.csv",
+      "--expected-opencc-inventory-sha256",
+      "01522f437038a3591d3a3b92cbdace2cced1b1e9076e566ca40662c736afcaf1",
+      "--opencc-source",
+      "crates/yune-core/src/opencc/data/HKVariantsFull.txt",
+      "--expected-opencc-source-sha256",
+      "145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2",
+      "--opencc-oracle-fixture",
+      "crates/yune-core/tests/fixtures/upstream-1.17.0/m59-opencc-convert-word.json",
+      "--expected-opencc-oracle-fixture-sha256",
+      "fafdb3b6ae5f7ac77d797dcc282c359e315669d2bb44bfca804cf7b7c56f8437",
+      "--oracle-manifest",
+      "crates/yune-core/tests/fixtures/upstream-1.17.0/oracle-manifest.json",
+      "--expected-oracle-manifest-sha256",
+      "7f765e004c340dc9002a542ca6f136395a289393e307359d96c80468da1add3f",
+      "--expected-yune-commit",
+      "e11557e2bbb05e3598e2d96dd6eb669ded88d33d",
+      "--expected-yune-tree",
+      "48bf8dbad8811e8c23e90af683a4c2bbcd9831cc",
+      "--expected-yune-dll-sha256",
+      "5a95705fa33e74dc7954d356339621c1462ddd9198eccf51dbb9b9abbd0f5eb7",
+      "--output",
+      "external/output"
+    ],
+    "opencc_inventory": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/opencc-same-code-inventory.csv",
+      "sha256": "01522f437038a3591d3a3b92cbdace2cced1b1e9076e566ca40662c736afcaf1"
+    },
+    "opencc_oracle_fixture": {
+      "path": "crates/yune-core/tests/fixtures/upstream-1.17.0/m59-opencc-convert-word.json",
+      "sha256": "fafdb3b6ae5f7ac77d797dcc282c359e315669d2bb44bfca804cf7b7c56f8437"
+    },
+    "opencc_source": {
+      "path": "crates/yune-core/src/opencc/data/HKVariantsFull.txt",
+      "sha256": "145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2"
+    },
+    "oracle": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json",
+      "sha256": "56e7aafabcfac7eb7d3b209d5929eff88c65aeaa1b98fee0464e6b1fcda8c1ca"
+    },
+    "oracle_manifest": {
+      "path": "crates/yune-core/tests/fixtures/upstream-1.17.0/oracle-manifest.json",
+      "sha256": "7f765e004c340dc9002a542ca6f136395a289393e307359d96c80468da1add3f"
+    },
+    "output_policy": "utf8-no-bom-lf-create-new-atomic-hardlink",
+    "strict_comparator": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/behavior/lane-a-13-exact.json",
+      "sha256": "5ca42ab5f3330db2f3ee330d3cdc139a28de0b3e5162b7dc06e98bde5eabfb3b"
+    }
+  },
+  "schema_version": 1,
+  "strict_comparator": {
+    "all_accepted": true,
+    "exception_policy_present": false,
+    "inputs": [
+      "be",
+      "bei",
+      "bein",
+      "being",
+      "beingo",
+      "beix",
+      "beixngoxx",
+      "ngohaig",
+      "ngohaigo",
+      "n",
+      "nri",
+      "mgoi",
+      "zijiguk"
+    ],
+    "policy": "exact",
+    "tool": "compare-candidate-order.py",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "tool_version": "5"
+  },
+  "summary": {
+    "actual_candidates": 5705,
+    "applicable_inventory_mappings": 5,
+    "applicable_inventory_occurrences": 14,
+    "applicable_inventory_rows": 28,
+    "beyond_oracle_depth": 0,
+    "canonical_inputs": 13,
+    "comment_mismatches_non_gating": 854,
+    "exact_cases": 13,
+    "exceptions": 0,
+    "mapping_mismatches": 0,
+    "opencc_inventory_mapping_keys": 64,
+    "opencc_inventory_rows": 83,
+    "opencc_residuals": 0,
+    "opencc_source_mapping_keys": 65,
+    "oracle_candidates": 5705,
+    "order_mismatches": 0,
+    "position_mismatches": 0
+  },
+  "tool": {
+    "name": "classify-m59-4c-residuals.py",
+    "sha256": "58e11dc48446c9746329019798e27ca09b7fe740714e57d1e86c898acab751c6",
+    "version": "1"
+  },
+  "verdict": "pass"
+}

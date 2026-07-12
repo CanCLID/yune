@@ -44,20 +44,21 @@ case is first under the canonical oracle, fixed current `yune-web`
 TypeDuck/profile `beingo` / 畀 and `zi` / 諮 reachability by preserving
 short-input profile-ranked paging, and kept the schema-id split audit-only
 pending explicit sign-off. The authoritative Windows M59 Increment 4a packet is
-implemented at `ca52ec42` and review-fixed at `2257fbbe`; its strict Lane A
-comparator remains `2/5`. On 2026-07-11 the owner renewed the narrowly scoped
+implemented at `ca52ec42` and review-fixed at `2257fbbe`; its historical strict
+Lane A comparator was `2/5`. On 2026-07-11 the owner renewed the narrowly scoped
 D-48 class-3 exception for all `6,086` captured equal-weight inversions, with
 zero cross-weight inversions, no beyond-oracle-depth use, and the recorded
-cross-weight/provenance/common-input-page-1 revisit triggers. Increment 4b is
-implemented through `d508e05b`; its accepted production capture and five-round
-ratchet bind to that clean source. The five declared class-4 rows are exact after only
-the predeclared 4c OpenCC normalization, while the raw strict comparator stays
-visibly red at `1/5` solely for `僞`, `臥`, and `鉤`. All 32 signed performance
-rows and all 160 individual observations pass. The designated Opus blocking
-review independently reproduced the load-bearing gates and approved 4b, so 4c
-may begin. Source-current WEB-04 is disclosed red on two Octagram rows that
-reproduce before 4b and remain assigned to the existing untoned-Luna 4e
-boundary; Lane A, D-48, REACH-03/04, and M59 remain open.
+revisit triggers. Increment 4b landed through `d508e05b` and received the
+designated Opus approval. Increment 4c is implemented at clean source
+`e11557e2`: the complete 13-input all-page Lane A capture is strict `13/13`
+across 5,705 candidate text/order/position rows, preedit, and commit preview,
+with no exception or beyond-depth use. The historical class-3 disposition is
+unused by this final capture. Canonical comments retain 854 explicitly
+non-gating differences outside D-48's text/order contract. Five fresh
+source-bound runs pass all 32 aggregate median rows under unchanged ceilings,
+with two individual red observations preserved. Source-current WEB-04 remains
+red on two Octagram rows assigned to the existing untoned-Luna 4e boundary;
+Lane A is complete, while Cangjie, Lane B, REACH-03/04, and M59 remain open.
 A separate macOS follow-up, measured only at source `89875ee2`, repairs the
 expanded upstream Luna 37/59 page-shape defect, preserves compiled natural-log
 weight semantics and the inclusive 5% pronunciation boundary across stored
@@ -394,7 +395,7 @@ and current decision rules.
 | M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
 | WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, 13 retained Phase 1 surface rows implemented through existing `apps/yune-web` seams, unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior unchanged, public demo debug/admin controls plus WEB-05 raw/cache/asset data pulls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Named follow-ups: persisted-config deploy-cache freshness and current Extended charset browser-effect N/A. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
 | M58 | Complete for reachability; perf residual recorded | Canonical Jyutping candidate behavior was recaptured from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; TypeDuck-HK/librime v1.1.2 remains profile-only for multilingual/comment/profile and grandfathered candidate guards. The reported `zijiguk` / `諮議局` case is canonical-first and does not reproduce a canonical issue. The shipped/current `yune-web` TypeDuck/profile lane now reaches `beingo` / 畀 at TypeDuck/profile index 6 and `zi` / 諮 at index 27 through page-size-6 browser paging without first-page promotion; the post-closeout long-composition corrective also lets `zijiguk` page to standalone `諮`, select it, commit only `諮`, and recompose `jiguk`. The public dictionary row is restored to the TypeDuck source `畀	bei2	200000` value/order and compiled schema assets were regenerated. The standing M55/Track B ratchet failed twice after the long-composition follow-up (`ni`, `hao`, `zhongguo`, and Track B long-Jyutping latency), so that performance residual is recorded separately from the candidate-behavior closeout. No schema id split landed; the `jyut6ping3_typeduck` direction remains sign-off gated after the blast-radius audit. Evidence: [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/). Plan: [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
-| M59 | In progress — full Path A locked, NOT closeable | General single-character reachability is default-on and schema-general; the reverted gamed execution remains excluded. Workspace fidelity (`2ee0805f`), unified TypeDuck/profile navigation (`e37ee011`), compiled `sort: original` (`d55b203e`), and transformed-algebra reachability (`2cb7e411`) are complete. Increment 4a landed at `ca52ec42`, was review-fixed at `2257fbbe`, and remains `2/5` raw under the owner's renewed 6,086-inversion equal-weight exception. Increment 4b is implemented through `d508e05b`; accepted production evidence binds to that clean source. Its declared five-row class-4 surface is exact `5/5` for normalized text/position, preedit, and commit preview, while the raw comparator stays visibly red at `1/5` solely for the predeclared 4c OpenCC siblings `僞`, `臥`, and `鉤`; there is no unowned residual, new exception, or beyond-depth use. The source-bound five-round ratchet passes all 32 signed rows and all 160 individual observations without changing ceilings, and the exact WEB-03 long-input guard passes after bounding oversized uncached prefix families. The designated Opus review independently reproduced the load-bearing gates and approved 4b, permitting 4c. Source-current WEB-04 is disclosed red on two Octagram rows that reproduce before 4b; the existing untoned-Luna 4e boundary must restore them before final closeout. M59-REACH-02 is complete. Remaining close blockers are REACH-03; 4c OpenCC, 4d Cangjie CJ-1, and 4e Lane B exact order/WEB-04 repair; final executable-evidence reconciliation; final-commit REACH-04; and the exact native/WASM/runtime/app/manifest/Playwright/browser/packaging gates. Evidence: [`reports/evidence/m59-canonical-jyutping-reachability-parity/`](./reports/evidence/m59-canonical-jyutping-reachability-parity/). Plan: [`plans/active/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/active/m59-plan-canonical-jyutping-reachability-parity.md). |
+| M59 | In progress — full Path A locked, NOT closeable | General single-character reachability is default-on and schema-general; the reverted gamed execution remains excluded. Workspace fidelity (`2ee0805f`), unified TypeDuck/profile navigation (`e37ee011`), compiled `sort: original` (`d55b203e`), and transformed-algebra reachability (`2cb7e411`) are complete. Increment 4a's historical `2/5` result and renewed 6,086-inversion class-3 disposition remain recorded; Increment 4b landed through `d508e05b` and received the designated Opus approval. Increment 4c at clean source `e11557e2` implements ordered one-to-many OpenCC conversion and closes Lane A strict `13/13` across all 5,705 captured candidate text/order/position rows, preedit, and commit preview, with zero exceptions or beyond-depth use. The historical class-3 disposition is unused by the final capture. Canonical comments retain 854 non-gating differences outside D-48's text/order contract. Its one-build/four-reuse five-round guard passes all 32 aggregate median rows under unchanged ceilings while preserving two individual red observations. M59-REACH-02 and M59-PARITY-01 are complete. Remaining close blockers are REACH-03; 4d Cangjie CJ-1; 4e Lane B exact order/WEB-04 repair; final executable-evidence reconciliation; final-commit REACH-04; and the exact native/WASM/runtime/app/manifest/Playwright/browser/packaging gates. Evidence: [`reports/evidence/m59-canonical-jyutping-reachability-parity/`](./reports/evidence/m59-canonical-jyutping-reachability-parity/). Plan: [`plans/active/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/active/m59-plan-canonical-jyutping-reachability-parity.md). |
 
 **M59 supplemental macOS diagnostic and resolution note (2026-07-10/11; no
 milestone or active-scope change):** At exact signed Increment-0 source
@@ -407,10 +408,10 @@ Yune defect and a compiled-log weight-domain error at independently measured
 source `89875ee2`; five fixed-binary macOS rounds match both pinned-librime long
 pages exactly. The Mac-versus-Windows latency comparison remains diagnostic
 only, with signed ceilings unchanged. This evidence neither measures the
-combined/reconciled source nor changes the authoritative Windows Increment 4a
-packet, strict Lane A `2/5` result, renewed class-3 owner disposition and 4b
-permission, or broader Lane B requirement; it did not cause or supersede the
-owner disposition. [Original diagnostic](./reports/evidence/m59-macos-librime-analysis-20260710/README.md);
+combined/reconciled source nor changes the authoritative historical Windows
+Increment 4a `2/5` packet, renewed class-3 owner disposition, or broader Lane B
+requirement; it did not cause or supersede the owner disposition or the later
+4c exact Lane A result. [Original diagnostic](./reports/evidence/m59-macos-librime-analysis-20260710/README.md);
 [supplemental repair evidence](./reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-luna-script-translation-order/README.md).
 
 ## Scope Ledger

@@ -1,6 +1,6 @@
 # Engine Support Contract
 
-Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI; updated by M56 to add productization hardening policies for compiled-artifact staleness, user-data lifecycle, ABI crash behavior, threading, poison recovery, and release panic strategy without widening the ABI; clarified by M59 Increment 4a for upstream Luna ScriptTranslation page shape and compiled-weight domains, and by Increment 4b for bounded abbreviation production and shared-cache lifecycle, again without ABI widening.
+Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI; updated by M56 to add productization hardening policies for compiled-artifact staleness, user-data lifecycle, ABI crash behavior, threading, poison recovery, and release panic strategy without widening the ABI; clarified by M59 Increment 4a for upstream Luna ScriptTranslation page shape and compiled-weight domains, by Increment 4b for bounded abbreviation production and shared-cache lifecycle, and by Increment 4c for ordered one-to-many OpenCC conversion, again without ABI widening.
 
 This contract defines Yune's launch-facing engine support boundary. It is a
 contract for engine behavior, storage, ABI shape, and evidence lanes; it is not
@@ -44,13 +44,17 @@ What "parity" requires differs by lane:
   pins — not extended, not deleted; multilingual comments stay oracle-backed
   against TypeDuck `v1.1.2`.
 
-M59 Increment 4b implements only its declared abbreviation/segmentation surface:
-after normalization through the already-declared Increment 4c same-code OpenCC
-inventory, candidate text/position, preedit, and commit preview are exact `5/5`.
-The raw strict comparator remains fail-closed at `1/5` solely for `僞`, `臥`, and
-`鉤`; this creates no new exception and does not close Lane A. The designated
-external review approved 4b with no blocking finding, so Increment 4c may begin;
-the remaining D-48 lanes and final gates stay open.
+M59 Increment 4c closes Lane A's complete D-48 text/order contract at strict
+`13/13` across all pages and 5,705 candidates, including global/page position,
+page shape, termination, preedit, and commit preview. No exception or
+beyond-oracle-depth row is consumed; the historical 4a class-3 disposition is
+unused by this final capture. The named Hong Kong OpenCC chain emits ordered
+one-to-many exact whole-word conversions, deduplicates each owned expansion
+family stably, and uses only default variants for partial segmentation.
+Candidate comments are not part of Lane A's D-48 text/order acceptance and
+retain 854 disclosed non-gating differences; canonical comment byte identity
+is not claimed. TypeDuck comment/profile parity remains its separate profile
+contract. Cangjie and Lane B D-48 lanes and final gates stay open; 4d is next.
 
 For the captured 37- and 59-character upstream Luna page-zero rows, the required
 shape is one best full-span sentence followed by the independent oracle phrase

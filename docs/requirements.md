@@ -1494,11 +1494,10 @@ residual, not a candidate-behavior blocker.
 
 ### M59 Schema-General Single-Character Reachability + Canonical Parity
 
-**Status: in progress — Lane B reachability mechanism landed; Windows Increment
-4a remains on its strict `2/5` Lane A result under the renewed, narrowly scoped
-class-3 owner disposition; Increment 4b is implemented and its designated Opus
-review approved it, permitting 4c; the supplemental macOS source `89875ee2` repairs
-only the expanded Luna 37/59 page-zero sentence/phrase slice; NOT closeable.**
+**Status: in progress — Lane B reachability mechanism landed; Increment 4c
+closes strict Lane A `13/13` with no exception consumed; 4d Cangjie and 4e Lane
+B remain open; the supplemental macOS source `89875ee2` repairs only the
+expanded Luna 37/59 page-zero sentence/phrase slice; NOT closeable.**
 M59 delivers the owner requirement that
 composing an arbitrary non-lexicon phrase one character at a time works on
 **every** schema. GPT's first execution was gamed (per-input
@@ -1507,8 +1506,8 @@ tests) and was reverted; the luna lane was reimplemented as a genuine general
 mechanism and landed (`c89a8ea9`). Owner amendment (2026-07-07) made the behavior
 a **default-ON, schema-general guarantee** delivered in M59, not M60.
 Increment 3b (`2cb7e411`) completes that default-on transformed-algebra
-guarantee and M59-REACH-02; manifest-derived REACH-03, final-commit REACH-04,
-and every D-48 ordering lane remain open. Increment 4a (`ca52ec42`) implements
+guarantee and M59-REACH-02; manifest-derived REACH-03 and final-commit REACH-04
+remain open. Increment 4a (`ca52ec42`) implements
 the sentence/phrase mechanism. Its owner-provided Opus blocking review found an
 explicit-false reachability bypass; fix `2257fbbe` now passes the exact owning
 deployment matrix, full workspace clippy, focused parity, and a fresh 32/32
@@ -1517,14 +1516,16 @@ class-3 exception for the complete captured equal-weight residual (`6,086`
 inversions, zero cross-weight inversions, no beyond-oracle-depth use) with the
 recorded revisit triggers. Increment 4b is implemented through `d508e05b`; its
 accepted production capture and five-round performance packet bind to that
-clean source. The declared class-4 rows (`n`, `nri`, `ngohaig`, `ngohaigo`, and
-`bein`) are exact `5/5` for normalized text/position, preedit, and commit
-preview. The raw comparator remains deliberately visible and red at `1/5` only
-for the predeclared 4c OpenCC siblings `僞`, `臥`, and `鉤`; there is zero
-unowned residual, no new exception, and no beyond-depth use. The source-bound
-five-round guard passes all 32 signed rows and all 160 individual observations
-without changing ceilings. Full Lane A acceptance still requires the 4b
-blocking-review resolution, 4c OpenCC, and final 13-input reconciliation.
+clean source, and its designated review approved 4c to start. Increment 4c at
+clean source `e11557e2` implements ordered one-to-many OpenCC conversion,
+stable deduplication, and default-only partial recomposition. The final
+13-input all-page comparator is strict `13/13` across 5,705 candidate
+text/order/position rows, preedit, and commit preview, with zero exception or
+beyond-depth use. The renewed 4a class-3 disposition remains recorded but is
+unused by final Lane A. Canonical comments retain 854 non-gating differences
+outside the D-48 text/order contract. Five fresh source-bound rounds pass all
+32 aggregate median rows under unchanged ceilings while preserving two
+individual red observations. Lane A is complete; Cangjie and Lane B remain.
 Separately, the macOS long-page follow-up is reviewed and measured only at
 source commit `89875ee2`; its exact 37/59 pages and compiled
 NaturalLog/stored-`f32` inclusive-5% fixture change no signed ceiling,
@@ -1578,16 +1579,22 @@ commit is claimed measured.
   supplies five fresh rounds over the complete 17+1 input set: all 32 aggregate
   rows and all 160 individual observations pass, including `n`, `ni`, `hao`,
   and the 37/59-character rows. It is increment evidence, not final
-  M59-REACH-04 acceptance after the remaining 4c/4d/4e behavior changes.
-- [ ] **M59-PARITY-01 (Lane A)**: Yune + pinned `rime/rime-cantonese` matches
+  M59-REACH-04 acceptance after the remaining 4d/4e behavior changes.
+  Increment 4c adds another five source-bound rounds at `e11557e2`: all 32
+  aggregate median rows pass under unchanged ceilings, with two individual red
+  observations preserved. It remains increment evidence rather than final
+  acceptance after 4d/4e.
+- [x] **M59-PARITY-01 (Lane A)**: Yune + pinned `rime/rime-cantonese` matches
   upstream `rime/librime 1.17.0` + `rime/rime-cantonese` page/prefix-exact for
   candidate text and order across the committed 13-input canonical capture:
   `be`, `bei`, `bein`, `being`, `beingo`, `beix`, `beixngoxx`, `ngohaig`,
   `ngohaigo`, `n`, `nri`, `mgoi`, and `zijiguk`. Every divergence is named; the
   retained phase-1/phase-2 groundwork is re-validated, not re-baked. Increment
-  4b closes its five-row abbreviation/segmentation surface at normalized `5/5`;
-  the raw `1/5` record remains fail-closed solely for the declared Increment 4c
-  OpenCC siblings, and 4b's designated review approved the start of 4c.
+  4c closes the strict raw comparator at `13/13` across all pages and 5,705
+  candidates, including exact preedit and commit preview. No exception or
+  beyond-depth row is consumed; the historical 4a class-3 disposition is
+  unused by the final capture. Candidate comments are outside this text/order
+  requirement and retain 854 explicitly non-gating differences.
 - [ ] **M59-PARITY-02 (Lane B exact order)**: Yune `luna_pinyin` matches pinned
   upstream librime for complete captured candidate text, order, and position
   ranges for `moboyi`, `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`, and `guo`.
@@ -1841,12 +1848,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M59-REACH-01 | M59 | Complete - the retained leading-single mechanism is structure-driven and covered by source-truthful anti-gaming controls; M59 remains in progress |
 | M59-REACH-02 | M59 | Complete - Increment 3b (`2cb7e411`) makes deployed-algebra reachability default-on and schema-general without schema-id/per-input gates; seven required default-on/explicit-false deploy rows plus Stroke control and the 32-row five-run aggregate gate are green |
 | M59-REACH-03 | M59 | In progress - the seven-schema 3b default-on/explicit-false deploy matrix is complete; canonical manifest-to-acceptance one-to-one reconciliation, remaining manifest-derived real-path coverage, and the documented dual-mechanism relationship remain required for M59 closeout |
-| M59-REACH-04 | M59 | In progress - Increment 4b's source-bound five-round 17+1 guard at `d508e05b` passes all 32 aggregate rows and all 160 individual observations without new ceilings; final acceptance after the remaining behavior increments is still required |
-| M59-PARITY-01 | M59 | In progress - Increment 4a (`ca52ec42`) plus review fix `2257fbbe` remains `2/5` raw under the renewed class-3 exception; Increment 4b is normalized `5/5` and raw `1/5` solely for declared 4c OpenCC siblings, and its designated review approved the start of 4c; 4c and final 13-input reconciliation remain open |
+| M59-REACH-04 | M59 | In progress - Increment 4c's source-bound five-round 17+1 guard at `e11557e2` passes all 32 aggregate median rows under unchanged ceilings and preserves two individual red observations; final acceptance after 4d/4e is still required |
+| M59-PARITY-01 | M59 | Complete - Increment 4c closes the complete 13-input all-page Lane A capture at strict `13/13` across 5,705 candidate text/order/position rows, preedit, and commit preview, with zero exception or beyond-depth use; the historical 4a class-3 disposition is unused by the final capture |
 | M59-PARITY-02 | M59 | In progress - Lane B complete captured text, order, and position parity remains required with no new exceptions or promotion/input/oracle hacks; supplemental source `89875ee2` repairs only the exact 37/59 page-zero sentence/phrase slice, while source-current WEB-04 is red on two untoned-Luna Octagram rows that 4e must restore |
 | M59-PARITY-03 | M59 | In progress - Cangjie exact-order onboarding and CJ-1 acceptance at 3 passed / 0 ignored remain required with no new exceptions or promotion/input/oracle hacks |
 | M59-NAV-01 | M59 | Complete - `e37ee011` centralizes profile-driven forward navigation in Engine, explicitly activates the TypeDuck product marker in both direct harnesses, passes Cantonese 41/41 and TypeDuck-Windows 4/4, keeps physical/API and Luna controls stable, and proves source-current browser WASM reaches `zi -> 諮` in four PageDown operations |
-| M59-EVIDENCE-01 | M59 | In progress - Increment 4b adds a fail-closed raw comparator, OpenCC-normalized classifier, source-bound one-build/four-reuse five-round packet, and preserved rejected attempts; the remaining lanes and final reconciliation still require deterministic raw provenance |
+| M59-EVIDENCE-01 | M59 | In progress - Increment 4c adds a fail-closed 13-input classifier, fresh oracle and Yune all-page captures, complete OpenCC inventory reconciliation, and a source-bound one-build/four-reuse five-round packet; Cangjie, Lane B, and final reconciliation still require deterministic raw provenance |
 | M59-DEPLOY-01 | M59 | Complete - `2ee0805f` matches pinned librime missing/malformed top-level schema and dependency semantics with real-path regression coverage |
 | M59-GATES-01 | M59 | In progress - exact native release, source-current WASM, runtime/app, manifest, Playwright, browser, and packaging gates remain required for M59 closeout |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
@@ -2153,11 +2160,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
 - M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
-- M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 4 complete, 7 in progress
+- M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 5 complete, 6 in progress
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
 - Mapped to phases: 433
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-12 - M59 full Path A remains locked and not closeable. Increment 4a remains `2/5` raw under the renewed class-3 exception. Increment 4b is implemented through `d508e05b`; its accepted production capture and five-round guard bind to that clean source, report normalized text/position, preedit, and commit preview `5/5`, preserve the raw `1/5` OpenCC-only residual, pass all 32 aggregate rows plus all 160 observations without new ceilings, and pass the exact WEB-03 long-input guard. Its designated Opus review independently reproduced the load-bearing gates and approved 4b, permitting 4c. Source-current WEB-04 is disclosed red on two pre-4b Octagram rows and remains a mandatory untoned-Luna 4e/final-closeout blocker. Lane A, Lane B, Cangjie, REACH-03/04, evidence reconciliation, and final gates remain open; the M59 requirement count stays 11 total, 4 complete, 7 in progress._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-12 - M59 full Path A remains locked and not closeable. Increment 4c at clean source `e11557e2` closes Lane A strict `13/13` across all pages and 5,705 candidate text/order/position rows, preedit, and commit preview, with no exception or beyond-depth use; the historical 4a class-3 disposition is unused by the final capture. Its five-round guard passes all 32 aggregate median rows under unchanged ceilings and preserves two individual red observations. Canonical comments retain 854 non-gating differences outside D-48's text/order contract. Source-current WEB-04 remains a mandatory untoned-Luna 4e/final-closeout blocker. Lane B, Cangjie, REACH-03/04, evidence reconciliation, and final gates remain open; the M59 requirement count is 11 total, 5 complete, 6 in progress._

@@ -1,0 +1,7 @@
+﻿command=powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\m4c-src-3c1a7e9b\scripts\benchmark-native-rime-inprocess.ps1' -OutputRoot 'C:\m59-4c-perf-e115\run5' -WorkRoot 'C:\m59-4c-perf-work-e115\run5' -UpstreamOracleRoot 'C:\rime-m59-4c-oracle' -ProductSchemaRoot 'C:\m4c-src-3c1a7e9b\apps\yune-web\public\schema' -YuneDll 'C:\m59-4c-release-target-5f2d19a1\release\yune_rime_api.dll' -Iterations 9 -SessionIterations 60 -KeyIterations 80 -TrackAInputs 'n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu' -TrackBInputs 'neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung' -PrebuiltNativeBenchmarkExecutable 'C:\m59-4c-perf-work-e115\run1\cargo-target\release\deps\native_inprocess_benchmark-5c1184aa464f2e15.exe' -PrebuiltNativeBenchmarkReceipt 'C:\m59-4c-perf-e115\run1\native-benchmark-build-receipt.txt' -DeployProductBeforeBenchmark -TrackAThresholds 'C:\m4c-src-3c1a7e9b\docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv'
+build_performed=False
+yune_dll_supplied=True
+native_benchmark_executable_prebuilt=True
+native_benchmark_build_performed=False
+native_benchmark_receipt=C:\m59-4c-perf-e115\run5\native-benchmark-build-receipt.txt
+native_benchmark_receipt_sha256=fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e

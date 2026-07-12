@@ -1,0 +1,142 @@
+{
+  "effective_argv": [
+    "--thresholds",
+    "docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv",
+    "--expected-runs",
+    "5",
+    "--run",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run1",
+    "--run",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run2",
+    "--run",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run3",
+    "--run",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run4",
+    "--run",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run5",
+    "--output",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/gate-verdict.csv"
+  ],
+  "effective_invocation": "python scripts/aggregate-native-ratchet.py --thresholds docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv --expected-runs 5 --run docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run1 --run docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run2 --run docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run3 --run docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run4 --run docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run5 --output docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/gate-verdict.csv",
+  "gate_verdict": {
+    "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/gate-verdict.csv",
+    "sha256": "e2e1ec02fb0d77a2980b98a2308636bfcdea90caa52a741f7fb13bebee92d1b0"
+  },
+  "required_run_count": 5,
+  "runs": [
+    {
+      "native_benchmark_build_performed": "True",
+      "native_benchmark_executable_prebuilt": "False",
+      "native_benchmark_executable_sha256": "0be04a93a55deb41359a1a7eeaa1618cf97de50171681f077cd6db0bc9db7e9d",
+      "native_benchmark_receipt_sha256": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run1",
+      "raw_files_sha256": {
+        "environment.txt": "ab5020f565860f66d05f336f2a5d35143a1ea7cb89f3dec4ffad14dec04aff1d",
+        "external-provenance.txt": "e2aca09a27cb0b47cda464b49bcf98ade4e4789d0ca8731955bf5bddc06da8db",
+        "native-benchmark-build-receipt.txt": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+        "run-status.txt": "d79073b65dfe427d704f8f9a13065b9aad25f010cc0a0f802bebf1f9224fbd91",
+        "summary-comparison.csv": "0d62ca249aa821b272f2ebe6f76894c5e724fbbae993df31ad1af106b2c4190a",
+        "threshold-check.csv": "c4629b128ddf9ed8ef947c7a5722f30fb90d75df409a8d8148e308e195c5de21"
+      },
+      "run": 1
+    },
+    {
+      "native_benchmark_build_performed": "False",
+      "native_benchmark_executable_prebuilt": "True",
+      "native_benchmark_executable_sha256": "0be04a93a55deb41359a1a7eeaa1618cf97de50171681f077cd6db0bc9db7e9d",
+      "native_benchmark_receipt_sha256": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run2",
+      "raw_files_sha256": {
+        "environment.txt": "7a4a00f8e3887174a29c4173517e6c980f496833466ed875802170606958237c",
+        "external-provenance.txt": "9b31f246427e28ea5eabb8a4c17098f434a7308c80f18f4cc17302ef262704ec",
+        "native-benchmark-build-receipt.txt": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+        "run-status.txt": "9ceceddb924473656c6be6cc0785f01603ad616452635e0d9f5c7c43d098e80f",
+        "summary-comparison.csv": "974c4b718b941be9b53939839742dcf1925d50195a2ddaa0967ef21d2bb97d67",
+        "threshold-check.csv": "ba2c62330d27a08c6f8d543684b31f167b5af7a7ea82a426ebe1571d3a78ed68"
+      },
+      "run": 2
+    },
+    {
+      "native_benchmark_build_performed": "False",
+      "native_benchmark_executable_prebuilt": "True",
+      "native_benchmark_executable_sha256": "0be04a93a55deb41359a1a7eeaa1618cf97de50171681f077cd6db0bc9db7e9d",
+      "native_benchmark_receipt_sha256": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run3",
+      "raw_files_sha256": {
+        "environment.txt": "75a94898465ff2035a7d6ba2be4cc33c00805e8ca5030126ab2d81ce5f16e58a",
+        "external-provenance.txt": "6c45f7d807161f0f787feea8b8c3334d251ba2e93849ebbf147f9a1ec448f6c2",
+        "native-benchmark-build-receipt.txt": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+        "run-status.txt": "5d9a75c3f8cd6bc0664634dbb73e7b398cd400d24472effb4aa733c1783d3725",
+        "summary-comparison.csv": "63d2e5cb5074869cfc6a30069829ee136458ce855b082b2673c9de7ef128cf98",
+        "threshold-check.csv": "996c3083382d31d0df680873ef9d7ef04bda978f823ee0332a2a43fe961d3ae7"
+      },
+      "run": 3
+    },
+    {
+      "native_benchmark_build_performed": "False",
+      "native_benchmark_executable_prebuilt": "True",
+      "native_benchmark_executable_sha256": "0be04a93a55deb41359a1a7eeaa1618cf97de50171681f077cd6db0bc9db7e9d",
+      "native_benchmark_receipt_sha256": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run4",
+      "raw_files_sha256": {
+        "environment.txt": "34622cab393945db1c0520c6b025e8586b015fa891e13037db620785b3fbae64",
+        "external-provenance.txt": "ffaa65b131c411ce4a4303e809315ba8dd80a30c23ccf204d1b447b3ac231ce2",
+        "native-benchmark-build-receipt.txt": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+        "run-status.txt": "5817751c97214c8bc306a1d02501d784d19ecf97b8c97ab7df285aafb9e408bd",
+        "summary-comparison.csv": "638fd7bca8cf53b35aad4fae200e76b5bdacec91e90577f07897c0055310ddfd",
+        "threshold-check.csv": "502572cb8e982e2c3b65ec874084bd972c43b46753fb578cac7222241881e692"
+      },
+      "run": 4
+    },
+    {
+      "native_benchmark_build_performed": "False",
+      "native_benchmark_executable_prebuilt": "True",
+      "native_benchmark_executable_sha256": "0be04a93a55deb41359a1a7eeaa1618cf97de50171681f077cd6db0bc9db7e9d",
+      "native_benchmark_receipt_sha256": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4c-opencc-variants/performance-ratchet/run5",
+      "raw_files_sha256": {
+        "environment.txt": "37460b100de1a2951ae191b33454948d34a552f2f415f47123389724cb5836eb",
+        "external-provenance.txt": "d98b92c5c4a4762cb53d303900e2b36c9d947a345c13eeb90adee3aaf05ca9e9",
+        "native-benchmark-build-receipt.txt": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+        "run-status.txt": "45d007da0e5460d29f50022a3c907de44da1569a9a4dc07166faa76b92bb6a9b",
+        "summary-comparison.csv": "b55a3bc75014f64e25eaab85304de7e36519037673cfd7e1291674c3a173f41b",
+        "threshold-check.csv": "593cfc4469690b4d1c45959bfd56575887485f126a35d15e26c19e49f8df6cf6"
+      },
+      "run": 5
+    }
+  ],
+  "schema_version": 1,
+  "thresholds": {
+    "path": "docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv",
+    "sha256": "e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba"
+  },
+  "tool": "aggregate-native-ratchet.py",
+  "tool_path": "scripts/aggregate-native-ratchet.py",
+  "tool_sha256": "ce36704f6524e70887d465713bec7bf5e1dcd8ddf9b4858b238b1cd252b7c4bf",
+  "tool_version": "8",
+  "validated_provenance": {
+    "allow_dirty": "False",
+    "benchmark_script_sha256": "a5177ffca4dab7fc2726be919c21c4c820247a3ae7b730af11da36ebf757b1df",
+    "deploy_product_before_benchmark": "True",
+    "iterations": "9",
+    "key_iterations": "80",
+    "measured_yune_dll_sha256": "5a95705fa33e74dc7954d356339621c1462ddd9198eccf51dbb9b9abbd0f5eb7",
+    "native_benchmark_builder_run": "1",
+    "native_benchmark_executable_sha256": "0be04a93a55deb41359a1a7eeaa1618cf97de50171681f077cd6db0bc9db7e9d",
+    "native_benchmark_mode_sequence": "build,reuse,reuse,reuse,reuse",
+    "native_benchmark_receipt_sha256": "fcd4461015eaa2ee3d57ee7fddfb479b433c5d2671b301d996edebbdeaf5182e",
+    "product_schema_tree_sha256": "1a61c7f3c759423d11755a7eaecdbedeb23d43bfa37f612ca822ca32b705063e",
+    "session_iterations": "60",
+    "skip_track_b": "False",
+    "source_clean": "True",
+    "source_commit": "e11557e2bbb05e3598e2d96dd6eb669ded88d33d",
+    "source_content_binding_sha256": "d83c34542ebc67af2084202104a6f8ed2ce75bddbbd8649d1749d91facb00c0b",
+    "source_tree": "48bf8dbad8811e8c23e90af683a4c2bbcd9831cc",
+    "track_a_inputs": "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu",
+    "track_b_inputs": "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
+    "upstream_build_tree_sha256": "27c7612854f7583a39ee1878dc1cf06aa75bd99c3674ae4ccb1ce15828d6771d",
+    "upstream_rime_dll_sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+    "upstream_shared_tree_sha256": "8b9b75a6559c7adba6b403c3b3c28d83718a7412d4e2f6f0f09dbbcc4787b24c",
+    "yune_git_head": "e11557e2bbb05e3598e2d96dd6eb669ded88d33d"
+  }
+}

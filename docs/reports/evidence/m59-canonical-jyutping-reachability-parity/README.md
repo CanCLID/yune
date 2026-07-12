@@ -11,6 +11,22 @@ Yune `luna_pinyin` vs `librime 1.17.0` + upstream luna. TypeDuck profile is a
 regression guard, not an acceptance oracle.
 
 > **Current update (2026-07-12):**
+> [`increment-4c-opencc-variants/`](./increment-4c-opencc-variants/) is the
+> Increment 4c packet bound to clean source `e11557e2`. Ordered whole-word
+> one-to-many OpenCC conversion, stable family deduplication, and default-only
+> partial recomposition close the complete Lane A capture at strict `13/13`
+> across all pages and 5,705 candidate text/order/position rows, preedit, and
+> commit preview. The fail-closed classifier reconciles 83 inventory rows to
+> 64 of 65 source keys and all 14 visible occurrences with zero residual,
+> exception, or beyond-depth use. The historical 4a class-3 disposition remains
+> recorded but is unused by final Lane A. Candidate comments retain 854
+> explicitly non-gating differences across nine inputs outside D-48's
+> text/order contract; no whole-capture byte identity or canonical comment
+> parity is claimed. Five fresh one-build/four-reuse performance rounds pass all
+> 32 aggregate median rows under unchanged ceilings and preserve two individual
+> red observations. Lane A is complete; 4d Cangjie, 4e Lane B/WEB-04,
+> REACH-03/04, final evidence, and final gates remain open.
+>
 > [`increment-4b-abbreviation-segmentation/`](./increment-4b-abbreviation-segmentation/)
 > is the landed Increment 4b packet. The implementation chain runs through
 > `d508e05b`; the accepted production capture, release DLL, and five-round
@@ -106,6 +122,21 @@ regression guard, not an acceptance oracle.
 > leaving all candidate/page arrays unchanged. CJ-1 remains open.
 
 ## Artifact classification
+
+### VALID — Increment 4c Lane A acceptance packet
+
+- `increment-4c-opencc-variants/` preserves a fresh pinned oracle refresh, the
+  complete Yune all-page capture, untouched strict comparator, fail-closed
+  inventory/source/fixture classifier, all five raw text-only performance
+  rounds, aggregate provenance, focused verification, and two independent final
+  reviews. It contains no DLL, benchmark executable, deployed tree, compiled
+  table, or other binary payload.
+- Acceptance is Lane A strict `13/13`, 5,705 candidate text/order/position rows,
+  exact preedit and commit preview, zero exception/beyond-depth use, and
+  performance `32/32` aggregate median rows with two individual failures
+  preserved. Candidate comment differences are disclosed as outside D-48's
+  text/order scope. The packet closes Lane A only and makes no 4d, 4e,
+  REACH-04, browser, package, or M59 closeout claim.
 
 ### VALID — Increment 4b landed packet (blocking review approved)
 

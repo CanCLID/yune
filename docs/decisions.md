@@ -626,6 +626,14 @@ uncached prefix families without changing short-input exactness or complete
 forward navigation. This is an Increment 4b guard, not final M59-REACH-04 evidence after
 the remaining behavior increments. No ceiling or exception changed.
 
+_Addendum 2026-07-12 (M59 Increment 4c):_ five fresh source-bound rounds at
+clean production source `e11557e2` pass all 32 aggregate median rows under the
+same signed ceilings. The packet preserves two individual red observations and
+uses the declared median rule; there is no adaptive rerun, re-baseline,
+threshold relaxation, or observation deletion. `n`, `ni`, `hao`, and the
+37/59-character rows pass. This remains increment evidence rather than final
+M59-REACH-04 acceptance after 4d and 4e.
+
 **D-48 / PER-LANE-RANKING-PARITY-POLICY — Ranking-order parity is required for
 three lanes; the TypeDuck profile lane keeps reachability + comment parity only.**
 Owner FINAL decision 2026-07-08, resolving what "parity" means per lane:
@@ -675,17 +683,16 @@ ceiling, exception, or new milestone.
 Extends D-24 (oracle precedence), D-31 (upstream-wins-on-composition-conflict +
 fork-as-profile-oracle), and D-47 (the schema-general reachability guarantee, of
 which order parity is the stricter sibling for the three named lanes). _Outcome:
-Pending — Increment 4a remains `2/5` raw under the owner's renewed, narrowly
-scoped class-3 exception. Increment 4b is implemented through `d508e05b`; its
-accepted production capture and five-round ratchet bind to that clean source. The
-declared five-row abbreviation/segmentation surface is exact `5/5` for
-OpenCC-normalized text/position, preedit, and commit preview. The raw comparator
-remains visibly red at `1/5` solely for the already-declared Increment 4c
-siblings `僞`, `臥`, and `鉤`; there is zero unowned residual, no new exception,
-and no beyond-oracle-depth use. The designated Opus review independently
-reproduced the load-bearing gates and approved 4b, permitting 4c. Remaining
-closure is 4c OpenCC variants, 4d Cangjie CJ-1, and 4e
-Lane B exact order. Source-current WEB-04 is also red on two of four Octagram
+Pending overall; Lane A complete — Increment 4c at clean source `e11557e2`
+matches the complete 13-input all-page canonical capture at strict `13/13`
+across 5,705 candidate text/order/position rows, page shape, preedit, and commit
+preview. Ordered one-to-many OpenCC conversion closes the declared `僞`, `臥`,
+and `鉤` residue. No exception or beyond-depth row is consumed, so the renewed
+4a class-3 disposition remains recorded but is unused by the final capture.
+Canonical comments retain 854 explicitly non-gating differences outside this
+text/order contract; no whole-capture byte identity or canonical comment parity
+is claimed. Remaining D-48 closure is 4d Cangjie CJ-1 and 4e Lane B exact
+order. Source-current WEB-04 is also red on two of four Octagram
 rows, reproduces before 4b, and is assigned to that existing untoned-Luna 4e
 boundary; it remains a final-closeout blocker, not a new exception. The
 supplemental macOS `89875ee2` evidence closes only its
@@ -707,7 +714,7 @@ exact 37/59 source-scoped slice and changes none of these statuses._
 
 _Last updated: 2026-07-11 - D-30 and D-48 now record the supplemental, source-scoped macOS Luna 37/59 page-zero repair measured at `89875ee2`, including the compiled natural-log weight domain, inclusive 5% pronunciation boundary, bounded exact-user scope, and unchanged ABI/threshold posture. The authoritative Windows Increment 4a packet remains at `ca52ec42` plus review fix `2257fbbe`: its strict Lane A comparator is `2/5`, and on 2026-07-11 the owner renewed the narrowly scoped D-48 class-3 exception for all `6,086` captured equal-weight inversions (zero cross-weight inversions and no beyond-oracle-depth use) with the recorded cross-weight, provenance, and common-input page-1 revisit triggers, permitting 4b to start. The macOS evidence did not cause or supersede that disposition, and no combined/reconciled commit is claimed measured. A post-WEB-03 correctness follow-up fixed a `DartsDoubleArray` prism construction bug that corrupted the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words (`litbiu -> 列表` etc.); the four affected prisms were regenerated and the user-visible words are now locked by trie-level and committed-asset regression tests (`a76fcd59`, `d1c0171a`). D-46 records WEB-03 complete after the phrase-composition follow-up: regenerated launch compiled assets and native byte-backed storage are now a delivery contract, fresh Emscripten/Playwright evidence shows the shipping public-demo `full-jyutping` browser row at `160.0 MiB` ready/peak/steady, and follow-up gates restore byte-backed `ngogokdak -> 我覺得` plus `zouhapci` visible lookup rows. The old `893.1 MiB` value remains only as a synthetic no-launch-assets negative control. D-45 records WEB-02 complete as the historical public-demo Jyutping source-fallback owner classification: shipped `Rime::Prism/3.0` assets forced `owned_heap` and retained `translator.entries_by_code` rows totaling `529,602,374 B`; WEB-03 fixed that launch path. D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and the pre-WEB-03 browser Jyutping row remained `893.1 MiB`, so M46 closed as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` did not reduce settled linear memory, 48 MiB worsened Luna, and pre-WEB-03 Jyutping remained `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._
 
-_Current update: 2026-07-12 - D-32 now records the approved same-root immutable
-cache lifecycle; D-47 records Increment 4b's unchanged-ceiling five-round guard;
-and D-48 records normalized `5/5`, raw `1/5` OpenCC-only residue, and the pending
-blocking-review stop before Increment 4c._
+_Current update: 2026-07-12 - D-47 records Increment 4c's unchanged-ceiling
+five-round median guard with both individual failures preserved. D-48 records
+Lane A strict `13/13`, no exception use, the historical class-3 disposition
+unused by final capture, and remaining 4d/4e closure._

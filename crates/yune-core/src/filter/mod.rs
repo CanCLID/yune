@@ -12,6 +12,27 @@ const DICTIONARY_LOOKUP_COMMENT_CACHE_CAPACITY: usize = 512;
 
 pub struct UniquifierFilter;
 
+fn promote_longer_recomposition_span(existing: &mut Candidate, duplicate: &Candidate) {
+    if matches!(
+        (&existing.source, &duplicate.source),
+        (
+            CandidateSource::PartialTable {
+                consumed: existing_consumed,
+                ..
+            },
+            CandidateSource::PartialTable {
+                consumed: duplicate_consumed,
+                recompose_on_default: true,
+            }
+        ) if *duplicate_consumed > *existing_consumed
+    ) {
+        // Preserve the first candidate's position, display fields, and quality,
+        // but selection must consume the longest deployed surface spelling that
+        // produced this same visible text.
+        existing.source = duplicate.source.clone();
+    }
+}
+
 impl CandidateFilter for UniquifierFilter {
     fn name(&self) -> &'static str {
         "uniquifier"
@@ -23,26 +44,9 @@ impl CandidateFilter for UniquifierFilter {
         for candidate in candidates.drain(..) {
             if let Some(index) = index_by_text.get(&candidate.text).copied() {
                 let existing = &mut unique[index];
-                if matches!(
-                    (&existing.source, &candidate.source),
-                    (
-                        CandidateSource::PartialTable {
-                            consumed: existing_consumed,
-                            ..
-                        },
-                        CandidateSource::PartialTable {
-                            consumed: candidate_consumed,
-                            recompose_on_default: true,
-                        }
-                    ) if *candidate_consumed > *existing_consumed
-                ) {
-                    // Preserve the first candidate's position, display fields,
-                    // and quality, but selection must consume the longest
-                    // deployed surface spelling that produced this same text.
-                    // This is generic across translator merges (including
-                    // toneless exact vs initial-abbreviation families).
-                    existing.source = candidate.source;
-                }
+                // This is generic across translator merges (including toneless
+                // exact vs initial-abbreviation families).
+                promote_longer_recomposition_span(existing, &candidate);
                 continue;
             }
             index_by_text.insert(candidate.text.clone(), unique.len());
@@ -737,6 +741,24 @@ impl SimplifierConversion {
             Self::TaiwanToTraditional => taiwan_to_traditional_text(text),
         }
     }
+
+    fn convert_word(self, text: &str) -> Option<Vec<String>> {
+        match self {
+            // M59 Increment 4c's pinned external fixture and complete same-code
+            // inventory own the variants_hk/t2hkf surface. Keep the other
+            // output standards on their existing default-form behavior until
+            // a named target supplies equivalent one-to-many oracle coverage.
+            Self::TraditionalToHongKong => t2hkf_opencc_chain().convert_word(text),
+            Self::None
+            | Self::TraditionalToSimplified
+            | Self::HongKongToSimplified
+            | Self::SimplifiedToTraditional
+            | Self::TraditionalToTaiwan
+            | Self::SimplifiedToTaiwan
+            | Self::TaiwanToSimplified
+            | Self::TaiwanToTraditional => None,
+        }
+    }
 }
 
 impl CandidateFilter for SimplifierFilter {
@@ -751,43 +773,88 @@ impl CandidateFilter for SimplifierFilter {
             return;
         }
 
-        for candidate in candidates {
+        let original_candidates = mem::take(candidates);
+        let mut converted_candidates = Vec::with_capacity(original_candidates.len());
+        let mut expanded_visible_texts = HashSet::new();
+        for candidate in original_candidates {
             if self.excluded_types.contains(candidate.source.as_str()) {
+                converted_candidates.push(candidate);
                 continue;
             }
 
-            let original = candidate.text.clone();
-            let simplified = self.conversion.convert(&original);
-            if simplified == original {
-                continue;
-            }
-
-            let show_tips = match self.tips_level {
-                SimplifierTipsLevel::None => false,
-                SimplifierTipsLevel::Char => original.chars().count() == 1,
-                SimplifierTipsLevel::All => true,
-            };
-
-            if self.show_in_comment {
-                if show_tips {
-                    candidate.comment = self.comment_format.apply(&simplified);
-                } else if !self.inherit_comment {
-                    candidate.comment.clear();
-                }
-            } else {
-                candidate.text = simplified;
-                if show_tips {
-                    let (comment, modified) = self.comment_format.apply_with_modified(&original);
-                    candidate.comment = if modified {
-                        comment
+            let original = candidate.text.as_str();
+            if let Some(forms) = self.conversion.convert_word(original) {
+                for form in forms {
+                    let converted_candidate = if form == original {
+                        candidate.clone()
                     } else {
-                        format!("〔{original}〕")
+                        self.convert_candidate(&candidate, form)
                     };
-                } else if !self.inherit_comment {
-                    candidate.comment.clear();
+                    expanded_visible_texts.insert(converted_candidate.text.clone());
+                    converted_candidates.push(converted_candidate);
                 }
+                continue;
+            }
+
+            let converted = self.conversion.convert(original);
+            if converted == original {
+                converted_candidates.push(candidate);
+            } else {
+                converted_candidates.push(self.convert_candidate(&candidate, converted));
             }
         }
+        if !expanded_visible_texts.is_empty() {
+            let mut index_by_text = HashMap::<String, usize>::new();
+            let mut stable = Vec::with_capacity(converted_candidates.len());
+            for candidate in converted_candidates.drain(..) {
+                if !expanded_visible_texts.contains(&candidate.text) {
+                    stable.push(candidate);
+                    continue;
+                }
+                if let Some(index) = index_by_text.get(&candidate.text).copied() {
+                    promote_longer_recomposition_span(&mut stable[index], &candidate);
+                    continue;
+                }
+                index_by_text.insert(candidate.text.clone(), stable.len());
+                stable.push(candidate);
+            }
+            converted_candidates = stable;
+        }
+        *candidates = converted_candidates;
+    }
+}
+
+impl SimplifierFilter {
+    fn convert_candidate(&self, original: &Candidate, converted: String) -> Candidate {
+        let mut candidate = original.clone();
+        let show_tips = match self.tips_level {
+            SimplifierTipsLevel::None => false,
+            SimplifierTipsLevel::Char => original.text.chars().count() == 1,
+            SimplifierTipsLevel::All => true,
+        };
+
+        if self.show_in_comment {
+            if show_tips {
+                candidate.comment = self.comment_format.apply(&converted);
+            } else if !self.inherit_comment {
+                candidate.comment.clear();
+            }
+        } else {
+            candidate.text = converted;
+            if show_tips {
+                let (comment, modified) = self
+                    .comment_format
+                    .apply_with_modified(original.text.as_str());
+                candidate.comment = if modified {
+                    comment
+                } else {
+                    format!("〔{}〕", original.text)
+                };
+            } else if !self.inherit_comment {
+                candidate.comment.clear();
+            }
+        }
+        candidate
     }
 }
 
@@ -804,8 +871,8 @@ static S2T_OPENCC_CHAIN: OnceLock<OpenCcChain> = OnceLock::new();
 
 #[derive(Default)]
 struct OpenCcStage {
-    phrases: HashMap<String, String>,
-    chars: HashMap<char, String>,
+    phrases: HashMap<String, Vec<String>>,
+    chars: HashMap<char, Vec<String>>,
     max_phrase_chars: usize,
 }
 
@@ -821,9 +888,45 @@ impl OpenCcChain {
                 stage.convert(&converted)
             })
     }
+
+    fn convert_word(&self, text: &str) -> Option<Vec<String>> {
+        let mut original_words = vec![text.to_owned()];
+        let mut matched_exact = false;
+        for stage in &self.stages {
+            let mut seen = HashSet::new();
+            let mut converted_words = Vec::new();
+            for original_word in original_words {
+                if let Some(forms) = stage.exact_forms(&original_word) {
+                    matched_exact = true;
+                    for form in forms {
+                        if seen.insert(form.clone()) {
+                            converted_words.push(form.clone());
+                        }
+                    }
+                } else {
+                    let converted = stage.convert(&original_word);
+                    if seen.insert(converted.clone()) {
+                        converted_words.push(converted);
+                    }
+                }
+            }
+            original_words = converted_words;
+        }
+        matched_exact.then_some(original_words)
+    }
 }
 
 impl OpenCcStage {
+    fn exact_forms(&self, text: &str) -> Option<&[String]> {
+        let mut chars = text.chars();
+        let first = chars.next()?;
+        if chars.next().is_none() {
+            self.chars.get(&first).map(Vec::as_slice)
+        } else {
+            self.phrases.get(text).map(Vec::as_slice)
+        }
+    }
+
     fn convert(&self, text: &str) -> String {
         let mut converted = String::new();
         let mut cursor = 0;
@@ -836,7 +939,7 @@ impl OpenCcStage {
             let Some(ch) = text[cursor..].chars().next() else {
                 break;
             };
-            if let Some(replacement) = self.chars.get(&ch) {
+            if let Some(replacement) = self.chars.get(&ch).and_then(|forms| forms.first()) {
                 converted.push_str(replacement);
             } else {
                 converted.push(ch);
@@ -866,6 +969,7 @@ impl OpenCcStage {
             let phrase = &text[cursor..end];
             self.phrases
                 .get(phrase)
+                .and_then(|forms| forms.first())
                 .map(|replacement| (phrase.len(), replacement.as_str()))
         })
     }
@@ -934,24 +1038,28 @@ fn s2t_opencc_chain() -> &'static OpenCcChain {
     })
 }
 
-fn parse_opencc_phrase_map(data: &str) -> HashMap<String, String> {
-    parse_opencc_entries(data)
+fn parse_opencc_phrase_map(data: &str) -> HashMap<String, Vec<String>> {
+    parse_opencc_entries_with_values(data)
         .filter(|(key, _)| key.chars().count() > 1)
-        .map(|(key, value)| (key.to_owned(), value.to_owned()))
-        .collect()
-}
-
-fn parse_opencc_char_map(data: &str) -> HashMap<char, String> {
-    parse_opencc_entries(data)
-        .filter_map(|(key, value)| {
-            let mut key_chars = key.chars();
-            let key = key_chars.next()?;
-            key_chars.next().is_none().then(|| (key, value.to_owned()))
+        .filter_map(|(key, values)| {
+            let values = values.map(str::to_owned).collect::<Vec<_>>();
+            (!values.is_empty()).then(|| (key.to_owned(), values))
         })
         .collect()
 }
 
-fn parse_reverse_opencc_char_map(data: &str) -> HashMap<char, String> {
+fn parse_opencc_char_map(data: &str) -> HashMap<char, Vec<String>> {
+    parse_opencc_entries_with_values(data)
+        .filter_map(|(key, value)| {
+            let mut key_chars = key.chars();
+            let key = key_chars.next()?;
+            let values = value.map(str::to_owned).collect::<Vec<_>>();
+            (key_chars.next().is_none() && !values.is_empty()).then_some((key, values))
+        })
+        .collect()
+}
+
+fn parse_reverse_opencc_char_map(data: &str) -> HashMap<char, Vec<String>> {
     let mut chars = HashMap::new();
     for (key, values) in parse_opencc_entries_with_values(data) {
         if key.chars().count() != 1 {
@@ -963,7 +1071,9 @@ fn parse_reverse_opencc_char_map(data: &str) -> HashMap<char, String> {
                 continue;
             };
             if value_chars.next().is_none() {
-                chars.entry(value_ch).or_insert_with(|| key.to_owned());
+                chars
+                    .entry(value_ch)
+                    .or_insert_with(|| vec![key.to_owned()]);
             }
         }
     }
@@ -1095,5 +1205,58 @@ impl CandidateFilter for ReverseLookupFilter {
                 candidate.comment = format!("{}; {reverse_comment}", candidate.comment);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod opencc_convert_word_tests {
+    use super::*;
+
+    fn chain_from_char_stages(stages: &[&str]) -> OpenCcChain {
+        OpenCcChain {
+            stages: stages
+                .iter()
+                .map(|data| OpenCcStage {
+                    phrases: HashMap::new(),
+                    chars: parse_opencc_char_map(data),
+                    max_phrase_chars: 0,
+                })
+                .collect(),
+        }
+    }
+
+    #[test]
+    fn exact_forms_cover_every_t2hkf_mapping_in_declared_order() {
+        let mut mappings = 0;
+        let mut multi_form_mappings = 0;
+        for (key, values) in parse_opencc_entries_with_values(HK_VARIANTS_FULL) {
+            let expected = values.map(str::to_owned).collect::<Vec<_>>();
+            let actual = t2hkf_opencc_chain()
+                .convert_word(key)
+                .unwrap_or_else(|| panic!("expected exact OpenCC match for {key}"));
+            assert_eq!(actual, expected, "ordered forms for {key}");
+            mappings += 1;
+            multi_form_mappings += usize::from(actual.len() > 1);
+        }
+        assert_eq!(mappings, 65);
+        assert_eq!(multi_form_mappings, 65);
+    }
+
+    #[test]
+    fn conversion_chain_deduplicates_each_stage_in_first_seen_order() {
+        let chain = chain_from_char_stages(&["甲\t乙 丙\n", "乙\t丁\n丙\t丁 丙\n"]);
+
+        assert_eq!(
+            chain.convert_word("甲"),
+            Some(vec!["丁".to_owned(), "丙".to_owned()])
+        );
+    }
+
+    #[test]
+    fn partial_segmentation_uses_only_each_match_default_form() {
+        let chain = chain_from_char_stages(&["祕\t秘 祕\n糉\t粽 糉 糭\n"]);
+
+        assert_eq!(chain.convert_word("甲祕糉乙"), None);
+        assert_eq!(chain.convert("甲祕糉乙"), "甲秘粽乙");
     }
 }

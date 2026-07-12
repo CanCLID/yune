@@ -47,6 +47,8 @@ const TYPEDUCK_V112_COMMENTS: &str =
 const TYPEDUCK_V112_M28_PARTIAL_SELECTION: &str = include_str!(
     "../../yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json"
 );
+const TYPEDUCK_V112_M21_CLOSEOUT: &str =
+    include_str!("../../yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m21-closeout.json");
 const M28_UPSTREAM_JYUTPING_COMPOSITION: &str = include_str!(
     "../../yune-core/tests/fixtures/upstream-jyutping/jyutping-m28-followup-composition.json"
 );
@@ -2915,6 +2917,96 @@ fn yune_web_adapter_real_assets_emit_oracle_dictionary_panel_comments() {
     assert_eq!(
         composing["context"]["candidates"][0]["comment"],
         Value::String(expected_comment.to_owned())
+    );
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn m59_real_typeduck_profile_variants_hk_preserves_captured_sibling_order() {
+    let _guard = test_guard();
+    let fixture: Value = serde_json::from_str(TYPEDUCK_V112_M21_CLOSEOUT)
+        .expect("TypeDuck v1.1.2 closeout fixture should parse");
+    let expected = fixture["cases"]
+        .as_array()
+        .expect("TypeDuck fixture should contain cases")
+        .iter()
+        .find(|case| case["variant"] == "default_combined" && case["input"] == "ngohaigo")
+        .expect("TypeDuck fixture should capture default ngohaigo");
+    let expected_texts = expected["selected_candidates"]
+        .as_array()
+        .expect("TypeDuck case should contain captured candidates")
+        .iter()
+        .map(|candidate| {
+            candidate["text"]
+                .as_str()
+                .expect("TypeDuck candidate text should be a string")
+                .to_owned()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(expected_texts.get(11).map(String::as_str), Some("卧"));
+    assert_eq!(expected_texts.get(28).map(String::as_str), Some("臥"));
+
+    let runtime = YuneWebRuntime::create_with_schema(
+        "m59-typeduck-profile-variants-hk-order",
+        "jyut6ping3_mobile",
+    );
+    runtime.write_browser_app_assets();
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let mut page = process_input(state, "ngohaigo");
+    let mut actual_texts = Vec::new();
+    loop {
+        actual_texts.extend(
+            page["context"]["candidates"]
+                .as_array()
+                .expect("profile page should contain candidates")
+                .iter()
+                .map(|candidate| {
+                    candidate["text"]
+                        .as_str()
+                        .expect("profile candidate text should be a string")
+                        .to_owned()
+                }),
+        );
+        if actual_texts.len() >= expected_texts.len()
+            || page["context"]["is_last_page"] == Value::Bool(true)
+        {
+            break;
+        }
+        page = response_json(unsafe { yune_web_flip_page(state, FALSE) });
+        assert_eq!(page["handled"], Value::Bool(true));
+    }
+
+    assert_eq!(
+        &actual_texts[..5],
+        &expected_texts[..5],
+        "the deployed TypeDuck profile must preserve its existing guarded leading rows"
+    );
+    assert_eq!(actual_texts.get(11).map(String::as_str), Some("卧"));
+    assert_eq!(actual_texts.get(28).map(String::as_str), Some("臥"));
+    let actual_owned_siblings = actual_texts
+        .iter()
+        .take(expected_texts.len())
+        .map(String::as_str)
+        .filter(|text| matches!(*text, "卧" | "臥"))
+        .collect::<Vec<_>>();
+    let expected_owned_siblings = expected_texts
+        .iter()
+        .map(String::as_str)
+        .filter(|text| matches!(*text, "卧" | "臥"))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        actual_owned_siblings, expected_owned_siblings,
+        "the profile lane must retain one stable copy of each owned OpenCC sibling without adopting unrelated TypeDuck tail-order parity"
     );
 
     unsafe { yune_web_cleanup(state) };

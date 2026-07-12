@@ -1,0 +1,518 @@
+{
+    "fixture_version":  1,
+    "milestone":  "M59 Increment 4c",
+    "status":  "pinned_upstream_oracle_capture",
+    "source_row_policy":  "m59_minimal_opencc_convert_word_and_default_segmentation_oracle",
+    "oracle":  {
+                   "engine":  "rime/librime",
+                   "engine_tag":  "1.17.0",
+                   "engine_commit":  "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+                   "canonical_repository":  "https://github.com/rime/librime",
+                   "release_url":  "https://github.com/rime/librime/releases/tag/1.17.0",
+                   "capture_date":  "2026-07-12",
+                   "binaries":  {
+                                    "rime_dll":  {
+                                                     "path":  "external/oracle-binaries/lib/rime.dll",
+                                                     "bytes":  3739136,
+                                                     "sha256":  "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+                                                     "staged_for_execution":  true,
+                                                     "loaded_module_verified":  true
+                                                 },
+                                    "rime_deployer":  {
+                                                          "path":  "external/oracle-binaries/bin/rime_deployer.exe",
+                                                          "bytes":  459776,
+                                                          "sha256":  "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
+                                                          "staged_for_execution":  true
+                                                      },
+                                    "rime_api_header":  {
+                                                            "path":  "external/oracle-binaries/include/rime_api.h",
+                                                            "bytes":  20632,
+                                                            "sha256":  "85caf744b4e5405a9a1de9c7aef3affc4ae315f4ae5d7ebdd08e191a2c16dad4"
+                                                        }
+                                }
+               },
+    "tools":  {
+                  "capture_script":  {
+                                         "path":  "scripts/capture-m59-opencc-convert-word.ps1",
+                                         "bytes":  27058,
+                                         "sha256":  "90c37c321247852bea03920b1ec573760c9f04e2286cc8bdf57531c3824f5a9a"
+                                     },
+                  "oracle_probe":  {
+                                       "path":  "scripts/oracle-rime-probe.cs",
+                                       "bytes":  44846,
+                                       "sha256":  "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7",
+                                       "capture_api":  "RimeProbe.Capture"
+                                   }
+              },
+    "data":  {
+                 "opencc_dictionary":  {
+                                           "path":  "crates/yune-core/src/opencc/data/HKVariantsFull.txt",
+                                           "canonical_repository":  "https://github.com/rime/rime-cantonese",
+                                           "repository_commit":  "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+                                           "repository_tree":  "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+                                           "repository_path":  "opencc/HKVariantsFull.txt",
+                                           "dictionary_manifest_sha256":  "4301001fb7bb52d5d1a9c032c519ac18ba50677e926e01006e34a48788385efa",
+                                           "bytes":  784,
+                                           "sha256":  "145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2",
+                                           "staged_byte_identical":  true
+                                       },
+                 "generated_sources":  [
+                                           {
+                                               "path":  "shared/default.yaml",
+                                               "bytes":  71,
+                                               "sha256":  "704935c197551cb93e00d84aa967bf8a6fe639a6f76acc9b1b922d62dc847a5e"
+                                           },
+                                           {
+                                               "path":  "shared/m59_opencc_convert_word.schema.yaml",
+                                               "bytes":  648,
+                                               "sha256":  "4a69c198ba453f2d8629f826cab57b145ea18353adc04dcbad0e918234f59cca"
+                                           },
+                                           {
+                                               "path":  "shared/m59_opencc_convert_word.dict.yaml",
+                                               "bytes":  162,
+                                               "sha256":  "3d0fc867231b752f8e2966e5442ce04838fd48a01146893d2dc65cd079a83803"
+                                           },
+                                           {
+                                               "path":  "shared/opencc/m59-opencc-hkvariantsfull.json",
+                                               "bytes":  286,
+                                               "sha256":  "55ffb47e57ea02a14a15a38c7a4c2e7ef9a89b4cc49a2749d93d9d4bcce26054"
+                                           },
+                                           {
+                                               "path":  "shared/opencc/HKVariantsFull.txt",
+                                               "bytes":  784,
+                                               "sha256":  "145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2"
+                                           }
+                                       ]
+             },
+    "capture":  {
+                    "schema_id":  "m59_opencc_convert_word",
+                    "inputs":  [
+                                   "a",
+                                   "b",
+                                   "c",
+                                   "d",
+                                   "e"
+                               ],
+                    "page_size":  2,
+                    "captured_all_pages_required":  true,
+                    "modules":  [
+                                    "default"
+                                ],
+                    "filter_chain":  [
+                                         "simplifier",
+                                         "uniquifier"
+                                     ],
+                    "opencc_config":  "m59-opencc-hkvariantsfull.json",
+                    "runtime_options":  [
+                                            {
+                                                "name":  "ascii_mode",
+                                                "enabled":  false
+                                            },
+                                            {
+                                                "name":  "full_shape",
+                                                "enabled":  false
+                                            },
+                                            {
+                                                "name":  "ascii_punct",
+                                                "enabled":  false
+                                            },
+                                            {
+                                                "name":  "zh_hans",
+                                                "enabled":  false
+                                            }
+                                        ],
+                    "runtime_options_source":  "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy",
+                    "table_rows":  [
+                                       {
+                                           "code":  "a",
+                                           "text":  "祕",
+                                           "weight":  100,
+                                           "role":  "exact_one_to_many_source"
+                                       },
+                                       {
+                                           "code":  "a",
+                                           "text":  "秘",
+                                           "weight":  90,
+                                           "role":  "later_already_normalized_dedup_source"
+                                       },
+                                       {
+                                           "code":  "b",
+                                           "text":  "糉",
+                                           "weight":  100,
+                                           "role":  "exact_three_way_source"
+                                       },
+                                       {
+                                           "code":  "c",
+                                           "text":  "祕糉",
+                                           "weight":  100,
+                                           "role":  "multi_character_no_exact_mapping_source"
+                                       },
+                                       {
+                                           "code":  "d",
+                                           "text":  "只",
+                                           "weight":  100,
+                                           "role":  "exact_mapping_whose_default_is_original"
+                                       },
+                                       {
+                                           "code":  "e",
+                                           "text":  "甲乙",
+                                           "weight":  100,
+                                           "role":  "unmapped_pass_through_control"
+                                       }
+                                   ],
+                    "observation_roles":  {
+                                              "a":  "whole-word ordered one-to-many plus stable dedup against a later normalized row",
+                                              "b":  "whole-word ordered three-way conversion spanning all candidate pages",
+                                              "c":  "no exact multi-character mapping; max-seg partial conversion uses defaults only",
+                                              "d":  "whole-word exact mapping retains its original-valued default in declared first position",
+                                              "e":  "unmapped whole word passes through unchanged"
+                                          }
+                },
+    "provenance":  {
+                       "capture_command":  "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/capture-m59-opencc-convert-word.ps1 -OracleBinaryRoot \u0027external/oracle-binaries\u0027 -Workspace \u0027external/workspace\u0027 -Output \u0027external/output\u0027 -CaptureDate \u00272026-07-12\u0027",
+                       "path_serialization_policy":  "repo-relative tool/data paths and external role placeholders; no local absolute paths",
+                       "output_policy":  "UTF-8 without BOM, LF-only, create-new; output must remain outside the protected oracle-binary root and workspace",
+                       "workspace_policy":  "caller supplies an absent isolated workspace outside the protected oracle-binary root; generated sources and exact-byte staged oracle executables are hash-bound and retained for audit but are never copied into the tracked fixture",
+                       "expectation_policy":  "capture records upstream output directly; no expected candidate text is derived from Yune"
+                   },
+    "cases":  [
+                  {
+                      "schema_id":  "m59_opencc_convert_word",
+                      "schema_name":  "M59 OpenCC ConvertWord Oracle",
+                      "input":  "a",
+                      "rime_get_input":  "a",
+                      "processed":  [
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "a",
+                      "commit_text_preview":  "秘",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  2,
+                      "page_no":  0,
+                      "num_candidates":  2,
+                      "is_last_page":  true,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "global_index":  0,
+                                                      "text":  "秘",
+                                                      "comment":  null
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "global_index":  1,
+                                                      "text":  "祕",
+                                                      "comment":  null
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  2,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "global_index":  0,
+                                                               "text":  "秘",
+                                                               "comment":  null
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "global_index":  1,
+                                                               "text":  "祕",
+                                                               "comment":  null
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "global_index":  0,
+                                                 "text":  "秘",
+                                                 "comment":  null
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "global_index":  1,
+                                                 "text":  "祕",
+                                                 "comment":  null
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "m59_opencc_convert_word",
+                      "schema_name":  "M59 OpenCC ConvertWord Oracle",
+                      "input":  "b",
+                      "rime_get_input":  "b",
+                      "processed":  [
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "b",
+                      "commit_text_preview":  "粽",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  2,
+                      "page_no":  0,
+                      "num_candidates":  2,
+                      "is_last_page":  false,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "global_index":  0,
+                                                      "text":  "粽",
+                                                      "comment":  null
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "global_index":  1,
+                                                      "text":  "糉",
+                                                      "comment":  null
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  2,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "global_index":  0,
+                                                               "text":  "粽",
+                                                               "comment":  null
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "global_index":  1,
+                                                               "text":  "糉",
+                                                               "comment":  null
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  1,
+                                        "page_size":  2,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "global_index":  2,
+                                                               "text":  "糭",
+                                                               "comment":  null
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "global_index":  0,
+                                                 "text":  "粽",
+                                                 "comment":  null
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "global_index":  1,
+                                                 "text":  "糉",
+                                                 "comment":  null
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "global_index":  2,
+                                                 "text":  "糭",
+                                                 "comment":  null
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "m59_opencc_convert_word",
+                      "schema_name":  "M59 OpenCC ConvertWord Oracle",
+                      "input":  "c",
+                      "rime_get_input":  "c",
+                      "processed":  [
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "c",
+                      "commit_text_preview":  "秘粽",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  2,
+                      "page_no":  0,
+                      "num_candidates":  1,
+                      "is_last_page":  true,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "global_index":  0,
+                                                      "text":  "秘粽",
+                                                      "comment":  null
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  2,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "global_index":  0,
+                                                               "text":  "秘粽",
+                                                               "comment":  null
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "global_index":  0,
+                                                 "text":  "秘粽",
+                                                 "comment":  null
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "m59_opencc_convert_word",
+                      "schema_name":  "M59 OpenCC ConvertWord Oracle",
+                      "input":  "d",
+                      "rime_get_input":  "d",
+                      "processed":  [
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "d",
+                      "commit_text_preview":  "只",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  2,
+                      "page_no":  0,
+                      "num_candidates":  2,
+                      "is_last_page":  true,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "global_index":  0,
+                                                      "text":  "只",
+                                                      "comment":  null
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "global_index":  1,
+                                                      "text":  "衹",
+                                                      "comment":  null
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  2,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "global_index":  0,
+                                                               "text":  "只",
+                                                               "comment":  null
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "global_index":  1,
+                                                               "text":  "衹",
+                                                               "comment":  null
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "global_index":  0,
+                                                 "text":  "只",
+                                                 "comment":  null
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "global_index":  1,
+                                                 "text":  "衹",
+                                                 "comment":  null
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "m59_opencc_convert_word",
+                      "schema_name":  "M59 OpenCC ConvertWord Oracle",
+                      "input":  "e",
+                      "rime_get_input":  "e",
+                      "processed":  [
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "e",
+                      "commit_text_preview":  "甲乙",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  2,
+                      "page_no":  0,
+                      "num_candidates":  1,
+                      "is_last_page":  true,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "global_index":  0,
+                                                      "text":  "甲乙",
+                                                      "comment":  null
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  2,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "global_index":  0,
+                                                               "text":  "甲乙",
+                                                               "comment":  null
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "global_index":  0,
+                                                 "text":  "甲乙",
+                                                 "comment":  null
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  }
+              ]
+}

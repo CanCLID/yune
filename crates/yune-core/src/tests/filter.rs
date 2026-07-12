@@ -1660,6 +1660,165 @@ fn simplifier_filter_uses_opencc_t2hkf_source_data() {
 }
 
 #[test]
+fn simplifier_filter_expands_ordered_opencc_forms_with_stable_family_deduplication() {
+    let filter = SimplifierFilter::new()
+        .with_option_name("variants_hk")
+        .with_opencc_config("t2hkf.json");
+    let mut options = std::collections::HashMap::new();
+    options.insert("variants_hk".to_owned(), true);
+    let original_variant = Candidate {
+        text: "祕".to_owned(),
+        comment: "original variant".to_owned(),
+        preedit: Some("bei3".to_owned()),
+        source: CandidateSource::PartialTable {
+            consumed: 3,
+            recompose_on_default: true,
+        },
+        quality: 0.75,
+    };
+    let later_default = Candidate {
+        text: "秘".to_owned(),
+        comment: "later default".to_owned(),
+        preedit: Some("bei3".to_owned()),
+        source: CandidateSource::Table,
+        quality: 0.5,
+    };
+    let mut candidates = vec![original_variant.clone(), later_default];
+
+    filter.apply_with_options(&mut candidates, &options);
+
+    assert_eq!(
+        candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["秘", "祕"]
+    );
+    assert_eq!(candidates[0].comment, original_variant.comment);
+    assert_eq!(candidates[0].preedit, original_variant.preedit);
+    assert_eq!(candidates[0].source, original_variant.source);
+    assert_eq!(candidates[0].quality, original_variant.quality);
+    assert_eq!(candidates[1], original_variant);
+
+    UniquifierFilter.apply(&mut candidates);
+
+    assert_eq!(
+        candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["秘", "祕"]
+    );
+    assert_eq!(candidates[1], original_variant);
+}
+
+#[test]
+fn simplifier_filter_preserves_arbitrary_opencc_form_arity_and_order() {
+    let filter = SimplifierFilter::new()
+        .with_option_name("variants_hk")
+        .with_opencc_config("t2hkf.json");
+    let mut options = std::collections::HashMap::new();
+    options.insert("variants_hk".to_owned(), true);
+    let mut candidates = vec![Candidate {
+        text: "糉".to_owned(),
+        comment: "zung2".to_owned(),
+        preedit: None,
+        source: CandidateSource::Table,
+        quality: 1.0,
+    }];
+
+    filter.apply_with_options(&mut candidates, &options);
+
+    assert_eq!(
+        candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["粽", "糉", "糭"]
+    );
+    assert!(candidates
+        .iter()
+        .all(|candidate| candidate.comment == "zung2"));
+}
+
+#[test]
+fn simplifier_filter_deduplicates_only_opencc_expansion_owned_texts() {
+    let filter = SimplifierFilter::new()
+        .with_option_name("variants_hk")
+        .with_opencc_config("t2hkf.json");
+    let mut options = std::collections::HashMap::new();
+    options.insert("variants_hk".to_owned(), true);
+    let candidate = |text: &str| Candidate {
+        text: text.to_owned(),
+        comment: String::new(),
+        preedit: None,
+        source: CandidateSource::Table,
+        quality: 1.0,
+    };
+    let mut candidates = vec![candidate("甲乙"), candidate("甲乙"), candidate("祕")];
+
+    filter.apply_with_options(&mut candidates, &options);
+
+    assert_eq!(
+        candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["甲乙", "甲乙", "秘", "祕"],
+        "unrelated repeated text must remain visible while the expansion family is stable-deduplicated"
+    );
+}
+
+#[test]
+fn simplifier_filter_uses_only_default_forms_for_partial_opencc_segmentation() {
+    let filter = SimplifierFilter::new()
+        .with_option_name("variants_hk")
+        .with_opencc_config("t2hkf.json");
+    let mut options = std::collections::HashMap::new();
+    options.insert("variants_hk".to_owned(), true);
+    let mut candidates = vec![Candidate {
+        text: "甲祕糉乙".to_owned(),
+        comment: "partial".to_owned(),
+        preedit: None,
+        source: CandidateSource::Table,
+        quality: 1.0,
+    }];
+
+    filter.apply_with_options(&mut candidates, &options);
+
+    assert_eq!(candidates.len(), 1);
+    assert_eq!(candidates[0].text, "甲秘粽乙");
+    assert_eq!(candidates[0].comment, "partial");
+}
+
+#[test]
+fn simplifier_filter_tips_distinguish_converted_and_original_opencc_forms() {
+    let filter = SimplifierFilter::new()
+        .with_option_name("variants_hk")
+        .with_opencc_config("t2hkf.json")
+        .with_tips("char");
+    let mut options = std::collections::HashMap::new();
+    options.insert("variants_hk".to_owned(), true);
+    let mut candidates = vec![Candidate {
+        text: "祕".to_owned(),
+        comment: "original".to_owned(),
+        preedit: None,
+        source: CandidateSource::Table,
+        quality: 1.0,
+    }];
+
+    filter.apply_with_options(&mut candidates, &options);
+
+    assert_eq!(
+        candidates
+            .iter()
+            .map(|candidate| (candidate.text.as_str(), candidate.comment.as_str()))
+            .collect::<Vec<_>>(),
+        [("秘", "〔祕〕"), ("祕", "original")]
+    );
+}
+
+#[test]
 fn simplifier_filter_shows_librime_tip_comments() {
     let mut engine = Engine::new();
     engine.add_translator(StaticTableTranslator::new([("tw", "臺"), ("tw", "臺灣")]));

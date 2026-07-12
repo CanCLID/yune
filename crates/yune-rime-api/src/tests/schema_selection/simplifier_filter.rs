@@ -581,3 +581,181 @@ tw\t龍馬\t8
     unsafe { RimeSetup(&reset_traits) };
     fs::remove_dir_all(root).expect("temp dirs should be removed");
 }
+
+#[test]
+fn select_schema_matches_librime_opencc_convert_word_for_source_and_compiled_tables() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-opencc-convert-word");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+
+    let dictionary_yaml = |name: &str| {
+        format!(
+            "---\nname: {name}\nversion: '0.1'\nsort: original\ncolumns: [text, code, weight]\n...\n\n祕\ta\t10\n秘\ta\t9\n糉\tb\t8\n祕糉\tc\t7\n只\td\t6\n甲乙\te\t5\n"
+        )
+    };
+    let schema_yaml = |schema_id: &str, dictionary_id: &str| {
+        format!(
+            "schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nswitches:\n  - name: variants_hk\n    reset: 1\nmenu:\n  page_size: 10\nengine:\n  translators:\n    - table_translator\n  filters:\n    - simplifier@variants_hk\n    - uniquifier\ntranslator:\n  dictionary: {dictionary_id}\n  enable_completion: false\n  enable_sentence: false\nvariants_hk:\n  option_name: variants_hk\n  opencc_config: t2hkf.json\n"
+        )
+    };
+
+    fs::write(
+        staging.join("opencc_source.schema.yaml"),
+        schema_yaml("opencc_source", "opencc_source"),
+    )
+    .expect("source schema should be written");
+    fs::write(
+        shared.join("opencc_source.dict.yaml"),
+        dictionary_yaml("opencc_source"),
+    )
+    .expect("source dictionary should be written");
+
+    fs::write(
+        staging.join("opencc_compiled.schema.yaml"),
+        schema_yaml("opencc_compiled", "opencc_compiled"),
+    )
+    .expect("compiled schema should be written");
+    let compiled_dictionary = yune_core::TableDictionary::parse_rime_dict_yaml(
+        &dictionary_yaml("opencc_compiled"),
+    )
+    .expect("compiled dictionary source should parse");
+    let compiled_checksum = 0x5904_c001;
+    fs::write(
+        shared.join("opencc_compiled.table.bin"),
+        yune_core::build_table_bin(&compiled_dictionary, compiled_checksum),
+    )
+    .expect("compiled table should be written");
+    fs::write(
+        shared.join("opencc_compiled.prism.bin"),
+        yune_core::build_prism_bin(
+            &[
+                "a".to_owned(),
+                "b".to_owned(),
+                "c".to_owned(),
+                "d".to_owned(),
+                "e".to_owned(),
+            ],
+            &[],
+            compiled_checksum,
+            0,
+        ),
+    )
+    .expect("compiled prism should be written");
+    fs::write(
+        shared.join("opencc_compiled.reverse.bin"),
+        yune_core::build_reverse_bin(&compiled_dictionary, compiled_checksum),
+    )
+    .expect("compiled reverse should be written");
+    assert!(
+        !shared.join("opencc_compiled.dict.yaml").exists(),
+        "compiled-path coverage must not silently fall back to source YAML"
+    );
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let oracle_fixture: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../yune-core/tests/fixtures/upstream-1.17.0/m59-opencc-convert-word.json"
+    )))
+    .expect("pinned librime OpenCC fixture should parse");
+    let cases = oracle_fixture["cases"]
+        .as_array()
+        .expect("oracle fixture should contain cases")
+        .iter()
+        .map(|case| {
+            let input = case["input"]
+                .as_str()
+                .expect("oracle input should be a string")
+                .to_owned();
+            let expected = case["all_candidates"]
+                .as_array()
+                .expect("oracle case should contain all-page candidates")
+                .iter()
+                .map(|candidate| {
+                    candidate["text"]
+                        .as_str()
+                        .expect("oracle candidate text should be a string")
+                        .to_owned()
+                })
+                .collect::<Vec<_>>();
+            (input, expected)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        cases.iter().map(|(input, _)| input.as_str()).collect::<Vec<_>>(),
+        ["a", "b", "c", "d", "e"],
+        "the ABI test must execute every captured upstream case"
+    );
+    for schema in ["opencc_source", "opencc_compiled"] {
+        let session_id = RimeCreateSession();
+        let schema_id = CString::new(schema).expect("schema id should be valid");
+        // SAFETY: schema id is a valid NUL-terminated string.
+        assert_eq!(
+            unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+            TRUE
+        );
+        let variants_hk = CString::new("variants_hk").expect("option name should be valid");
+        // SAFETY: option name is a valid NUL-terminated string.
+        assert_eq!(
+            unsafe { RimeGetOption(session_id, variants_hk.as_ptr()) },
+            TRUE,
+            "{schema} must activate variants_hk through its declared reset"
+        );
+
+        for (input, expected) in &cases {
+            RimeClearComposition(session_id);
+            for ch in input.chars() {
+                assert_eq!(
+                    RimeProcessKey(session_id, ch as c_int, 0),
+                    TRUE,
+                    "{schema} should process {input}"
+                );
+            }
+            let actual = current_candidate_pairs(session_id)
+                .into_iter()
+                .map(|(text, _)| text)
+                .collect::<Vec<_>>();
+            assert_eq!(
+                actual,
+                *expected,
+                "ordered ConvertWord candidates for {schema}/{input}"
+            );
+        }
+
+        if schema == "opencc_compiled" {
+            let diagnostics = crate::session_web_diagnostics_snapshot(session_id)
+                .expect("compiled session diagnostics should exist");
+            let storage = diagnostics
+                .storage
+                .iter()
+                .find(|row| row.owner == "compact_table.storage")
+                .expect("compiled schema should use compact table storage");
+            assert_eq!(storage.selected_storage, "byte_backed");
+            assert!(
+                !remaining_gear_deferrals_snapshot(session_id)
+                    .expect("compiled session should exist")
+                    .iter()
+                    .any(|deferral| deferral.gear == "dictionary_source_fallback"),
+                "compiled-path coverage must not pass through source fallback"
+            );
+        }
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}

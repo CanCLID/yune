@@ -51,6 +51,13 @@ $Wanted = @(
     'Get-RepositorySourceSnapshot',
     'Assert-RepositorySourceSnapshot',
     'Test-PathWithinOrEqual',
+    'Assert-FileOutsideRoot',
+    'Resolve-PrebuiltNativeBenchmarkExecutable',
+    'Resolve-PrebuiltNativeBenchmarkReceipt',
+    'Write-NativeBenchmarkBuildReceipt',
+    'Read-NativeBenchmarkBuildReceipt',
+    'Assert-NativeBenchmarkBuildReceipt',
+    'Select-NativeBenchmarkExecutable',
     'Assert-ExplicitRootOutsideRepo',
     'Clear-DirectoryUnder',
     'Initialize-BenchmarkRoot'
@@ -407,6 +414,169 @@ if (-not $UntrackedRejected) {{
         self.assertIn(
             'if ((File-Sha256 $NativeBenchmarkExecutable) -ne '
             '$NativeBenchmarkExecutableSha256)',
+            self.source,
+        )
+
+    def test_prebuilt_mode_skips_build_and_build_mode_calls_it_once(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            prebuilt = root / "stable harness with spaces.exe"
+            built = root / "newly-built.exe"
+            build_log = root / "build log with spaces.txt"
+            prebuilt.write_bytes(b"prebuilt")
+            body = f"""
+$script:NativeBenchmarkBuildCount = 0
+function Build-NativeBenchmarkExecutable([string]$LogPath) {{
+    $script:NativeBenchmarkBuildCount += 1
+    return {ps_quote(built)}
+}}
+$Reused = Select-NativeBenchmarkExecutable $false {ps_quote(prebuilt)} {ps_quote(build_log)}
+if ($script:NativeBenchmarkBuildCount -ne 0) {{
+    throw 'prebuilt reuse unexpectedly invoked the Cargo build'
+}}
+if ($Reused -ne {ps_quote(prebuilt)}) {{ throw "wrong reused executable: $Reused" }}
+$Built = Select-NativeBenchmarkExecutable $true {ps_quote(prebuilt)} {ps_quote(build_log)}
+if ($script:NativeBenchmarkBuildCount -ne 1) {{
+    throw "build mode invoked the Cargo build $script:NativeBenchmarkBuildCount times"
+}}
+if ($Built -ne {ps_quote(built)}) {{ throw "wrong built executable: $Built" }}
+"""
+            result = self.run_function_harness(body)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_prebuilt_paths_must_be_external_existing_plain_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / "output"
+            work = root / "work"
+            stable = root / "stable files"
+            output.mkdir()
+            work.mkdir()
+            stable.mkdir()
+            executable = stable / "native benchmark with spaces.exe"
+            receipt = stable / "native benchmark receipt with spaces.txt"
+            executable.write_bytes(b"stable-prebuilt-harness")
+            receipt.write_text("format_version=1\n", encoding="utf-8")
+            output_file = output / executable.name
+            work_file = work / executable.name
+            output_file.write_bytes(b"output-owned")
+            work_file.write_bytes(b"work-owned")
+            directory = stable / "directory-not-file"
+            directory.mkdir()
+            missing = stable / "missing.exe"
+            body = f"""
+$Executable = Resolve-PrebuiltNativeBenchmarkExecutable `
+    {ps_quote(executable)} {ps_quote(output)} {ps_quote(work)}
+$Receipt = Resolve-PrebuiltNativeBenchmarkReceipt `
+    {ps_quote(receipt)} {ps_quote(output)} {ps_quote(work)}
+if ($Executable -ne [System.IO.Path]::GetFullPath({ps_quote(executable)})) {{
+    throw "safe executable was not canonicalized: $Executable"
+}}
+if ($Receipt -ne [System.IO.Path]::GetFullPath({ps_quote(receipt)})) {{
+    throw "safe receipt was not canonicalized: $Receipt"
+}}
+$Rejected = 0
+foreach ($Unsafe in @(
+    {ps_quote(output_file)},
+    {ps_quote(work_file)},
+    {ps_quote(directory)},
+    {ps_quote(missing)},
+    ({ps_quote(executable)} + ':stream')
+)) {{
+    try {{
+        Resolve-PrebuiltNativeBenchmarkExecutable `
+            $Unsafe {ps_quote(output)} {ps_quote(work)} | Out-Null
+    }}
+    catch {{ $Rejected += 1 }}
+}}
+if ($Rejected -ne 5) {{ throw "expected five unsafe paths to fail, got $Rejected" }}
+"""
+            result = self.run_function_harness(body)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(executable.read_bytes(), b"stable-prebuilt-harness")
+            self.assertEqual(output_file.read_bytes(), b"output-owned")
+            self.assertEqual(work_file.read_bytes(), b"work-owned")
+            self.assertFalse(missing.exists())
+
+    def test_build_receipt_is_deterministic_and_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            receipt = Path(temporary) / "native benchmark receipt.txt"
+            body = f"""
+$Fields = [ordered]@{{
+    format_version = '1'
+    source_commit = ('a' * 40)
+    source_tree = ('b' * 40)
+    source_clean = 'True'
+    source_content_binding_sha256 = ('c' * 64)
+    benchmark_script_sha256 = ('d' * 64)
+    benchmark_rust_source_sha256 = ('e' * 64)
+    cargo_lock_sha256 = ('f' * 64)
+    rustc_identity_sha256 = ('1' * 64)
+    cargo_identity_sha256 = ('2' * 64)
+    cargo_command = 'cargo bench --no-run'
+    native_benchmark_build_command = "`$env:CARGO_TARGET_DIR='C:\\stable target'; cargo bench --no-run"
+    cargo_target_root = 'C:\\stable target'
+    native_benchmark_executable_path = 'C:\\stable target\\bench with spaces.exe'
+    native_benchmark_executable_sha256 = ('3' * 64)
+}}
+Write-NativeBenchmarkBuildReceipt {ps_quote(receipt)} $Fields
+$Receipt = Read-NativeBenchmarkBuildReceipt {ps_quote(receipt)}
+Assert-NativeBenchmarkBuildReceipt $Receipt $Fields
+$MismatchRejected = $false
+$ExpectedMismatch = [ordered]@{{
+    native_benchmark_executable_sha256 = ('4' * 64)
+}}
+try {{ Assert-NativeBenchmarkBuildReceipt $Receipt $ExpectedMismatch }}
+catch {{ $MismatchRejected = $_.Exception.Message -like '*mismatch*' }}
+if (-not $MismatchRejected) {{ throw 'receipt hash mismatch was accepted' }}
+$Receipt.Remove('cargo_lock_sha256')
+$MissingRejected = $false
+try {{ Assert-NativeBenchmarkBuildReceipt $Receipt $Fields }}
+catch {{ $MissingRejected = $_.Exception.Message -like '*missing cargo_lock_sha256*' }}
+if (-not $MissingRejected) {{ throw 'incomplete receipt was accepted' }}
+$OverwriteRejected = $false
+try {{ Write-NativeBenchmarkBuildReceipt {ps_quote(receipt)} $Fields }}
+catch {{ $OverwriteRejected = $_.Exception.Message -like '*Refusing to overwrite*' }}
+if (-not $OverwriteRejected) {{ throw 'receipt overwrite was accepted' }}
+"""
+            result = self.run_function_harness(body)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            receipt_bytes = receipt.read_bytes()
+            self.assertFalse(receipt_bytes.startswith(b"\xef\xbb\xbf"))
+            self.assertNotIn(b"\r", receipt_bytes)
+            self.assertTrue(receipt_bytes.endswith(b"\n"))
+
+    def test_prebuilt_receipt_provenance_and_final_hashes_are_recorded(self) -> None:
+        for parameter in (
+            "[string]$PrebuiltNativeBenchmarkExecutable",
+            "[string]$PrebuiltNativeBenchmarkReceipt",
+        ):
+            self.assertIn(parameter, self.source)
+        for field in (
+            "native_benchmark_executable_prebuilt",
+            "native_benchmark_build_performed",
+            "native_benchmark_receipt_sha256",
+        ):
+            self.assertGreaterEqual(self.source.count(field), 3)
+        for receipt_field in (
+            "source_content_binding_sha256",
+            "benchmark_rust_source_sha256",
+            "cargo_lock_sha256",
+            "rustc_identity_sha256",
+            "cargo_identity_sha256",
+            "native_benchmark_build_command",
+            "cargo_target_root",
+        ):
+            self.assertIn(receipt_field, self.source)
+        self.assertIn('"-PrebuiltNativeBenchmarkExecutable",', self.source)
+        self.assertIn('"-PrebuiltNativeBenchmarkReceipt",', self.source)
+        self.assertIn(
+            "if ((File-Sha256 $NativeBenchmarkReceiptInput) -ne "
+            "$NativeBenchmarkReceiptInputSha256)",
+            self.source,
+        )
+        self.assertIn(
+            "Prebuilt native benchmark build receipt changed during validation",
             self.source,
         )
 

@@ -3059,7 +3059,13 @@ class NativeRatchetTests(unittest.TestCase):
         "upstream_shared_tree_sha256": "e" * 64,
         "upstream_build_tree_sha256": "f" * 64,
         "product_schema_tree_sha256": "d" * 64,
+        "native_benchmark_executable": (
+            "/external/native-benchmark-target/native-benchmark"
+        ),
         "native_benchmark_executable_sha256": "1" * 64,
+        "native_benchmark_receipt_sha256": "4" * 64,
+        "native_benchmark_executable_prebuilt": "False",
+        "native_benchmark_build_performed": "True",
         "benchmark_script_sha256": "2" * 64,
         "track_a_inputs": "x",
         "track_b_inputs": "trackb",
@@ -3128,14 +3134,59 @@ class NativeRatchetTests(unittest.TestCase):
         observed,
         *,
         provenance_override=None,
+        receipt_override=None,
         include_ratio_check=True,
         checked_observed=None,
     ):
         run = self.root / f"run-{number}"
         run.mkdir()
         environment = dict(self.provenance)
+        builder_run = str(number).endswith("1")
+        environment["native_benchmark_executable_prebuilt"] = (
+            "False" if builder_run else "True"
+        )
+        environment["native_benchmark_build_performed"] = (
+            "True" if builder_run else "False"
+        )
         if provenance_override:
             environment.update(provenance_override)
+        receipt_fields = {
+            "format_version": "1",
+            "source_commit": environment["source_commit"],
+            "source_tree": environment["source_tree"],
+            "source_clean": environment["source_clean"],
+            "source_content_binding_sha256": environment[
+                "source_content_binding_sha256"
+            ],
+            "benchmark_script_sha256": environment["benchmark_script_sha256"],
+            "benchmark_rust_source_sha256": "5" * 64,
+            "cargo_lock_sha256": "6" * 64,
+            "rustc_identity_sha256": "7" * 64,
+            "cargo_identity_sha256": "8" * 64,
+            "cargo_command": "cargo bench --no-run",
+            "native_benchmark_build_command": "cargo bench --no-run",
+            "cargo_target_root": "/external/native-benchmark-target",
+            "native_benchmark_executable_path": (
+                "/external/native-benchmark-target/native-benchmark"
+            ),
+            "native_benchmark_executable_sha256": environment[
+                "native_benchmark_executable_sha256"
+            ],
+        }
+        if receipt_override:
+            receipt_fields.update(receipt_override)
+        receipt_text = "".join(
+            f"{key}={value}\n" for key, value in receipt_fields.items()
+        )
+        receipt_path = run / "native-benchmark-build-receipt.txt"
+        receipt_path.write_text(receipt_text, encoding="utf-8")
+        if (
+            not provenance_override
+            or "native_benchmark_receipt_sha256" not in provenance_override
+        ):
+            environment["native_benchmark_receipt_sha256"] = hashlib.sha256(
+                receipt_path.read_bytes()
+            ).hexdigest()
         (run / "run-status.txt").write_text(
             "status=complete\ndate_utc=2026-01-01T00:00:00Z\ndetail=\n",
             encoding="utf-8",
@@ -3282,6 +3333,38 @@ class NativeRatchetTests(unittest.TestCase):
         self.assertEqual(
             provenance["validated_provenance"]["measured_yune_dll_sha256"],
             "b" * 64,
+        )
+        self.assertEqual(
+            provenance["validated_provenance"]["native_benchmark_mode_sequence"],
+            "build,reuse,reuse,reuse,reuse",
+        )
+        self.assertEqual(
+            provenance["validated_provenance"]["native_benchmark_builder_run"],
+            "1",
+        )
+        self.assertEqual(
+            [
+                (
+                    row["native_benchmark_executable_prebuilt"],
+                    row["native_benchmark_build_performed"],
+                )
+                for row in provenance["runs"]
+            ],
+            [("False", "True")] + [("True", "False")] * 4,
+        )
+        self.assertEqual(
+            {
+                row["native_benchmark_executable_sha256"]
+                for row in provenance["runs"]
+            },
+            {"1" * 64},
+        )
+        self.assertEqual(
+            {
+                row["native_benchmark_receipt_sha256"]
+                for row in provenance["runs"]
+            },
+            {provenance["runs"][0]["native_benchmark_receipt_sha256"]},
         )
         self.assertIn("--thresholds", provenance["effective_invocation"])
 
@@ -3579,6 +3662,110 @@ namespace['_write_output_pair'](
         result, stderr = self.run_tool(runs, return_stderr=True)
         self.assertEqual(result, 2)
         self.assertIn("run 5 provenance mismatch for iterations", stderr)
+        self.assertFalse(self.output.exists())
+        self.assertFalse(self.sidecar.exists())
+
+    def test_native_benchmark_build_reuse_sequence_is_exact(self):
+        bad_cases = (
+            (
+                "run-1-reused",
+                1,
+                {
+                    "native_benchmark_executable_prebuilt": "True",
+                    "native_benchmark_build_performed": "False",
+                },
+            ),
+            (
+                "run-2-rebuilt",
+                2,
+                {
+                    "native_benchmark_executable_prebuilt": "False",
+                    "native_benchmark_build_performed": "True",
+                },
+            ),
+        )
+        for case_number, (label, bad_index, override) in enumerate(bad_cases, start=1):
+            with self.subTest(label=label):
+                runs = []
+                for index in range(1, 6):
+                    runs.append(
+                        self.write_run(
+                            case_number * 10 + index,
+                            1,
+                            provenance_override=override if index == bad_index else None,
+                        )
+                    )
+                result, stderr = self.run_tool(runs, return_stderr=True)
+                self.assertEqual(result, 2)
+                self.assertIn("run 1 built once", stderr)
+                self.assertFalse(self.output.exists())
+                self.assertFalse(self.sidecar.exists())
+
+    def test_native_benchmark_receipt_must_match_packet_and_environment(self):
+        bad_cases = (
+            (
+                "packet-hash",
+                {"native_benchmark_receipt_sha256": "9" * 64},
+                None,
+                "receipt SHA does not match packet bytes",
+            ),
+            (
+                "source-binding",
+                None,
+                {"source_content_binding_sha256": "9" * 64},
+                "receipt mismatch for source_content_binding_sha256",
+            ),
+            (
+                "executable-path-binding",
+                None,
+                {
+                    "native_benchmark_executable_path": (
+                        "/external/native-benchmark-target/other-benchmark"
+                    )
+                },
+                "receipt mismatch for native_benchmark_executable_path",
+            ),
+        )
+        for case_number, (
+            label,
+            provenance_override,
+            receipt_override,
+            message,
+        ) in enumerate(bad_cases, start=1):
+            with self.subTest(label=label):
+                runs = [
+                    self.write_run(case_number * 10 + index, 1)
+                    for index in range(1, 5)
+                ]
+                runs.append(
+                    self.write_run(
+                        case_number * 10 + 5,
+                        1,
+                        provenance_override=provenance_override,
+                        receipt_override=receipt_override,
+                    )
+                )
+                result, stderr = self.run_tool(runs, return_stderr=True)
+                self.assertEqual(result, 2)
+                self.assertIn(message, stderr)
+                self.assertFalse(self.output.exists())
+                self.assertFalse(self.sidecar.exists())
+
+    def test_native_benchmark_receipt_hash_must_match_across_all_runs(self):
+        runs = [self.write_run(index, 1) for index in range(1, 5)]
+        runs.append(
+            self.write_run(
+                5,
+                1,
+                receipt_override={"cargo_command": "cargo bench --no-run --frozen"},
+            )
+        )
+        result, stderr = self.run_tool(runs, return_stderr=True)
+        self.assertEqual(result, 2)
+        self.assertIn(
+            "run 5 provenance mismatch for native_benchmark_receipt_sha256",
+            stderr,
+        )
         self.assertFalse(self.output.exists())
         self.assertFalse(self.sidecar.exists())
 

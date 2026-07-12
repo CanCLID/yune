@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Aggregate native benchmark runs into an executable median ratchet gate.
 
-Each run directory must contain ``environment.txt``, ``summary-comparison.csv``
-and ``threshold-check.csv``; ``external-provenance.txt`` is merged when present.
+Each run directory must contain ``environment.txt``, the source-bound native
+benchmark build receipt, ``summary-comparison.csv``, and
+``threshold-check.csv``; ``external-provenance.txt`` is merged when present.
 Track-A latency ratios are read from the underlying summary comparison; all
 other metrics are read from the threshold check. This keeps newly signed latency
 rows reproducible even when the measurement run was captured before those rows
@@ -41,6 +42,9 @@ PROVENANCE_KEYS = (
     "upstream_build_tree_sha256",
     "product_schema_tree_sha256",
     "native_benchmark_executable_sha256",
+    "native_benchmark_receipt_sha256",
+    "native_benchmark_executable_prebuilt",
+    "native_benchmark_build_performed",
     "benchmark_script_sha256",
     "track_a_inputs",
     "track_b_inputs",
@@ -51,13 +55,14 @@ PROVENANCE_KEYS = (
     "skip_track_b",
 )
 TOOL_NAME = "aggregate-native-ratchet.py"
-TOOL_VERSION = "7"
+TOOL_VERSION = "8"
 REQUIRED_RUN_COUNT = 5
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUN_FILES = (
     "run-status.txt",
     "environment.txt",
     "external-provenance.txt",
+    "native-benchmark-build-receipt.txt",
     "summary-comparison.csv",
     "threshold-check.csv",
 )
@@ -345,6 +350,7 @@ def read_environment(run_path: Path) -> dict[str, str]:
         "upstream_build_tree_sha256",
         "product_schema_tree_sha256",
         "native_benchmark_executable_sha256",
+        "native_benchmark_receipt_sha256",
         "benchmark_script_sha256",
     ):
         if re.fullmatch(r"[0-9a-fA-F]{64}", environment[key]) is None:
@@ -369,6 +375,63 @@ def read_environment(run_path: Path) -> dict[str, str]:
         )
     if environment["skip_track_b"] != "False":
         raise EvidenceError(f"{run_path} must record skip_track_b=False")
+    if not environment.get("native_benchmark_executable"):
+        raise EvidenceError(
+            f"{run_path} is missing native_benchmark_executable provenance"
+        )
+    prebuilt = environment["native_benchmark_executable_prebuilt"]
+    build_performed = environment["native_benchmark_build_performed"]
+    if (prebuilt, build_performed) not in {("False", "True"), ("True", "False")}:
+        raise EvidenceError(
+            f"{run_path} native benchmark mode must be exactly one of "
+            "build or prebuilt reuse"
+        )
+    receipt_path = run_path / "native-benchmark-build-receipt.txt"
+    receipt_sha = _file_sha256(receipt_path)
+    if receipt_sha.lower() != environment["native_benchmark_receipt_sha256"].lower():
+        raise EvidenceError(
+            f"{run_path} native benchmark receipt SHA does not match packet bytes"
+        )
+    receipt = _read_key_value_file(receipt_path, required=True)
+    receipt_matches = {
+        "source_commit": "source_commit",
+        "source_tree": "source_tree",
+        "source_clean": "source_clean",
+        "source_content_binding_sha256": "source_content_binding_sha256",
+        "benchmark_script_sha256": "benchmark_script_sha256",
+        "native_benchmark_executable_path": "native_benchmark_executable",
+        "native_benchmark_executable_sha256": "native_benchmark_executable_sha256",
+    }
+    for receipt_key, environment_key in receipt_matches.items():
+        receipt_value = receipt.get(receipt_key)
+        environment_value = environment[environment_key]
+        matches = (
+            receipt_value.casefold() == environment_value.casefold()
+            if receipt_key == "native_benchmark_executable_path" and receipt_value
+            else receipt_value == environment_value
+        )
+        if not matches:
+            raise EvidenceError(
+                f"{run_path} native benchmark receipt mismatch for {receipt_key}"
+            )
+    if receipt.get("format_version") != "1":
+        raise EvidenceError(f"{run_path} native benchmark receipt format must be 1")
+    for key in (
+        "benchmark_rust_source_sha256",
+        "cargo_lock_sha256",
+        "rustc_identity_sha256",
+        "cargo_identity_sha256",
+    ):
+        if re.fullmatch(r"[0-9a-fA-F]{64}", receipt.get(key, "")) is None:
+            raise EvidenceError(f"{run_path} native benchmark receipt has invalid {key}")
+    for key in (
+        "cargo_command",
+        "native_benchmark_build_command",
+        "cargo_target_root",
+        "native_benchmark_executable_path",
+    ):
+        if not receipt.get(key):
+            raise EvidenceError(f"{run_path} native benchmark receipt is missing {key}")
     return environment
 
 
@@ -583,7 +646,12 @@ def read_run(path: Path, thresholds: Sequence[Threshold]) -> RunEvidence:
 
 
 def _validate_provenance(runs: Sequence[RunEvidence]) -> dict[str, str]:
-    baseline = {key: runs[0].environment[key] for key in PROVENANCE_KEYS}
+    mode_keys = {
+        "native_benchmark_executable_prebuilt",
+        "native_benchmark_build_performed",
+    }
+    common_keys = tuple(key for key in PROVENANCE_KEYS if key not in mode_keys)
+    baseline = {key: runs[0].environment[key] for key in common_keys}
     for run_number, run in enumerate(runs[1:], start=2):
         for key, expected in baseline.items():
             actual = run.environment[key]
@@ -592,6 +660,26 @@ def _validate_provenance(runs: Sequence[RunEvidence]) -> dict[str, str]:
                     f"run {run_number} provenance mismatch for {key}: "
                     f"{actual!r} != {expected!r}"
                 )
+    expected_modes = [("False", "True")] + [("True", "False")] * (
+        len(runs) - 1
+    )
+    observed_modes = [
+        (
+            run.environment["native_benchmark_executable_prebuilt"],
+            run.environment["native_benchmark_build_performed"],
+        )
+        for run in runs
+    ]
+    if observed_modes != expected_modes:
+        raise EvidenceError(
+            "native benchmark packet must contain run 1 built once and all "
+            f"later runs reusing its receipt; observed={observed_modes}"
+        )
+    baseline["native_benchmark_mode_sequence"] = ",".join(
+        "build" if build == "True" else "reuse"
+        for _, build in observed_modes
+    )
+    baseline["native_benchmark_builder_run"] = "1"
     return baseline
 
 
@@ -777,6 +865,18 @@ def _run_hashes(run: RunEvidence, number: int) -> dict[str, Any]:
     return {
         "run": number,
         "path": _recorded_path(run.path),
+        "native_benchmark_executable_prebuilt": run.environment[
+            "native_benchmark_executable_prebuilt"
+        ],
+        "native_benchmark_build_performed": run.environment[
+            "native_benchmark_build_performed"
+        ],
+        "native_benchmark_executable_sha256": run.environment[
+            "native_benchmark_executable_sha256"
+        ],
+        "native_benchmark_receipt_sha256": run.environment[
+            "native_benchmark_receipt_sha256"
+        ],
         "raw_files_sha256": files,
     }
 

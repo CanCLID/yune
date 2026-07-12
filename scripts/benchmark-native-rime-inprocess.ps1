@@ -2,6 +2,8 @@ param(
     [string]$OutputRoot,
     [string]$UpstreamOracleRoot,
     [string]$YuneDll,
+    [string]$PrebuiltNativeBenchmarkExecutable,
+    [string]$PrebuiltNativeBenchmarkReceipt,
     [int]$Iterations = 9,
     [int]$SessionIterations = 60,
     [int]$KeyIterations = 80,
@@ -179,6 +181,11 @@ $RepoRoot = Get-CanonicalSafePath (Join-Path $PSScriptRoot "..") "repository roo
 $OutputRootWasProvided = -not [string]::IsNullOrWhiteSpace($OutputRoot)
 $WorkRootWasProvided = -not [string]::IsNullOrWhiteSpace($WorkRoot)
 $YuneDllWasProvided = -not [string]::IsNullOrWhiteSpace($YuneDll)
+$NativeBenchmarkExecutableWasProvided = -not [string]::IsNullOrWhiteSpace($PrebuiltNativeBenchmarkExecutable)
+$NativeBenchmarkReceiptWasProvided = -not [string]::IsNullOrWhiteSpace($PrebuiltNativeBenchmarkReceipt)
+if ($NativeBenchmarkExecutableWasProvided -ne $NativeBenchmarkReceiptWasProvided) {
+    throw "PrebuiltNativeBenchmarkExecutable and PrebuiltNativeBenchmarkReceipt must be supplied together"
+}
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path $RepoRoot "docs\reports\evidence\m36-product-path\phase-0-native-inprocess"
 }
@@ -229,6 +236,102 @@ function Bytes-Sha256([byte[]]$Bytes) {
     }
     finally {
         $Hasher.Dispose()
+    }
+}
+
+function Command-IdentitySha256([string]$Command, [string[]]$ArgumentList) {
+    $Output = @(& $Command @ArgumentList 2>&1 | ForEach-Object { [string]$_ })
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to capture tool identity: $Command $($ArgumentList -join ' ')"
+    }
+    $Payload = (($Output -join "`n") + "`n")
+    return Bytes-Sha256 ([System.Text.Encoding]::UTF8.GetBytes($Payload))
+}
+
+function Write-NativeBenchmarkBuildReceipt(
+    [string]$Path,
+    [System.Collections.IDictionary]$Fields
+) {
+    if (Test-Path -LiteralPath $Path) {
+        throw "Refusing to overwrite native benchmark build receipt: $Path"
+    }
+    $Lines = foreach ($Entry in $Fields.GetEnumerator()) {
+        $Key = [string]$Entry.Key
+        $Value = [string]$Entry.Value
+        if ([string]::IsNullOrWhiteSpace($Key) -or $Key.Contains("=") -or
+            $Key.Contains("`r") -or $Key.Contains("`n") -or
+            $Value.Contains("`r") -or $Value.Contains("`n")) {
+            throw "Native benchmark build receipt contains an invalid key/value"
+        }
+        "$Key=$Value"
+    }
+    $Text = (($Lines -join "`n") + "`n")
+    [System.IO.File]::WriteAllText(
+        $Path,
+        $Text,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+}
+
+function Read-NativeBenchmarkBuildReceipt([string]$Path) {
+    $Fields = @{}
+    $LineNumber = 0
+    foreach ($Line in Get-Content -LiteralPath $Path -Encoding UTF8) {
+        $LineNumber += 1
+        if ([string]::IsNullOrWhiteSpace($Line) -or $Line.TrimStart().StartsWith("#")) {
+            continue
+        }
+        $Separator = $Line.IndexOf("=")
+        if ($Separator -le 0) {
+            throw "$Path`:$LineNumber is not key=value"
+        }
+        $Key = $Line.Substring(0, $Separator).Trim()
+        $Value = $Line.Substring($Separator + 1).Trim()
+        if ($Fields.ContainsKey($Key)) {
+            throw "$Path`:$LineNumber duplicates receipt key $Key"
+        }
+        $Fields[$Key] = $Value
+    }
+    return $Fields
+}
+
+function Assert-NativeBenchmarkBuildReceipt(
+    [System.Collections.IDictionary]$Receipt,
+    [System.Collections.IDictionary]$Expected
+) {
+    foreach ($Key in @(
+        "format_version",
+        "source_commit",
+        "source_tree",
+        "source_clean",
+        "source_content_binding_sha256",
+        "benchmark_script_sha256",
+        "benchmark_rust_source_sha256",
+        "cargo_lock_sha256",
+        "rustc_identity_sha256",
+        "cargo_identity_sha256",
+        "cargo_command",
+        "native_benchmark_build_command",
+        "cargo_target_root",
+        "native_benchmark_executable_path",
+        "native_benchmark_executable_sha256"
+    )) {
+        if (-not $Receipt.Contains($Key) -or [string]::IsNullOrWhiteSpace([string]$Receipt[$Key])) {
+            throw "Native benchmark build receipt is missing $Key"
+        }
+    }
+    foreach ($Entry in $Expected.GetEnumerator()) {
+        $Key = [string]$Entry.Key
+        $ExpectedValue = [string]$Entry.Value
+        $ActualValue = [string]$Receipt[$Key]
+        $Matches = if ($Key -eq "native_benchmark_executable_path") {
+            $ActualValue.Equals($ExpectedValue, [System.StringComparison]::OrdinalIgnoreCase)
+        } else {
+            $ActualValue.Equals($ExpectedValue, [System.StringComparison]::Ordinal)
+        }
+        if (-not $Matches) {
+            throw "Native benchmark build receipt mismatch for $Key`: expected [$ExpectedValue], found [$ActualValue]"
+        }
     }
 }
 
@@ -352,6 +455,36 @@ function Assert-FileOutsideRoot([string]$FilePath, [string]$FileLabel, [string]$
     if (Test-PathWithinOrEqual $FilePath $Root) {
         throw "$FileLabel must not be inside $RootLabel`: $FilePath"
     }
+}
+
+function Resolve-PrebuiltNativeBenchmarkExecutable(
+    [string]$Path,
+    [string]$OutputRoot,
+    [string]$WorkRoot
+) {
+    $Canonical = Get-CanonicalSafePath $Path "PrebuiltNativeBenchmarkExecutable"
+    if (-not (Test-Path -LiteralPath $Canonical -PathType Leaf)) {
+        throw "PrebuiltNativeBenchmarkExecutable must be an existing plain file: $Canonical"
+    }
+    Assert-FileOutsideRoot $Canonical "PrebuiltNativeBenchmarkExecutable" $OutputRoot "OutputRoot"
+    Assert-FileOutsideRoot $Canonical "PrebuiltNativeBenchmarkExecutable" $WorkRoot "WorkRoot"
+    Assert-FileOutsideRoot $Canonical "PrebuiltNativeBenchmarkExecutable" $RepoRoot "repository root"
+    return $Canonical
+}
+
+function Resolve-PrebuiltNativeBenchmarkReceipt(
+    [string]$Path,
+    [string]$OutputRoot,
+    [string]$WorkRoot
+) {
+    $Canonical = Get-CanonicalSafePath $Path "PrebuiltNativeBenchmarkReceipt"
+    if (-not (Test-Path -LiteralPath $Canonical -PathType Leaf)) {
+        throw "PrebuiltNativeBenchmarkReceipt must be an existing plain file: $Canonical"
+    }
+    Assert-FileOutsideRoot $Canonical "PrebuiltNativeBenchmarkReceipt" $OutputRoot "OutputRoot"
+    Assert-FileOutsideRoot $Canonical "PrebuiltNativeBenchmarkReceipt" $WorkRoot "WorkRoot"
+    Assert-FileOutsideRoot $Canonical "PrebuiltNativeBenchmarkReceipt" $RepoRoot "repository root"
+    return $Canonical
 }
 
 function Initialize-BenchmarkRoot([string]$Path, [string]$LegacyParent, [bool]$WasProvided, [string]$Label) {
@@ -508,6 +641,17 @@ function Build-NativeBenchmarkExecutable($LogPath) {
         $env:CARGO_TARGET_DIR = $PreviousCargoTargetDir
         $ErrorActionPreference = $PreviousErrorActionPreference
     }
+}
+
+function Select-NativeBenchmarkExecutable(
+    [bool]$BuildPerformed,
+    [string]$PrebuiltExecutable,
+    [string]$BuildLogPath
+) {
+    if ($BuildPerformed) {
+        return Build-NativeBenchmarkExecutable $BuildLogPath
+    }
+    return $PrebuiltExecutable
 }
 
 function Invoke-NativeBenchmarkLogged($Description, [string[]]$ArgumentList, $LogPath, $ExtraPath = "") {
@@ -869,6 +1013,16 @@ Assert-Path $ProductSchemaRoot "Yune web product schema assets"
 if ($YuneDllWasProvided) {
     Assert-Path $YuneDll "supplied Yune DLL"
 }
+if ($NativeBenchmarkExecutableWasProvided) {
+    $PrebuiltNativeBenchmarkExecutable = Resolve-PrebuiltNativeBenchmarkExecutable `
+        $PrebuiltNativeBenchmarkExecutable `
+        $OutputRoot `
+        $WorkRoot
+    $PrebuiltNativeBenchmarkReceipt = Resolve-PrebuiltNativeBenchmarkReceipt `
+        $PrebuiltNativeBenchmarkReceipt `
+        $OutputRoot `
+        $WorkRoot
+}
 if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) {
     Assert-Path $TrackAThresholds "Track A thresholds"
 }
@@ -937,13 +1091,119 @@ try {
     $UpstreamBuildTreeSha256 = Tree-Sha256 $BuildSource
     $ProductSchemaTreeSha256 = Tree-Sha256 $ProductSchemaRoot
     $BenchmarkScriptSha256 = File-Sha256 $PSCommandPath
+    $BenchmarkRustSource = Get-CanonicalSafePath `
+        (Join-Path $RepoRoot "crates\yune-rime-api\benches\native_inprocess_benchmark.rs") `
+        "native benchmark Rust source"
+    $CargoLock = Get-CanonicalSafePath (Join-Path $RepoRoot "Cargo.lock") "Cargo.lock"
+    $BenchmarkRustSourceSha256 = File-Sha256 $BenchmarkRustSource
+    $CargoLockSha256 = File-Sha256 $CargoLock
+    $RustcIdentitySha256 = Command-IdentitySha256 "rustc" @("-vV")
+    $CargoIdentitySha256 = Command-IdentitySha256 "cargo" @("-V")
     $TrackAThresholdsSha256 = if ([string]::IsNullOrWhiteSpace($TrackAThresholds)) { "" } else { File-Sha256 $TrackAThresholds }
 
-    $BenchmarkCargoTargetRoot = Join-Path $WorkRoot "cargo-target"
+    $NativeBenchmarkBuildPerformed = -not $NativeBenchmarkExecutableWasProvided
+    $BenchmarkCargoTargetRoot = if ($NativeBenchmarkBuildPerformed) { Join-Path $WorkRoot "cargo-target" } else { "" }
     $BenchmarkCargoCommand = "cargo bench -p yune-rime-api --bench native_inprocess_benchmark --no-run --message-format=json-render-diagnostics"
-    $BenchmarkBuildCommand = "`$env:CARGO_TARGET_DIR=$(Quote-CommandArg $BenchmarkCargoTargetRoot); $BenchmarkCargoCommand"
-    $NativeBenchmarkExecutable = Build-NativeBenchmarkExecutable (Join-Path $OutputRoot "cargo-build-native-inprocess-benchmark.log")
+    $BenchmarkBuildCommand = if ($NativeBenchmarkBuildPerformed) {
+        "`$env:CARGO_TARGET_DIR=$(Quote-CommandArg $BenchmarkCargoTargetRoot); $BenchmarkCargoCommand"
+    } else {
+        ""
+    }
+    $NativeBenchmarkExecutable = Select-NativeBenchmarkExecutable `
+        $NativeBenchmarkBuildPerformed `
+        $PrebuiltNativeBenchmarkExecutable `
+        (Join-Path $OutputRoot "cargo-build-native-inprocess-benchmark.log")
+    Assert-Path $NativeBenchmarkExecutable "native benchmark executable"
     $NativeBenchmarkExecutableSha256 = File-Sha256 $NativeBenchmarkExecutable
+    $ReceiptExpected = [ordered]@{
+        format_version = "1"
+        source_commit = $YuneHead
+        source_tree = $YuneTree
+        source_clean = [string]$SourceClean
+        source_content_binding_sha256 = $SourceContentBindingSha256
+        benchmark_script_sha256 = $BenchmarkScriptSha256
+        benchmark_rust_source_sha256 = $BenchmarkRustSourceSha256
+        cargo_lock_sha256 = $CargoLockSha256
+        rustc_identity_sha256 = $RustcIdentitySha256
+        cargo_identity_sha256 = $CargoIdentitySha256
+        cargo_command = $BenchmarkCargoCommand
+        native_benchmark_executable_path = $NativeBenchmarkExecutable
+        native_benchmark_executable_sha256 = $NativeBenchmarkExecutableSha256
+    }
+    if ($NativeBenchmarkBuildPerformed) {
+        $BenchmarkCargoTargetRoot = Get-CanonicalSafePath `
+            $BenchmarkCargoTargetRoot `
+            "native benchmark cargo target root"
+        $NativeBenchmarkReceipt = Join-Path `
+            $OutputRoot `
+            "native-benchmark-build-receipt.txt"
+        $ReceiptFields = [ordered]@{}
+        foreach ($Entry in $ReceiptExpected.GetEnumerator()) {
+            $ReceiptFields[[string]$Entry.Key] = [string]$Entry.Value
+        }
+        $ReceiptFields["native_benchmark_build_command"] = $BenchmarkBuildCommand
+        $ReceiptFields["cargo_target_root"] = $BenchmarkCargoTargetRoot
+        Write-NativeBenchmarkBuildReceipt $NativeBenchmarkReceipt $ReceiptFields
+        $NativeBenchmarkReceipt = Get-CanonicalSafePath `
+            $NativeBenchmarkReceipt `
+            "native benchmark build receipt"
+        $NativeBenchmarkReceiptInput = $NativeBenchmarkReceipt
+        $NativeBenchmarkReceiptInputSha256 = File-Sha256 `
+            $NativeBenchmarkReceiptInput
+    } else {
+        $NativeBenchmarkReceiptInput = $PrebuiltNativeBenchmarkReceipt
+        $NativeBenchmarkReceiptInputSha256 = File-Sha256 `
+            $NativeBenchmarkReceiptInput
+        $Receipt = Read-NativeBenchmarkBuildReceipt $NativeBenchmarkReceiptInput
+        $ReceiptCargoTargetRoot = Get-CanonicalSafePath `
+            ([string]$Receipt["cargo_target_root"]) `
+            "receipt cargo target root"
+        if (-not $ReceiptCargoTargetRoot.Equals(
+            [string]$Receipt["cargo_target_root"],
+            [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+            throw "Native benchmark build receipt cargo target physical path drifted"
+        }
+        Assert-DirectoryRootsDisjoint `
+            $ReceiptCargoTargetRoot `
+            "receipt cargo target root" `
+            $RepoRoot `
+            "repository root"
+        Assert-DirectoryRootsDisjoint `
+            $ReceiptCargoTargetRoot `
+            "receipt cargo target root" `
+            $OutputRoot `
+            "OutputRoot"
+        Assert-DirectoryRootsDisjoint `
+            $ReceiptCargoTargetRoot `
+            "receipt cargo target root" `
+            $WorkRoot `
+            "WorkRoot"
+        if (-not (Test-PathWithinOrEqual $NativeBenchmarkExecutable $ReceiptCargoTargetRoot)) {
+            throw "PrebuiltNativeBenchmarkExecutable is not inside the receipt cargo target root"
+        }
+        $ReceiptExpected["native_benchmark_build_command"] = `
+            "`$env:CARGO_TARGET_DIR=$(Quote-CommandArg $ReceiptCargoTargetRoot); $BenchmarkCargoCommand"
+        $ReceiptExpected["cargo_target_root"] = $ReceiptCargoTargetRoot
+        Assert-NativeBenchmarkBuildReceipt $Receipt $ReceiptExpected
+        if ((File-Sha256 $NativeBenchmarkReceiptInput) -ne
+            $NativeBenchmarkReceiptInputSha256) {
+            throw "Prebuilt native benchmark build receipt changed during validation"
+        }
+        $NativeBenchmarkReceipt = Join-Path `
+            $OutputRoot `
+            "native-benchmark-build-receipt.txt"
+        Copy-Item `
+            -LiteralPath $NativeBenchmarkReceiptInput `
+            -Destination $NativeBenchmarkReceipt
+        $NativeBenchmarkReceipt = Get-CanonicalSafePath `
+            $NativeBenchmarkReceipt `
+            "packet native benchmark build receipt"
+    }
+    $NativeBenchmarkReceiptSha256 = File-Sha256 $NativeBenchmarkReceipt
+    if ($NativeBenchmarkReceiptInputSha256 -ne $NativeBenchmarkReceiptSha256) {
+        throw "Packet native benchmark build receipt differs from its validated input"
+    }
     Assert-RepositorySourceSnapshot $InitialSourceSnapshot "post-build"
 
 $TrackAYuneRun = Prepare-UpstreamRun "track-a-yune" $YuneDll
@@ -981,6 +1241,14 @@ $InvocationParts = @(
     "-TrackAInputs", (Quote-CommandArg $TrackAInputs),
     "-TrackBInputs", (Quote-CommandArg $TrackBInputs)
 )
+if ($NativeBenchmarkExecutableWasProvided) {
+    $InvocationParts += @(
+        "-PrebuiltNativeBenchmarkExecutable",
+        (Quote-CommandArg $PrebuiltNativeBenchmarkExecutable),
+        "-PrebuiltNativeBenchmarkReceipt",
+        (Quote-CommandArg $PrebuiltNativeBenchmarkReceipt)
+    )
+}
 if ($DeployProductBeforeBenchmark) { $InvocationParts += "-DeployProductBeforeBenchmark" }
 if ($SkipTrackB) { $InvocationParts += "-SkipTrackB" }
 if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) {
@@ -993,14 +1261,23 @@ $Commands = @()
 if ($BuildPerformed) {
     $Commands += "cargo build --release -p yune-rime-api  # cwd=$(Quote-CommandArg $RepoRoot)"
 }
-$Commands += "$BenchmarkBuildCommand  # cwd=$(Quote-CommandArg $RepoRoot)"
+if ($NativeBenchmarkBuildPerformed) {
+    $Commands += "$BenchmarkBuildCommand  # cwd=$(Quote-CommandArg $RepoRoot)"
+} else {
+    $Commands += "# reused prebuilt native benchmark executable $(Quote-CommandArg $NativeBenchmarkExecutable) sha256=$NativeBenchmarkExecutableSha256; cargo bench build skipped"
+}
+$Commands += "# native benchmark build receipt $(Quote-CommandArg $NativeBenchmarkReceipt) sha256=$NativeBenchmarkReceiptSha256"
 $Commands += $ActualInvocation
 $Commands | Set-Content -LiteralPath (Join-Path $OutputRoot "commands.txt") -Encoding UTF8
 
 @(
     "command=$ActualInvocation",
     "build_performed=$BuildPerformed",
-    "yune_dll_supplied=$YuneDllWasProvided"
+    "yune_dll_supplied=$YuneDllWasProvided",
+    "native_benchmark_executable_prebuilt=$NativeBenchmarkExecutableWasProvided",
+    "native_benchmark_build_performed=$NativeBenchmarkBuildPerformed",
+    "native_benchmark_receipt=$NativeBenchmarkReceipt",
+    "native_benchmark_receipt_sha256=$NativeBenchmarkReceiptSha256"
 ) | Set-Content -LiteralPath (Join-Path $OutputRoot "actual-invocation.txt") -Encoding UTF8
 
 $Identity = @(
@@ -1022,6 +1299,10 @@ $Identity = @(
     "build_performed=$BuildPerformed",
     "native_benchmark_executable=$NativeBenchmarkExecutable",
     "native_benchmark_executable_sha256=$NativeBenchmarkExecutableSha256",
+    "native_benchmark_executable_prebuilt=$NativeBenchmarkExecutableWasProvided",
+    "native_benchmark_build_performed=$NativeBenchmarkBuildPerformed",
+    "native_benchmark_receipt=$NativeBenchmarkReceipt",
+    "native_benchmark_receipt_sha256=$NativeBenchmarkReceiptSha256",
     "native_benchmark_cargo_target_root=$BenchmarkCargoTargetRoot",
     "native_benchmark_build_command=$BenchmarkBuildCommand",
     "benchmark_script_sha256=$BenchmarkScriptSha256",
@@ -1049,7 +1330,12 @@ $Identity | Set-Content -LiteralPath (Join-Path $OutputRoot "environment.txt") -
     "upstream_shared_tree_sha256=$UpstreamSharedTreeSha256",
     "upstream_build_tree_sha256=$UpstreamBuildTreeSha256",
     "product_schema_tree_sha256=$ProductSchemaTreeSha256",
+    "native_benchmark_executable=$NativeBenchmarkExecutable",
     "native_benchmark_executable_sha256=$NativeBenchmarkExecutableSha256",
+    "native_benchmark_executable_prebuilt=$NativeBenchmarkExecutableWasProvided",
+    "native_benchmark_build_performed=$NativeBenchmarkBuildPerformed",
+    "native_benchmark_receipt=$NativeBenchmarkReceipt",
+    "native_benchmark_receipt_sha256=$NativeBenchmarkReceiptSha256",
     "benchmark_script_sha256=$BenchmarkScriptSha256"
 ) | Set-Content -LiteralPath (Join-Path $OutputRoot "external-provenance.txt") -Encoding UTF8
 
@@ -1175,6 +1461,12 @@ if ((Tree-Sha256 $ProductSchemaRoot) -ne $ProductSchemaTreeSha256) {
 if ((File-Sha256 $NativeBenchmarkExecutable) -ne $NativeBenchmarkExecutableSha256) {
     $InputDrift += "native benchmark executable changed during the benchmark: $NativeBenchmarkExecutable"
 }
+if ((File-Sha256 $NativeBenchmarkReceipt) -ne $NativeBenchmarkReceiptSha256) {
+    $InputDrift += "native benchmark build receipt changed during the benchmark: $NativeBenchmarkReceipt"
+}
+if ((File-Sha256 $NativeBenchmarkReceiptInput) -ne $NativeBenchmarkReceiptInputSha256) {
+    $InputDrift += "native benchmark build receipt input changed during the benchmark: $NativeBenchmarkReceiptInput"
+}
 if ((File-Sha256 $PSCommandPath) -ne $BenchmarkScriptSha256) {
     $InputDrift += "benchmark script changed during the benchmark: $PSCommandPath"
 }
@@ -1191,11 +1483,23 @@ foreach ($PathRecord in @(
     [pscustomobject]@{ Path = $UpstreamOracleRoot; Label = "UpstreamOracleRoot" },
     [pscustomobject]@{ Path = $ProductSchemaRoot; Label = "ProductSchemaRoot" },
     [pscustomobject]@{ Path = $YuneDll; Label = "YuneDll" },
-    [pscustomobject]@{ Path = $NativeBenchmarkExecutable; Label = "native benchmark executable" }
+    [pscustomobject]@{ Path = $NativeBenchmarkExecutable; Label = "native benchmark executable" },
+    [pscustomobject]@{ Path = $NativeBenchmarkReceipt; Label = "native benchmark build receipt" }
 )) {
     $CanonicalNow = Get-CanonicalSafePath $PathRecord.Path $PathRecord.Label
     if (-not $CanonicalNow.Equals($PathRecord.Path, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw "$($PathRecord.Label) physical path changed during the benchmark: [$($PathRecord.Path)] -> [$CanonicalNow]"
+    }
+}
+if ($NativeBenchmarkExecutableWasProvided) {
+    $ReceiptInputNow = Get-CanonicalSafePath `
+        $NativeBenchmarkReceiptInput `
+        "prebuilt native benchmark receipt input"
+    if (-not $ReceiptInputNow.Equals(
+        $NativeBenchmarkReceiptInput,
+        [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+        throw "Prebuilt native benchmark receipt input physical path changed during the benchmark"
     }
 }
 Assert-RepositorySourceSnapshot $InitialSourceSnapshot "final"

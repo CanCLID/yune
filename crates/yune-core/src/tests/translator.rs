@@ -2572,6 +2572,59 @@ fn exact_surface_duplicate_promotes_shorter_prefix_fallback_consumed_span() {
 }
 
 #[test]
+fn exact_surface_duplicate_span_promotion_uses_raw_code_not_display_comment() {
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "abbrev/^([a-z]).+$/$1/".to_owned(),
+    ];
+    let build = |show_full_code, comment_format: &[String]| {
+        StaticTableTranslator::new([("zi2", "CHILD")])
+            .with_prefix_fallback(true)
+            .with_leading_syllable_reachability(true)
+            .with_spelling_algebra(&formulas)
+            .with_show_full_code(show_full_code)
+            .with_comment_format(comment_format)
+            .with_sentence(false)
+    };
+
+    for (label, translator) in [
+        ("hidden", build(false, &[])),
+        (
+            "formatted",
+            build(true, &["xform/^zi2$/DISPLAY-ONLY/".to_owned()]),
+        ),
+    ] {
+        let mut eager = translator.translate("zi");
+        let mut bounded = translator
+            .translate_with_context_and_request(
+                "zi",
+                &Status::default(),
+                &HashMap::new(),
+                &Context::default(),
+                CandidateRequest::bounded(1),
+            )
+            .candidates;
+        UniquifierFilter.apply(&mut eager);
+        UniquifierFilter.apply(&mut bounded);
+
+        assert_eq!(bounded, eager[..1], "{label}");
+        assert_eq!(
+            bounded[0].source,
+            CandidateSource::PartialTable {
+                consumed: 2,
+                recompose_on_default: false,
+            },
+            "{label}: span promotion must use the deployed raw `zi2` surface provenance even when the visible comment cannot encode it"
+        );
+        if label == "hidden" {
+            assert!(bounded[0].comment.is_empty());
+        } else {
+            assert_eq!(bounded[0].comment, "DISPLAY-ONLY");
+        }
+    }
+}
+
+#[test]
 fn cross_translator_duplicate_promotes_longest_surface_span_but_not_abbreviation_only() {
     let abbreviated = StaticTableTranslator::new([("si6", "\u{662f}")])
         .with_prefix_fallback(true)
@@ -3805,12 +3858,12 @@ fn bounded_transformed_phrase_tier_reserves_later_single_reachability() {
             .collect::<Vec<_>>();
         if path == "streaming" {
             entries.extend([
-                TableEntry::new("zlast", "LATE-PHRASE-A", 9.0),
-                TableEntry::new("zlast", "LATE-PHRASE-B", 8.0),
-                TableEntry::new("zlast", "LATE-PHRASE-C", 7.0),
+                TableEntry::new("zlate", "LATE-PHRASE-A", 9.0),
+                TableEntry::new("zlate", "LATE-PHRASE-B", 8.0),
+                TableEntry::new("zlate", "LATE-PHRASE-C", 7.0),
             ]);
         }
-        entries.push(TableEntry::new("zlast", "S", 1.0));
+        entries.push(TableEntry::new("zsingle", "S", 1.0));
         let translator = compact_prefix_fallback_test_translator(entries, &formulas);
 
         let bounded = translator.translate_with_context_and_request(
@@ -3847,7 +3900,7 @@ fn bounded_transformed_phrase_tier_reserves_later_single_reachability() {
 }
 
 #[test]
-fn bounded_transformed_phrase_tier_reserves_later_single_within_fetch() {
+fn bounded_transformed_phrase_tier_keeps_a_later_single_head_blocked_within_fetch() {
     let formulas = ["derive/^same$/x/".to_owned()];
     let translator = compact_prefix_fallback_test_translator(
         [
@@ -3872,11 +3925,11 @@ fn bounded_transformed_phrase_tier_reserves_later_single_within_fetch() {
             .iter()
             .map(|candidate| candidate.text.as_str())
             .collect::<Vec<_>>(),
-        ["S"],
-        "a full per-fetch deferred window must reserve a later transformed single"
+        ["PHRASE-A"],
+        "an accepted transformed phrase remains the accessor head; a later single cannot leap it"
     );
     assert!(!bounded.is_complete, "deferred phrases remain reachable");
-    assert_eq!(translator.translate("xy")[0].text, "S");
+    assert_eq!(bounded.candidates, translator.translate("xy")[..1]);
 }
 
 #[test]
@@ -6792,7 +6845,7 @@ fn full_bounded_page_stays_incomplete_when_unique_fallback_is_beyond_fetch_cap()
 }
 
 #[test]
-fn budget_truncated_duplicate_probe_stays_incomplete() {
+fn exact_duplicate_probe_reports_complete_without_a_budget_guess() {
     let entries = [
         TableEntry::new("abcdefgh", "EXACT", 200.0),
         TableEntry::new("ab", "EXACT", 100.0),
@@ -6812,8 +6865,8 @@ fn budget_truncated_duplicate_probe_stays_incomplete() {
 
     assert_eq!(result.candidates[0].text, "EXACT");
     assert!(
-        !result.is_complete,
-        "a global probe cap cannot prove that the duplicate-only family is exhausted"
+        result.is_complete,
+        "the current-head collector exhausts this duplicate-only family instead of guessing from a global probe cap"
     );
 }
 
@@ -6861,6 +6914,152 @@ fn compact_prefix_fallback_test_translator(
         .with_spelling_algebra(formulas)
         .with_prefix_fallback(true)
         .with_sentence(false)
+}
+
+fn original_prefix_fallback_test_translators() -> [(&'static str, StaticTableTranslator); 2] {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: original_prefix_chunks
+version: "0.1"
+sort: original
+...
+
+A	ca	1
+a	ca	100
+B	cb	10
+C	cc	10
+"#,
+    )
+    .expect("sort-original prefix dictionary should parse");
+    let formulas = ["derive/^c[abc]$/x/".to_owned()];
+    let syllabary = ["ca", "cb", "cc"].map(str::to_owned);
+    let owned_prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("owned sort-original prefix prism should parse");
+    let owned =
+        StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(owned_prism))
+            .with_spelling_algebra(&formulas)
+            .with_prefix_fallback(true)
+            .with_sentence(false)
+            .with_sentence_policy(SentencePolicy::UpstreamScript);
+
+    let table_bytes = build_table_bin(&dictionary, 0x5904_b423);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed sort-original prefix metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed sort-original prefix table should parse");
+    let prism_bytes = build_prism_bin(store.syllabary_codes(), &formulas, 1, 2);
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let byte_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed sort-original prefix prism should parse");
+    let byte =
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(byte_prism))
+            .with_spelling_algebra(&formulas)
+            .with_prefix_fallback(true)
+            .with_sentence(false)
+            .with_sentence_policy(SentencePolicy::UpstreamScript);
+
+    [("owned", owned), ("byte-backed", byte)]
+}
+
+#[test]
+fn sort_original_prefix_fallback_uses_current_heads_and_partial_sort_residual_order() {
+    for (storage, translator) in original_prefix_fallback_test_translators() {
+        let complete = translator.translate("xy");
+        assert_eq!(
+            complete
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["B", "C", "A", "a"],
+            "{storage}: the first strict visitor swap must leave the later equal head in librime's one-item partial-sort residual order, while the high `ca` tail remains blocked by its accepted head"
+        );
+
+        for limit in 1..=complete.len() {
+            let bounded = translator.translate_with_context_and_request(
+                "xy",
+                &Status::default(),
+                &HashMap::new(),
+                &Context::default(),
+                CandidateRequest::bounded(limit),
+            );
+            assert_eq!(
+                candidate_shape_without_quality(bounded.candidates),
+                candidate_shape_without_quality(complete[..limit].iter().cloned()),
+                "{storage}: bounded {limit}-row order must be the exact prefix of the complete current-head merge"
+            );
+        }
+    }
+}
+
+#[test]
+fn bounded_current_head_merge_advances_past_cross_chunk_duplicate_heads() {
+    let formulas = ["derive/^c[ab]$/x/".to_owned()];
+    let entries = [
+        TableEntry::new("ca", "DUP", 100.0),
+        TableEntry::new("ca", "A", 80.0),
+        TableEntry::new("cb", "DUP", 90.0),
+        TableEntry::new("cb", "B", 70.0),
+    ];
+    let translator = compact_prefix_fallback_test_translator(entries, &formulas)
+        .with_sentence_policy(SentencePolicy::UpstreamScript);
+    let complete = translator.translate("xy");
+    let bounded = translator.translate_with_context_and_request(
+        "xy",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(3),
+    );
+
+    assert_eq!(
+        complete
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["DUP", "A", "B"]
+    );
+    assert_eq!(
+        candidate_shape_without_quality(bounded.candidates),
+        candidate_shape_without_quality(complete)
+    );
+}
+
+#[test]
+fn bounded_current_head_merge_advances_past_more_than_the_old_blocked_row_cap() {
+    let duplicate_prefix_rows =
+        (0..96).map(|index| TableEntry::new("a0", "DUP", 900.0 - index as f32));
+    let unique_prefix_rows =
+        (0..16).map(|index| TableEntry::new("a0", format!("ROW{index:02}"), 700.0 - index as f32));
+    let entries = std::iter::once(TableEntry::new("a0z", "DUP", 1_000.0))
+        .chain(duplicate_prefix_rows)
+        .chain(unique_prefix_rows)
+        .collect::<Vec<_>>();
+    let translator = compact_prefix_fallback_test_translator(entries, &[])
+        .with_sentence_policy(SentencePolicy::UpstreamScript);
+    let complete = translator.translate("a0z");
+    let bounded = translator.translate_with_context_and_request(
+        "a0z",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(5),
+    );
+
+    assert_eq!(
+        bounded
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["DUP", "ROW00", "ROW01", "ROW02", "ROW03"]
+    );
+    assert_eq!(
+        candidate_shape_without_quality(bounded.candidates),
+        candidate_shape_without_quality(complete[..5].iter().cloned())
+    );
+    assert!(!bounded.is_complete);
 }
 
 #[test]
@@ -7011,7 +7210,10 @@ fn bounded_prefix_fallback_cache_preserves_cold_warm_order_and_is_owner_accounte
         "the cold bounded cache fill must preserve the complete-list prefix"
     );
     let populated_owner = owner(&translator);
-    assert_eq!(populated_owner.item_count, 25);
+    assert_eq!(
+        populated_owner.item_count, 11,
+        "a ten-row page caches only its exact K+1 current-head certificate"
+    );
     assert!(populated_owner.estimated_bytes > 0);
     assert!(populated_owner.item_count <= 128);
     assert!(populated_owner.estimated_bytes <= 512 * 1024);
@@ -7161,6 +7363,129 @@ fn oversized_prefix_count_and_key_bytes_bypass_the_cache() {
             "the uncached collector must retain the signed four-window bound for first_len={first_len}, prefix_count={prefix_count}: {metrics:?}"
         );
     }
+}
+
+#[test]
+fn oversized_streaming_finishes_the_longest_span_group_before_shorter_prefixes() {
+    let _guard = super::m37_metrics_test_guard();
+    let longest = "a".repeat(65);
+    let mut entries = vec![
+        TableEntry::new(&longest, "TOP1", 300.0),
+        TableEntry::new(&longest, "TOP2", 299.0),
+        TableEntry::new(&longest, "TOP3", 298.0),
+        TableEntry::new(&longest, "TOP4", 297.0),
+    ];
+    entries.extend(
+        (1..65).map(|len| TableEntry::new("a".repeat(len), format!("LOW{len:02}"), len as f32)),
+    );
+    let syllabary = (1..=65).map(|len| "a".repeat(len)).collect::<Vec<_>>();
+    let owned_prism =
+        parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &[], 0x5904_b431, 0x5904_b432))
+            .expect("owned oversized-prefix prism should parse");
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        TableDictionary::new(entries.clone()),
+        Some(owned_prism),
+    )
+    .with_spelling_algebra(&[])
+    .with_prefix_fallback(true)
+    .with_sentence(false);
+    let byte = compact_prefix_fallback_test_translator(entries, &[]);
+    let input = "a".repeat(66);
+
+    for (storage, translator) in [("owned", owned), ("byte", byte)] {
+        let complete = translator.translate(&input);
+        crate::m37_metrics_enable(true);
+        crate::m37_metrics_reset();
+        let bounded = translator.translate_with_context_and_request(
+            &input,
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(4),
+        );
+        let metrics = crate::m37_metrics_snapshot();
+        crate::m37_metrics_enable(false);
+
+        assert_eq!(
+            candidate_shape_without_quality(bounded.candidates),
+            candidate_shape_without_quality(complete.into_iter().take(4)),
+            "{storage}: bounded output must finish the longest consumed-span group before admitting shorter prefixes"
+        );
+        assert!(
+            metrics.prefix_fallback_views_visited <= 140,
+            "{storage}: the exact current-head merge should inspect one bounded head per accessor, not every accessor tail: {metrics:?}"
+        );
+    }
+}
+
+#[test]
+fn prefix_fallback_bounding_is_selected_by_profile_policy_not_schema_identity() {
+    let longest = "a".repeat(65);
+    let entries = [
+        TableEntry::new(&longest, "TOP1", 300.0),
+        TableEntry::new(&longest, "TOP2", 299.0),
+        TableEntry::new(&longest, "TOP3", 298.0),
+        TableEntry::new(&longest, "TOP4", 297.0),
+        TableEntry::new("a".repeat(64), "LOW64", 64.0),
+        TableEntry::new("a".repeat(63), "LOW63", 63.0),
+    ];
+    let build = |policy, prediction_limit| {
+        let translator = compact_prefix_fallback_test_translator(entries.clone(), &[])
+            .with_sentence_policy(policy);
+        if prediction_limit {
+            translator.with_prediction_candidate_limit(1)
+        } else {
+            translator
+        }
+    };
+    let standard = build(SentencePolicy::UpstreamScript, false);
+    let profile = build(SentencePolicy::LegacyFallback, true);
+    let legacy_without_profile_marker = build(SentencePolicy::LegacyFallback, false);
+    let input = "a".repeat(66);
+    let complete = standard.translate(&input);
+
+    for (label, translator) in [
+        ("upstream-script", &standard),
+        (
+            "legacy-without-prediction-marker",
+            &legacy_without_profile_marker,
+        ),
+    ] {
+        let bounded = translator.translate_with_context_and_request(
+            &input,
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(4),
+        );
+        assert_eq!(
+            candidate_shape_without_quality(bounded.candidates),
+            candidate_shape_without_quality(complete[..4].iter().cloned()),
+            "{label}: canonical exact current-head paging must not depend on a schema id"
+        );
+    }
+
+    let profile_bounded = profile.translate_with_context_and_request(
+        &input,
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(4),
+    );
+    assert_eq!(
+        profile_bounded
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["TOP1", "TOP2", "LOW64", "LOW63"],
+        "only the explicit LegacyFallback plus prediction marker retains TypeDuck's page-bounded long-input policy"
+    );
+    assert_eq!(
+        candidate_shape_without_quality(profile.translate(&input)),
+        candidate_shape_without_quality(complete),
+        "complete/page-turn collection remains exact even for the bounded profile policy"
+    );
 }
 
 #[test]

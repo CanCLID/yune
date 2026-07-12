@@ -45,10 +45,11 @@ const PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE: usize = 2;
 const PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE: usize = 3;
 const PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS: usize = 7;
 const PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER: usize = 4;
-const PREFIX_FALLBACK_BOUNDED_LONG_PENDING_MULTIPLIER: usize = 2;
+const PREFIX_FALLBACK_PROFILE_LONG_PENDING_MULTIPLIER: usize = 2;
 const PREFIX_FALLBACK_CACHE_MAX_ROWS: usize = 128;
 const PREFIX_FALLBACK_CACHE_MAX_PREFIXES: usize = 64;
 const PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES: usize = 32 * 1024;
+const PREFIX_FALLBACK_CACHE_MAX_ROW_BYTES: usize = 16 * 1024;
 const PREFIX_FALLBACK_CACHE_MAX_ENTRY_BYTES: usize = 512 * 1024;
 /// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture
 /// and the M28 follow-up upstream-Jyutping composition fixture; install only for the
@@ -702,7 +703,7 @@ struct BoundedPrefixFallbackCacheRequest<'input, 'request> {
     lookup_code: &'input str,
     filter_by_charset: bool,
     existing_candidates: &'request [Candidate],
-    admitted_span_candidates: &'request [Candidate],
+    admitted_span_candidates: &'request [PrefixFallbackSpanView],
     prefixes: &'request [LookupPrefixSpec<'input>],
     limit: usize,
     fallback_start: Option<Instant>,
@@ -713,17 +714,53 @@ struct BoundedPrefixFallbackStreamingRequest<'input, 'request> {
     lookup_code: &'input str,
     filter_by_charset: bool,
     existing_candidates: &'request [Candidate],
-    admitted_span_candidates: &'request [Candidate],
+    admitted_span_candidates: &'request [PrefixFallbackSpanView],
     limit: usize,
-    pending_cap: usize,
-    per_fetch_cap: usize,
 }
 
+#[derive(Clone)]
 struct LookupPrefixSpec<'a> {
     input_prefix: &'a str,
     fetch_code: String,
     consumed_lookup_len: usize,
     surface_fetch: Option<LeadingFetchCode>,
+}
+
+struct BoundedPrefixStreamRow {
+    fetch_code: String,
+    fetch_order: usize,
+    candidate_index: usize,
+    text: String,
+    consumed_lookup_len: usize,
+    consumed_input_len: usize,
+    recompose_on_default: bool,
+    deferred_surface_phrase: bool,
+    raw_quality: f32,
+}
+
+struct BoundedPrefixStreamChunk<'input> {
+    prefix: LookupPrefixSpec<'input>,
+    fetch_order: usize,
+    next_candidate_index: usize,
+    head: Option<BoundedPrefixStreamRow>,
+}
+
+fn bounded_prefix_stream_head_strictly_precedes(
+    candidate: &BoundedPrefixStreamRow,
+    current: &BoundedPrefixStreamRow,
+) -> bool {
+    match candidate
+        .deferred_surface_phrase
+        .cmp(&current.deferred_surface_phrase)
+        .then_with(|| {
+            current
+                .consumed_input_len
+                .cmp(&candidate.consumed_input_len)
+        }) {
+        Ordering::Less => true,
+        Ordering::Greater => false,
+        Ordering::Equal => candidate.raw_quality > current.raw_quality,
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -750,8 +787,6 @@ struct CachedPrefixFallbackView {
     consumed_lookup_len: usize,
     surface_abbreviation: bool,
     spelling_abbreviation: bool,
-    deferred_surface_phrase: bool,
-    emission_order: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -766,6 +801,14 @@ struct PrefixFallbackBatch {
     candidates: Vec<Candidate>,
     truncated: bool,
     owns_reachability: bool,
+    span_promotions: HashMap<String, CandidateSource>,
+}
+
+#[derive(Clone, Debug)]
+struct PrefixFallbackSpanView {
+    text: String,
+    raw_comment: String,
+    spelling_abbreviation: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -913,47 +956,82 @@ fn bounded_upstream_script_cache_entry_bytes(input: &str, result: &TranslationRe
         )
 }
 
-#[derive(Clone, Copy)]
-struct BoundedPrefixRetention {
-    truncated: bool,
-    saturated_with_preferred: bool,
+fn order_current_head_chunks<T>(
+    candidates: &mut Vec<T>,
+    output_limit: Option<usize>,
+    mut chunk_key: impl FnMut(&T) -> usize,
+    mut strictly_precedes: impl FnMut(&T, &T) -> bool,
+) {
+    let mut chunk_indices: HashMap<usize, usize> = HashMap::new();
+    let mut chunks: Vec<VecDeque<T>> = Vec::new();
+    for candidate in std::mem::take(candidates) {
+        let key = chunk_key(&candidate);
+        if let Some(index) = chunk_indices.get(&key).copied() {
+            chunks[index].push_back(candidate);
+        } else {
+            chunk_indices.insert(key, chunks.len());
+            chunks.push(VecDeque::from([candidate]));
+        }
+    }
+
+    let total = chunks.iter().map(VecDeque::len).sum::<usize>();
+    let mut ordered = Vec::with_capacity(output_limit.map_or(total, |limit| limit.min(total)));
+    let mut active = 0usize;
+    while active < chunks.len() {
+        for visitor in active + 1..chunks.len() {
+            if chunks[visitor]
+                .front()
+                .zip(chunks[active].front())
+                .is_some_and(|(candidate, current)| strictly_precedes(candidate, current))
+            {
+                // librime's DictEntryIterator repeatedly performs a one-item
+                // partial_sort. Swap for every strict visitor so the residual
+                // chunk permutation, including later equal-head ties, matches
+                // that tournament rather than a conventional stable heap.
+                chunks.swap(active, visitor);
+            }
+        }
+        ordered.push(
+            chunks[active]
+                .pop_front()
+                .expect("active prefix chunk should be nonempty"),
+        );
+        if chunks[active].is_empty() {
+            active += 1;
+        }
+        if output_limit.is_some_and(|limit| ordered.len() >= limit) {
+            break;
+        }
+    }
+    *candidates = ordered;
 }
 
-fn retain_bounded_prefix_row<T>(
+fn retain_profile_bounded_prefix_row<T>(
     rows: &mut Vec<T>,
     row: T,
     cap: usize,
     deferred_row_count: &mut usize,
     is_deferred: impl Fn(&T) -> bool,
-) -> BoundedPrefixRetention {
-    debug_assert!(cap > 0);
+) -> bool {
     let row_is_deferred = is_deferred(&row);
     if rows.len() < cap {
         *deferred_row_count += usize::from(row_is_deferred);
         rows.push(row);
     } else if !row_is_deferred && *deferred_row_count > 0 {
-        // Prefixes arrive longest-first. A transformed-only phrase can fill the
-        // bounded window before a later raw-compatible family or transformed
-        // single is visited. Replace the last deferred row while keeping the
-        // original cap; once every retained row is preferred, shorter prefixes
-        // cannot outrank this window and traversal may stop as before.
         if let Some(index) = rows.iter().rposition(&is_deferred) {
             rows.remove(index);
             *deferred_row_count -= 1;
             rows.push(row);
         }
     }
-    let truncated = rows.len() >= cap;
-    BoundedPrefixRetention {
-        truncated,
-        saturated_with_preferred: truncated && *deferred_row_count == 0,
-    }
+    rows.len() >= cap && *deferred_row_count == 0
 }
 
 struct LookupCandidateBatch {
     candidates: Vec<Candidate>,
     full_input_anchor: Option<usize>,
     has_reliable_exact_system_phrase: bool,
+    prefix_fallback_span_views: Vec<PrefixFallbackSpanView>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -3620,6 +3698,7 @@ impl StaticTableTranslator {
             candidates,
             truncated,
             owns_reachability: true,
+            span_promotions: HashMap::new(),
         };
         Some(batch)
     }
@@ -4522,13 +4601,14 @@ impl StaticTableTranslator {
                     lookup_code,
                     filter_by_charset,
                     &candidates,
-                    &candidates,
+                    &[],
                     Some(room),
                 );
                 prefix_fallback_owned = prefix_batch.owns_reachability;
                 prefix_fallback_truncated = prefix_batch.truncated;
                 let inserted = merge_prefix_fallback_candidates_with_full_input_anchor(
                     &mut candidates,
+                    &prefix_batch.span_promotions,
                     prefix_batch.candidates,
                     lookup_code,
                     None,
@@ -5024,6 +5104,18 @@ impl StaticTableTranslator {
         } else {
             Vec::new()
         };
+        let prefix_fallback_span_views = selected
+            .iter()
+            .filter(|candidate| {
+                candidate.owns_full_input_span()
+                    && candidate.candidate.source_hint() == CandidateSource::Table
+            })
+            .map(|candidate| PrefixFallbackSpanView {
+                text: candidate.candidate.text().to_owned(),
+                raw_comment: candidate.candidate.raw_comment().to_owned(),
+                spelling_abbreviation: candidate.spelling_abbreviation,
+            })
+            .collect::<Vec<_>>();
         let mut full_input_anchor = if self.combine_candidates {
             full_input_indices.last().copied()
         } else {
@@ -5109,14 +5201,15 @@ impl StaticTableTranslator {
                     input,
                     lookup_code,
                     filter_by_charset,
-                    &[],
                     &candidates,
+                    &prefix_fallback_span_views,
                     Some(limit),
                 );
                 prefix_fallback_owned = prefix_batch.owns_reachability;
                 let mut prefix_fallback_truncated = prefix_batch.truncated;
                 let inserted = merge_prefix_fallback_candidates_with_full_input_anchor(
                     &mut candidates,
+                    &prefix_batch.span_promotions,
                     prefix_batch.candidates,
                     lookup_code,
                     full_input_anchor,
@@ -5548,6 +5641,17 @@ impl StaticTableTranslator {
                 .iter()
                 .rposition(PendingLookupCandidate::owns_full_input_span)
         };
+        let prefix_fallback_span_views = pooled
+            .iter()
+            .filter(|pending| {
+                pending.owns_full_input_span() && pending.candidate.source == CandidateSource::Table
+            })
+            .map(|pending| PrefixFallbackSpanView {
+                text: pending.candidate.text.clone(),
+                raw_comment: pending.candidate.comment.clone(),
+                spelling_abbreviation: pending.spelling_abbreviation,
+            })
+            .collect();
         let mut candidates = pooled
             .into_iter()
             .map(|pending| {
@@ -5576,6 +5680,7 @@ impl StaticTableTranslator {
             candidates,
             full_input_anchor,
             has_reliable_exact_system_phrase,
+            prefix_fallback_span_views,
         }
     }
 
@@ -5709,97 +5814,512 @@ impl StaticTableTranslator {
 
     fn build_bounded_prefix_fallback_cache_entry(
         &self,
+        input: &str,
+        lookup_code: &str,
         prefixes: &[LookupPrefixSpec<'_>],
         filter_by_charset: bool,
         pending_cap: usize,
-        per_fetch_cap: usize,
         key: PrefixFallbackWindowCacheKey,
     ) -> (Arc<PrefixFallbackWindowCacheEntry>, usize) {
-        let mut rows = Vec::new();
-        let mut emission_order = 0usize;
-        let mut views_visited = 0usize;
-        let mut deferred_row_count = 0usize;
-        let mut truncated = false;
-        let mut global_truncated = false;
-        let mut fetch_rows = Vec::<CachedPrefixFallbackView>::with_capacity(per_fetch_cap);
-        for prefix_spec in prefixes {
-            let exact_start = LookupTimer::start();
-            let mut exact_candidates = 0usize;
-            fetch_rows.clear();
-            let mut deferred_fetch_row_count = 0usize;
-            for candidate in self
-                .storage
-                .exact_candidates(&prefix_spec.fetch_code)
-                .filter(|candidate| {
-                    self.prefix_fallback_view_is_allowed(prefix_spec, candidate, filter_by_charset)
-                })
-            {
-                views_visited += 1;
-                exact_candidates += 1;
-                if fetch_rows
-                    .iter()
-                    .any(|row| row.candidate.text == candidate.text())
-                {
-                    continue;
-                }
+        let full_span_texts: HashSet<&str> = HashSet::new();
+        let blocked_texts = HashSet::new();
+        let mut selected_texts = HashSet::new();
+        let (stream_rows, views_visited, exhausted) = self
+            .bounded_prefix_stream_rows_from_prefixes(
+                input,
+                lookup_code,
+                filter_by_charset,
+                &full_span_texts,
+                &blocked_texts,
+                &mut selected_texts,
+                prefixes.to_vec(),
+                pending_cap,
+            );
+        let rows = stream_rows
+            .into_iter()
+            .filter_map(|row| {
+                let prefix_spec = prefixes.get(row.fetch_order)?;
+                let candidate = self
+                    .storage
+                    .exact_candidates(&row.fetch_code)
+                    .nth(row.candidate_index)?;
                 let spelling_abbreviation =
                     self.is_spelling_abbreviation_view(prefix_spec.input_prefix, &candidate);
-                let row = CachedPrefixFallbackView {
-                    fetch_code: prefix_spec.fetch_code.clone(),
+                let candidate = candidate.to_candidate();
+                Some(CachedPrefixFallbackView {
+                    fetch_code: row.fetch_code,
                     input_prefix: prefix_spec.input_prefix.to_owned(),
-                    candidate: candidate.to_candidate(),
-                    consumed_lookup_len: prefix_spec.consumed_lookup_len,
+                    candidate,
+                    consumed_lookup_len: row.consumed_lookup_len,
                     surface_abbreviation: prefix_spec
                         .surface_fetch
                         .as_ref()
                         .is_some_and(|fetch| fetch.abbreviation),
                     spelling_abbreviation,
+                })
+            })
+            .collect();
+        (
+            Arc::new(PrefixFallbackWindowCacheEntry {
+                key,
+                rows,
+                truncated: !exhausted,
+            }),
+            views_visited,
+        )
+    }
+
+    fn advance_bounded_prefix_stream_chunk(
+        &self,
+        input: &str,
+        lookup_code: &str,
+        filter_by_charset: bool,
+        full_span_texts: &HashSet<&str>,
+        _blocked_texts: &HashSet<String>,
+        chunk: &mut BoundedPrefixStreamChunk<'_>,
+    ) -> usize {
+        let exact_start = LookupTimer::start();
+        let mut exact_candidates = 0usize;
+        let mut views_visited = 0usize;
+        chunk.head = None;
+        for (candidate_index, candidate) in self
+            .storage
+            .exact_candidates(&chunk.prefix.fetch_code)
+            .enumerate()
+            .skip(chunk.next_candidate_index)
+        {
+            chunk.next_candidate_index = candidate_index.saturating_add(1);
+            if !self.prefix_fallback_view_is_allowed(&chunk.prefix, &candidate, filter_by_charset) {
+                continue;
+            }
+            views_visited += 1;
+            exact_candidates += 1;
+            let consumed_input_len = if full_span_texts.contains(candidate.text()) {
+                input.len()
+            } else {
+                input
+                    .len()
+                    .saturating_sub(lookup_code.len())
+                    .saturating_add(chunk.prefix.consumed_lookup_len)
+            };
+            let spelling_abbreviation =
+                self.is_spelling_abbreviation_view(chunk.prefix.input_prefix, &candidate);
+            chunk.head = Some(BoundedPrefixStreamRow {
+                fetch_code: chunk.prefix.fetch_code.clone(),
+                fetch_order: chunk.fetch_order,
+                candidate_index,
+                text: candidate.text().to_owned(),
+                consumed_lookup_len: chunk.prefix.consumed_lookup_len,
+                consumed_input_len,
+                recompose_on_default: consumed_input_len > 1
+                    && !chunk
+                        .prefix
+                        .surface_fetch
+                        .as_ref()
+                        .is_some_and(|fetch| fetch.abbreviation)
+                    && !spelling_abbreviation,
+                deferred_surface_phrase: Self::prefix_fallback_view_is_deferred_surface_phrase(
+                    &chunk.prefix,
+                    &candidate,
+                ),
+                raw_quality: candidate.raw_quality(),
+            });
+            break;
+        }
+        self.storage
+            .record_exact_lookup(exact_start.elapsed(), exact_candidates);
+        views_visited
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn push_bounded_prefix_stream_chunks<'input>(
+        &self,
+        input: &str,
+        lookup_code: &str,
+        filter_by_charset: bool,
+        full_span_texts: &HashSet<&str>,
+        blocked_texts: &HashSet<String>,
+        prefixes: impl IntoIterator<Item = LookupPrefixSpec<'input>>,
+        next_fetch_order: &mut usize,
+        chunks: &mut Vec<BoundedPrefixStreamChunk<'input>>,
+    ) -> usize {
+        let mut views_visited = 0usize;
+        for prefix in prefixes {
+            let fetch_order = *next_fetch_order;
+            *next_fetch_order = next_fetch_order.saturating_add(1);
+            let mut chunk = BoundedPrefixStreamChunk {
+                prefix,
+                fetch_order,
+                next_candidate_index: 0,
+                head: None,
+            };
+            views_visited += self.advance_bounded_prefix_stream_chunk(
+                input,
+                lookup_code,
+                filter_by_charset,
+                full_span_texts,
+                blocked_texts,
+                &mut chunk,
+            );
+            if chunk.head.is_some() {
+                chunks.push(chunk);
+            }
+        }
+        views_visited
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn drain_bounded_prefix_stream_chunks(
+        &self,
+        input: &str,
+        lookup_code: &str,
+        filter_by_charset: bool,
+        full_span_texts: &HashSet<&str>,
+        blocked_texts: &HashSet<String>,
+        selected_texts: &mut HashSet<String>,
+        chunks: &mut Vec<BoundedPrefixStreamChunk<'_>>,
+        rows: &mut Vec<BoundedPrefixStreamRow>,
+        target: usize,
+        allow_deferred: bool,
+    ) -> usize {
+        let mut views_visited = 0usize;
+        while !chunks.is_empty() && rows.len() < target {
+            for visitor in 1..chunks.len() {
+                if chunks[visitor]
+                    .head
+                    .as_ref()
+                    .zip(chunks[0].head.as_ref())
+                    .is_some_and(|(candidate, current)| {
+                        bounded_prefix_stream_head_strictly_precedes(candidate, current)
+                    })
+                {
+                    chunks.swap(0, visitor);
+                }
+            }
+            if !allow_deferred
+                && chunks[0]
+                    .head
+                    .as_ref()
+                    .is_some_and(|row| row.deferred_surface_phrase)
+            {
+                break;
+            }
+            let row = chunks[0]
+                .head
+                .take()
+                .expect("active bounded-prefix chunk has a head");
+            views_visited += self.advance_bounded_prefix_stream_chunk(
+                input,
+                lookup_code,
+                filter_by_charset,
+                full_span_texts,
+                blocked_texts,
+                &mut chunks[0],
+            );
+            if chunks[0].head.is_none() {
+                chunks.remove(0);
+            }
+            if selected_texts.insert(row.text.clone()) {
+                rows.push(row);
+            }
+        }
+        views_visited
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn bounded_prefix_stream_rows_from_prefixes(
+        &self,
+        input: &str,
+        lookup_code: &str,
+        filter_by_charset: bool,
+        full_span_texts: &HashSet<&str>,
+        blocked_texts: &HashSet<String>,
+        selected_texts: &mut HashSet<String>,
+        prefixes: Vec<LookupPrefixSpec<'_>>,
+        target: usize,
+    ) -> (Vec<BoundedPrefixStreamRow>, usize, bool) {
+        let mut chunks = Vec::new();
+        let mut next_fetch_order = 0usize;
+        let mut views_visited = self.push_bounded_prefix_stream_chunks(
+            input,
+            lookup_code,
+            filter_by_charset,
+            full_span_texts,
+            blocked_texts,
+            prefixes,
+            &mut next_fetch_order,
+            &mut chunks,
+        );
+        let mut rows = Vec::new();
+        views_visited += self.drain_bounded_prefix_stream_chunks(
+            input,
+            lookup_code,
+            filter_by_charset,
+            full_span_texts,
+            blocked_texts,
+            selected_texts,
+            &mut chunks,
+            &mut rows,
+            target,
+            true,
+        );
+        (rows, views_visited, chunks.is_empty())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn bounded_prefix_stream_rows_incremental<'input>(
+        &self,
+        input: &'input str,
+        lookup_code: &'input str,
+        filter_by_charset: bool,
+        full_span_texts: &HashSet<&str>,
+        blocked_texts: &HashSet<String>,
+        selected_texts: &mut HashSet<String>,
+        target: usize,
+    ) -> (Vec<BoundedPrefixStreamRow>, usize, bool, bool) {
+        let mut chunks = Vec::new();
+        let mut current_span = Vec::<LookupPrefixSpec<'input>>::new();
+        let mut next_fetch_order = 0usize;
+        let mut rows = Vec::new();
+        let mut views_visited = 0usize;
+        let mut saw_prefix = false;
+        let traversal = self.visit_valid_lookup_prefixes(lookup_code, |prefix| {
+            saw_prefix = true;
+            if current_span
+                .first()
+                .is_some_and(|current| current.consumed_lookup_len != prefix.consumed_lookup_len)
+            {
+                views_visited += self.push_bounded_prefix_stream_chunks(
+                    input,
+                    lookup_code,
+                    filter_by_charset,
+                    full_span_texts,
+                    blocked_texts,
+                    current_span.drain(..),
+                    &mut next_fetch_order,
+                    &mut chunks,
+                );
+                views_visited += self.drain_bounded_prefix_stream_chunks(
+                    input,
+                    lookup_code,
+                    filter_by_charset,
+                    full_span_texts,
+                    blocked_texts,
+                    selected_texts,
+                    &mut chunks,
+                    &mut rows,
+                    target,
+                    false,
+                );
+                if rows.len() >= target {
+                    return ControlFlow::Break(());
+                }
+            }
+            current_span.push(prefix);
+            ControlFlow::Continue(())
+        });
+        let visited_all = matches!(traversal, ControlFlow::Continue(()));
+        if visited_all {
+            views_visited += self.push_bounded_prefix_stream_chunks(
+                input,
+                lookup_code,
+                filter_by_charset,
+                full_span_texts,
+                blocked_texts,
+                current_span,
+                &mut next_fetch_order,
+                &mut chunks,
+            );
+            views_visited += self.drain_bounded_prefix_stream_chunks(
+                input,
+                lookup_code,
+                filter_by_charset,
+                full_span_texts,
+                blocked_texts,
+                selected_texts,
+                &mut chunks,
+                &mut rows,
+                target,
+                true,
+            );
+        }
+        (
+            rows,
+            views_visited,
+            visited_all && chunks.is_empty(),
+            saw_prefix,
+        )
+    }
+
+    fn bounded_profile_prefix_fallback_candidates(
+        &self,
+        request: BoundedPrefixFallbackStreamingRequest<'_, '_>,
+    ) -> (PrefixFallbackBatch, usize, bool) {
+        let BoundedPrefixFallbackStreamingRequest {
+            input,
+            lookup_code,
+            filter_by_charset,
+            existing_candidates,
+            admitted_span_candidates,
+            limit,
+        } = request;
+        let mut seen_texts = existing_candidates
+            .iter()
+            .map(|candidate| candidate.text.clone())
+            .collect::<HashSet<_>>();
+        seen_texts.extend(
+            admitted_span_candidates
+                .iter()
+                .map(|candidate| candidate.text.clone()),
+        );
+        let per_fetch_cap =
+            if input.chars().count() <= PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS {
+                limit.min(PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE)
+            } else if input.len() <= MAX_ABBREVIATION_SENTENCE_INPUT_BYTES {
+                limit
+            } else {
+                limit.min(PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE)
+            };
+        let pending_multiplier = if input.len() <= MAX_ABBREVIATION_SENTENCE_INPUT_BYTES {
+            PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER
+        } else {
+            PREFIX_FALLBACK_PROFILE_LONG_PENDING_MULTIPLIER
+        };
+        let pending_cap = limit.saturating_mul(pending_multiplier).max(limit);
+        let input_base = input.len().saturating_sub(lookup_code.len());
+        let mut pending = Vec::<BoundedPrefixStreamRow>::new();
+        let mut fetch_rows = Vec::<BoundedPrefixStreamRow>::with_capacity(per_fetch_cap);
+        let mut emission_order = 0usize;
+        let mut views_visited = 0usize;
+        let mut deferred_row_count = 0usize;
+        let mut truncated = false;
+        let mut saw_prefix = false;
+        let _: ControlFlow<()> = self.visit_valid_lookup_prefixes(lookup_code, |prefix| {
+            saw_prefix = true;
+            fetch_rows.clear();
+            let mut deferred_fetch_row_count = 0usize;
+            let exact_start = LookupTimer::start();
+            let mut exact_candidates = 0usize;
+            for (candidate_index, candidate) in self
+                .storage
+                .exact_candidates(&prefix.fetch_code)
+                .enumerate()
+            {
+                if !self.prefix_fallback_view_is_allowed(&prefix, &candidate, filter_by_charset) {
+                    continue;
+                }
+                views_visited += 1;
+                exact_candidates += 1;
+                if fetch_rows.iter().any(|row| row.text == candidate.text()) {
+                    continue;
+                }
+                let consumed_input_len = input_base.saturating_add(prefix.consumed_lookup_len);
+                let spelling_abbreviation =
+                    self.is_spelling_abbreviation_view(prefix.input_prefix, &candidate);
+                let row = BoundedPrefixStreamRow {
+                    fetch_code: prefix.fetch_code.clone(),
+                    fetch_order: emission_order,
+                    candidate_index,
+                    text: candidate.text().to_owned(),
+                    consumed_lookup_len: prefix.consumed_lookup_len,
+                    consumed_input_len,
+                    recompose_on_default: consumed_input_len > 1
+                        && !prefix
+                            .surface_fetch
+                            .as_ref()
+                            .is_some_and(|fetch| fetch.abbreviation)
+                        && !spelling_abbreviation,
                     deferred_surface_phrase: Self::prefix_fallback_view_is_deferred_surface_phrase(
-                        prefix_spec,
-                        &candidate,
+                        &prefix, &candidate,
                     ),
-                    emission_order,
+                    raw_quality: candidate.raw_quality(),
                 };
                 emission_order += 1;
-                let retention = retain_bounded_prefix_row(
+                let saturated = retain_profile_bounded_prefix_row(
                     &mut fetch_rows,
                     row,
                     per_fetch_cap,
                     &mut deferred_fetch_row_count,
                     |row| row.deferred_surface_phrase,
                 );
-                truncated |= retention.truncated;
-                if retention.saturated_with_preferred {
-                    break;
-                }
-            }
-            for row in fetch_rows.drain(..) {
-                let retention = retain_bounded_prefix_row(
-                    &mut rows,
-                    row,
-                    pending_cap,
-                    &mut deferred_row_count,
-                    |row| row.deferred_surface_phrase,
-                );
-                truncated |= retention.truncated;
-                if retention.saturated_with_preferred {
-                    global_truncated = true;
+                truncated |= fetch_rows.len() >= per_fetch_cap;
+                if saturated {
                     break;
                 }
             }
             self.storage
                 .record_exact_lookup(exact_start.elapsed(), exact_candidates);
-            if global_truncated {
+            let mut saturated = false;
+            for row in fetch_rows.drain(..) {
+                saturated = retain_profile_bounded_prefix_row(
+                    &mut pending,
+                    row,
+                    pending_cap,
+                    &mut deferred_row_count,
+                    |row| row.deferred_surface_phrase,
+                );
+                truncated |= pending.len() >= pending_cap;
+                if saturated {
+                    break;
+                }
+            }
+            if saturated {
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        });
+        pending.sort_by(|left, right| {
+            left.deferred_surface_phrase
+                .cmp(&right.deferred_surface_phrase)
+                .then_with(|| right.consumed_input_len.cmp(&left.consumed_input_len))
+                .then_with(|| {
+                    right
+                        .raw_quality
+                        .partial_cmp(&left.raw_quality)
+                        .unwrap_or(Ordering::Equal)
+                })
+                .then_with(|| left.fetch_order.cmp(&right.fetch_order))
+        });
+        let pending_len = pending.len();
+        let mut candidates = Vec::new();
+        for (index, row) in pending.into_iter().enumerate() {
+            let Some(candidate_view) = self
+                .storage
+                .exact_candidates(&row.fetch_code)
+                .nth(row.candidate_index)
+            else {
+                continue;
+            };
+            let mut candidate = self.candidate_for_lookup_view(
+                &row.fetch_code,
+                &candidate_view,
+                &lookup_code[..row.consumed_lookup_len],
+                None,
+                0.0,
+            );
+            if !seen_texts.insert(candidate.text.clone()) {
+                continue;
+            }
+            candidate.source = CandidateSource::PartialTable {
+                consumed: row.consumed_input_len,
+                recompose_on_default: row.recompose_on_default,
+            };
+            candidates.push(candidate);
+            if candidates.len() >= limit {
+                truncated |= index + 1 < pending_len;
                 break;
             }
         }
         (
-            Arc::new(PrefixFallbackWindowCacheEntry {
-                key,
-                rows,
+            PrefixFallbackBatch {
+                candidates,
                 truncated,
-            }),
+                owns_reachability: saw_prefix,
+                span_promotions: HashMap::new(),
+            },
             views_visited,
+            saw_prefix,
         )
     }
 
@@ -5814,138 +6334,33 @@ impl StaticTableTranslator {
             existing_candidates,
             admitted_span_candidates,
             limit,
-            pending_cap,
-            per_fetch_cap,
         } = request;
-        struct PendingPrefixCandidate {
-            fetch_code: String,
-            candidate_index: usize,
-            text: String,
-            consumed_lookup_len: usize,
-            consumed_input_len: usize,
-            recompose_on_default: bool,
-            deferred_surface_phrase: bool,
-            raw_quality: f32,
-            emission_order: usize,
-        }
 
         let mut seen_texts = existing_candidates
             .iter()
             .map(|candidate| candidate.text.clone())
             .collect::<HashSet<_>>();
-        let full_span_texts = admitted_span_candidates
-            .iter()
-            .filter(|candidate| candidate.source == CandidateSource::Table)
-            .map(|candidate| candidate.text.as_str())
-            .collect::<HashSet<_>>();
-        let input_base = input.len().saturating_sub(lookup_code.len());
-        let mut pending = Vec::<PendingPrefixCandidate>::new();
-        let mut emission_order = 0usize;
-        let mut views_visited = 0usize;
-        let mut deferred_row_count = 0usize;
-        let mut truncated = false;
-        let mut saw_prefix = false;
-        let mut fetch_rows = Vec::<PendingPrefixCandidate>::with_capacity(per_fetch_cap);
-        let _: ControlFlow<()> = self.visit_valid_lookup_prefixes(lookup_code, |prefix_spec| {
-            saw_prefix = true;
-            let exact_start = LookupTimer::start();
-            let mut exact_candidates = 0usize;
-            fetch_rows.clear();
-            let mut deferred_fetch_row_count = 0usize;
-            let mut global_truncated = false;
-            for (candidate_index, candidate) in self
-                .storage
-                .exact_candidates(&prefix_spec.fetch_code)
-                .enumerate()
-            {
-                if !self.prefix_fallback_view_is_allowed(
-                    &prefix_spec,
-                    &candidate,
-                    filter_by_charset,
-                ) {
-                    continue;
-                }
-                views_visited += 1;
-                exact_candidates += 1;
-                if fetch_rows.iter().any(|row| row.text == candidate.text()) {
-                    continue;
-                }
-                let consumed_input_len = if full_span_texts.contains(candidate.text()) {
-                    input.len()
-                } else {
-                    input_base.saturating_add(prefix_spec.consumed_lookup_len)
-                };
-                let spelling_abbreviation =
-                    self.is_spelling_abbreviation_view(prefix_spec.input_prefix, &candidate);
-                let recompose_on_default = consumed_input_len > 1
-                    && !prefix_spec
-                        .surface_fetch
-                        .as_ref()
-                        .is_some_and(|fetch| fetch.abbreviation)
-                    && !spelling_abbreviation;
-                let raw_quality = candidate.raw_quality();
-                let row = PendingPrefixCandidate {
-                    fetch_code: prefix_spec.fetch_code.clone(),
-                    candidate_index,
-                    text: candidate.text().to_owned(),
-                    consumed_lookup_len: prefix_spec.consumed_lookup_len,
-                    consumed_input_len,
-                    recompose_on_default,
-                    deferred_surface_phrase: Self::prefix_fallback_view_is_deferred_surface_phrase(
-                        &prefix_spec,
-                        &candidate,
-                    ),
-                    raw_quality,
-                    emission_order,
-                };
-                emission_order += 1;
-                let retention = retain_bounded_prefix_row(
-                    &mut fetch_rows,
-                    row,
-                    per_fetch_cap,
-                    &mut deferred_fetch_row_count,
-                    |row| row.deferred_surface_phrase,
-                );
-                truncated |= retention.truncated;
-                if retention.saturated_with_preferred {
-                    break;
-                }
-            }
-            for row in fetch_rows.drain(..) {
-                let retention = retain_bounded_prefix_row(
-                    &mut pending,
-                    row,
-                    pending_cap,
-                    &mut deferred_row_count,
-                    |row| row.deferred_surface_phrase,
-                );
-                truncated |= retention.truncated;
-                if retention.saturated_with_preferred {
-                    global_truncated = true;
-                    break;
-                }
-            }
-            self.storage
-                .record_exact_lookup(exact_start.elapsed(), exact_candidates);
-            if global_truncated {
-                ControlFlow::Break(())
-            } else {
-                ControlFlow::Continue(())
-            }
-        });
-
-        pending.sort_by(|left, right| {
-            left.deferred_surface_phrase
-                .cmp(&right.deferred_surface_phrase)
-                .then_with(|| right.consumed_input_len.cmp(&left.consumed_input_len))
-                .then_with(|| {
-                    right
-                        .raw_quality
-                        .partial_cmp(&left.raw_quality)
-                        .unwrap_or(Ordering::Equal)
-                })
-                .then_with(|| left.emission_order.cmp(&right.emission_order))
-        });
+        seen_texts.extend(
+            admitted_span_candidates
+                .iter()
+                .map(|candidate| candidate.text.clone()),
+        );
+        let full_span_texts: HashSet<&str> = HashSet::new();
+        let blocked_texts = seen_texts.clone();
+        let mut selected_texts = blocked_texts.clone();
+        let target = limit.saturating_add(1);
+        let (mut pending, views_visited, exhausted, saw_prefix) = self
+            .bounded_prefix_stream_rows_incremental(
+                input,
+                lookup_code,
+                filter_by_charset,
+                &full_span_texts,
+                &blocked_texts,
+                &mut selected_texts,
+                target,
+            );
+        let mut truncated = !exhausted || pending.len() > limit;
+        pending.truncate(limit);
         let pending_len = pending.len();
         let mut candidates = Vec::new();
         for (index, pending) in pending.into_iter().enumerate() {
@@ -5981,6 +6396,7 @@ impl StaticTableTranslator {
                 candidates,
                 truncated,
                 owns_reachability: saw_prefix,
+                span_promotions: HashMap::new(),
             },
             views_visited,
             saw_prefix,
@@ -5993,25 +6409,21 @@ impl StaticTableTranslator {
         input: &str,
         lookup_code: &str,
         existing_candidates: &[Candidate],
-        admitted_span_candidates: &[Candidate],
+        _admitted_span_candidates: &[PrefixFallbackSpanView],
         limit: usize,
     ) -> PrefixFallbackBatch {
         let mut seen_texts = existing_candidates
             .iter()
             .map(|candidate| candidate.text.clone())
             .collect::<HashSet<_>>();
-        let full_span_texts = admitted_span_candidates
-            .iter()
-            .filter(|candidate| candidate.source == CandidateSource::Table)
-            .map(|candidate| candidate.text.as_str())
-            .collect::<HashSet<_>>();
+        let full_span_texts: HashSet<&str> = HashSet::new();
         struct CachedPendingPrefixCandidate<'a> {
             view: &'a CachedPrefixFallbackView,
             consumed_input_len: usize,
             recompose_on_default: bool,
         }
         let input_base = input.len().saturating_sub(lookup_code.len());
-        let mut pending = entry
+        let pending = entry
             .rows
             .iter()
             .map(|view| {
@@ -6029,21 +6441,6 @@ impl StaticTableTranslator {
                 }
             })
             .collect::<Vec<_>>();
-        pending.sort_by(|left, right| {
-            left.view
-                .deferred_surface_phrase
-                .cmp(&right.view.deferred_surface_phrase)
-                .then_with(|| right.consumed_input_len.cmp(&left.consumed_input_len))
-                .then_with(|| {
-                    right
-                        .view
-                        .candidate
-                        .quality
-                        .partial_cmp(&left.view.candidate.quality)
-                        .unwrap_or(Ordering::Equal)
-                })
-                .then_with(|| left.view.emission_order.cmp(&right.view.emission_order))
-        });
         let pending_len = pending.len();
         let mut candidates = Vec::new();
         let mut truncated = entry.truncated;
@@ -6072,6 +6469,7 @@ impl StaticTableTranslator {
             candidates,
             truncated,
             owns_reachability: true,
+            span_promotions: HashMap::new(),
         }
     }
 
@@ -6089,8 +6487,8 @@ impl StaticTableTranslator {
             limit,
             fallback_start,
         } = request;
-        let per_fetch_cap = limit;
-        let pending_cap = limit.saturating_mul(prefixes.len().max(1)).max(limit);
+        let pending_cap = limit.saturating_add(1);
+        let per_fetch_cap = pending_cap;
         let key = PrefixFallbackWindowCacheKey {
             prefixes: prefixes
                 .iter()
@@ -6117,16 +6515,20 @@ impl StaticTableTranslator {
             entry
         } else {
             let (built, built_views) = self.build_bounded_prefix_fallback_cache_entry(
+                input,
+                lookup_code,
                 prefixes,
                 filter_by_charset,
                 pending_cap,
-                per_fetch_cap,
                 key,
             );
             views_visited = built_views;
             if built.rows.len() > PREFIX_FALLBACK_CACHE_MAX_ROWS
                 || estimate_prefix_fallback_window_cache_key_bytes(&built.key)
                     > PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES
+                || built.rows.iter().any(|row| {
+                    estimate_candidate_bytes(&row.candidate) > PREFIX_FALLBACK_CACHE_MAX_ROW_BYTES
+                })
                 || estimate_prefix_fallback_window_cache_bytes(&built)
                     > PREFIX_FALLBACK_CACHE_MAX_ENTRY_BYTES
             {
@@ -6221,31 +6623,118 @@ impl StaticTableTranslator {
         false
     }
 
+    fn prefix_fallback_span_promotions(
+        &self,
+        input: &str,
+        lookup_code: &str,
+        filter_by_charset: bool,
+        admitted_span_candidates: &[PrefixFallbackSpanView],
+    ) -> HashMap<String, CandidateSource> {
+        if admitted_span_candidates.is_empty() {
+            return HashMap::new();
+        }
+        let prefixes = self.valid_lookup_prefixes(lookup_code);
+        let mut promotions = HashMap::new();
+        for candidate in admitted_span_candidates {
+            let mut best: Option<&LookupPrefixSpec<'_>> = None;
+            for prefix in &prefixes {
+                let admitted_by_surface = prefix.surface_fetch.as_ref().is_some_and(|fetch| {
+                    canonical_fetch_group(&candidate.raw_comment).as_ref() == fetch.canonical_code
+                });
+                let admitted_by_raw = prefix.surface_fetch.is_none()
+                    && original_code_allows_prefix_fallback(
+                        &candidate.raw_comment,
+                        prefix.input_prefix,
+                    );
+                if !(admitted_by_surface || admitted_by_raw)
+                    || !self.is_dictionary_text_allowed(&candidate.text)
+                    || (filter_by_charset && contains_extended_cjk(&candidate.text))
+                {
+                    continue;
+                }
+                if best.map_or(true, |current| {
+                    prefix.consumed_lookup_len > current.consumed_lookup_len
+                }) {
+                    best = Some(prefix);
+                }
+            }
+            let Some(prefix) = best else {
+                continue;
+            };
+            let spelling_abbreviation = candidate.spelling_abbreviation
+                || self.spelling_abbreviation_entries.contains(&(
+                    prefix.input_prefix.to_owned(),
+                    candidate.text.clone(),
+                    candidate.raw_comment.clone(),
+                ));
+            promotions.insert(
+                candidate.text.clone(),
+                CandidateSource::PartialTable {
+                    consumed: input.len(),
+                    recompose_on_default: input.len() > 1
+                        && !prefix
+                            .surface_fetch
+                            .as_ref()
+                            .is_some_and(|fetch| fetch.abbreviation)
+                        && !spelling_abbreviation,
+                },
+            );
+        }
+        promotions
+    }
+
     fn prefix_fallback_candidates(
         &self,
         input: &str,
         lookup_code: &str,
         filter_by_charset: bool,
         existing_candidates: &[Candidate],
-        admitted_span_candidates: &[Candidate],
+        admitted_span_candidates: &[PrefixFallbackSpanView],
         request_limit: Option<usize>,
     ) -> PrefixFallbackBatch {
         let fallback_start = crate::m37_metrics_enabled().then(Instant::now);
+        let span_promotions = self.prefix_fallback_span_promotions(
+            input,
+            lookup_code,
+            filter_by_charset,
+            admitted_span_candidates,
+        );
         let bounded_limit = if self.bounds_compact_fallback_expansion() {
             request_limit.filter(|limit| *limit > 0)
         } else {
             None
         };
         if let Some(limit) = bounded_limit {
-            let pending_cap = limit
-                .saturating_mul(PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER)
-                .max(limit);
-            // Oversized uncached families keep one visible page plus one page
-            // of duplicate/deferred replacement reserve. Short M59
-            // abbreviation inputs retain the wider four-page exact window.
-            let long_streaming_pending_cap = limit
-                .saturating_mul(PREFIX_FALLBACK_BOUNDED_LONG_PENDING_MULTIPLIER)
-                .max(limit);
+            if self.sentence_policy == SentencePolicy::LegacyFallback
+                && self.prediction_candidate_limit.is_some()
+            {
+                // The TypeDuck profile keeps its historical page-bounded
+                // prediction stream; complete/page-turn requests still use the
+                // exact current-head collector below. Standard UpstreamScript
+                // schemas, including M59's canonical D-48 lane, never enter
+                // this profile-policy path.
+                let (mut batch, views_visited, saw_prefix) = self
+                    .bounded_profile_prefix_fallback_candidates(
+                        BoundedPrefixFallbackStreamingRequest {
+                            input,
+                            lookup_code,
+                            filter_by_charset,
+                            existing_candidates,
+                            admitted_span_candidates,
+                            limit,
+                        },
+                    );
+                if let Some(start) = fallback_start {
+                    crate::m37_record_prefix_fallback(
+                        start.elapsed(),
+                        views_visited,
+                        batch.candidates.len(),
+                    );
+                }
+                batch.owns_reachability = saw_prefix;
+                batch.span_promotions = span_promotions;
+                return batch;
+            }
             let mut cache_prefixes = Vec::new();
             let cache_probe_complete = if self.direct_prism_prefix_family_exceeds_cache_limit(
                 lookup_code,
@@ -6273,13 +6762,16 @@ impl StaticTableTranslator {
                     candidates: Vec::new(),
                     truncated: false,
                     owns_reachability: false,
+                    span_promotions,
                 };
             }
-            let cache_admitted = cache_probe_complete
+            let cache_admitted = span_promotions.is_empty()
+                && existing_candidates.is_empty()
+                && cache_probe_complete
                 && prefix_fallback_cache_key_bytes(&cache_prefixes)
                     <= PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES;
             if cache_admitted {
-                if let Some(batch) = self.bounded_prefix_fallback_candidates_cached(
+                if let Some(mut batch) = self.bounded_prefix_fallback_candidates_cached(
                     BoundedPrefixFallbackCacheRequest {
                         input,
                         lookup_code,
@@ -6291,10 +6783,11 @@ impl StaticTableTranslator {
                         fallback_start,
                     },
                 ) {
+                    batch.span_promotions = span_promotions;
                     return batch;
                 }
             }
-            let (batch, views_visited, saw_prefix) = self
+            let (mut batch, views_visited, saw_prefix) = self
                 .bounded_prefix_fallback_candidates_streaming(
                     BoundedPrefixFallbackStreamingRequest {
                         input,
@@ -6303,23 +6796,6 @@ impl StaticTableTranslator {
                         existing_candidates,
                         admitted_span_candidates,
                         limit,
-                        pending_cap: if input.len() <= MAX_ABBREVIATION_SENTENCE_INPUT_BYTES {
-                            pending_cap
-                        } else {
-                            long_streaming_pending_cap
-                        },
-                        // The M59 exact abbreviation graph is deliberately
-                        // bounded to short inputs. Keep its requested page
-                        // window intact, but retain the historical two-head
-                        // sampling boundary when an oversized prism family on
-                        // a longer input cannot use the bounded prefix cache.
-                        // Complete translation remains unbounded and is still
-                        // available when forward navigation requests it.
-                        per_fetch_cap: if input.len() <= MAX_ABBREVIATION_SENTENCE_INPUT_BYTES {
-                            limit
-                        } else {
-                            limit.min(PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE)
-                        },
                     },
                 );
             if !saw_prefix {
@@ -6330,6 +6806,7 @@ impl StaticTableTranslator {
                     candidates: Vec::new(),
                     truncated: false,
                     owns_reachability: false,
+                    span_promotions,
                 };
             }
             if let Some(start) = fallback_start {
@@ -6339,6 +6816,7 @@ impl StaticTableTranslator {
                     batch.candidates.len(),
                 );
             }
+            batch.span_promotions = span_promotions;
             return batch;
         }
         let prefixes = self.valid_lookup_prefixes(lookup_code);
@@ -6350,6 +6828,7 @@ impl StaticTableTranslator {
                 candidates: Vec::new(),
                 truncated: false,
                 owns_reachability: false,
+                span_promotions,
             };
         }
         let mut seen_texts = existing_candidates
@@ -6362,14 +6841,16 @@ impl StaticTableTranslator {
         // span when this same translator has already admitted the same text as a
         // full exact for the current lookup. Otherwise selecting `zi` -> 子 from
         // the earlier `z` abbreviation family leaves raw `i` behind.
-        let full_span_texts = admitted_span_candidates
-            .iter()
-            .filter(|candidate| candidate.source == CandidateSource::Table)
-            .map(|candidate| candidate.text.as_str())
-            .collect::<HashSet<_>>();
+        seen_texts.extend(
+            admitted_span_candidates
+                .iter()
+                .map(|candidate| candidate.text.clone()),
+        );
+        let full_span_texts: HashSet<&str> = HashSet::new();
         let mut candidates = Vec::new();
         struct PendingPrefixCandidate<'a> {
             pending: PendingLookupCandidateRef<'a>,
+            fetch_order: usize,
             consumed_input_len: usize,
             recompose_on_default: bool,
             deferred_surface_phrase: bool,
@@ -6396,7 +6877,7 @@ impl StaticTableTranslator {
                 }
             })
             .unwrap_or(usize::MAX);
-        for prefix_spec in &prefixes {
+        for (fetch_order, prefix_spec) in prefixes.iter().enumerate() {
             let prefix = prefix_spec.input_prefix;
             let fetch_code = prefix_spec.fetch_code.as_str();
             let prefix_consumed_input_len = input
@@ -6441,6 +6922,7 @@ impl StaticTableTranslator {
                         spelling_correction: false,
                         spelling_credibility: 0.0,
                     },
+                    fetch_order,
                     consumed_input_len,
                     recompose_on_default,
                     deferred_surface_phrase,
@@ -6463,21 +6945,26 @@ impl StaticTableTranslator {
                 break;
             }
         }
-        pending.sort_by(|left, right| {
-            left.deferred_surface_phrase
-                .cmp(&right.deferred_surface_phrase)
-                .then_with(|| right.consumed_input_len.cmp(&left.consumed_input_len))
+        order_current_head_chunks(
+            &mut pending,
+            None,
+            |row| row.fetch_order,
+            |candidate, current| match candidate
+                .deferred_surface_phrase
+                .cmp(&current.deferred_surface_phrase)
                 .then_with(|| {
-                    self.lookup_candidate_ref_comparison_weight(&right.pending)
-                        .partial_cmp(&self.lookup_candidate_ref_comparison_weight(&left.pending))
-                        .unwrap_or(Ordering::Equal)
-                })
-                .then_with(|| {
-                    left.pending
-                        .emission_order
-                        .cmp(&right.pending.emission_order)
-                })
-        });
+                    current
+                        .consumed_input_len
+                        .cmp(&candidate.consumed_input_len)
+                }) {
+                Ordering::Less => true,
+                Ordering::Greater => false,
+                Ordering::Equal => {
+                    self.lookup_candidate_ref_comparison_weight(&candidate.pending)
+                        > self.lookup_candidate_ref_comparison_weight(&current.pending)
+                }
+            },
+        );
         let pending_len = pending.len();
         for (index, pending) in pending.into_iter().enumerate() {
             let mut candidate = self.candidate_for_lookup_view(
@@ -6507,6 +6994,7 @@ impl StaticTableTranslator {
             candidates,
             truncated,
             owns_reachability: true,
+            span_promotions,
         }
     }
 
@@ -7122,6 +7610,7 @@ impl StaticTableTranslator {
                 candidates: Vec::new(),
                 truncated: false,
                 owns_reachability: false,
+                span_promotions: HashMap::new(),
             };
         }
 
@@ -7130,6 +7619,7 @@ impl StaticTableTranslator {
                 candidates: Vec::new(),
                 truncated: false,
                 owns_reachability: false,
+                span_promotions: HashMap::new(),
             };
         };
         if let Some(batch) =
@@ -7142,6 +7632,7 @@ impl StaticTableTranslator {
             mut candidates,
             full_input_anchor,
             has_reliable_exact_system_phrase,
+            prefix_fallback_span_views,
         } = self.candidates_for_lookup_codes(&expanded_lookup_codes, filter_by_charset);
         let has_correction_lookup = expanded_lookup_codes
             .iter()
@@ -7240,33 +7731,28 @@ impl StaticTableTranslator {
                         PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
                     ),
                     owns_reachability: !matches!(probe, PrefixFallbackProbe::NoPrefix),
+                    span_promotions: self.prefix_fallback_span_promotions(
+                        input,
+                        lookup_code,
+                        filter_by_charset,
+                        &prefix_fallback_span_views,
+                    ),
                 }
             } else {
-                let needs_span_promotion = candidates
-                    .iter()
-                    .any(|candidate| candidate.source == CandidateSource::Table);
-                let existing_candidates = if needs_span_promotion {
-                    &[][..]
-                } else {
-                    candidates.as_slice()
-                };
                 self.prefix_fallback_candidates(
                     input,
                     lookup_code,
                     filter_by_charset,
-                    existing_candidates,
-                    &candidates,
-                    if needs_span_promotion {
-                        prefix_fallback_limit
-                    } else {
-                        fallback_room
-                    },
+                    candidates.as_slice(),
+                    &prefix_fallback_span_views,
+                    fallback_room,
                 )
             };
             prefix_fallback_owned = prefix_batch.owns_reachability;
             prefix_fallback_truncated |= prefix_batch.truncated;
             let inserted = merge_prefix_fallback_candidates_with_full_input_anchor(
                 &mut candidates,
+                &prefix_batch.span_promotions,
                 prefix_batch.candidates,
                 lookup_code,
                 full_input_anchor,
@@ -7360,6 +7846,7 @@ impl StaticTableTranslator {
             candidates,
             truncated: prefix_fallback_truncated,
             owns_reachability: prefix_fallback_owned,
+            span_promotions: HashMap::new(),
         }
     }
 
@@ -7934,6 +8421,7 @@ fn prefix_fallback_insert_index(candidates: &[Candidate], lookup_code: &str) -> 
 
 fn merge_prefix_fallback_candidates_with_full_input_anchor(
     candidates: &mut Vec<Candidate>,
+    span_promotions: &HashMap<String, CandidateSource>,
     mut prefix_candidates: Vec<Candidate>,
     lookup_code: &str,
     full_input_anchor: Option<usize>,
@@ -7959,6 +8447,12 @@ fn merge_prefix_fallback_candidates_with_full_input_anchor(
         || prefix_fallback_insert_index(candidates, lookup_code),
         |index| index + 1,
     );
+
+    for exact_index in &exact_positions {
+        if let Some(source) = span_promotions.get(&candidates[*exact_index].text) {
+            candidates[*exact_index].source = source.clone();
+        }
+    }
 
     prefix_candidates.retain(|prefix_candidate| {
         if let Some(exact_index) = exact_positions

@@ -179,6 +179,7 @@ struct BorrowedWordGraphEntry<'a> {
 }
 
 type BorrowedWordGraph<'a> = BTreeMap<usize, BTreeMap<usize, Vec<BorrowedWordGraphEntry<'a>>>>;
+type CandidateEligibility<'a> = dyn Fn(&str, usize) -> bool + 'a;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SentenceCodeSpan {
@@ -207,7 +208,7 @@ struct CodeSpanGraphOptions<'a> {
     root_only: bool,
     vocabulary_only: bool,
     visible_limit: Option<usize>,
-    eligible_candidate: Option<&'a dyn Fn(&str, usize) -> bool>,
+    eligible_candidate: Option<&'a CandidateEligibility<'a>>,
 }
 
 impl CodeSpanGraphOptions<'_> {
@@ -2021,7 +2022,7 @@ impl UpstreamSentenceModel {
         input: &str,
         spans: &[WeightedSentenceCodeSpan],
         max_candidates: usize,
-        eligible_candidate: &dyn Fn(&str, usize) -> bool,
+        eligible_candidate: &CandidateEligibility<'_>,
     ) -> Vec<RankedScriptPhraseCandidate> {
         self.ranked_script_phrase_candidates_for_weighted_code_spans_impl(
             input,
@@ -2038,7 +2039,7 @@ impl UpstreamSentenceModel {
         spans: &[WeightedSentenceCodeSpan],
         visible_limit: Option<usize>,
         vocabulary_only: bool,
-        eligible_candidate: Option<&dyn Fn(&str, usize) -> bool>,
+        eligible_candidate: Option<&CandidateEligibility<'_>>,
     ) -> Vec<RankedScriptPhraseCandidate> {
         if input.is_empty() || spans.is_empty() {
             return Vec::new();
@@ -3608,7 +3609,10 @@ impl UpstreamSentenceModel {
                 // cannot reach any second span, no vocabulary phrase can
                 // match; avoid cloning/scanning the complete first-code family
                 // on cold one-syllable keys such as n/ni/hao.
-                if spans_by_start.get(span.end_index).is_none_or(Vec::is_empty) {
+                if spans_by_start
+                    .get(span.end_index)
+                    .map_or(true, Vec::is_empty)
+                {
                     continue;
                 }
                 let vocabulary_entries = self

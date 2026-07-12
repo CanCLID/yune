@@ -6985,8 +6985,8 @@ fn sort_original_prefix_fallback_uses_current_heads_and_partial_sort_residual_or
                 CandidateRequest::bounded(limit),
             );
             assert_eq!(
-                candidate_shape_without_quality(bounded.candidates),
-                candidate_shape_without_quality(complete[..limit].iter().cloned()),
+                bounded.candidates,
+                complete[..limit],
                 "{storage}: bounded {limit}-row order must be the exact prefix of the complete current-head merge"
             );
         }
@@ -7020,10 +7020,7 @@ fn bounded_current_head_merge_advances_past_cross_chunk_duplicate_heads() {
             .collect::<Vec<_>>(),
         ["DUP", "A", "B"]
     );
-    assert_eq!(
-        candidate_shape_without_quality(bounded.candidates),
-        candidate_shape_without_quality(complete)
-    );
+    assert_eq!(bounded.candidates, complete);
 }
 
 #[test]
@@ -7055,10 +7052,7 @@ fn bounded_current_head_merge_advances_past_more_than_the_old_blocked_row_cap() 
             .collect::<Vec<_>>(),
         ["DUP", "ROW00", "ROW01", "ROW02", "ROW03"]
     );
-    assert_eq!(
-        candidate_shape_without_quality(bounded.candidates),
-        candidate_shape_without_quality(complete[..5].iter().cloned())
-    );
+    assert_eq!(bounded.candidates, complete[..5]);
     assert!(!bounded.is_complete);
 }
 
@@ -7459,8 +7453,8 @@ fn prefix_fallback_bounding_is_selected_by_profile_policy_not_schema_identity() 
             CandidateRequest::bounded(4),
         );
         assert_eq!(
-            candidate_shape_without_quality(bounded.candidates),
-            candidate_shape_without_quality(complete[..4].iter().cloned()),
+            bounded.candidates,
+            complete[..4],
             "{label}: canonical exact current-head paging must not depend on a schema id"
         );
     }
@@ -7482,8 +7476,8 @@ fn prefix_fallback_bounding_is_selected_by_profile_policy_not_schema_identity() 
         "only the explicit LegacyFallback plus prediction marker retains TypeDuck's page-bounded long-input policy"
     );
     assert_eq!(
-        candidate_shape_without_quality(profile.translate(&input)),
-        candidate_shape_without_quality(complete),
+        profile.translate(&input),
+        complete,
         "complete/page-turn collection remains exact even for the bounded profile policy"
     );
 }

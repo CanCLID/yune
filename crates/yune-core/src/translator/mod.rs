@@ -7552,14 +7552,15 @@ impl StaticTableTranslator {
     }
 
     fn assign_mode_stable_ordered_candidate_qualities(&self, candidates: &mut [Candidate]) {
-        if self.sentence_policy == SentencePolicy::LegacyFallback && self.prefix_fallback {
-            // A bounded legacy fallback must not materialize its complete tail
-            // merely to learn a count-dependent denominator. Positional ranks
-            // in this open unit band depend only on the visible index, so the
-            // bounded and complete shared prefix is field-identical.
-            for (index, candidate) in candidates.iter_mut().enumerate() {
-                candidate.quality = self.initial_quality + 1.0 / (index as f32 + 2.0);
-            }
+        if self.sentence_policy == SentencePolicy::UpstreamScript
+            || (self.sentence_policy == SentencePolicy::LegacyFallback && self.prefix_fallback)
+        {
+            // Neither an UpstreamScript page nor a bounded legacy prefix
+            // fallback may materialize its complete tail merely to learn a
+            // count-dependent denominator. Keep the shared bounded/complete
+            // prefix field-identical so page expansion cannot perturb an outer
+            // multi-translator merge.
+            self.assign_upstream_script_candidate_qualities(candidates);
         } else {
             self.assign_ordered_candidate_qualities(candidates);
         }

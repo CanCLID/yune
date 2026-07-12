@@ -1,0 +1,7 @@
+﻿command=powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\y4b-src\scripts\benchmark-native-rime-inprocess.ps1' -OutputRoot 'C:\y4b-d508-proof\performance\run4' -WorkRoot 'C:\y4b-d508-perf-work\run4' -UpstreamOracleRoot 'C:\y4b-oracle' -ProductSchemaRoot 'C:\y4b-src\apps\yune-web\public\schema' -YuneDll 'C:\y4b-d508-target\release\yune_rime_api.dll' -Iterations 9 -SessionIterations 60 -KeyIterations 80 -TrackAInputs 'n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu' -TrackBInputs 'neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung' -PrebuiltNativeBenchmarkExecutable 'C:\y4b-d508-perf-work\run1\cargo-target\release\deps\native_inprocess_benchmark-5c1184aa464f2e15.exe' -PrebuiltNativeBenchmarkReceipt 'C:\y4b-d508-proof\performance\run1\native-benchmark-build-receipt.txt' -DeployProductBeforeBenchmark -TrackAThresholds 'C:\y4b-src\docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv'
+build_performed=False
+yune_dll_supplied=True
+native_benchmark_executable_prebuilt=True
+native_benchmark_build_performed=False
+native_benchmark_receipt=C:\y4b-d508-proof\performance\run4\native-benchmark-build-receipt.txt
+native_benchmark_receipt_sha256=dccaea1f066b4287ec76818b2c0d368c36c1a23fedf04ddae06dab3308d0bd13

@@ -1,0 +1,36 @@
+gate=WEB-04 octagram profile loads pinned model and changes Luna ranking
+status=red; mandatory M59 final-closeout blocker; not attributed to Increment 4b
+diagnosed_on=2026-07-12 America/Los_Angeles
+final_4b_source=d508e05b638fc21de7f8f8dfc45c82d33a8bbde8
+pre_4b_reproduction_source=afb7079b71f7f9353845114ff3e310c0a38b9b87
+pinned_librime=33e78140250125871856cdc5b42ddc6a5fcd3cd4
+pinned_model_sha256=574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3
+
+The committed Playwright gate first fails because two plain-Luna literals are
+stale after Increment 4a. A scratch-only refresh from the pinned
+null_grammar_control fixture produced these plain first candidates:
+
+youhuiyong=有會用
+jintianhuiyi=今天回憶
+jintianwanshangyouhui=今天晚上優惠
+gegeguojiayougegeguojiadeguoge=各個國家有各個國家的國歌
+
+With only that scratch control refresh, the real Octagram row verdict is 2/4:
+
+input=youhuiyong expected=優惠用 actual=優惠用 verdict=pass
+input=jintianhuiyi expected=今天會議 actual=今天回憶 verdict=fail
+input=jintianwanshangyouhui expected=今天晚上又會 actual=今天晚上優惠 verdict=fail
+input=gegeguojiayougegeguojiadeguoge expected=各個國家有各個國家的國歌 actual=各個國家有各個國家的國歌 verdict=pass
+
+Native diagnostics reproduce that exact row result at both the pre-4b source
+and final 4b source. Schema installation assigns the Standard UpstreamScript
+policy, but its surface-translation branch explicitly returns None for Luna's
+structurally untoned dictionary and retains the legacy merge until M59
+Increment 4e. The rejected direct-witness experiment never reached this
+path and is not included in the packet. No WEB-04 expectation, engine behavior,
+exception, or schema-id/input gate is changed here.
+
+Required disposition: send 4b to its designated blocking review with this red
+gate disclosed. After that review is resolved, Increment 4e must restore the
+two oracle rows and rerun the source-current native and Playwright WEB-04 gates
+before M59 can close.

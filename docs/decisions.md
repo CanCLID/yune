@@ -292,6 +292,16 @@ dictionary keys, and schema-install profile predicates such as
 
 **D-32 / M33-NATIVE-PERF - Accept build-once dictionary translator sharing and lazy reverse lookup as the bounded native fairness slice; defer lazy candidate-pipeline and table+prism/mmap work until a future byte-parity design exists.** M33 fixed the unfair `luna_pinyin` startup/session comparison by deferring `stroke` reverse-lookup dictionary loading to first reverse use, matching librime for no-reverse timed rows. It also allows process-wide sharing of immutable built dictionary translators keyed by schema and resolved source/compiled asset signatures, while keeping per-session mutable state outside the cache. This does not widen `RimeApi`, change `RimeCandidate`, or alter TypeDuck-profile behavior. The lazy lookup spike is a no-go for M33 because a prism-only walk cannot produce byte-identical candidate text/comment/order; as in librime, the prism is an index into table payloads. Current byte-identical output still depends on table-backed translator state. A later milestone must split the remaining work: bounded/lazy candidate production for typing latency, plus queryable table+prism storage and possible mmap for cold-start/memory. mmap is therefore deferred as part of that broader design, not as a standalone M33 change. _Outcome: M33 complete as a fair cold/warm startup/session improvement, with no typing, browser, memory-footprint, or "faster than librime" claim._
 
+_M59 Increment 4b lifecycle clarification (2026-07-12):_
+fingerprint-keyed immutable dictionary translators and byte-backed lookup-record
+indexes may survive `RimeFinalize` across same-root reinitialization.
+`RimeFinalize` ends sessions and clears ephemeral input/page-window caches, but
+does not invalidate those immutable same-root entries. `RimeCleanupAllSessions`,
+dictionary-root changes, and workspace updates clear sessions and the full
+shared dictionary/lookup caches before a path change or filesystem mutation.
+Setup, deployment, and workspace mutation remain externally serialized with
+session use; internal synchronization does not authorize concurrent mutation.
+
 ### M36 product-path performance boundary (project-wide D-33)
 
 **D-33 / M36-PRODUCT-PERF - Optimize the shipped TypeDuck product path separately from fair upstream `luna_pinyin` comparison rows.** M33-M35 made valid progress on the upstream comparison path, but the product path users run (`jyut6ping3` / `jyut6ping3_mobile`) still fell back to heap/source-YAML storage because the shipped TypeDuck compiled tables carry a marisa string table that Yune rejects. M36 therefore treats Track A (`luna_pinyin` Yune vs librime) as comparison-only evidence and Track B (`jyut6ping3` Yune before/after) as the product target. The `rsmarisa` path remains closed by measured no-go for this milestone because the actual product blobs require table, reverse, and prism semantics together, and the shipped artifacts are stale/unsupported as a set. The accepted M36 product strategy is schema-scoped no-marisa re-emission into Yune-readable compiled table/prism/reverse artifacts, including the configured `jyut6ping3_mobile` prism stem, then compact product storage only when compiled artifacts load. Native mmap and WASM byte-backed loading stay future gated work; mapping bytes and rebuilding owned heap maps still does not count. ABI stability, TypeDuck rich comments, lookup records, tolerance/correction, partial selection, default-confirm recomposition, long composition, and userdb learning remain hard gates. _Outcome: M36 complete. Track B `jyut6ping3_mobile` final rows run with `compiled_ready=true`, product typing rows improve up to `81.7%`, and product max peak working set drops from `1000.4 MB` to `885.3 MB`; Track A still trails librime widely and no browser/product-delivery claim is made._
@@ -606,6 +616,16 @@ made single-run gating a coin-flip (fable's independent 22/23 at `06cd1800`
 straddled at 1.647). Only that row moved; the other 19 standing rows remain
 untouched._
 
+_Addendum 2026-07-12 (M59 Increment 4b):_ the owner-selected
+retained-ceiling, lazy/page-bounded implementation passes the unchanged signed
+ratchet in five source-bound rounds at production source `d508e05b`. All 32
+aggregate rows and all 160 individual observations pass; `n`, `ni`, and `hao`
+medians are `0.202x`, `0.241x`, and `0.278x`, and the 37/59-character rows are
+included. The exact WEB-03 long-input guard passes after bounding oversized
+uncached prefix families without changing short-input exactness or complete
+forward navigation. This is an Increment 4b guard, not final M59-REACH-04 evidence after
+the remaining behavior increments. No ceiling or exception changed.
+
 **D-48 / PER-LANE-RANKING-PARITY-POLICY — Ranking-order parity is required for
 three lanes; the TypeDuck profile lane keeps reachability + comment parity only.**
 Owner FINAL decision 2026-07-08, resolving what "parity" means per lane:
@@ -655,20 +675,21 @@ ceiling, exception, or new milestone.
 Extends D-24 (oracle precedence), D-31 (upstream-wins-on-composition-conflict +
 fork-as-profile-oracle), and D-47 (the schema-general reachability guarantee, of
 which order parity is the stricter sibling for the three named lanes). _Outcome:
-Pending — the Lane A diff/disposition exists and Increment 4a's sentence/phrase
-mechanism is implemented at `ca52ec42`. The owner-provided Opus blocking review
-found an explicit-false reachability bypass, which is fixed and reverified at
-`2257fbbe`. On 2026-07-11 the owner renewed the narrowly scoped D-48 class-3
-exception for the complete captured equal-weight residual (`6,086` inversions,
-zero cross-weight inversions, no beyond-oracle-depth use), retaining mandatory
-cross-weight, provenance, and common-input page-1 revisit triggers. Increment 4b
-is permitted to start. The strict five-row comparator remains visibly red; the
-remaining surface is classified as the predeclared 4c OpenCC rows plus the
-owner-signed equal-weight class. Remaining closure is 4b
-abbreviation/segmentation, 4c OpenCC variants, 4d Cangjie CJ-1, and 4e Lane B
-exact order. The supplemental macOS `89875ee2` evidence closes only its exact
-37/59 source-scoped slice; it did not cause or supersede the renewed exception
-and changes none of the recorded disposition or broader lane statuses._
+Pending — Increment 4a remains `2/5` raw under the owner's renewed, narrowly
+scoped class-3 exception. Increment 4b is implemented through `d508e05b`; its
+accepted production capture and five-round ratchet bind to that clean source. The
+declared five-row abbreviation/segmentation surface is exact `5/5` for
+OpenCC-normalized text/position, preedit, and commit preview. The raw comparator
+remains visibly red at `1/5` solely for the already-declared Increment 4c
+siblings `僞`, `臥`, and `鉤`; there is zero unowned residual, no new exception,
+and no beyond-oracle-depth use. The designated Opus blocking review is pending,
+so 4c and every later engine-behavior increment remain blocked. Remaining
+closure is the 4b review resolution, 4c OpenCC variants, 4d Cangjie CJ-1, and 4e
+Lane B exact order. Source-current WEB-04 is also red on two of four Octagram
+rows, reproduces before 4b, and is assigned to that existing untoned-Luna 4e
+boundary; it remains a final-closeout blocker, not a new exception. The
+supplemental macOS `89875ee2` evidence closes only its
+exact 37/59 source-scoped slice and changes none of these statuses._
 
 ### Initialization notes (process decisions)
 
@@ -685,3 +706,8 @@ and changes none of the recorded disposition or broader lane statuses._
 ---
 
 _Last updated: 2026-07-11 - D-30 and D-48 now record the supplemental, source-scoped macOS Luna 37/59 page-zero repair measured at `89875ee2`, including the compiled natural-log weight domain, inclusive 5% pronunciation boundary, bounded exact-user scope, and unchanged ABI/threshold posture. The authoritative Windows Increment 4a packet remains at `ca52ec42` plus review fix `2257fbbe`: its strict Lane A comparator is `2/5`, and on 2026-07-11 the owner renewed the narrowly scoped D-48 class-3 exception for all `6,086` captured equal-weight inversions (zero cross-weight inversions and no beyond-oracle-depth use) with the recorded cross-weight, provenance, and common-input page-1 revisit triggers, permitting 4b to start. The macOS evidence did not cause or supersede that disposition, and no combined/reconciled commit is claimed measured. A post-WEB-03 correctness follow-up fixed a `DartsDoubleArray` prism construction bug that corrupted the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words (`litbiu -> 列表` etc.); the four affected prisms were regenerated and the user-visible words are now locked by trie-level and committed-asset regression tests (`a76fcd59`, `d1c0171a`). D-46 records WEB-03 complete after the phrase-composition follow-up: regenerated launch compiled assets and native byte-backed storage are now a delivery contract, fresh Emscripten/Playwright evidence shows the shipping public-demo `full-jyutping` browser row at `160.0 MiB` ready/peak/steady, and follow-up gates restore byte-backed `ngogokdak -> 我覺得` plus `zouhapci` visible lookup rows. The old `893.1 MiB` value remains only as a synthetic no-launch-assets negative control. D-45 records WEB-02 complete as the historical public-demo Jyutping source-fallback owner classification: shipped `Rime::Prism/3.0` assets forced `owned_heap` and retained `translator.entries_by_code` rows totaling `529,602,374 B`; WEB-03 fixed that launch path. D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and the pre-WEB-03 browser Jyutping row remained `893.1 MiB`, so M46 closed as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` did not reduce settled linear memory, 48 MiB worsened Luna, and pre-WEB-03 Jyutping remained `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._
+
+_Current update: 2026-07-12 - D-32 now records the approved same-root immutable
+cache lifecycle; D-47 records Increment 4b's unchanged-ceiling five-round guard;
+and D-48 records normalized `5/5`, raw `1/5` OpenCC-only residue, and the pending
+blocking-review stop before Increment 4c._

@@ -1,6 +1,6 @@
 # M59 Canonical Parity + General Reachability Plan (reimplementation)
 
-> **CURRENT CLOSEOUT STATUS (2026-07-11): full Path A is locked; M59 is NOT
+> **CURRENT CLOSEOUT STATUS (2026-07-12): full Path A is locked; M59 is NOT
 > closeable.** The genuine Lane B **reachability mechanism** landed at `c89a8ea9`
 > and remains source-truthful and non-circular, but Lane B D-48 exact-order parity
 > is still open. Workspace deployment fidelity completed at `2ee0805f`.
@@ -28,24 +28,29 @@
 > Because the prior class-3 disposition says to revisit if the diff grows, the
 > owner explicitly renewed the narrowly scoped D-48 exception on 2026-07-11:
 > `6,086` equal-weight inversions, zero cross-weight inversions, no
-> beyond-oracle-depth use, with the declared revisit triggers. Increment 4b is
-> now permitted to start.
+> beyond-oracle-depth use, with the declared revisit triggers.
+> Increment 4b is now implemented through `d508e05b`, with accepted external
+> behavior and five-round performance evidence bound to that clean production
+> source. Its bounded/lazy abbreviation and longest-recognized-prefix
+> mechanism makes the declared five-row class-4 surface exact after only the
+> already-declared Increment 4c OpenCC normalization: text/position, preedit,
+> and commit preview are `5/5`. The raw strict comparator remains visibly red
+> at `1/5`; every residual is limited to `僞`, `臥`, and `鉤`, with zero unowned
+> residuals, no new exception, and no beyond-oracle-depth use. All 32 signed
+> performance rows pass across all five source-bound runs, including every
+> individual observation and the 37/59-character rows. The designated Opus
+> blocking review is pending, so Increment 4c and every later engine-behavior
+> increment remain blocked.
 > No D-48 lane, REACH-03/04, or final-gate row is implied complete here.
 >
-> Nothing remaining moves to M60 or another milestone. After 4a lands, **no
-> subsequent engine-behavior increment** (including 4b) starts until the
-> blocking review returns, all findings are fixed forward and reverified, and
-> the owner explicitly re-disposes the expanded equal-weight class. The review,
-> fix-forward, and owner re-disposition conditions are now satisfied.
-> Non-overlapping
-> evidence/docs work may continue during that wait; reviews for all other
-> increments remain nonblocking. Symmetrically, after 4b lands, no later
-> engine-behavior increment starts until its Fable review is resolved. Before 4b
-> can land, the signed short-key ratchet must cover `n`, `ni`, and `hao`. Any red
-> short-key row is an owner-decision stop between retaining the signed ceilings
-> with a lazy/page-bounded exact-order strategy and signing freshly derived
-> ceilings; it is never a quiet re-baseline, silent revert, or weakened parity
-> target.
+> Nothing remaining moves to M60 or another milestone. The 4a review,
+> fix-forward, and owner re-disposition conditions are satisfied. Increment 4b
+> selected the owner-approved retained-ceiling, lazy/page-bounded strategy after
+> its first short-key checkpoint went red; its final ratchet is green without a
+> re-baseline. No later engine-behavior increment starts until the designated
+> Opus review of landed 4b returns, every finding is resolved, and the packet is
+> updated. Non-overlapping evidence/docs work may continue during that wait;
+> reviews for other increments remain nonblocking.
 >
 > A separate macOS follow-up is measured only at source commit `89875ee2`.
 > Its exact 37/59 first pages match pinned librime, and its non-circular fixture
@@ -55,7 +60,8 @@
 > combined/reconciled source was measured nor causes or supersedes the recorded
 > Windows owner disposition: the strict Lane A comparator remains `2/5`, the
 > narrowly scoped class-3 exception and its revisit triggers remain in force,
-> and 4b remains permitted to start.
+> and the later 4b implementation/review state is governed by the current
+> Windows update above.
 
 > **For agentic workers:** this plan was RESET on 2026-07-06 after the prior
 > execution was found to be gamed and reverted, then re-scoped per owner
@@ -91,11 +97,11 @@
   gates all remain in M59. Lane B's landed item is its reachability mechanism,
   not completion of its exact-order lane.
 - **Blocking review/performance protocol:** 4a's blocking review, fix-forward,
-  and explicit owner re-disposition under D-48 are complete as of 2026-07-11,
-  so 4b may start. After 4b lands, every later engine-behavior
-  increment likewise pauses for its designated blocking review. Other reviews remain
-  nonblocking. A red `n`/`ni`/`hao` 4b ratchet is an owner stop before landing,
-  not permission to re-baseline, revert, or weaken exact-order acceptance.
+  and explicit owner re-disposition are complete. Increment 4b is landed, its
+  retained-ceiling lazy/page-bounded implementation passes all 32 signed rows
+  in five source-bound rounds, and its designated Opus blocking review is
+  pending. Increment 4c and later engine-behavior work remain blocked until that
+  review is returned and resolved. Other reviews remain nonblocking.
 - **Increment 2 complete (`e37ee011`, pushed 2026-07-10):** explicit
   TypeDuck-profile activation repaired the direct Cantonese and synthetic
   Windows harnesses without golden edits; one `Engine` policy now governs
@@ -131,7 +137,27 @@
   deployment matrix, full workspace clippy, focused parity, and a fresh 32/32
   signed ratchet guard. The owner renewed the narrowly scoped class-3 exception
   on 2026-07-11 with the recorded cross-weight/provenance/page-1 revisit
-  triggers; 4b is permitted to start.
+  triggers, which cleared the historical 4b start stop; 4b has since landed as
+  the separate increment below.
+- **Increment 4b implemented through `d508e05b`; blocking review pending:** the
+  bounded/lazy abbreviation graph propagates prism spelling types, removes the
+  former initial-`m`/two-syllable restriction, merges abbreviation families
+  globally, and recomposes the longest recognized prefix without schema-id,
+  input, promotion, or oracle-data gates. The heap/source spelling-type
+  collision and compiled/deployed paths have owning tests. The final external
+  capture is raw strict `1/5`, but exact `5/5` for text/position, preedit, and
+  commit preview after only the predeclared 4c OpenCC inventory; the remaining
+  surfaces are `僞`, `臥`, and `鉤`, with zero unowned residuals, no exception,
+  and no beyond-depth use. Five fixed-binary, source-bound rounds at `d508e05b`
+  pass all 32 signed rows and all 160 individual observations; `n`, `ni`, and
+  `hao` medians are `0.202x`, `0.241x`, and `0.278x`. The exact WEB-03
+  long-input expansion guard also passes after generically bounding oversized
+  uncached prefix families. This is an increment
+  guard, not final M59-REACH-04. Evidence:
+  `increment-4b-abbreviation-segmentation/`. Increment 4c is blocked on the
+  designated Opus review. The packet also discloses that source-current WEB-04
+  is red on two Octagram rows, reproduces before 4b, and remains assigned to the
+  existing untoned-Luna 4e/final-closeout boundary; no web-gate pass is claimed.
 - **Supplemental macOS 37/59 repair measured at source `89875ee2`:**
   `71a80704` separates upstream Luna's one-best sentence from its independent
   phrase stream; `e5c57eb6` preserves ScriptTranslation display metadata;
@@ -150,14 +176,12 @@
   packet, and neither causes nor supersedes its now-recorded owner disposition
   or 4b permission. Evidence:
   `increment-4a-luna-script-translation-order/`.
-- **Increment 4b checklist residual from 3b:** close the pre-existing
-  fuzzy-versus-abbreviation collision on the heap/source
-  `ExpandedSpellingCode` path with full pinned spelling-type precedence and
-  exact abbreviation provenance/graph tests. Increment 3b fixes and covers the
-  normal-correction collision, and its writer/compiled/deployed-index paths are
-  type-aware; that does **not** establish general heap collision parity. This
-  row remains in 4b alongside the `n`/`nri`/`ngohaig` abbreviation and
-  segmentation work and is subject to the same Fable/performance stop.
+- **Increment 4b checklist residual from 3b is closed:** heap/source
+  `ExpandedSpellingCode` precedence, abbreviation provenance, graph merging,
+  bounded complete traversal, and the `n`/`nri`/`ngohaig` segmentation family
+  are covered by owning tests and external captures. The later OpenCC sibling
+  rows remain explicitly owned by 4c rather than being normalized away in the
+  raw comparator.
 
 ## Honest baseline (`7d5ec9b8`, verified 2026-07-06)
 

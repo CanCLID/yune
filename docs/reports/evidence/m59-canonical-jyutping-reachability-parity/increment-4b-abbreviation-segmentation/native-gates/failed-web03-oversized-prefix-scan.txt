@@ -1,0 +1,29 @@
+M59 Increment 4b exact WEB-03 failure and fix-forward record
+
+Rejected source: eb117c53f460e749a8a37fee6d978690f3c226f7
+Rejected tree: 2649750b6edfa94dd65467872b0051c8477c2543
+Command: cargo test -p yune-rime-api --test yune_web web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion -- --exact --nocapture
+Verdict: failed
+
+First long input:
+- prefix_fallback_views_visited: 442856
+- ceiling: 5000
+- candidate correctness assertion: passed before the metric assertion
+
+Cause: d7adc253 retained the requested per-fetch page window but removed the
+global pending bound on the uncached streaming path. Oversized prism families
+therefore traversed their complete prefix surface on every incremental key.
+
+Preserved diagnostics:
+- Restoring only the historical four-page pending cap reduced the second long
+  row to 6224 views against its 6000 ceiling; still rejected.
+- Adding only the long per-fetch boundary reduced it to 6044; still rejected.
+
+Accepted fix-forward: d2499358a8823fda2f2f6edea6bf726ed5802e9b
+- Short inputs inside M59's <=16-byte exact abbreviation window keep the full
+  requested per-fetch window and four-page reserve.
+- Longer uncached oversized families use two heads per fetch and a two-page
+  duplicate/deferred reserve.
+- Complete forward-navigation translation remains unbounded.
+- Exact WEB-03 rerun: 1 passed / 0 failed.
+- Independent exact WEB-03 rerun: 1 passed / 0 failed.

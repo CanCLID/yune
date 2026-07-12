@@ -1,0 +1,3 @@
+﻿status=failed
+date_utc=2026-07-12T08:12:32.9180485Z
+detail=Track A threshold regression detected: median_working_set_bytes[] observed=69066752 ceiling=66872115 status=fail; median_private_bytes[] observed=35344384 ceiling=32084378 status=fail

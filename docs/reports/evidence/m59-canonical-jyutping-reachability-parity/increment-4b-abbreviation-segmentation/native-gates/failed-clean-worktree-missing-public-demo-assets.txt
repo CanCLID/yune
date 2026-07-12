@@ -1,0 +1,28 @@
+M59 Increment 4b final native gate: preserved failed setup attempt
+
+Source commit: eb117c53f460e749a8a37fee6d978690f3c226f7
+Source tree: 2649750b6edfa94dd65467872b0051c8477c2543
+Source worktree: clean detached worktree at C:\y4b-frozen
+Command: cargo test --workspace
+Exit code: 1
+Elapsed: 2218.3 seconds
+
+Result before failure:
+- yune_web integration: 47 passed, 2 failed, 2 ignored
+- all preceding workspace test binaries passed
+
+Failures:
+- web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion
+- web03_public_demo_launch_schemas_byte_back_compiled_assets
+
+Both tests failed at crates/yune-rime-api/tests/yune_web.rs:4263 while reading
+apps/yune-web/public-demo/dist/schema. That generated, gitignored packaging tree
+was present in the canonical checkout but absent from the fresh detached
+worktree. No engine or candidate-order assertion failed.
+
+Disposition:
+- Preserve this attempt as failed; do not count it as a passing native gate.
+- Mount the existing source-current generated public-demo dist tree into the
+  detached worktree without changing tracked source.
+- Rerun the literal cargo test --workspace command and record its independent
+  verdict in verification.md.

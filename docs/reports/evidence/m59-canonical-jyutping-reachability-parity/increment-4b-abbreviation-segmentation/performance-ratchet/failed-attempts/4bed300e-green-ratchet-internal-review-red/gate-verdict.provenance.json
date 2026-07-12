@@ -1,0 +1,142 @@
+{
+  "effective_argv": [
+    "--thresholds",
+    "docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv",
+    "--expected-runs",
+    "5",
+    "--run",
+    "C:/y4b-final-proof/run1",
+    "--run",
+    "C:/y4b-final-proof/run2",
+    "--run",
+    "C:/y4b-final-proof/run3",
+    "--run",
+    "C:/y4b-final-proof/run4",
+    "--run",
+    "C:/y4b-final-proof/run5",
+    "--output",
+    "C:/y4b-final-proof/gate-verdict.csv"
+  ],
+  "effective_invocation": "python scripts/aggregate-native-ratchet.py --thresholds docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv --expected-runs 5 --run C:/y4b-final-proof/run1 --run C:/y4b-final-proof/run2 --run C:/y4b-final-proof/run3 --run C:/y4b-final-proof/run4 --run C:/y4b-final-proof/run5 --output C:/y4b-final-proof/gate-verdict.csv",
+  "gate_verdict": {
+    "path": "C:/y4b-final-proof/gate-verdict.csv",
+    "sha256": "b364d39c865769432f2a4f77e68d42b2f1148cea5fca52ae6dd30ce878789d15"
+  },
+  "required_run_count": 5,
+  "runs": [
+    {
+      "native_benchmark_build_performed": "True",
+      "native_benchmark_executable_prebuilt": "False",
+      "native_benchmark_executable_sha256": "3b6373d25039be111150798d4415c16b91d028f4b9ce05a5307d89b2de03ffee",
+      "native_benchmark_receipt_sha256": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+      "path": "C:/y4b-final-proof/run1",
+      "raw_files_sha256": {
+        "environment.txt": "3d5e7feca5864a1540d9c743697228865d530c102476f801f82853913192b73b",
+        "external-provenance.txt": "2d0fe577d421f1a5cd66400c563686f7bef43d284e99f14cd98e4aeea28a3e45",
+        "native-benchmark-build-receipt.txt": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+        "run-status.txt": "154261adfd9201a80d4b0a0322c1edbe59178b1e5c7896f3f6e57b3a4ca8f346",
+        "summary-comparison.csv": "02e211f8f2fc2ca3acebb81891f7ca022fa2c69b486a635a1b804ceb9e80f1d7",
+        "threshold-check.csv": "ed3cf0ca892c3877fe459d07b26800996586cc853341499343acb760eb22934c"
+      },
+      "run": 1
+    },
+    {
+      "native_benchmark_build_performed": "False",
+      "native_benchmark_executable_prebuilt": "True",
+      "native_benchmark_executable_sha256": "3b6373d25039be111150798d4415c16b91d028f4b9ce05a5307d89b2de03ffee",
+      "native_benchmark_receipt_sha256": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+      "path": "C:/y4b-final-proof/run2",
+      "raw_files_sha256": {
+        "environment.txt": "cf405cd7a6db44020b93f19a4210305c1227b07cf9eb60a14abf698cb8b9f807",
+        "external-provenance.txt": "b80b27ef16b8ecd23da39ece377b4205961d45c85648dbd9d766f3fc70dc1645",
+        "native-benchmark-build-receipt.txt": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+        "run-status.txt": "30c5a4bb2c603d8c1a0dbf4825bda9329b7a22a1a18df59299274cfa6ab75452",
+        "summary-comparison.csv": "e6d34c1820857617dd393682a83116320c4ca18f2381b2f560c263444e438853",
+        "threshold-check.csv": "79d6eeec60122ec71e0344a04b24f07478fad380f51385950803bda012b40dfe"
+      },
+      "run": 2
+    },
+    {
+      "native_benchmark_build_performed": "False",
+      "native_benchmark_executable_prebuilt": "True",
+      "native_benchmark_executable_sha256": "3b6373d25039be111150798d4415c16b91d028f4b9ce05a5307d89b2de03ffee",
+      "native_benchmark_receipt_sha256": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+      "path": "C:/y4b-final-proof/run3",
+      "raw_files_sha256": {
+        "environment.txt": "594f049fd9b8016e46601e183151e7027478da4d6041c429661b8fc0e73e010c",
+        "external-provenance.txt": "7b4a886eacc68dc7658feca3e97a583f90ac40d1d56438f6301780953a6c9263",
+        "native-benchmark-build-receipt.txt": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+        "run-status.txt": "997fcb17cd2d395f46f945c903759af579cb6bf9fafa3b0b9c17a2c433d704d6",
+        "summary-comparison.csv": "167b45c5341a5b58e2b4b060df5adff2f55559d00e0cbcaf42e459f376fd916f",
+        "threshold-check.csv": "0a158437013ebb5b674638ed34f0e28c1127c368f8180f613b2859dff7aa5094"
+      },
+      "run": 3
+    },
+    {
+      "native_benchmark_build_performed": "False",
+      "native_benchmark_executable_prebuilt": "True",
+      "native_benchmark_executable_sha256": "3b6373d25039be111150798d4415c16b91d028f4b9ce05a5307d89b2de03ffee",
+      "native_benchmark_receipt_sha256": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+      "path": "C:/y4b-final-proof/run4",
+      "raw_files_sha256": {
+        "environment.txt": "0b645d5398bd4c92a8d643fe1db9e244e325303843a34fad5a7bf0d24fb33a53",
+        "external-provenance.txt": "e52b55bd865bbd671d16f46dc41628f6add66d1939513d177e99d167ec07de6c",
+        "native-benchmark-build-receipt.txt": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+        "run-status.txt": "df03fc3d9b433016992804f58ade8b8ff845682b63f71530346a4dd521579ea8",
+        "summary-comparison.csv": "105f4b75aad40c36c1890b5c53d0fd58026dcfd6f22f6be4ab6a00daa0691e7c",
+        "threshold-check.csv": "7f1d5722a0ed08e20542b2427c01b21ae8bec2f386839ae011e86dc4e3e524bc"
+      },
+      "run": 4
+    },
+    {
+      "native_benchmark_build_performed": "False",
+      "native_benchmark_executable_prebuilt": "True",
+      "native_benchmark_executable_sha256": "3b6373d25039be111150798d4415c16b91d028f4b9ce05a5307d89b2de03ffee",
+      "native_benchmark_receipt_sha256": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+      "path": "C:/y4b-final-proof/run5",
+      "raw_files_sha256": {
+        "environment.txt": "21dfbbc073a3ea7c15897803d80437296302da00417e99a697159cc055db1fb9",
+        "external-provenance.txt": "858d565a7d60eb163da69d66809bad79c3b94a4722b72516617047bdca24007d",
+        "native-benchmark-build-receipt.txt": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+        "run-status.txt": "7f8e466544c7d490d3dc0b6fe69c00a148a8e1f7a555385307e344d381b9546e",
+        "summary-comparison.csv": "0bed9540382345589a1a706b5be06d59538baee524b9bfd93cb2636a16924d9f",
+        "threshold-check.csv": "16fca9d68c5ad058e6ecde6079935b90a930437d56da018d34923da040505210"
+      },
+      "run": 5
+    }
+  ],
+  "schema_version": 1,
+  "thresholds": {
+    "path": "docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv",
+    "sha256": "e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba"
+  },
+  "tool": "aggregate-native-ratchet.py",
+  "tool_path": "scripts/aggregate-native-ratchet.py",
+  "tool_sha256": "ce36704f6524e70887d465713bec7bf5e1dcd8ddf9b4858b238b1cd252b7c4bf",
+  "tool_version": "8",
+  "validated_provenance": {
+    "allow_dirty": "False",
+    "benchmark_script_sha256": "a5177ffca4dab7fc2726be919c21c4c820247a3ae7b730af11da36ebf757b1df",
+    "deploy_product_before_benchmark": "True",
+    "iterations": "9",
+    "key_iterations": "80",
+    "measured_yune_dll_sha256": "d52dceaaa64948720a2b0adff4389af2f74aebc22d57320dff764b888b61cdd1",
+    "native_benchmark_builder_run": "1",
+    "native_benchmark_executable_sha256": "3b6373d25039be111150798d4415c16b91d028f4b9ce05a5307d89b2de03ffee",
+    "native_benchmark_mode_sequence": "build,reuse,reuse,reuse,reuse",
+    "native_benchmark_receipt_sha256": "3936691aa6085db25885f4583ced07d9faaaf442f68ab33cb4395e876ca5b2e6",
+    "product_schema_tree_sha256": "1a61c7f3c759423d11755a7eaecdbedeb23d43bfa37f612ca822ca32b705063e",
+    "session_iterations": "60",
+    "skip_track_b": "False",
+    "source_clean": "True",
+    "source_commit": "4bed300e80a4e921cd87e615eb56be018f62b3a7",
+    "source_content_binding_sha256": "43f2fe3c0de70afda862c1547df1cabd03e1a4be205eca53b2e172fa7caddf3c",
+    "source_tree": "e41aa0d7b41220de71f52fcaf2f8dbd1f17ddd1d",
+    "track_a_inputs": "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu",
+    "track_b_inputs": "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
+    "upstream_build_tree_sha256": "049c0a811ef2c68ce3815ec00f83b3ea2caf0c58de441f80513cbf0c6eb414db",
+    "upstream_rime_dll_sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+    "upstream_shared_tree_sha256": "98efe00e3a5743193896f428fe09dc9a676342d24fb380d47f4cfcead5f98666",
+    "yune_git_head": "4bed300e80a4e921cd87e615eb56be018f62b3a7"
+  }
+}

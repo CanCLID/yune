@@ -1,0 +1,215 @@
+{
+  "tool": "compare-candidate-order.py",
+  "tool_version": "5",
+  "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+  "policy": "exact",
+  "inputs": [
+    "n",
+    "nri",
+    "ngohaig",
+    "ngohaigo",
+    "bein"
+  ],
+  "all_accepted": true,
+  "cases": [
+    {
+      "input": "n",
+      "policy": "exact",
+      "oracle_count": 1306,
+      "actual_count": 1306,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "3ff1de6775071b0bafda91443926e1d90aa192da1a7ffb924ec023ed778a0e6d",
+      "actual_rows_sha256": "3ff1de6775071b0bafda91443926e1d90aa192da1a7ffb924ec023ed778a0e6d",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "nri",
+      "policy": "exact",
+      "oracle_count": 1306,
+      "actual_count": 1306,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "3ff1de6775071b0bafda91443926e1d90aa192da1a7ffb924ec023ed778a0e6d",
+      "actual_rows_sha256": "3ff1de6775071b0bafda91443926e1d90aa192da1a7ffb924ec023ed778a0e6d",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "ngohaig",
+      "policy": "exact",
+      "oracle_count": 2047,
+      "actual_count": 2047,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "0a3daaf8f9c4e2c54c17890102a65ca86a01d378b6a5f5d03534cb1660caa066",
+      "actual_rows_sha256": "0a3daaf8f9c4e2c54c17890102a65ca86a01d378b6a5f5d03534cb1660caa066",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "ngohaigo",
+      "policy": "exact",
+      "oracle_count": 112,
+      "actual_count": 112,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "cea8fb8a61e67c0b48576dfb022b45d07d062094b9ff57d6ac886ea6affe1fc0",
+      "actual_rows_sha256": "cea8fb8a61e67c0b48576dfb022b45d07d062094b9ff57d6ac886ea6affe1fc0",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "bein",
+      "policy": "exact",
+      "oracle_count": 5,
+      "actual_count": 5,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "6ded41b8d2ce446a6e08a15c78c0f33b69cef3fea3d5053839419f09a7c2310a",
+      "actual_rows_sha256": "6ded41b8d2ce446a6e08a15c78c0f33b69cef3fea3d5053839419f09a7c2310a",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    }
+  ],
+  "provenance": {
+    "oracle": {
+      "path": "external/oracle",
+      "sha256": "40996a31e729db9a675bc4eb2c1ef7e3fb41ea4f5b97e2443391fb6183795a0b"
+    },
+    "actual": {
+      "path": "external/actual",
+      "sha256": "17b3c004d8edf7cfa54e56d4f91d7bcefeb12370ae4a0206ff1ad21f2056cd91"
+    },
+    "exceptions": null,
+    "tool_path": "scripts/compare-candidate-order.py",
+    "tool_version": "5",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "effective_argv": [
+      "--oracle",
+      "external/oracle",
+      "--actual",
+      "external/actual",
+      "--policy",
+      "exact",
+      "--input",
+      "n,nri,ngohaig,ngohaigo,bein",
+      "--output-json",
+      "external/output-json",
+      "--output-csv",
+      "external/output-csv"
+    ],
+    "effective_invocation": "python scripts/compare-candidate-order.py --oracle external/oracle --actual external/actual --policy exact --input n,nri,ngohaig,ngohaigo,bein --output-json external/output-json --output-csv external/output-csv"
+  }
+}

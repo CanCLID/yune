@@ -10,7 +10,27 @@ pinned `rime/rime-cantonese` vs `librime 1.17.0` + `rime-cantonese`; **Lane B** 
 Yune `luna_pinyin` vs `librime 1.17.0` + upstream luna. TypeDuck profile is a
 regression guard, not an acceptance oracle.
 
-> **Current update (2026-07-11):**
+> **Current update (2026-07-12):**
+> [`increment-4b-abbreviation-segmentation/`](./increment-4b-abbreviation-segmentation/)
+> is the landed Increment 4b packet. The implementation chain runs through
+> `d508e05b`; the accepted production capture, release DLL, and five-round
+> performance packet bind to that clean source. Its fail-closed raw
+> comparator remains deliberately red (`raw_comparator_all_accepted: false`,
+> `1/5`) solely for the already-declared Increment 4c OpenCC siblings `僞`, `臥`,
+> and `鉤`. After that declared inventory normalization, candidate text/position,
+> preedit, and commit preview are exact `5/5`; there is zero unowned residual,
+> no new exception, and no beyond-oracle-depth use. The one-build/four-reuse
+> source-bound ratchet passes all 32 signed rows and all 160 individual
+> observations without changing ceilings, and the exact WEB-03 long-input guard
+> passes. The `eb117c53` and `d2499358` packets are retained only as rejected
+> history for the oversized uncached prefix-family scan and later current-head
+> equal-weight review finding. This is an increment guard, not final
+> M59-REACH-04. The designated Opus blocking review is pending, so
+> `next_engine_increment_allowed: false`; Increment 4c and later behavior work
+> remain blocked, and M59 is open. Source-current WEB-04 is separately disclosed
+> red on two Octagram rows that reproduce before 4b; the existing untoned-Luna
+> 4e boundary must restore them before final closeout.
+>
 > [`increment-4a-sentence-ordering/`](./increment-4a-sentence-ordering/) is the
 > review packet for mechanism commit `ca52ec42` and blocking-review fix
 > `2257fbbe`. The owner-provided Opus review substituted for unavailable Fable,
@@ -86,6 +106,19 @@ regression guard, not an acceptance oracle.
 > leaving all candidate/page arrays unchanged. CJ-1 remains open.
 
 ## Artifact classification
+
+### VALID — Increment 4b landed packet (blocking review pending)
+
+- `increment-4b-abbreviation-segmentation/` preserves the pre-lazy behavior,
+  all red and provenance-rejected performance attempts, the owner-selected
+  retained-ceiling disposition, the final external production capture, the
+  fail-closed raw and normalized classifiers, and five source-bound accepted
+  runs. It includes no DLL, benchmark executable, deployed tree, or compiled
+  table payload.
+- Acceptance at this boundary is normalized `5/5`, raw `1/5` OpenCC-only, and
+  performance `32/32` with zero individual failures. Its designated Opus review
+  is still blocking; it does not permit 4c or close Lane A, D-48, REACH-04, or
+  M59.
 
 ### VALID — supplemental macOS repair evidence (source-scoped, not Windows acceptance)
 

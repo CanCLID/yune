@@ -1,0 +1,931 @@
+{
+  "scope": {
+    "milestone": "M59",
+    "increment": "4b",
+    "decision": "D-48",
+    "classification_only": true,
+    "full_d48_acceptance_claimed": false,
+    "increment_4c_waived": false,
+    "inputs": [
+      "n",
+      "nri",
+      "ngohaig",
+      "ngohaigo",
+      "bein"
+    ],
+    "normalization_policy": "map only inventory-proven exact candidate surfaces whose observed comment carries the inventory code; represent each mapping/code as one logical row at its first occurrence; stable-deduplicate later siblings only when structured capture provenance or the visible surface identifies a distinct declared output; fail repeated source surfaces; require exact normalized text/position order",
+    "segmentation_policy": "preedit and commit preview remain strict exact",
+    "exception_policy": null
+  },
+  "raw_comparator": {
+    "tool": "compare-candidate-order.py",
+    "policy": "exact",
+    "inputs": [
+      "n",
+      "nri",
+      "ngohaig",
+      "ngohaigo",
+      "bein"
+    ],
+    "all_accepted": false,
+    "exception_policy_present": false
+  },
+  "raw_comparator_all_accepted": false,
+  "classification_complete": true,
+  "classification_status": "complete",
+  "cases": [
+    {
+      "input": "n",
+      "raw": {
+        "oracle_count": 1309,
+        "actual_count": 1306,
+        "first_mismatch_index": 71,
+        "missing_count": 3,
+        "extra_count": 0,
+        "missing": [
+          "僞",
+          "臥",
+          "鉤"
+        ],
+        "extra": [],
+        "oracle_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+        "actual_rows_sha256": "3ff1de6775071b0bafda91443926e1d90aa192da1a7ffb924ec023ed778a0e6d",
+        "diff_opcodes": [
+          {
+            "tag": "delete",
+            "oracle_start": 71,
+            "oracle_end": 72,
+            "actual_start": 71,
+            "actual_end": 71
+          },
+          {
+            "tag": "delete",
+            "oracle_start": 88,
+            "oracle_end": 89,
+            "actual_start": 87,
+            "actual_end": 87
+          },
+          {
+            "tag": "delete",
+            "oracle_start": 300,
+            "oracle_end": 301,
+            "actual_start": 298,
+            "actual_end": 298
+          }
+        ],
+        "strict_verdict": "fail"
+      },
+      "segmentation": {
+        "oracle_preedit": "n",
+        "actual_preedit": "n",
+        "preedit_exact": true,
+        "oracle_commit_text_preview": "我",
+        "actual_commit_text_preview": "我",
+        "commit_text_preview_exact": true
+      },
+      "normalization": {
+        "oracle_count": 1306,
+        "actual_count": 1306,
+        "oracle_text_position_sha256": "c6c6c62d489e15bde7b273c745761897936f3e62500e0016fc43dba98412727a",
+        "actual_text_position_sha256": "c6c6c62d489e15bde7b273c745761897936f3e62500e0016fc43dba98412727a",
+        "oracle_multiplicity_within_declared_outputs": true,
+        "actual_multiplicity_within_declared_outputs": true,
+        "text_position_order_exact": true,
+        "first_mismatch": null,
+        "declared_opencc_groups": [
+          {
+            "inventory_line": 1,
+            "mapping_key": "僞",
+            "code": "ngai6",
+            "ordered_outputs": [
+              "偽",
+              "僞"
+            ],
+            "normalized_text": "偽",
+            "oracle_normalized_index": 70,
+            "actual_normalized_index": 70,
+            "max_collapsible_occurrences": 2,
+            "oracle_claimed_source_surfaces": [
+              "偽",
+              "僞"
+            ],
+            "actual_claimed_source_surfaces": [
+              "偽"
+            ],
+            "oracle_occurrences": [
+              {
+                "raw_index": 70,
+                "text": "偽",
+                "code": "ngai6",
+                "source_surfaces": [
+                  "偽"
+                ]
+              },
+              {
+                "raw_index": 71,
+                "text": "僞",
+                "code": "ngai6",
+                "source_surfaces": [
+                  "僞"
+                ]
+              }
+            ],
+            "actual_occurrences": [
+              {
+                "raw_index": 70,
+                "text": "偽",
+                "code": "ngai6",
+                "source_surfaces": [
+                  "偽"
+                ]
+              }
+            ],
+            "oracle_excess_occurrences": [],
+            "actual_excess_occurrences": []
+          },
+          {
+            "inventory_line": 45,
+            "mapping_key": "臥",
+            "code": "ngo6",
+            "ordered_outputs": [
+              "卧",
+              "臥"
+            ],
+            "normalized_text": "卧",
+            "oracle_normalized_index": 86,
+            "actual_normalized_index": 86,
+            "max_collapsible_occurrences": 2,
+            "oracle_claimed_source_surfaces": [
+              "卧",
+              "臥"
+            ],
+            "actual_claimed_source_surfaces": [
+              "卧"
+            ],
+            "oracle_occurrences": [
+              {
+                "raw_index": 87,
+                "text": "卧",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "卧"
+                ]
+              },
+              {
+                "raw_index": 88,
+                "text": "臥",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "臥"
+                ]
+              }
+            ],
+            "actual_occurrences": [
+              {
+                "raw_index": 86,
+                "text": "卧",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "卧"
+                ]
+              }
+            ],
+            "oracle_excess_occurrences": [],
+            "actual_excess_occurrences": []
+          },
+          {
+            "inventory_line": 61,
+            "mapping_key": "鉤",
+            "code": "ngau1",
+            "ordered_outputs": [
+              "鈎",
+              "鉤"
+            ],
+            "normalized_text": "鈎",
+            "oracle_normalized_index": 297,
+            "actual_normalized_index": 297,
+            "max_collapsible_occurrences": 2,
+            "oracle_claimed_source_surfaces": [
+              "鈎",
+              "鉤"
+            ],
+            "actual_claimed_source_surfaces": [
+              "鈎"
+            ],
+            "oracle_occurrences": [
+              {
+                "raw_index": 299,
+                "text": "鈎",
+                "code": "ngau1",
+                "source_surfaces": [
+                  "鈎"
+                ]
+              },
+              {
+                "raw_index": 300,
+                "text": "鉤",
+                "code": "ngau1",
+                "source_surfaces": [
+                  "鉤"
+                ]
+              }
+            ],
+            "actual_occurrences": [
+              {
+                "raw_index": 297,
+                "text": "鈎",
+                "code": "ngau1",
+                "source_surfaces": [
+                  "鈎"
+                ]
+              }
+            ],
+            "oracle_excess_occurrences": [],
+            "actual_excess_occurrences": []
+          }
+        ],
+        "oracle_inventory_surfaces_with_unmatched_code": [],
+        "actual_inventory_surfaces_with_unmatched_code": []
+      },
+      "raw_difference_attribution": "declared-opencc-4c-surface-only",
+      "classification_reasons": [],
+      "classification_verdict": "pass"
+    },
+    {
+      "input": "nri",
+      "raw": {
+        "oracle_count": 1309,
+        "actual_count": 1306,
+        "first_mismatch_index": 71,
+        "missing_count": 3,
+        "extra_count": 0,
+        "missing": [
+          "僞",
+          "臥",
+          "鉤"
+        ],
+        "extra": [],
+        "oracle_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+        "actual_rows_sha256": "3ff1de6775071b0bafda91443926e1d90aa192da1a7ffb924ec023ed778a0e6d",
+        "diff_opcodes": [
+          {
+            "tag": "delete",
+            "oracle_start": 71,
+            "oracle_end": 72,
+            "actual_start": 71,
+            "actual_end": 71
+          },
+          {
+            "tag": "delete",
+            "oracle_start": 88,
+            "oracle_end": 89,
+            "actual_start": 87,
+            "actual_end": 87
+          },
+          {
+            "tag": "delete",
+            "oracle_start": 300,
+            "oracle_end": 301,
+            "actual_start": 298,
+            "actual_end": 298
+          }
+        ],
+        "strict_verdict": "fail"
+      },
+      "segmentation": {
+        "oracle_preedit": "nri",
+        "actual_preedit": "nri",
+        "preedit_exact": true,
+        "oracle_commit_text_preview": "我ri",
+        "actual_commit_text_preview": "我ri",
+        "commit_text_preview_exact": true
+      },
+      "normalization": {
+        "oracle_count": 1306,
+        "actual_count": 1306,
+        "oracle_text_position_sha256": "c6c6c62d489e15bde7b273c745761897936f3e62500e0016fc43dba98412727a",
+        "actual_text_position_sha256": "c6c6c62d489e15bde7b273c745761897936f3e62500e0016fc43dba98412727a",
+        "oracle_multiplicity_within_declared_outputs": true,
+        "actual_multiplicity_within_declared_outputs": true,
+        "text_position_order_exact": true,
+        "first_mismatch": null,
+        "declared_opencc_groups": [
+          {
+            "inventory_line": 1,
+            "mapping_key": "僞",
+            "code": "ngai6",
+            "ordered_outputs": [
+              "偽",
+              "僞"
+            ],
+            "normalized_text": "偽",
+            "oracle_normalized_index": 70,
+            "actual_normalized_index": 70,
+            "max_collapsible_occurrences": 2,
+            "oracle_claimed_source_surfaces": [
+              "偽",
+              "僞"
+            ],
+            "actual_claimed_source_surfaces": [
+              "偽"
+            ],
+            "oracle_occurrences": [
+              {
+                "raw_index": 70,
+                "text": "偽",
+                "code": "ngai6",
+                "source_surfaces": [
+                  "偽"
+                ]
+              },
+              {
+                "raw_index": 71,
+                "text": "僞",
+                "code": "ngai6",
+                "source_surfaces": [
+                  "僞"
+                ]
+              }
+            ],
+            "actual_occurrences": [
+              {
+                "raw_index": 70,
+                "text": "偽",
+                "code": "ngai6",
+                "source_surfaces": [
+                  "偽"
+                ]
+              }
+            ],
+            "oracle_excess_occurrences": [],
+            "actual_excess_occurrences": []
+          },
+          {
+            "inventory_line": 45,
+            "mapping_key": "臥",
+            "code": "ngo6",
+            "ordered_outputs": [
+              "卧",
+              "臥"
+            ],
+            "normalized_text": "卧",
+            "oracle_normalized_index": 86,
+            "actual_normalized_index": 86,
+            "max_collapsible_occurrences": 2,
+            "oracle_claimed_source_surfaces": [
+              "卧",
+              "臥"
+            ],
+            "actual_claimed_source_surfaces": [
+              "卧"
+            ],
+            "oracle_occurrences": [
+              {
+                "raw_index": 87,
+                "text": "卧",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "卧"
+                ]
+              },
+              {
+                "raw_index": 88,
+                "text": "臥",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "臥"
+                ]
+              }
+            ],
+            "actual_occurrences": [
+              {
+                "raw_index": 86,
+                "text": "卧",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "卧"
+                ]
+              }
+            ],
+            "oracle_excess_occurrences": [],
+            "actual_excess_occurrences": []
+          },
+          {
+            "inventory_line": 61,
+            "mapping_key": "鉤",
+            "code": "ngau1",
+            "ordered_outputs": [
+              "鈎",
+              "鉤"
+            ],
+            "normalized_text": "鈎",
+            "oracle_normalized_index": 297,
+            "actual_normalized_index": 297,
+            "max_collapsible_occurrences": 2,
+            "oracle_claimed_source_surfaces": [
+              "鈎",
+              "鉤"
+            ],
+            "actual_claimed_source_surfaces": [
+              "鈎"
+            ],
+            "oracle_occurrences": [
+              {
+                "raw_index": 299,
+                "text": "鈎",
+                "code": "ngau1",
+                "source_surfaces": [
+                  "鈎"
+                ]
+              },
+              {
+                "raw_index": 300,
+                "text": "鉤",
+                "code": "ngau1",
+                "source_surfaces": [
+                  "鉤"
+                ]
+              }
+            ],
+            "actual_occurrences": [
+              {
+                "raw_index": 297,
+                "text": "鈎",
+                "code": "ngau1",
+                "source_surfaces": [
+                  "鈎"
+                ]
+              }
+            ],
+            "oracle_excess_occurrences": [],
+            "actual_excess_occurrences": []
+          }
+        ],
+        "oracle_inventory_surfaces_with_unmatched_code": [],
+        "actual_inventory_surfaces_with_unmatched_code": []
+      },
+      "raw_difference_attribution": "declared-opencc-4c-surface-only",
+      "classification_reasons": [],
+      "classification_verdict": "pass"
+    },
+    {
+      "input": "ngohaig",
+      "raw": {
+        "oracle_count": 2050,
+        "actual_count": 2047,
+        "first_mismatch_index": 51,
+        "missing_count": 3,
+        "extra_count": 0,
+        "missing": [
+          "僞",
+          "臥",
+          "鉤"
+        ],
+        "extra": [],
+        "oracle_rows_sha256": "1d33916d8c5f1cd6631a16ce28befd2ed4ab3584b607dc625dc2f801454f4ed1",
+        "actual_rows_sha256": "0a3daaf8f9c4e2c54c17890102a65ca86a01d378b6a5f5d03534cb1660caa066",
+        "diff_opcodes": [
+          {
+            "tag": "delete",
+            "oracle_start": 51,
+            "oracle_end": 52,
+            "actual_start": 51,
+            "actual_end": 51
+          },
+          {
+            "tag": "delete",
+            "oracle_start": 914,
+            "oracle_end": 915,
+            "actual_start": 913,
+            "actual_end": 913
+          },
+          {
+            "tag": "delete",
+            "oracle_start": 1106,
+            "oracle_end": 1107,
+            "actual_start": 1104,
+            "actual_end": 1104
+          }
+        ],
+        "strict_verdict": "fail"
+      },
+      "segmentation": {
+        "oracle_preedit": "ngo hai g",
+        "actual_preedit": "ngo hai g",
+        "preedit_exact": true,
+        "oracle_commit_text_preview": "我係噉",
+        "actual_commit_text_preview": "我係噉",
+        "commit_text_preview_exact": true
+      },
+      "normalization": {
+        "oracle_count": 2047,
+        "actual_count": 2047,
+        "oracle_text_position_sha256": "4bf47b5a2099092cfc5b598bb922f2e2f6310d54511efce43496044aeaaa4ed6",
+        "actual_text_position_sha256": "4bf47b5a2099092cfc5b598bb922f2e2f6310d54511efce43496044aeaaa4ed6",
+        "oracle_multiplicity_within_declared_outputs": true,
+        "actual_multiplicity_within_declared_outputs": true,
+        "text_position_order_exact": true,
+        "first_mismatch": null,
+        "declared_opencc_groups": [
+          {
+            "inventory_line": 1,
+            "mapping_key": "僞",
+            "code": "ngai6",
+            "ordered_outputs": [
+              "偽",
+              "僞"
+            ],
+            "normalized_text": "偽",
+            "oracle_normalized_index": 912,
+            "actual_normalized_index": 912,
+            "max_collapsible_occurrences": 2,
+            "oracle_claimed_source_surfaces": [
+              "偽",
+              "僞"
+            ],
+            "actual_claimed_source_surfaces": [
+              "偽"
+            ],
+            "oracle_occurrences": [
+              {
+                "raw_index": 913,
+                "text": "偽",
+                "code": "ngai6",
+                "source_surfaces": [
+                  "偽"
+                ]
+              },
+              {
+                "raw_index": 914,
+                "text": "僞",
+                "code": "ngai6",
+                "source_surfaces": [
+                  "僞"
+                ]
+              }
+            ],
+            "actual_occurrences": [
+              {
+                "raw_index": 912,
+                "text": "偽",
+                "code": "ngai6",
+                "source_surfaces": [
+                  "偽"
+                ]
+              }
+            ],
+            "oracle_excess_occurrences": [],
+            "actual_excess_occurrences": []
+          },
+          {
+            "inventory_line": 45,
+            "mapping_key": "臥",
+            "code": "ngo6",
+            "ordered_outputs": [
+              "卧",
+              "臥"
+            ],
+            "normalized_text": "卧",
+            "oracle_normalized_index": 50,
+            "actual_normalized_index": 50,
+            "max_collapsible_occurrences": 2,
+            "oracle_claimed_source_surfaces": [
+              "卧",
+              "臥"
+            ],
+            "actual_claimed_source_surfaces": [
+              "卧"
+            ],
+            "oracle_occurrences": [
+              {
+                "raw_index": 50,
+                "text": "卧",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "卧"
+                ]
+              },
+              {
+                "raw_index": 51,
+                "text": "臥",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "臥"
+                ]
+              }
+            ],
+            "actual_occurrences": [
+              {
+                "raw_index": 50,
+                "text": "卧",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "卧"
+                ]
+              }
+            ],
+            "oracle_excess_occurrences": [],
+            "actual_excess_occurrences": []
+          },
+          {
+            "inventory_line": 61,
+            "mapping_key": "鉤",
+            "code": "ngau1",
+            "ordered_outputs": [
+              "鈎",
+              "鉤"
+            ],
+            "normalized_text": "鈎",
+            "oracle_normalized_index": 1103,
+            "actual_normalized_index": 1103,
+            "max_collapsible_occurrences": 2,
+            "oracle_claimed_source_surfaces": [
+              "鈎",
+              "鉤"
+            ],
+            "actual_claimed_source_surfaces": [
+              "鈎"
+            ],
+            "oracle_occurrences": [
+              {
+                "raw_index": 1105,
+                "text": "鈎",
+                "code": "ngau1",
+                "source_surfaces": [
+                  "鈎"
+                ]
+              },
+              {
+                "raw_index": 1106,
+                "text": "鉤",
+                "code": "ngau1",
+                "source_surfaces": [
+                  "鉤"
+                ]
+              }
+            ],
+            "actual_occurrences": [
+              {
+                "raw_index": 1103,
+                "text": "鈎",
+                "code": "ngau1",
+                "source_surfaces": [
+                  "鈎"
+                ]
+              }
+            ],
+            "oracle_excess_occurrences": [],
+            "actual_excess_occurrences": []
+          }
+        ],
+        "oracle_inventory_surfaces_with_unmatched_code": [],
+        "actual_inventory_surfaces_with_unmatched_code": []
+      },
+      "raw_difference_attribution": "declared-opencc-4c-surface-only",
+      "classification_reasons": [],
+      "classification_verdict": "pass"
+    },
+    {
+      "input": "ngohaigo",
+      "raw": {
+        "oracle_count": 113,
+        "actual_count": 112,
+        "first_mismatch_index": 10,
+        "missing_count": 1,
+        "extra_count": 0,
+        "missing": [
+          "臥"
+        ],
+        "extra": [],
+        "oracle_rows_sha256": "82512131beadd2f2da1d734fd1d34040c3b1994ff91f023f4d625d5eba3f6401",
+        "actual_rows_sha256": "cea8fb8a61e67c0b48576dfb022b45d07d062094b9ff57d6ac886ea6affe1fc0",
+        "diff_opcodes": [
+          {
+            "tag": "delete",
+            "oracle_start": 10,
+            "oracle_end": 11,
+            "actual_start": 10,
+            "actual_end": 10
+          }
+        ],
+        "strict_verdict": "fail"
+      },
+      "segmentation": {
+        "oracle_preedit": "ngo hai go",
+        "actual_preedit": "ngo hai go",
+        "preedit_exact": true,
+        "oracle_commit_text_preview": "我繫個",
+        "actual_commit_text_preview": "我繫個",
+        "commit_text_preview_exact": true
+      },
+      "normalization": {
+        "oracle_count": 112,
+        "actual_count": 112,
+        "oracle_text_position_sha256": "01759ec8c66bc9791ab366dc5c9a1866aea2ca0bd2a924aac78a43b67ef457c7",
+        "actual_text_position_sha256": "01759ec8c66bc9791ab366dc5c9a1866aea2ca0bd2a924aac78a43b67ef457c7",
+        "oracle_multiplicity_within_declared_outputs": true,
+        "actual_multiplicity_within_declared_outputs": true,
+        "text_position_order_exact": true,
+        "first_mismatch": null,
+        "declared_opencc_groups": [
+          {
+            "inventory_line": 45,
+            "mapping_key": "臥",
+            "code": "ngo6",
+            "ordered_outputs": [
+              "卧",
+              "臥"
+            ],
+            "normalized_text": "卧",
+            "oracle_normalized_index": 9,
+            "actual_normalized_index": 9,
+            "max_collapsible_occurrences": 2,
+            "oracle_claimed_source_surfaces": [
+              "卧",
+              "臥"
+            ],
+            "actual_claimed_source_surfaces": [
+              "卧"
+            ],
+            "oracle_occurrences": [
+              {
+                "raw_index": 9,
+                "text": "卧",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "卧"
+                ]
+              },
+              {
+                "raw_index": 10,
+                "text": "臥",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "臥"
+                ]
+              }
+            ],
+            "actual_occurrences": [
+              {
+                "raw_index": 9,
+                "text": "卧",
+                "code": "ngo6",
+                "source_surfaces": [
+                  "卧"
+                ]
+              }
+            ],
+            "oracle_excess_occurrences": [],
+            "actual_excess_occurrences": []
+          }
+        ],
+        "oracle_inventory_surfaces_with_unmatched_code": [],
+        "actual_inventory_surfaces_with_unmatched_code": []
+      },
+      "raw_difference_attribution": "declared-opencc-4c-surface-only",
+      "classification_reasons": [],
+      "classification_verdict": "pass"
+    },
+    {
+      "input": "bein",
+      "raw": {
+        "oracle_count": 5,
+        "actual_count": 5,
+        "first_mismatch_index": null,
+        "missing_count": 0,
+        "extra_count": 0,
+        "missing": [],
+        "extra": [],
+        "oracle_rows_sha256": "6ded41b8d2ce446a6e08a15c78c0f33b69cef3fea3d5053839419f09a7c2310a",
+        "actual_rows_sha256": "6ded41b8d2ce446a6e08a15c78c0f33b69cef3fea3d5053839419f09a7c2310a",
+        "diff_opcodes": [],
+        "strict_verdict": "pass"
+      },
+      "segmentation": {
+        "oracle_preedit": "be in",
+        "actual_preedit": "be in",
+        "preedit_exact": true,
+        "oracle_commit_text_preview": "啤In",
+        "actual_commit_text_preview": "啤In",
+        "commit_text_preview_exact": true
+      },
+      "normalization": {
+        "oracle_count": 5,
+        "actual_count": 5,
+        "oracle_text_position_sha256": "75bdd099e9595985504ff77438b9a4a26a0d570bb6cff0a561a8489fc45aa69b",
+        "actual_text_position_sha256": "75bdd099e9595985504ff77438b9a4a26a0d570bb6cff0a561a8489fc45aa69b",
+        "oracle_multiplicity_within_declared_outputs": true,
+        "actual_multiplicity_within_declared_outputs": true,
+        "text_position_order_exact": true,
+        "first_mismatch": null,
+        "declared_opencc_groups": [],
+        "oracle_inventory_surfaces_with_unmatched_code": [],
+        "actual_inventory_surfaces_with_unmatched_code": []
+      },
+      "raw_difference_attribution": "none",
+      "classification_reasons": [],
+      "classification_verdict": "pass"
+    }
+  ],
+  "summary": {
+    "raw_strict_passes": 1,
+    "raw_strict_failures": 4,
+    "normalized_text_position_passes": 5,
+    "preedit_segmentation_passes": 5,
+    "commit_preview_passes": 5,
+    "unowned_residual_cases": 0,
+    "opencc_inventory_mapping_count": 83,
+    "exception_used": false,
+    "beyond_oracle_depth_used": false
+  },
+  "tool": "classify-m59-4b-residuals.py",
+  "tool_version": "1",
+  "tool_sha256": "1864092d1e93ee807993834e5bb42927e13545d69a8ff9703c0816fe245fb58d",
+  "provenance": {
+    "oracle": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json",
+      "sha256": "56e7aafabcfac7eb7d3b209d5929eff88c65aeaa1b98fee0464e6b1fcda8c1ca"
+    },
+    "actual": {
+      "path": "external/actual",
+      "sha256": "17b3c004d8edf7cfa54e56d4f91d7bcefeb12370ae4a0206ff1ad21f2056cd91"
+    },
+    "strict_comparator": {
+      "path": "external/strict-comparator",
+      "sha256": "3e8c72be6370d0a0c11bd94a4d6b7f2ec43e8fc096c7804296807ee38cd6747f",
+      "raw_red_preserved": true,
+      "exceptions": null
+    },
+    "opencc_inventory": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/opencc-same-code-inventory.csv",
+      "sha256": "01522f437038a3591d3a3b92cbdace2cced1b1e9076e566ca40662c736afcaf1",
+      "mapping_count": 83,
+      "dictionary_commit": "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+      "dictionary_tree": "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+      "dictionary_manifest_sha256": "4301001fb7bb52d5d1a9c032c519ac18ba50677e926e01006e34a48788385efa",
+      "dictionary_import_tables": [
+        "jyut6ping3.chars",
+        "jyut6ping3.words",
+        "jyut6ping3.phrase",
+        "jyut6ping3.lettered",
+        "jyut6ping3.maps"
+      ],
+      "generator_path": "scripts/inventory-opencc-same-code.ps1",
+      "generator_sha256": "5dc88c282a7dd8dec6d4c43a5be08e90d6b6b7276c383d5decd704e0c7b363f7"
+    },
+    "opencc_source": {
+      "path": "crates/yune-core/src/opencc/data/HKVariantsFull.txt",
+      "sha256": "145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2"
+    },
+    "capture_identity": {
+      "oracle_engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+      "oracle_schema_commit": "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+      "actual_source_commit": "d2499358a8823fda2f2f6edea6bf726ed5802e9b",
+      "actual_source_tree": "132e8d86bd58c3cb9296d2f2d340825c7a555710",
+      "actual_yune_dll_sha256": "4000869a4b3d2bee27d663e35cbe38cde7dd4c29b6ac6c7b76fdaf5d82e68238",
+      "actual_source_clean": true,
+      "capture_script_sha256": "c2614bc7f068d89903d7b0af3856f286f07194e35f505806251aa2ba887aa45c",
+      "capture_probe_sha256": "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7",
+      "source_shared_tree_sha256": "b76c540136b54162df6cc00a2b9159719fb7c207c99e5a6c9625abbe08aa9e5c",
+      "staged_shared_tree_sha256": "a169531b04449c38875eca42c14ce2ddb95d32037f2178de603e0d80c47adfd8",
+      "default_yaml_overlay_sha256": "ab0beef16410765c1b7157a27f406990c7a6f6330e4e0c76d95e2b44b4050f7f"
+    },
+    "effective_argv": [
+      "--oracle",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json",
+      "--expected-oracle-sha256",
+      "56e7aafabcfac7eb7d3b209d5929eff88c65aeaa1b98fee0464e6b1fcda8c1ca",
+      "--actual",
+      "external/actual",
+      "--expected-actual-sha256",
+      "17b3c004d8edf7cfa54e56d4f91d7bcefeb12370ae4a0206ff1ad21f2056cd91",
+      "--strict-comparator",
+      "external/strict-comparator",
+      "--expected-strict-comparator-sha256",
+      "3e8c72be6370d0a0c11bd94a4d6b7f2ec43e8fc096c7804296807ee38cd6747f",
+      "--opencc-inventory",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/opencc-same-code-inventory.csv",
+      "--expected-opencc-inventory-sha256",
+      "01522f437038a3591d3a3b92cbdace2cced1b1e9076e566ca40662c736afcaf1",
+      "--opencc-source",
+      "crates/yune-core/src/opencc/data/HKVariantsFull.txt",
+      "--expected-opencc-source-sha256",
+      "145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2",
+      "--expected-dictionary-commit",
+      "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+      "--expected-dictionary-tree",
+      "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+      "--expected-dictionary-manifest-sha256",
+      "4301001fb7bb52d5d1a9c032c519ac18ba50677e926e01006e34a48788385efa",
+      "--expected-yune-commit",
+      "d2499358a8823fda2f2f6edea6bf726ed5802e9b",
+      "--expected-yune-tree",
+      "132e8d86bd58c3cb9296d2f2d340825c7a555710",
+      "--expected-yune-dll-sha256",
+      "4000869A4B3D2BEE27D663E35CBE38CDE7DD4C29B6AC6C7B76FDAF5D82E68238",
+      "--output",
+      "external/output"
+    ],
+    "effective_invocation": "python scripts/classify-m59-4b-residuals.py --oracle docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json --expected-oracle-sha256 56e7aafabcfac7eb7d3b209d5929eff88c65aeaa1b98fee0464e6b1fcda8c1ca --actual external/actual --expected-actual-sha256 17b3c004d8edf7cfa54e56d4f91d7bcefeb12370ae4a0206ff1ad21f2056cd91 --strict-comparator external/strict-comparator --expected-strict-comparator-sha256 3e8c72be6370d0a0c11bd94a4d6b7f2ec43e8fc096c7804296807ee38cd6747f --opencc-inventory docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/opencc-same-code-inventory.csv --expected-opencc-inventory-sha256 01522f437038a3591d3a3b92cbdace2cced1b1e9076e566ca40662c736afcaf1 --opencc-source crates/yune-core/src/opencc/data/HKVariantsFull.txt --expected-opencc-source-sha256 145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2 --expected-dictionary-commit c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0 --expected-dictionary-tree eb193fb80675ffa60df3c32bf24afa7d7f68617a --expected-dictionary-manifest-sha256 4301001fb7bb52d5d1a9c032c519ac18ba50677e926e01006e34a48788385efa --expected-yune-commit d2499358a8823fda2f2f6edea6bf726ed5802e9b --expected-yune-tree 132e8d86bd58c3cb9296d2f2d340825c7a555710 --expected-yune-dll-sha256 4000869A4B3D2BEE27D663E35CBE38CDE7DD4C29B6AC6C7B76FDAF5D82E68238 --output external/output"
+  }
+}

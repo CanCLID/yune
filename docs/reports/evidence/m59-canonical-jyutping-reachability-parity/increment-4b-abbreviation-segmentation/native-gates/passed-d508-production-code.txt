@@ -1,0 +1,32 @@
+gate_execution_date=2026-07-12 America/Los_Angeles
+gate_execution_head=0ba07cf6b9db720cb5148d0c0b8a4b2500268a3
+production_source=d508e05b638fc21de7f8f8dfc45c82d33a8bbde8
+production_tree=4cc2ca6e6ca2f43666bbff942cee54e1e95abd07
+
+The post-d508 commit changes only `.codex/*` and `AGENTS.md`. Before the gate,
+both the committed range and working tree were verified to have no differences
+from d508 in `crates/`, `packages/`, `apps/`, `scripts/`, `Cargo.toml`, or
+`Cargo.lock`. The dirty working tree contained only the M59 documentation and
+text-evidence packet being finalized. `CARGO_TARGET_DIR` was the disposable
+external path `C:\y4b-d508-target`.
+
+command=cargo fmt --check
+exit_code=0
+duration_seconds=1.0
+
+command=cargo clippy --workspace --all-targets -- -D warnings
+exit_code=0
+duration_seconds=7.1
+scope=yune-core,yune-rime-api,yune-cli; all targets; warnings denied
+
+command=cargo test --workspace
+exit_code=0
+duration_seconds=2522.9
+selected_verdicts=yune-core 484/484; yune-rime-api 355 passed, 1 ignored; cold_start_conformance 1/1; frontend_client 35/35; typeduck_windows_boundary 4/4; yune_web 49 passed, 2 evidence-only ignored
+
+command=cargo build --release -p yune-rime-api
+exit_code=0
+duration_seconds=66.4
+
+The workspace gate does not substitute for WEB-04. That Playwright gate remains
+explicitly red and is recorded separately in `failed-web04-untoned-lane-b.txt`.

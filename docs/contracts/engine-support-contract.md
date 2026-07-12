@@ -1,6 +1,6 @@
 # Engine Support Contract
 
-Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI; updated by M56 to add productization hardening policies for compiled-artifact staleness, user-data lifecycle, ABI crash behavior, threading, poison recovery, and release panic strategy without widening the ABI; clarified by M59 Increment 4a for upstream Luna ScriptTranslation page shape and compiled-weight domains, again without ABI widening.
+Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI; updated by M56 to add productization hardening policies for compiled-artifact staleness, user-data lifecycle, ABI crash behavior, threading, poison recovery, and release panic strategy without widening the ABI; clarified by M59 Increment 4a for upstream Luna ScriptTranslation page shape and compiled-weight domains, and by Increment 4b for bounded abbreviation production and shared-cache lifecycle, again without ABI widening.
 
 This contract defines Yune's launch-facing engine support boundary. It is a
 contract for engine behavior, storage, ABI shape, and evidence lanes; it is not
@@ -43,6 +43,14 @@ What "parity" requires differs by lane:
   fixture-backed candidate guards (e.g. `beingo` vs v1.1.2) are frozen regression
   pins — not extended, not deleted; multilingual comments stay oracle-backed
   against TypeDuck `v1.1.2`.
+
+M59 Increment 4b implements only its declared abbreviation/segmentation surface:
+after normalization through the already-declared Increment 4c same-code OpenCC
+inventory, candidate text/position, preedit, and commit preview are exact `5/5`.
+The raw strict comparator remains fail-closed at `1/5` solely for `僞`, `臥`, and
+`鉤`; this creates no new exception and does not close Lane A. Increment 4c and
+later engine-behavior work remain blocked until the designated 4b review is
+returned and resolved.
 
 For the captured 37- and 59-character upstream Luna page-zero rows, the required
 shape is one best full-span sentence followed by the independent oracle phrase
@@ -237,6 +245,20 @@ Policy:
 - backup/restore and partial sync failure must preserve local usability and
   report failed peers rather than silently treating a partial merge as fully
   successful.
+
+### Shared Dictionary Cache Lifecycle
+
+Fingerprint-keyed immutable dictionary translators and byte-backed
+lookup-record indexes may survive `RimeFinalize` across same-root
+reinitialization. `RimeFinalize` ends sessions and clears ephemeral
+input/page-window caches, but does not invalidate those immutable same-root
+entries.
+
+`RimeCleanupAllSessions`, dictionary-root changes, and workspace updates clear
+sessions and the full shared dictionary/lookup caches before a path change or
+filesystem mutation. Setup, deployment, and workspace mutation remain
+externally serialized with session use; internal synchronization does not
+authorize concurrent mutation.
 
 ### ABI Crash, Threading, And Poison Recovery
 

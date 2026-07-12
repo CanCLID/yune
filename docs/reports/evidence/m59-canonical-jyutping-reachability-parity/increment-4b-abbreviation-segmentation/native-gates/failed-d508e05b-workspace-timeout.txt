@@ -1,0 +1,5 @@
+source_commit=d508e05b638fc21de7f8f8dfc45c82d33a8bbde8
+source_tree=4cc2ca6e6ca2f43666bbff942cee54e1e95abd07
+command=cargo fmt --check; cargo clippy --workspace --all-targets -- -D warnings; cargo test --workspace; cargo build --release -p yune-rime-api
+result=not accepted
+detail=The exact sequence cleared formatting and workspace Clippy, then remained CPU-active in the yune_web integration binary until the outer command timed out after 1,204 seconds. No assertion failure was reported, but a timed-out run is not green. The workspace test and following release build are rerun separately with a longer limit; only the completed rerun may support acceptance.

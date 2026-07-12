@@ -22,13 +22,20 @@ use crate::{
     Candidate, CandidateRequest, CandidateSource, Context, M37SentenceCandidateMetrics,
     MemoryOwnerClass, MemoryOwnerRow, PresetVocabularyEntry, RimeCorrectionEntry,
     RimeToleranceRule, SpellingAlgebraDebug, Status, StorageDiagnosticsRow, TableDictionary,
-    TableDictionaryParseError, TableEntry, TranslationResult, Translator, TranslatorScratch,
+    TableDictionaryParseError, TableEntry, TranslationMergePolicy, TranslationResult, Translator,
+    TranslatorScratch,
 };
+
+mod reverse_graph;
+
+use reverse_graph::lookup_reverse_graph;
 
 const TYPEDUCK_CORRECTION_CREDIBILITY: f32 = -16.118_095; // log(1e-7)
 const TYPEDUCK_CORRECTION_MAX_DISTANCE: usize = 4;
 const DEFAULT_SENTENCE_WORD_PENALTY: f32 = 0.0;
 const BOUNDED_SENTENCE_MODEL_PAGE_LIMIT: usize = 5;
+const UPSTREAM_TABLE_INITIAL_SEARCH_LIMIT: usize = 10;
+const UPSTREAM_TABLE_EXPANDING_FACTOR: usize = 10;
 const BOUNDED_UPSTREAM_SCRIPT_CACHE_CAPACITY: usize = 64;
 const BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_LIMIT: usize = 64;
 const BOUNDED_UPSTREAM_SCRIPT_CACHE_MAX_INPUT_BYTES: usize = 256;
@@ -60,13 +67,18 @@ pub const TYPEDUCK_SENTENCE_WORD_PENALTY: f32 = 24.0;
 /// sentence ordering. The legacy mode preserves the historical fallback-only
 /// behavior. `UpstreamScript` makes the deployed surface graph authoritative
 /// for a Standard, toned/transformed `script_translator` with
-/// `enable_sentence: true`. Untoned identity dictionaries retain the legacy
-/// fast path until M59 4e owns their complete merge/order semantics.
+/// `enable_sentence: true`. `UpstreamTable` is the opt-in table-translation
+/// lane: Poet remains fallback-only and contributes exactly one best sentence,
+/// followed by the dictionary's real longest-first start-prefix collectors.
+/// The dictionary's lazy predictive iterator order remains authoritative when
+/// ordinary translation succeeds. This is deliberately distinct from
+/// ScriptTranslation ownership and its multi-sentence/exact-user merge.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum SentencePolicy {
     #[default]
     LegacyFallback,
     UpstreamScript,
+    UpstreamTable,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1032,6 +1044,26 @@ struct LookupCandidateBatch {
     full_input_anchor: Option<usize>,
     has_reliable_exact_system_phrase: bool,
     prefix_fallback_span_views: Vec<PrefixFallbackSpanView>,
+}
+
+struct UpstreamTableLazyGroup {
+    entry_code: String,
+    rows: Vec<Candidate>,
+}
+
+struct UpstreamTableLazyChunk<'a> {
+    group: &'a UpstreamTableLazyGroup,
+    cursor: usize,
+}
+
+impl UpstreamTableLazyChunk<'_> {
+    fn head(&self) -> Option<&Candidate> {
+        self.group.rows.get(self.cursor)
+    }
+
+    fn remaining_rows(&self) -> usize {
+        self.group.rows.len().saturating_sub(self.cursor)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -4540,6 +4572,84 @@ impl StaticTableTranslator {
         }
     }
 
+    fn upstream_table_sentence_translation_candidates(
+        &self,
+        input: &str,
+        lookup_code: &str,
+        model_candidates: Vec<Candidate>,
+        filter_by_charset: bool,
+        visible_limit: Option<usize>,
+    ) -> (Vec<Candidate>, bool) {
+        // TableTranslator::MakeSentence owns exactly one Poet sentence. Its
+        // SentenceTranslation then drops that sentence and drains only the
+        // real DictEntryIterator collectors cached at input start, longest
+        // consumed prefix first. The model's remaining candidates include
+        // ScriptEncoder/preset-vocabulary reconstructions; exposing those as
+        // table prefix rows admits phrases which are absent from the compiled
+        // table (the M59 Cangjie `莫入` residual).
+        let Some(sentence) = model_candidates
+            .into_iter()
+            .find(|candidate| candidate.source == CandidateSource::Sentence)
+        else {
+            // Upstream creates SentenceTranslation only when Poet returns a
+            // sentence. Prefix collectors are not independently visible.
+            return (Vec::new(), false);
+        };
+
+        let output_cap = visible_limit
+            .map(|limit| limit.saturating_add(1))
+            .unwrap_or(usize::MAX);
+        let mut candidates = Vec::new();
+        let mut seen_texts = HashSet::new();
+        seen_texts.insert(sentence.text.clone());
+        candidates.push(sentence);
+
+        let input_base = input.len().saturating_sub(lookup_code.len());
+        let traversal = self.visit_valid_lookup_prefixes(lookup_code, |prefix| {
+            for candidate_view in self.storage.exact_candidates(&prefix.fetch_code) {
+                if !self.prefix_fallback_view_is_allowed(
+                    &prefix,
+                    &candidate_view,
+                    filter_by_charset,
+                ) || !seen_texts.insert(candidate_view.text().to_owned())
+                {
+                    continue;
+                }
+                let consumed = input_base.saturating_add(prefix.consumed_lookup_len);
+                let mut candidate = self.candidate_for_lookup_view(
+                    &prefix.fetch_code,
+                    &candidate_view,
+                    prefix.input_prefix,
+                    None,
+                    0.0,
+                );
+                candidate.source = CandidateSource::PartialTable {
+                    consumed,
+                    // SentenceTranslation's prefix Phrase candidates preserve
+                    // the upstream table behavior: default confirmation commits
+                    // the candidate; explicit selection still consumes its span.
+                    recompose_on_default: false,
+                };
+                candidates.push(candidate);
+                if candidates.len() >= output_cap {
+                    return ControlFlow::Break(());
+                }
+            }
+            ControlFlow::Continue(())
+        });
+
+        let mut truncated = matches!(traversal, ControlFlow::Break(()));
+        if visible_limit.is_some_and(|limit| candidates.len() > limit) {
+            candidates.pop();
+            truncated = true;
+        }
+        // Keep bounded and complete prefixes field-identical without learning
+        // the complete collector size. Producer-head merge consumes this list
+        // in its declared order, not by re-sorting raw dictionary weights.
+        self.assign_upstream_script_candidate_qualities(&mut candidates);
+        (candidates, truncated)
+    }
+
     fn legacy_bounded_upstream_sentence_fallback(
         &self,
         request: LegacyBoundedSentenceFallbackRequest<'_>,
@@ -4586,11 +4696,26 @@ impl StaticTableTranslator {
                 crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
             }
         }
+        let mut upstream_table_truncated = false;
+        if self.sentence_policy == SentencePolicy::UpstreamTable {
+            (candidates, upstream_table_truncated) = self
+                .upstream_table_sentence_translation_candidates(
+                    input,
+                    lookup_code,
+                    candidates,
+                    filter_by_charset,
+                    Some(limit),
+                );
+        }
         if candidates.is_empty() {
             return None;
         }
 
-        let base_window_may_have_more = candidates.len() >= sentence_limit;
+        let base_window_may_have_more = if self.sentence_policy == SentencePolicy::UpstreamTable {
+            upstream_table_truncated
+        } else {
+            candidates.len() >= sentence_limit
+        };
         let mut prefix_fallback_truncated = false;
         let mut prefix_fallback_owned = false;
         if self.prefix_fallback && !has_correction_lookup {
@@ -4736,7 +4861,10 @@ impl StaticTableTranslator {
     }
 
     fn caches_bounded_translation_results(&self) -> bool {
-        (self.sentence_policy == SentencePolicy::UpstreamScript && self.enable_sentence)
+        (matches!(
+            self.sentence_policy,
+            SentencePolicy::UpstreamScript | SentencePolicy::UpstreamTable
+        ) && self.enable_sentence)
             || (self.sentence_policy == SentencePolicy::LegacyFallback && self.prefix_fallback)
     }
 
@@ -4762,6 +4890,42 @@ impl StaticTableTranslator {
             limit,
             include_full_count,
         } = request;
+        if let Some((batch, mut has_more)) =
+            self.upstream_table_lazy_candidates(lookup_specs, filter_by_charset, Some(limit))
+        {
+            if !batch.candidates.is_empty() {
+                let mut candidates = batch.candidates;
+                if self.leading_syllable_reachability
+                    && has_proper_leading_prefix(lookup_code)
+                    && !self.input_serves_single_char_exact(lookup_code)
+                {
+                    let insert_at = leading_single_insert_index(&candidates);
+                    let want = limit.saturating_sub(insert_at).saturating_add(1);
+                    let leading_singles = self.leading_single_syllable_prefix_candidates(
+                        input,
+                        lookup_code,
+                        filter_by_charset,
+                        &candidates,
+                        Some(want),
+                    );
+                    if !leading_singles.is_empty() {
+                        has_more |= candidates.len().saturating_add(leading_singles.len()) > limit;
+                        candidates.splice(insert_at..insert_at, leading_singles);
+                        self.assign_mode_stable_ordered_candidate_qualities(&mut candidates);
+                        if candidates.len() > limit {
+                            candidates.truncate(limit);
+                        }
+                    }
+                }
+                let full_count = if has_more {
+                    candidates.len().saturating_add(1)
+                } else {
+                    candidates.len()
+                };
+                crate::m37_record_bounded_iterator(limit, candidates.len(), full_count);
+                return TranslationResult::bounded(candidates, full_count, include_full_count);
+            }
+        }
         // NOTE: `leading_syllable_reachability` deliberately does NOT widen
         // `ordered_mode` here — that would disable luna's bounded early-stop
         // (`can_stop_after_window`) and cost typing latency. Ordering for the
@@ -4966,8 +5130,10 @@ impl StaticTableTranslator {
             selected.extend(limited_predictions);
         }
         has_correction_lookup |= selected.iter().any(|pending| pending.spelling_correction);
-        if self.sentence_policy == SentencePolicy::LegacyFallback
-            && self.enable_sentence
+        if matches!(
+            self.sentence_policy,
+            SentencePolicy::LegacyFallback | SentencePolicy::UpstreamTable
+        ) && self.enable_sentence
             && selected.is_empty()
         {
             if let Some(model) = self.upstream_sentence_model() {
@@ -5379,6 +5545,212 @@ impl StaticTableTranslator {
         TranslationResult::bounded(candidates, result_full_count, include_full_count)
     }
 
+    fn upstream_table_lazy_candidates(
+        &self,
+        lookup_specs: &[LookupCodeSpec],
+        filter_by_charset: bool,
+        visible_limit: Option<usize>,
+    ) -> Option<(LookupCandidateBatch, bool)> {
+        let [lookup_spec] = lookup_specs else {
+            return None;
+        };
+        let lookup_code = lookup_spec.lookup_code.as_str();
+        if self.sentence_policy != SentencePolicy::UpstreamTable
+            || !self.enable_completion
+            || lookup_code.is_empty()
+            || lookup_spec.code != lookup_spec.lookup_code
+            || lookup_spec.correction_distance.is_some()
+            || lookup_spec.required_syllable_count.is_some()
+            || lookup_spec.tolerance
+            || lookup_spec.spelling_correction
+            || lookup_spec.spelling_abbreviation
+            || lookup_spec.spelling_credibility != 0.0
+            || self.spelling_algebra_active
+            || !self.spelling_abbreviation_entries.is_empty()
+            || !self.spelling_correction_entries.is_empty()
+            || self.enable_correction
+            || self.dynamic_correction_lookup
+            || !self.corrections.is_empty()
+            || !self.tolerance_rules.is_empty()
+            || !self.dictionary_exclude.is_empty()
+            || self.combine_candidates
+            || self.prediction_candidate_limit.is_some()
+            || self.prediction_weight_threshold.is_some()
+            || self.prediction_never_first
+            || self.prefix_fallback
+            || self.sentence_over_completion
+        {
+            return None;
+        }
+
+        // Identity table translators obtain one dictionary chunk per prism key.
+        // Prism::ExpandSearch emits the exact key first, then performs a BFS over
+        // its sorted alphabet; for identity codes that is remaining byte length
+        // followed by lexical code order. Keep every raw row here: librime's
+        // search-limit and Skip accounting happens before CharsetFilter and
+        // DistinctTranslation hide rows.
+        let mut groups = Vec::<UpstreamTableLazyGroup>::new();
+        for entry in self.storage.prefix_candidates(lookup_code) {
+            let (entry_code, candidate) = entry.into_parts();
+            if !entry_code.starts_with(lookup_code) {
+                break;
+            }
+            if groups
+                .last()
+                .map_or(true, |group| group.entry_code != entry_code.as_ref())
+            {
+                groups.push(UpstreamTableLazyGroup {
+                    entry_code: entry_code.into_owned(),
+                    rows: Vec::new(),
+                });
+            }
+            groups
+                .last_mut()
+                .expect("upstream-table group should exist")
+                .rows
+                .push(candidate.to_candidate());
+        }
+        groups.sort_by(|left, right| {
+            left.entry_code
+                .len()
+                .saturating_sub(lookup_code.len())
+                .cmp(&right.entry_code.len().saturating_sub(lookup_code.len()))
+                .then_with(|| left.entry_code.cmp(&right.entry_code))
+        });
+
+        let output_cap = visible_limit
+            .map(|limit| limit.saturating_add(1))
+            .unwrap_or(usize::MAX);
+        let mut candidates = Vec::new();
+        let mut seen_texts = HashSet::new();
+        let mut previous_entry_count = 0usize;
+        let mut search_limit = UPSTREAM_TABLE_INITIAL_SEARCH_LIMIT;
+        let mut observed_more = false;
+
+        'expand: loop {
+            let key_count = groups.len().min(search_limit);
+            let entry_count = groups[..key_count]
+                .iter()
+                .map(|group| group.rows.len())
+                .sum::<usize>();
+            if entry_count <= previous_entry_count {
+                break;
+            }
+            let mut chunks = groups[..key_count]
+                .iter()
+                .map(|group| UpstreamTableLazyChunk { group, cursor: 0 })
+                .collect::<Vec<_>>();
+            let mut active = 0usize;
+            let mut skip = previous_entry_count;
+            // DictEntryIterator::Skip deliberately walks the fresh raw BFS
+            // chunks without sorting and without applying outer filters.
+            while skip > 0 && active < chunks.len() {
+                let remaining = chunks[active].remaining_rows();
+                if skip < remaining {
+                    chunks[active].cursor += skip;
+                    skip = 0;
+                } else {
+                    skip -= remaining;
+                    active += 1;
+                }
+            }
+
+            while active < chunks.len() {
+                let chunk = &chunks[active];
+                let raw = chunk
+                    .head()
+                    .expect("active upstream-table chunk should have a head");
+                if self.is_dictionary_text_allowed(&raw.text)
+                    && (!filter_by_charset || !contains_extended_cjk(&raw.text))
+                {
+                    let candidate = self.candidate_for_lookup(
+                        &chunk.group.entry_code,
+                        raw,
+                        lookup_code,
+                        None,
+                        0.0,
+                    );
+                    if seen_texts.insert(candidate.text.clone()) {
+                        candidates.push(candidate);
+                        if candidates.len() >= output_cap {
+                            observed_more = visible_limit.is_some();
+                            break 'expand;
+                        }
+                    }
+                }
+
+                chunks[active].cursor += 1;
+                if chunks[active].head().is_none() {
+                    active += 1;
+                }
+                if active >= chunks.len() {
+                    break;
+                }
+                // DictEntryIterator::FindNextEntry runs a one-head partial_sort
+                // only after advancing. The first row after construction or a
+                // 10->100 rebuild+Skip therefore remains in raw BFS order.
+                for visitor in active + 1..chunks.len() {
+                    let candidate = &chunks[visitor];
+                    let current = &chunks[active];
+                    let candidate_remaining = candidate
+                        .group
+                        .entry_code
+                        .len()
+                        .saturating_sub(lookup_code.len());
+                    let current_remaining = current
+                        .group
+                        .entry_code
+                        .len()
+                        .saturating_sub(lookup_code.len());
+                    let strictly_precedes = match candidate_remaining.cmp(&current_remaining) {
+                        Ordering::Less => true,
+                        Ordering::Greater => false,
+                        Ordering::Equal => candidate.head().zip(current.head()).is_some_and(
+                            |(candidate, current)| {
+                                table_comparison_weight(candidate.quality, self.entry_weight_domain)
+                                    > table_comparison_weight(
+                                        current.quality,
+                                        self.entry_weight_domain,
+                                    )
+                            },
+                        ),
+                    };
+                    if strictly_precedes {
+                        chunks.swap(active, visitor);
+                    }
+                }
+            }
+
+            previous_entry_count = entry_count;
+            if key_count < search_limit {
+                break;
+            }
+            let next_limit = search_limit.saturating_mul(UPSTREAM_TABLE_EXPANDING_FACTOR);
+            if next_limit <= search_limit {
+                break;
+            }
+            search_limit = next_limit;
+        }
+
+        if visible_limit.is_some_and(|limit| candidates.len() > limit) {
+            candidates.pop();
+            observed_more = true;
+        }
+        let full_input_anchor = candidates
+            .iter()
+            .rposition(|candidate| candidate.source == CandidateSource::Table);
+        let has_reliable_exact_system_phrase = full_input_anchor.is_some();
+        Some((
+            LookupCandidateBatch {
+                candidates,
+                full_input_anchor,
+                has_reliable_exact_system_phrase,
+                prefix_fallback_span_views: Vec::new(),
+            },
+            observed_more,
+        ))
+    }
+
     fn candidates_for_lookup_codes(
         &self,
         lookup_specs: &[LookupCodeSpec],
@@ -5393,6 +5765,13 @@ impl StaticTableTranslator {
         filter_by_charset: bool,
         include_completion: bool,
     ) -> LookupCandidateBatch {
+        if include_completion {
+            if let Some((batch, _)) =
+                self.upstream_table_lazy_candidates(lookup_specs, filter_by_charset, None)
+            {
+                return batch;
+            }
+        }
         let mut pooled: Vec<PendingLookupCandidate> = Vec::new();
         let mut exact_scan_ranges: Vec<(usize, usize)> = Vec::new();
         let mut fetch_groups = HashMap::new();
@@ -7552,14 +7931,16 @@ impl StaticTableTranslator {
     }
 
     fn assign_mode_stable_ordered_candidate_qualities(&self, candidates: &mut [Candidate]) {
-        if self.sentence_policy == SentencePolicy::UpstreamScript
-            || (self.sentence_policy == SentencePolicy::LegacyFallback && self.prefix_fallback)
+        if matches!(
+            self.sentence_policy,
+            SentencePolicy::UpstreamScript | SentencePolicy::UpstreamTable
+        ) || (self.sentence_policy == SentencePolicy::LegacyFallback && self.prefix_fallback)
         {
-            // Neither an UpstreamScript page nor a bounded legacy prefix
-            // fallback may materialize its complete tail merely to learn a
-            // count-dependent denominator. Keep the shared bounded/complete
-            // prefix field-identical so page expansion cannot perturb an outer
-            // multi-translator merge.
+            // Neither an upstream-owned translation page nor a bounded legacy
+            // prefix fallback may materialize its complete tail merely to
+            // learn a count-dependent denominator. Keep the shared
+            // bounded/complete prefix field-identical so page expansion cannot
+            // perturb an outer multi-translator merge.
             self.assign_upstream_script_candidate_qualities(candidates);
         } else {
             self.assign_ordered_candidate_qualities(candidates);
@@ -7645,8 +8026,10 @@ impl StaticTableTranslator {
         let mut upstream_script_candidates = Vec::<Candidate>::new();
         if !has_reliable_exact_system_phrase
             && (independent_upstream_script
-                || (self.sentence_policy == SentencePolicy::LegacyFallback
-                    && candidates.is_empty()))
+                || (matches!(
+                    self.sentence_policy,
+                    SentencePolicy::LegacyFallback | SentencePolicy::UpstreamTable
+                ) && candidates.is_empty()))
         {
             if let Some(model) = self.upstream_sentence_model() {
                 let model_start = crate::m37_metrics_enabled().then(Instant::now);
@@ -7678,6 +8061,17 @@ impl StaticTableTranslator {
                             upstream_candidates.len(),
                         );
                     }
+                }
+                if self.sentence_policy == SentencePolicy::UpstreamTable {
+                    upstream_candidates = self
+                        .upstream_table_sentence_translation_candidates(
+                            input,
+                            lookup_code,
+                            upstream_candidates,
+                            filter_by_charset,
+                            None,
+                        )
+                        .0;
                 }
                 if independent_upstream_script {
                     upstream_script_candidates = upstream_candidates;
@@ -9102,6 +9496,11 @@ impl Translator for StaticTableTranslator {
             Some(&context.segment_tags),
             request,
         )
+        .with_merge_policy(if self.sentence_policy == SentencePolicy::UpstreamTable {
+            TranslationMergePolicy::UpstreamTable
+        } else {
+            TranslationMergePolicy::Default
+        })
     }
 
     fn translate_with_context_and_request_with_scratch(
@@ -9123,6 +9522,11 @@ impl Translator for StaticTableTranslator {
             request,
             scratch,
         )
+        .with_merge_policy(if self.sentence_policy == SentencePolicy::UpstreamTable {
+            TranslationMergePolicy::UpstreamTable
+        } else {
+            TranslationMergePolicy::Default
+        })
     }
 
     fn spelling_algebra_debug(&self, input: &str) -> Option<SpellingAlgebraDebug> {
@@ -9365,14 +9769,30 @@ impl Translator for StaticTableTranslator {
 
 struct ReverseLookupData {
     entries: Vec<TableEntry>,
+    entries_by_code: OnceLock<HashMap<String, Vec<usize>>>,
     reverse_comments: HashMap<String, Vec<String>>,
+    prism_payload: Option<RimePrismRuntimePayload>,
+    syllabary_codes: Vec<String>,
+    sort_by_weight: bool,
+    poet_model: Option<Box<UpstreamSentenceModel>>,
 }
+
+const MAX_REVERSE_POET_CANDIDATE_WORK: usize = 65_536;
+
+type ReverseLookupLoaderResult = (
+    TableDictionary,
+    Option<TableDictionary>,
+    Option<RimePrismRuntimePayload>,
+    Vec<String>,
+    Vec<PresetVocabularyEntry>,
+    Option<(Arc<dyn PoetByteSource>, u32)>,
+);
 
 enum ReverseLookupStorage {
     Ready(ReverseLookupData),
     Lazy {
         loaded: Mutex<Option<ReverseLookupData>>,
-        loader: Box<dyn Fn() -> Option<(TableDictionary, Option<TableDictionary>)> + Send + Sync>,
+        loader: Box<dyn Fn() -> Option<ReverseLookupLoaderResult> + Send + Sync>,
     },
 }
 
@@ -9382,6 +9802,8 @@ pub struct ReverseLookupTranslator {
     suffix: String,
     tag: String,
     enable_completion: bool,
+    strict_spelling: bool,
+    upstream_table_validation: bool,
     comment_format: CommentFormat,
     spelling_algebra_formulas: Vec<String>,
 }
@@ -9398,11 +9820,17 @@ impl ReverseLookupTranslator {
             storage: ReverseLookupStorage::Ready(ReverseLookupData::from_dictionaries(
                 dictionary,
                 reverse_dictionary,
+                None,
+                Vec::new(),
+                Vec::new(),
+                None,
             )),
             prefix: prefix.into(),
             suffix: suffix.into(),
             tag: "reverse_lookup".to_owned(),
             enable_completion: false,
+            strict_spelling: false,
+            upstream_table_validation: false,
             comment_format: CommentFormat::default(),
             spelling_algebra_formulas: Vec::new(),
         }
@@ -9417,12 +9845,98 @@ impl ReverseLookupTranslator {
         Self {
             storage: ReverseLookupStorage::Lazy {
                 loaded: Mutex::new(None),
+                loader: Box::new(move || {
+                    loader().map(|(dictionary, reverse_dictionary)| {
+                        (
+                            dictionary,
+                            reverse_dictionary,
+                            None,
+                            Vec::new(),
+                            Vec::new(),
+                            None,
+                        )
+                    })
+                }),
+            },
+            prefix: prefix.into(),
+            suffix: suffix.into(),
+            tag: "reverse_lookup".to_owned(),
+            enable_completion: false,
+            strict_spelling: false,
+            upstream_table_validation: false,
+            comment_format: CommentFormat::default(),
+            spelling_algebra_formulas: Vec::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn new_lazy_with_prism(
+        loader: impl Fn() -> Option<(
+                TableDictionary,
+                Option<TableDictionary>,
+                Option<RimePrismRuntimePayload>,
+                Vec<String>,
+            )> + Send
+            + Sync
+            + 'static,
+        prefix: impl Into<String>,
+        suffix: impl Into<String>,
+    ) -> Self {
+        Self {
+            storage: ReverseLookupStorage::Lazy {
+                loaded: Mutex::new(None),
+                loader: Box::new(move || {
+                    loader().map(
+                        |(dictionary, reverse_dictionary, prism_payload, syllabary_codes)| {
+                            (
+                                dictionary,
+                                reverse_dictionary,
+                                prism_payload,
+                                syllabary_codes,
+                                Vec::new(),
+                                None,
+                            )
+                        },
+                    )
+                }),
+            },
+            prefix: prefix.into(),
+            suffix: suffix.into(),
+            tag: "reverse_lookup".to_owned(),
+            enable_completion: false,
+            strict_spelling: false,
+            upstream_table_validation: false,
+            comment_format: CommentFormat::default(),
+            spelling_algebra_formulas: Vec::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn new_lazy_with_prism_and_poet(
+        loader: impl Fn() -> Option<(
+                TableDictionary,
+                Option<TableDictionary>,
+                Option<RimePrismRuntimePayload>,
+                Vec<String>,
+                Vec<PresetVocabularyEntry>,
+                Option<(Arc<dyn PoetByteSource>, u32)>,
+            )> + Send
+            + Sync
+            + 'static,
+        prefix: impl Into<String>,
+        suffix: impl Into<String>,
+    ) -> Self {
+        Self {
+            storage: ReverseLookupStorage::Lazy {
+                loaded: Mutex::new(None),
                 loader: Box::new(loader),
             },
             prefix: prefix.into(),
             suffix: suffix.into(),
             tag: "reverse_lookup".to_owned(),
             enable_completion: false,
+            strict_spelling: false,
+            upstream_table_validation: false,
             comment_format: CommentFormat::default(),
             spelling_algebra_formulas: Vec::new(),
         }
@@ -9437,6 +9951,18 @@ impl ReverseLookupTranslator {
     #[must_use]
     pub fn with_completion(mut self, enable_completion: bool) -> Self {
         self.enable_completion = enable_completion;
+        self
+    }
+
+    #[must_use]
+    pub fn with_strict_spelling(mut self, strict_spelling: bool) -> Self {
+        self.strict_spelling = strict_spelling;
+        self
+    }
+
+    #[must_use]
+    pub fn with_upstream_table_validation(mut self, enabled: bool) -> Self {
+        self.upstream_table_validation = enabled;
         self
     }
 
@@ -9471,9 +9997,23 @@ impl ReverseLookupTranslator {
                     .lock()
                     .expect("reverse lookup lazy data should not be poisoned");
                 if loaded.is_none() {
-                    if let Some((dictionary, reverse_dictionary)) = loader() {
-                        let mut data =
-                            ReverseLookupData::from_dictionaries(dictionary, reverse_dictionary);
+                    if let Some((
+                        dictionary,
+                        reverse_dictionary,
+                        prism_payload,
+                        syllabary_codes,
+                        preset_vocabulary,
+                        poet_source,
+                    )) = loader()
+                    {
+                        let mut data = ReverseLookupData::from_dictionaries(
+                            dictionary,
+                            reverse_dictionary,
+                            prism_payload,
+                            syllabary_codes,
+                            preset_vocabulary,
+                            poet_source,
+                        );
                         data.apply_spelling_algebra(&self.spelling_algebra_formulas);
                         *loaded = Some(data);
                     }
@@ -9482,13 +10022,247 @@ impl ReverseLookupTranslator {
             }
         }
     }
+
+    fn translated_candidates_and_policy(
+        &self,
+        input: &str,
+    ) -> (Vec<Candidate>, TranslationMergePolicy) {
+        if input.is_empty() {
+            return (Vec::new(), TranslationMergePolicy::Default);
+        }
+
+        let start = if !self.prefix.is_empty() && input.starts_with(&self.prefix) {
+            self.prefix.len()
+        } else {
+            0
+        };
+        let has_prefix = start > 0;
+        let mut code = &input[start..];
+        if !self.suffix.is_empty() && code.ends_with(&self.suffix) {
+            code = &code[..code.len() - self.suffix.len()];
+        }
+        let code = normalize_table_code(code);
+        if code.is_empty() {
+            return (Vec::new(), TranslationMergePolicy::Default);
+        }
+
+        self.with_data(|data| {
+            if self.upstream_table_validation && !self.enable_completion {
+                if let (Some(prism), false) =
+                    (data.prism_payload.as_ref(), data.syllabary_codes.is_empty())
+                {
+                    if let Some(graph) = lookup_reverse_graph(
+                        &code,
+                        &data.entries,
+                        data.entries_by_code(),
+                        prism,
+                        &data.syllabary_codes,
+                        self.strict_spelling,
+                        data.sort_by_weight,
+                    ) {
+                        if let Some(candidates) =
+                            self.poet_reverse_candidates(data, &code, &graph.paths)
+                        {
+                            let candidates = if candidates.is_empty() {
+                                graph
+                                    .rows
+                                    .into_iter()
+                                    .map(|row| self.reverse_candidate(data, &row.entry, 0.0))
+                                    .collect()
+                            } else {
+                                candidates
+                            };
+                            return (
+                                candidates,
+                                TranslationMergePolicy::ReverseLookup {
+                                    normal_prefix_quality: graph.normal_prefix_quality,
+                                },
+                            );
+                        }
+                    }
+                }
+            }
+
+            let candidates = data
+                .entries
+                .iter()
+                .filter(|entry| {
+                    if self.enable_completion {
+                        entry.code.starts_with(&code)
+                    } else {
+                        entry.code == code
+                    }
+                })
+                .map(|entry| {
+                    let quality = if self.enable_completion && has_prefix && entry.code == code {
+                        entry.weight + 1_000_000.0
+                    } else {
+                        entry.weight
+                    };
+                    self.reverse_candidate(data, entry, quality)
+                })
+                .collect();
+            (candidates, TranslationMergePolicy::Default)
+        })
+        .unwrap_or_else(|| (Vec::new(), TranslationMergePolicy::Default))
+    }
+
+    fn translated_result_for_request(
+        &self,
+        input: &str,
+        request: CandidateRequest,
+    ) -> TranslationResult {
+        let (mut candidates, policy) = self.translated_candidates_and_policy(input);
+        if !self.upstream_table_validation {
+            return TranslationResult::complete(candidates).with_merge_policy(policy);
+        }
+        let Some(limit) = request.limit else {
+            return TranslationResult::complete(candidates).with_merge_policy(policy);
+        };
+        let full_count = candidates.len();
+        candidates.truncate(limit);
+        TranslationResult::bounded(candidates, full_count, request.include_debug_full_count)
+            .with_merge_policy(policy)
+    }
+
+    fn reverse_candidate(
+        &self,
+        data: &ReverseLookupData,
+        entry: &TableEntry,
+        quality: f32,
+    ) -> Candidate {
+        self.reverse_candidate_from_text(data, &entry.text, &entry.code, quality)
+    }
+
+    fn reverse_candidate_from_text(
+        &self,
+        data: &ReverseLookupData,
+        text: &str,
+        fallback_comment: &str,
+        quality: f32,
+    ) -> Candidate {
+        let comment = data
+            .reverse_comments
+            .get(text)
+            .filter(|comments| !comments.is_empty())
+            .map(|comments| self.comment_format.apply(&comments.join("; ")))
+            .unwrap_or_else(|| fallback_comment.to_owned());
+        Candidate {
+            text: text.to_owned(),
+            comment,
+            preedit: None,
+            source: CandidateSource::ReverseLookup,
+            quality,
+        }
+    }
+
+    fn poet_reverse_candidates(
+        &self,
+        data: &ReverseLookupData,
+        input: &str,
+        paths: &[reverse_graph::ReverseGraphPath],
+    ) -> Option<Vec<Candidate>> {
+        self.poet_reverse_candidates_with_work_limit(
+            data,
+            input,
+            paths,
+            MAX_REVERSE_POET_CANDIDATE_WORK,
+        )
+    }
+
+    fn poet_reverse_candidates_with_work_limit(
+        &self,
+        data: &ReverseLookupData,
+        input: &str,
+        paths: &[reverse_graph::ReverseGraphPath],
+        max_candidate_work: usize,
+    ) -> Option<Vec<Candidate>> {
+        let Some(model) = data.poet_model.as_deref() else {
+            return Some(Vec::new());
+        };
+        let mut ranked = Vec::<(Candidate, usize, usize)>::new();
+        let mut candidate_work = 0usize;
+        for path in paths {
+            let spans = path
+                .segments
+                .iter()
+                .map(|segment| {
+                    WeightedSentenceCodeSpan::new(
+                        SentenceCodeSpan::new(segment.start, segment.end, segment.code.clone()),
+                        segment.credibility,
+                    )
+                })
+                .collect::<Vec<_>>();
+            let remaining = max_candidate_work.saturating_sub(candidate_work);
+            let path_family = model
+                .ranked_script_full_phrase_candidates_with_work_limit(input, &spans, remaining)?;
+            candidate_work = candidate_work.saturating_add(path_family.len());
+            let path_candidates = path_family
+                .into_iter()
+                .filter(|ranked| ranked.candidate.source == CandidateSource::Table)
+                .collect::<Vec<_>>();
+            ranked.extend(path_candidates.into_iter().enumerate().map(
+                |(candidate_order, ranked)| (ranked.candidate, path.path_order, candidate_order),
+            ));
+        }
+        ranked.sort_by(
+            |(left, left_path, left_candidate), (right, right_path, right_candidate)| {
+                right
+                    .quality
+                    .partial_cmp(&left.quality)
+                    .unwrap_or(Ordering::Equal)
+                    .then_with(|| left_path.cmp(right_path))
+                    .then_with(|| left_candidate.cmp(right_candidate))
+            },
+        );
+        let mut seen = HashSet::new();
+        Some(
+            ranked
+                .into_iter()
+                .filter(|(candidate, _, _)| seen.insert(candidate.text.clone()))
+                .map(|(candidate, _, _)| {
+                    self.reverse_candidate_from_text(data, &candidate.text, "", 0.0)
+                })
+                .collect(),
+        )
+    }
 }
 
 impl ReverseLookupData {
     fn from_dictionaries(
         dictionary: TableDictionary,
         reverse_dictionary: Option<TableDictionary>,
+        prism_payload: Option<RimePrismRuntimePayload>,
+        syllabary_codes: Vec<String>,
+        preset_vocabulary: Vec<PresetVocabularyEntry>,
+        poet_source: Option<(Arc<dyn PoetByteSource>, u32)>,
     ) -> Self {
+        let sort_by_weight = dictionary.sort_by_weight();
+        let poet_model = poet_source
+            .map(|(source, checksum)| {
+                UpstreamSentenceModel::from_poet_bin_source(source, checksum, 100)
+                    .expect("validated reverse-lookup Poet artifact should load")
+            })
+            .or_else(|| {
+                if preset_vocabulary.is_empty() {
+                    return None;
+                }
+                let entries = dictionary.entries().to_vec();
+                Some(match dictionary.entry_weight_domain() {
+                    TableEntryWeightDomain::NaturalLog => {
+                        UpstreamSentenceModel::from_natural_log_table_entries(
+                            entries,
+                            &preset_vocabulary,
+                            100,
+                        )
+                    }
+                    TableEntryWeightDomain::Raw => {
+                        UpstreamSentenceModel::from_table_entries(entries, &preset_vocabulary, 100)
+                    }
+                })
+            })
+            .map(|model| model.with_script_translation_limits(1, usize::MAX))
+            .map(Box::new);
         let mut reverse_comments: HashMap<String, Vec<String>> = HashMap::new();
         if let Some(reverse_dictionary) = reverse_dictionary {
             let comment_format = reverse_dictionary
@@ -9509,7 +10283,12 @@ impl ReverseLookupData {
 
         Self {
             entries: dictionary.entries,
+            entries_by_code: OnceLock::new(),
             reverse_comments,
+            prism_payload,
+            syllabary_codes,
+            sort_by_weight,
+            poet_model,
         }
     }
 
@@ -9518,6 +10297,12 @@ impl ReverseLookupData {
         if algebra.is_empty() {
             return;
         }
+        // The runtime prism's syllable IDs belong to the unexpanded compiled
+        // table. A separately configured reverse algebra cannot safely reuse
+        // that mapping; retain the legacy expanded-entry path instead.
+        self.prism_payload = None;
+        self.syllabary_codes.clear();
+        self.poet_model = None;
         let entries = std::mem::take(&mut self.entries)
             .into_iter()
             .map(|entry| {
@@ -9538,10 +10323,21 @@ impl ReverseLookupData {
             .into_iter()
             .map(|entry| TableEntry::new(entry.code, entry.candidate.text, entry.candidate.quality))
             .collect();
+        let _ = self.entries_by_code.take();
+    }
+
+    fn entries_by_code(&self) -> &HashMap<String, Vec<usize>> {
+        self.entries_by_code.get_or_init(|| {
+            let mut index = HashMap::<String, Vec<usize>>::new();
+            for (position, entry) in self.entries.iter().enumerate() {
+                index.entry(entry.code.clone()).or_default().push(position);
+            }
+            index
+        })
     }
 
     fn memory_owner_rows(&self, storage_label: &'static str) -> Vec<MemoryOwnerRow> {
-        vec![
+        let mut rows = vec![
             MemoryOwnerRow::new(
                 "reverse_lookup.entries",
                 MemoryOwnerClass::HeapOwnedRequired,
@@ -9558,7 +10354,216 @@ impl ReverseLookupData {
                 storage_label,
                 "retained reverse-comment side index used to join dictionary-panel lookup comments",
             ),
-        ]
+        ];
+        rows.push(MemoryOwnerRow::new(
+            "reverse_lookup.entries_by_code",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            self.entries_by_code.get().map_or(0, |index| {
+                index
+                    .iter()
+                    .map(|(code, positions)| {
+                        code.capacity().saturating_add(
+                            positions.capacity().saturating_mul(mem::size_of::<usize>()),
+                        )
+                    })
+                    .sum()
+            }),
+            self.entries_by_code
+                .get()
+                .map_or(0, |index| index.values().map(Vec::len).sum()),
+            storage_label,
+            "lazy exact-code index built only for the marked reverse-lookup graph",
+        ));
+        rows.push(MemoryOwnerRow::new(
+            "reverse_lookup.prism_syllabary",
+            MemoryOwnerClass::HeapOwnedRequired,
+            self.syllabary_codes
+                .iter()
+                .map(String::capacity)
+                .sum::<usize>()
+                .saturating_add(
+                    self.syllabary_codes
+                        .capacity()
+                        .saturating_mul(mem::size_of::<String>()),
+                ),
+            self.syllabary_codes.len(),
+            storage_label,
+            "compiled reverse-lookup prism syllabary retained for marked upstream validation",
+        ));
+        if let Some(prism) = &self.prism_payload {
+            rows.extend(prism.memory_owner_rows());
+        }
+        if let Some(model) = &self.poet_model {
+            rows.extend(model.memory_owner_rows().into_iter().map(|mut row| {
+                row.owner = format!("reverse_lookup.{}", row.owner);
+                row
+            }));
+        }
+        rows
+    }
+}
+
+#[cfg(test)]
+mod reverse_lookup_hardening_tests {
+    use super::*;
+
+    fn poet_fixture() -> (ReverseLookupData, Vec<reverse_graph::ReverseGraphPath>) {
+        let dictionary = TableDictionary::new([
+            TableEntry::new("a", "甲", 100.0),
+            TableEntry::new("b", "乙", 100.0),
+            TableEntry::new("b", "丙", 90.0),
+        ]);
+        let data = ReverseLookupData::from_dictionaries(
+            dictionary,
+            None,
+            None,
+            Vec::new(),
+            vec![
+                PresetVocabularyEntry::new("甲乙", 20.0),
+                PresetVocabularyEntry::new("甲丙", 10.0),
+            ],
+            None,
+        );
+        let paths = vec![reverse_graph::ReverseGraphPath {
+            path_order: 0,
+            segments: vec![
+                reverse_graph::ReverseGraphPathSegment {
+                    start: 0,
+                    end: 1,
+                    code: "a".to_owned(),
+                    credibility: 0.0,
+                },
+                reverse_graph::ReverseGraphPathSegment {
+                    start: 1,
+                    end: 2,
+                    code: "b".to_owned(),
+                    credibility: 0.0,
+                },
+            ],
+        }];
+        (data, paths)
+    }
+
+    #[test]
+    fn reverse_poet_candidate_work_budget_fails_closed() {
+        let translator = ReverseLookupTranslator::new(TableDictionary::new([]), None, "", "");
+        let (data, paths) = poet_fixture();
+
+        assert!(translator
+            .poet_reverse_candidates_with_work_limit(&data, "ab", &paths, 1)
+            .is_none());
+        assert_eq!(
+            translator
+                .poet_reverse_candidates_with_work_limit(&data, "ab", &paths, 2)
+                .expect("the complete two-row family fits the declared budget")
+                .len(),
+            2
+        );
+    }
+
+    #[test]
+    fn budgeted_full_phrase_family_matches_complete_owned_model_with_partial_rows() {
+        let (data, paths) = poet_fixture();
+        let model = data
+            .poet_model
+            .as_deref()
+            .expect("fixture has an owned Poet model");
+        let spans = paths[0]
+            .segments
+            .iter()
+            .map(|segment| {
+                WeightedSentenceCodeSpan::new(
+                    SentenceCodeSpan::new(segment.start, segment.end, segment.code.clone()),
+                    segment.credibility,
+                )
+            })
+            .collect::<Vec<_>>();
+        let complete = model.ranked_script_phrase_candidates_for_weighted_code_spans("ab", &spans);
+        let complete_full = complete
+            .iter()
+            .filter(|ranked| ranked.candidate.source == CandidateSource::Table)
+            .cloned()
+            .collect::<Vec<_>>();
+        assert!(complete.len() > complete_full.len());
+        assert_eq!(complete_full.len(), 2);
+
+        assert_eq!(
+            model
+                .ranked_script_full_phrase_candidates_with_work_limit(
+                    "ab",
+                    &spans,
+                    complete_full.len(),
+                )
+                .expect("the complete full-input family fits the work budget"),
+            complete_full
+        );
+        assert!(model
+            .ranked_script_full_phrase_candidates_with_work_limit(
+                "ab",
+                &spans,
+                complete_full.len() - 1,
+            )
+            .is_none());
+    }
+
+    #[test]
+    fn marked_reverse_graph_bounded_result_is_an_exact_complete_prefix() {
+        let syllabary_codes = vec!["a".to_owned(), "b".to_owned()];
+        let prism: RimePrismRuntimePayload = crate::parse_rime_prism_bin_payload(
+            crate::build_prism_bin(&syllabary_codes, &[], 0, 0),
+        )
+        .expect("test prism should parse")
+        .into();
+        let dictionary = TableDictionary::new([
+            TableEntry::new("a", "甲", 100.0),
+            TableEntry::new("b", "乙", 100.0),
+            TableEntry::new("b", "丙", 90.0),
+        ]);
+        let vocabulary = vec![
+            PresetVocabularyEntry::new("甲乙", 20.0),
+            PresetVocabularyEntry::new("甲丙", 10.0),
+        ];
+        let prism = Mutex::new(Some(prism));
+        let translator = ReverseLookupTranslator::new_lazy_with_prism_and_poet(
+            move || {
+                Some((
+                    dictionary.clone(),
+                    None,
+                    Some(
+                        prism
+                            .lock()
+                            .expect("test prism should not be poisoned")
+                            .take()?,
+                    ),
+                    syllabary_codes.clone(),
+                    vocabulary.clone(),
+                    None,
+                ))
+            },
+            "",
+            "",
+        )
+        .with_upstream_table_validation(true);
+
+        let complete =
+            translator.translated_result_for_request("ab", CandidateRequest::unbounded());
+        let bounded = translator.translated_result_for_request(
+            "ab",
+            CandidateRequest::bounded(1).with_debug_full_count(true),
+        );
+        assert_eq!(complete.candidates.len(), 2);
+        assert_eq!(bounded.candidates, complete.candidates[..1]);
+        assert_eq!(bounded.full_count, Some(complete.candidates.len()));
+        assert!(!bounded.is_complete);
+        assert_eq!(bounded.merge_policy, complete.merge_policy);
+
+        let whole = translator.translated_result_for_request(
+            "ab",
+            CandidateRequest::bounded(complete.candidates.len()).with_debug_full_count(true),
+        );
+        assert_eq!(whole.candidates, complete.candidates);
+        assert_eq!(whole.full_count, Some(complete.candidates.len()));
+        assert!(whole.is_complete);
     }
 }
 
@@ -9604,58 +10609,7 @@ impl Translator for ReverseLookupTranslator {
     }
 
     fn translate(&self, input: &str) -> Vec<Candidate> {
-        if input.is_empty() {
-            return Vec::new();
-        }
-
-        let start = if !self.prefix.is_empty() && input.starts_with(&self.prefix) {
-            self.prefix.len()
-        } else {
-            0
-        };
-        let has_prefix = start > 0;
-        let mut code = &input[start..];
-        if !self.suffix.is_empty() && code.ends_with(&self.suffix) {
-            code = &code[..code.len() - self.suffix.len()];
-        }
-        let code = normalize_table_code(code);
-        if code.is_empty() {
-            return Vec::new();
-        }
-
-        self.with_data(|data| {
-            data.entries
-                .iter()
-                .filter(|entry| {
-                    if self.enable_completion {
-                        entry.code.starts_with(&code)
-                    } else {
-                        entry.code == code
-                    }
-                })
-                .map(|entry| {
-                    let comment = data
-                        .reverse_comments
-                        .get(&entry.text)
-                        .filter(|comments| !comments.is_empty())
-                        .map(|comments| self.comment_format.apply(&comments.join("; ")))
-                        .unwrap_or_else(|| entry.code.clone());
-                    let quality = if self.enable_completion && has_prefix && entry.code == code {
-                        entry.weight + 1_000_000.0
-                    } else {
-                        entry.weight
-                    };
-                    Candidate {
-                        text: entry.text.clone(),
-                        comment,
-                        preedit: None,
-                        source: CandidateSource::ReverseLookup,
-                        quality,
-                    }
-                })
-                .collect()
-        })
-        .unwrap_or_default()
+        self.translated_candidates_and_policy(input).0
     }
 
     fn translate_with_context(
@@ -9668,7 +10622,21 @@ impl Translator for ReverseLookupTranslator {
         if !self.accepts_segment_tags(&context.segment_tags) {
             return Vec::new();
         }
-        self.translate(input)
+        self.translated_candidates_and_policy(input).0
+    }
+
+    fn translate_with_context_and_request(
+        &self,
+        input: &str,
+        _status: &Status,
+        _options: &HashMap<String, bool>,
+        context: &Context,
+        request: CandidateRequest,
+    ) -> TranslationResult {
+        if !self.accepts_segment_tags(&context.segment_tags) {
+            return TranslationResult::complete(Vec::new());
+        }
+        self.translated_result_for_request(input, request)
     }
 
     fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {

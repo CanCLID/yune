@@ -1,0 +1,1425 @@
+{
+  "milestone": "M59",
+  "task": "Increment 4d Cangjie CJ-1 competing-segmentation source fixture",
+  "status": "cangjie5_competing_segmentation_source_complete",
+  "canonical": true,
+  "generation": {
+    "generated_by": "scripts/build-m59-cangjie-competing-fixture.py",
+    "generator_version": 1,
+    "generator_sha256": "1d652dfbac827b2fa12305ce2251cedab1a246426f4e2e480894f3473b8ceed5",
+    "serialization": {
+      "encoding": "utf-8",
+      "bom": false,
+      "line_endings": "lf",
+      "terminal_newline": "exactly_one",
+      "write_policy": "create_new"
+    },
+    "command_template": "python -B scripts/build-m59-cangjie-competing-fixture.py --oracle crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-composition.json --cangjie-dir <pinned-rime-cangjie> --essay <pinned-rime-essay>/essay.txt --output <create-new-output>"
+  },
+  "oracle_fixture": {
+    "path": "crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-composition.json",
+    "sha256": "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf",
+    "librime_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "status": "cangjie5_capture_curated_complete",
+    "immutable_input": true
+  },
+  "schema_source": {
+    "repository": "rime/rime-cangjie",
+    "commit": "52d90a1b1312e74042b38c1cbc8142defbc53171",
+    "tree": "db11cf6ffd382ada3087e9765c0ba2e636a8b68d",
+    "clean": true,
+    "status_short": [],
+    "files": [
+      {
+        "path": "cangjie5.dict.yaml",
+        "sha256": "1514afcfb56dc347db596a6602c8dfefee798fa504e35d10eaa1e11536648d3a",
+        "bytes": 984,
+        "line_count": 46
+      },
+      {
+        "path": "cangjie5.base.dict.yaml",
+        "sha256": "8690f2ad8aafd38780846881aa916b5779e6d9247a351a1da426d3f3257afca4",
+        "bytes": 219207,
+        "line_count": 23973
+      },
+      {
+        "path": "cangjie5.stem.dict.yaml",
+        "sha256": "a15208351dbc33d5ade8d16ece75907ef2a7310e3962f4e54003dab9bbd49b8a",
+        "bytes": 13399,
+        "line_count": 882
+      },
+      {
+        "path": "cangjie5.extended.dict.yaml",
+        "sha256": "a6a0b06427c599d9fa7fc1e02a618bf234eb1dc9fc9b6b92f3292fc02213b3cd",
+        "bytes": 564497,
+        "line_count": 55352
+      }
+    ],
+    "import_tables": [
+      "cangjie5.base",
+      "cangjie5.stem",
+      "cangjie5.extended"
+    ],
+    "dictionary_policy": {
+      "sort": "by_weight",
+      "use_preset_vocabulary": true,
+      "vocabulary": "essay",
+      "max_phrase_length": 7,
+      "min_phrase_weight": 100,
+      "encoder_rules": [
+        {
+          "length_equal": 2,
+          "formula": "AaAzBaBbBz"
+        },
+        {
+          "length_equal": 3,
+          "formula": "AaAzBaBzCz"
+        },
+        {
+          "length_in_range": [
+            4,
+            10
+          ],
+          "formula": "AaBzCaYzZz"
+        }
+      ],
+      "tail_anchor": "'"
+    }
+  },
+  "essay_source": {
+    "repository": "rime/rime-essay",
+    "commit": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+    "tree": "4769c4ef6c5f93f450c5f36c2c9ac5e6845d37bc",
+    "clean": true,
+    "status_short": [],
+    "file": {
+      "path": "essay.txt",
+      "sha256": "09086a44204f469d2c16ad72784e1f567a6f016570dfc9aa79f868267a9c1385",
+      "bytes": 5887668,
+      "line_count": 442712
+    },
+    "selection_policy": "all exact rows for every extracted cohort text plus each oracle target and derived root-candidate-zero sentence; missing rows remain explicit",
+    "primary_scoring_texts": [
+      "粵",
+      "拼",
+      "竹",
+      "田",
+      "一",
+      "女",
+      "尸",
+      "手",
+      "廿",
+      "測",
+      "試",
+      "水",
+      "月",
+      "金",
+      "弓",
+      "卜",
+      "口",
+      "戈",
+      "心",
+      "莫",
+      "伯",
+      "洢",
+      "日",
+      "大",
+      "人",
+      "香",
+      "港",
+      "木",
+      "山"
+    ],
+    "selected_rows": {
+      "粵": [
+        {
+          "text": "粵",
+          "weight": 1679,
+          "weight_raw": "1679",
+          "source_line": 307389,
+          "raw": "粵\t1679"
+        }
+      ],
+      "粤": [
+        {
+          "text": "粤",
+          "weight": 0,
+          "weight_raw": "0",
+          "source_line": 307352,
+          "raw": "粤\t0"
+        }
+      ],
+      "拼": [
+        {
+          "text": "拼",
+          "weight": 3088,
+          "weight_raw": "3088",
+          "source_line": 180071,
+          "raw": "拼\t3088"
+        }
+      ],
+      "𢪝": [],
+      "測": [
+        {
+          "text": "測",
+          "weight": 4030,
+          "weight_raw": "4030",
+          "source_line": 250793,
+          "raw": "測\t4030"
+        }
+      ],
+      "試": [
+        {
+          "text": "試",
+          "weight": 7462,
+          "weight_raw": "7462",
+          "source_line": 360851,
+          "raw": "試\t7462"
+        }
+      ],
+      "莫": [
+        {
+          "text": "莫",
+          "weight": 5358,
+          "weight_raw": "5358",
+          "source_line": 340043,
+          "raw": "莫\t5358"
+        }
+      ],
+      "伯": [
+        {
+          "text": "伯",
+          "weight": 2435,
+          "weight_raw": "2435",
+          "source_line": 31363,
+          "raw": "伯\t2435"
+        }
+      ],
+      "洢": [
+        {
+          "text": "洢",
+          "weight": 437,
+          "weight_raw": "437",
+          "source_line": 244789,
+          "raw": "洢\t437"
+        }
+      ],
+      "香": [
+        {
+          "text": "香",
+          "weight": 7072,
+          "weight_raw": "7072",
+          "source_line": 429235,
+          "raw": "香\t7072"
+        }
+      ],
+      "港": [
+        {
+          "text": "港",
+          "weight": 5099,
+          "weight_raw": "5099",
+          "source_line": 251031,
+          "raw": "港\t5099"
+        }
+      ],
+      "𣿑": [],
+      "竹": [
+        {
+          "text": "竹",
+          "weight": 3072,
+          "weight_raw": "3072",
+          "source_line": 302227,
+          "raw": "竹\t3072"
+        }
+      ],
+      "丿": [
+        {
+          "text": "丿",
+          "weight": 735,
+          "weight_raw": "735",
+          "source_line": 19045,
+          "raw": "丿\t735"
+        }
+      ],
+      "𥫗": [],
+      "田": [
+        {
+          "text": "田",
+          "weight": 5643,
+          "weight_raw": "5643",
+          "source_line": 276128,
+          "raw": "田\t5643"
+        }
+      ],
+      "一": [
+        {
+          "text": "一",
+          "weight": 135314,
+          "weight_raw": "135314",
+          "source_line": 155,
+          "raw": "一\t135314"
+        }
+      ],
+      "女": [
+        {
+          "text": "女",
+          "weight": 23625,
+          "weight_raw": "23625",
+          "source_line": 116467,
+          "raw": "女\t23625"
+        }
+      ],
+      "尸": [
+        {
+          "text": "尸",
+          "weight": 846,
+          "weight_raw": "846",
+          "source_line": 136393,
+          "raw": "尸\t846"
+        }
+      ],
+      "手": [
+        {
+          "text": "手",
+          "weight": 17113,
+          "weight_raw": "17113",
+          "source_line": 171128,
+          "raw": "手\t17113"
+        }
+      ],
+      "廿": [
+        {
+          "text": "廿",
+          "weight": 964,
+          "weight_raw": "964",
+          "source_line": 149020,
+          "raw": "廿\t964"
+        }
+      ],
+      "水": [
+        {
+          "text": "水",
+          "weight": 28524,
+          "weight_raw": "28524",
+          "source_line": 236474,
+          "raw": "水\t28524"
+        }
+      ],
+      "月": [
+        {
+          "text": "月",
+          "weight": 66349,
+          "weight_raw": "66349",
+          "source_line": 211821,
+          "raw": "月\t66349"
+        }
+      ],
+      "金": [
+        {
+          "text": "金",
+          "weight": 16064,
+          "weight_raw": "16064",
+          "source_line": 399715,
+          "raw": "金\t16064"
+        }
+      ],
+      "弓": [
+        {
+          "text": "弓",
+          "weight": 2187,
+          "weight_raw": "2187",
+          "source_line": 149328,
+          "raw": "弓\t2187"
+        }
+      ],
+      "𢎗": [],
+      "卜": [
+        {
+          "text": "卜",
+          "weight": 1186,
+          "weight_raw": "1186",
+          "source_line": 71070,
+          "raw": "卜\t1186"
+        }
+      ],
+      "口": [
+        {
+          "text": "口",
+          "weight": 9737,
+          "weight_raw": "9737",
+          "source_line": 75834,
+          "raw": "口\t9737"
+        }
+      ],
+      "戈": [
+        {
+          "text": "戈",
+          "weight": 1658,
+          "weight_raw": "1658",
+          "source_line": 166455,
+          "raw": "戈\t1658"
+        }
+      ],
+      "、": [],
+      "丶": [
+        {
+          "text": "丶",
+          "weight": 900,
+          "weight_raw": "900",
+          "source_line": 18253,
+          "raw": "丶\t900"
+        }
+      ],
+      "心": [
+        {
+          "text": "心",
+          "weight": 21110,
+          "weight_raw": "21110",
+          "source_line": 156112,
+          "raw": "心\t21110"
+        }
+      ],
+      "日": [
+        {
+          "text": "日",
+          "weight": 71052,
+          "weight_raw": "71052",
+          "source_line": 202591,
+          "raw": "日\t71052"
+        }
+      ],
+      "曰": [
+        {
+          "text": "曰",
+          "weight": 3017,
+          "weight_raw": "3017",
+          "source_line": 208553,
+          "raw": "曰\t3017"
+        }
+      ],
+      "大": [
+        {
+          "text": "大",
+          "weight": 107094,
+          "weight_raw": "107094",
+          "source_line": 108326,
+          "raw": "大\t107094"
+        }
+      ],
+      "乂": [
+        {
+          "text": "乂",
+          "weight": 611,
+          "weight_raw": "611",
+          "source_line": 19048,
+          "raw": "乂\t611"
+        }
+      ],
+      "㐅": [
+        {
+          "text": "㐅",
+          "weight": 1,
+          "weight_raw": "1",
+          "source_line": 14,
+          "raw": "㐅\t1"
+        }
+      ],
+      "人": [
+        {
+          "text": "人",
+          "weight": 250956,
+          "weight_raw": "250956",
+          "source_line": 25935,
+          "raw": "人\t250956"
+        }
+      ],
+      "木": [
+        {
+          "text": "木",
+          "weight": 7336,
+          "weight_raw": "7336",
+          "source_line": 215616,
+          "raw": "木\t7336"
+        }
+      ],
+      "山": [
+        {
+          "text": "山",
+          "weight": 11877,
+          "weight_raw": "11877",
+          "source_line": 137820,
+          "raw": "山\t11877"
+        }
+      ],
+      "粵拼": [
+        {
+          "text": "粵拼",
+          "weight": 100,
+          "weight_raw": "100",
+          "source_line": 307395,
+          "raw": "粵拼\t100"
+        }
+      ],
+      "測試": [
+        {
+          "text": "測試",
+          "weight": 36183,
+          "weight_raw": "36183",
+          "source_line": 250874,
+          "raw": "測試\t36183"
+        }
+      ],
+      "莫伯洢": [],
+      "香港": [
+        {
+          "text": "香港",
+          "weight": 26427,
+          "weight_raw": "26427",
+          "source_line": 429353,
+          "raw": "香港\t26427"
+        }
+      ],
+      "竹田一女尸手廿廿": [],
+      "水月金弓卜口戈心一": [],
+      "廿日大人竹日水人尸大": [],
+      "竹木日水廿金山": []
+    },
+    "missing_selected_texts": [
+      "𢪝",
+      "𣿑",
+      "𥫗",
+      "𢎗",
+      "、",
+      "莫伯洢",
+      "竹田一女尸手廿廿",
+      "水月金弓卜口戈心一",
+      "廿日大人竹日水人尸大",
+      "竹木日水廿金山"
+    ]
+  },
+  "scope": {
+    "owner_atom_codes": [
+      "hwmvs",
+      "qtt",
+      "ebcn",
+      "yripm",
+      "tak",
+      "oha",
+      "eosk"
+    ],
+    "control_codes": [
+      "hda",
+      "etcu"
+    ],
+    "one_letter_root_codes": [
+      "h",
+      "w",
+      "m",
+      "v",
+      "s",
+      "q",
+      "t",
+      "e",
+      "b",
+      "c",
+      "n",
+      "y",
+      "r",
+      "i",
+      "p",
+      "a",
+      "k",
+      "o",
+      "d",
+      "u"
+    ],
+    "all_requested_codes": [
+      "hwmvs",
+      "qtt",
+      "ebcn",
+      "yripm",
+      "tak",
+      "oha",
+      "eosk",
+      "hda",
+      "etcu",
+      "h",
+      "w",
+      "m",
+      "v",
+      "s",
+      "q",
+      "t",
+      "e",
+      "b",
+      "c",
+      "n",
+      "y",
+      "r",
+      "i",
+      "p",
+      "a",
+      "k",
+      "o",
+      "d",
+      "u"
+    ],
+    "cohort_policy": "complete exact-code rows from cangjie5.base, cangjie5.stem, and cangjie5.extended in declared import/file order"
+  },
+  "competing_segmentations": [
+    {
+      "input": "hwmvsqtt",
+      "target": "粵拼",
+      "target_codepoints": "U+7CB5 U+62FC",
+      "target_characters": [
+        "粵",
+        "拼"
+      ],
+      "target_atom_codes": [
+        "hwmvs",
+        "qtt"
+      ],
+      "oracle_candidate_index": 0,
+      "oracle_preedit": "hwmvs qtt",
+      "oracle_commit_text_preview": "粵拼",
+      "root_code_path": [
+        "h",
+        "w",
+        "m",
+        "v",
+        "s",
+        "q",
+        "t",
+        "t"
+      ],
+      "root_candidate_zero_characters": [
+        "竹",
+        "田",
+        "一",
+        "女",
+        "尸",
+        "手",
+        "廿",
+        "廿"
+      ],
+      "root_candidate_zero_sentence": "竹田一女尸手廿廿"
+    },
+    {
+      "input": "ebcnyripm",
+      "target": "測試",
+      "target_codepoints": "U+6E2C U+8A66",
+      "target_characters": [
+        "測",
+        "試"
+      ],
+      "target_atom_codes": [
+        "ebcn",
+        "yripm"
+      ],
+      "oracle_candidate_index": 0,
+      "oracle_preedit": "ebcn yripm",
+      "oracle_commit_text_preview": "測試",
+      "root_code_path": [
+        "e",
+        "b",
+        "c",
+        "n",
+        "y",
+        "r",
+        "i",
+        "p",
+        "m"
+      ],
+      "root_candidate_zero_characters": [
+        "水",
+        "月",
+        "金",
+        "弓",
+        "卜",
+        "口",
+        "戈",
+        "心",
+        "一"
+      ],
+      "root_candidate_zero_sentence": "水月金弓卜口戈心一"
+    },
+    {
+      "input": "takohaeosk",
+      "target": "莫伯洢",
+      "target_codepoints": "U+83AB U+4F2F U+6D22",
+      "target_characters": [
+        "莫",
+        "伯",
+        "洢"
+      ],
+      "target_atom_codes": [
+        "tak",
+        "oha",
+        "eosk"
+      ],
+      "oracle_candidate_index": 0,
+      "oracle_preedit": "tak oha eosk",
+      "oracle_commit_text_preview": "莫伯洢",
+      "root_code_path": [
+        "t",
+        "a",
+        "k",
+        "o",
+        "h",
+        "a",
+        "e",
+        "o",
+        "s",
+        "k"
+      ],
+      "root_candidate_zero_characters": [
+        "廿",
+        "日",
+        "大",
+        "人",
+        "竹",
+        "日",
+        "水",
+        "人",
+        "尸",
+        "大"
+      ],
+      "root_candidate_zero_sentence": "廿日大人竹日水人尸大"
+    },
+    {
+      "input": "hdaetcu",
+      "target": "香港",
+      "target_codepoints": "U+9999 U+6E2F",
+      "target_characters": [
+        "香",
+        "港"
+      ],
+      "target_atom_codes": [
+        "hda",
+        "etcu"
+      ],
+      "oracle_candidate_index": 0,
+      "oracle_preedit": "hda etcu",
+      "oracle_commit_text_preview": "香港",
+      "root_code_path": [
+        "h",
+        "d",
+        "a",
+        "e",
+        "t",
+        "c",
+        "u"
+      ],
+      "root_candidate_zero_characters": [
+        "竹",
+        "木",
+        "日",
+        "水",
+        "廿",
+        "金",
+        "山"
+      ],
+      "root_candidate_zero_sentence": "竹木日水廿金山"
+    }
+  ],
+  "exact_code_cohorts": {
+    "hwmvs": [
+      {
+        "text": "粵",
+        "code": "hwmvs",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 7146,
+        "raw": "粵\thwmvs",
+        "essay_rows": [
+          {
+            "text": "粵",
+            "weight": 1679,
+            "weight_raw": "1679",
+            "source_line": 307389,
+            "raw": "粵\t1679"
+          }
+        ],
+        "effective_compiler_weight": 1679
+      },
+      {
+        "text": "粤",
+        "code": "hwmvs",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 7147,
+        "raw": "粤\thwmvs",
+        "essay_rows": [
+          {
+            "text": "粤",
+            "weight": 0,
+            "weight_raw": "0",
+            "source_line": 307352,
+            "raw": "粤\t0"
+          }
+        ],
+        "effective_compiler_weight": 0
+      }
+    ],
+    "qtt": [
+      {
+        "text": "拼",
+        "code": "qtt",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 15434,
+        "raw": "拼\tqtt",
+        "essay_rows": [
+          {
+            "text": "拼",
+            "weight": 3088,
+            "weight_raw": "3088",
+            "source_line": 180071,
+            "raw": "拼\t3088"
+          }
+        ],
+        "effective_compiler_weight": 3088
+      },
+      {
+        "text": "𢪝",
+        "code": "qtt",
+        "source_file": "cangjie5.extended.dict.yaml",
+        "source_line": 37314,
+        "raw": "𢪝\tqtt",
+        "essay_rows": [],
+        "effective_compiler_weight": 0
+      }
+    ],
+    "ebcn": [
+      {
+        "text": "測",
+        "code": "ebcn",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 3255,
+        "raw": "測\tebcn",
+        "essay_rows": [
+          {
+            "text": "測",
+            "weight": 4030,
+            "weight_raw": "4030",
+            "source_line": 250793,
+            "raw": "測\t4030"
+          }
+        ],
+        "effective_compiler_weight": 4030
+      }
+    ],
+    "yripm": [
+      {
+        "text": "試",
+        "code": "yripm",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 21106,
+        "raw": "試\tyripm",
+        "essay_rows": [
+          {
+            "text": "試",
+            "weight": 7462,
+            "weight_raw": "7462",
+            "source_line": 360851,
+            "raw": "試\t7462"
+          }
+        ],
+        "effective_compiler_weight": 7462
+      }
+    ],
+    "tak": [
+      {
+        "text": "莫",
+        "code": "tak",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 17245,
+        "raw": "莫\ttak",
+        "essay_rows": [
+          {
+            "text": "莫",
+            "weight": 5358,
+            "weight_raw": "5358",
+            "source_line": 340043,
+            "raw": "莫\t5358"
+          }
+        ],
+        "effective_compiler_weight": 5358
+      }
+    ],
+    "oha": [
+      {
+        "text": "伯",
+        "code": "oha",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 12957,
+        "raw": "伯\toha",
+        "essay_rows": [
+          {
+            "text": "伯",
+            "weight": 2435,
+            "weight_raw": "2435",
+            "source_line": 31363,
+            "raw": "伯\t2435"
+          }
+        ],
+        "effective_compiler_weight": 2435
+      }
+    ],
+    "eosk": [
+      {
+        "text": "洢",
+        "code": "eosk",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 3956,
+        "raw": "洢\teosk",
+        "essay_rows": [
+          {
+            "text": "洢",
+            "weight": 437,
+            "weight_raw": "437",
+            "source_line": 244789,
+            "raw": "洢\t437"
+          }
+        ],
+        "effective_compiler_weight": 437
+      }
+    ],
+    "hda": [
+      {
+        "text": "香",
+        "code": "hda",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 5860,
+        "raw": "香\thda",
+        "essay_rows": [
+          {
+            "text": "香",
+            "weight": 7072,
+            "weight_raw": "7072",
+            "source_line": 429235,
+            "raw": "香\t7072"
+          }
+        ],
+        "effective_compiler_weight": 7072
+      }
+    ],
+    "etcu": [
+      {
+        "text": "港",
+        "code": "etcu",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 4109,
+        "raw": "港\tetcu",
+        "essay_rows": [
+          {
+            "text": "港",
+            "weight": 5099,
+            "weight_raw": "5099",
+            "source_line": 251031,
+            "raw": "港\t5099"
+          }
+        ],
+        "effective_compiler_weight": 5099
+      },
+      {
+        "text": "𣿑",
+        "code": "etcu",
+        "source_file": "cangjie5.extended.dict.yaml",
+        "source_line": 13724,
+        "raw": "𣿑\tetcu",
+        "essay_rows": [],
+        "effective_compiler_weight": 0
+      }
+    ],
+    "h": [
+      {
+        "text": "竹",
+        "code": "h",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 5682,
+        "raw": "竹\th",
+        "essay_rows": [
+          {
+            "text": "竹",
+            "weight": 3072,
+            "weight_raw": "3072",
+            "source_line": 302227,
+            "raw": "竹\t3072"
+          }
+        ],
+        "effective_compiler_weight": 3072
+      },
+      {
+        "text": "丿",
+        "code": "h",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 5683,
+        "raw": "丿\th",
+        "essay_rows": [
+          {
+            "text": "丿",
+            "weight": 735,
+            "weight_raw": "735",
+            "source_line": 19045,
+            "raw": "丿\t735"
+          }
+        ],
+        "effective_compiler_weight": 735
+      },
+      {
+        "text": "𥫗",
+        "code": "h",
+        "source_file": "cangjie5.extended.dict.yaml",
+        "source_line": 16715,
+        "raw": "𥫗\th",
+        "essay_rows": [],
+        "effective_compiler_weight": 0
+      }
+    ],
+    "w": [
+      {
+        "text": "田",
+        "code": "w",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 20137,
+        "raw": "田\tw",
+        "essay_rows": [
+          {
+            "text": "田",
+            "weight": 5643,
+            "weight_raw": "5643",
+            "source_line": 276128,
+            "raw": "田\t5643"
+          }
+        ],
+        "effective_compiler_weight": 5643
+      }
+    ],
+    "m": [
+      {
+        "text": "一",
+        "code": "m",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 10312,
+        "raw": "一\tm",
+        "essay_rows": [
+          {
+            "text": "一",
+            "weight": 135314,
+            "weight_raw": "135314",
+            "source_line": 155,
+            "raw": "一\t135314"
+          }
+        ],
+        "effective_compiler_weight": 135314
+      }
+    ],
+    "v": [
+      {
+        "text": "女",
+        "code": "v",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 19032,
+        "raw": "女\tv",
+        "essay_rows": [
+          {
+            "text": "女",
+            "weight": 23625,
+            "weight_raw": "23625",
+            "source_line": 116467,
+            "raw": "女\t23625"
+          }
+        ],
+        "effective_compiler_weight": 23625
+      }
+    ],
+    "s": [
+      {
+        "text": "尸",
+        "code": "s",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 16558,
+        "raw": "尸\ts",
+        "essay_rows": [
+          {
+            "text": "尸",
+            "weight": 846,
+            "weight_raw": "846",
+            "source_line": 136393,
+            "raw": "尸\t846"
+          }
+        ],
+        "effective_compiler_weight": 846
+      }
+    ],
+    "q": [
+      {
+        "text": "手",
+        "code": "q",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 14659,
+        "raw": "手\tq",
+        "essay_rows": [
+          {
+            "text": "手",
+            "weight": 17113,
+            "weight_raw": "17113",
+            "source_line": 171128,
+            "raw": "手\t17113"
+          }
+        ],
+        "effective_compiler_weight": 17113
+      }
+    ],
+    "t": [
+      {
+        "text": "廿",
+        "code": "t",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 17227,
+        "raw": "廿\tt",
+        "essay_rows": [
+          {
+            "text": "廿",
+            "weight": 964,
+            "weight_raw": "964",
+            "source_line": 149020,
+            "raw": "廿\t964"
+          }
+        ],
+        "effective_compiler_weight": 964
+      }
+    ],
+    "e": [
+      {
+        "text": "水",
+        "code": "e",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 3200,
+        "raw": "水\te",
+        "essay_rows": [
+          {
+            "text": "水",
+            "weight": 28524,
+            "weight_raw": "28524",
+            "source_line": 236474,
+            "raw": "水\t28524"
+          }
+        ],
+        "effective_compiler_weight": 28524
+      }
+    ],
+    "b": [
+      {
+        "text": "月",
+        "code": "b",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 456,
+        "raw": "月\tb",
+        "essay_rows": [
+          {
+            "text": "月",
+            "weight": 66349,
+            "weight_raw": "66349",
+            "source_line": 211821,
+            "raw": "月\t66349"
+          }
+        ],
+        "effective_compiler_weight": 66349
+      }
+    ],
+    "c": [
+      {
+        "text": "金",
+        "code": "c",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 1386,
+        "raw": "金\tc",
+        "essay_rows": [
+          {
+            "text": "金",
+            "weight": 16064,
+            "weight_raw": "16064",
+            "source_line": 399715,
+            "raw": "金\t16064"
+          }
+        ],
+        "effective_compiler_weight": 16064
+      }
+    ],
+    "n": [
+      {
+        "text": "弓",
+        "code": "n",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 11765,
+        "raw": "弓\tn",
+        "essay_rows": [
+          {
+            "text": "弓",
+            "weight": 2187,
+            "weight_raw": "2187",
+            "source_line": 149328,
+            "raw": "弓\t2187"
+          }
+        ],
+        "effective_compiler_weight": 2187
+      },
+      {
+        "text": "𢎗",
+        "code": "n",
+        "source_file": "cangjie5.extended.dict.yaml",
+        "source_line": 31294,
+        "raw": "𢎗\tn",
+        "essay_rows": [],
+        "effective_compiler_weight": 0
+      }
+    ],
+    "y": [
+      {
+        "text": "卜",
+        "code": "y",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 20410,
+        "raw": "卜\ty",
+        "essay_rows": [
+          {
+            "text": "卜",
+            "weight": 1186,
+            "weight_raw": "1186",
+            "source_line": 71070,
+            "raw": "卜\t1186"
+          }
+        ],
+        "effective_compiler_weight": 1186
+      }
+    ],
+    "r": [
+      {
+        "text": "口",
+        "code": "r",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 15554,
+        "raw": "口\tr",
+        "essay_rows": [
+          {
+            "text": "口",
+            "weight": 9737,
+            "weight_raw": "9737",
+            "source_line": 75834,
+            "raw": "口\t9737"
+          }
+        ],
+        "effective_compiler_weight": 9737
+      }
+    ],
+    "i": [
+      {
+        "text": "戈",
+        "code": "i",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 7307,
+        "raw": "戈\ti",
+        "essay_rows": [
+          {
+            "text": "戈",
+            "weight": 1658,
+            "weight_raw": "1658",
+            "source_line": 166455,
+            "raw": "戈\t1658"
+          }
+        ],
+        "effective_compiler_weight": 1658
+      },
+      {
+        "text": "、",
+        "code": "i",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 7308,
+        "raw": "、\ti",
+        "essay_rows": [],
+        "effective_compiler_weight": 0
+      },
+      {
+        "text": "丶",
+        "code": "i",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 7309,
+        "raw": "丶\ti",
+        "essay_rows": [
+          {
+            "text": "丶",
+            "weight": 900,
+            "weight_raw": "900",
+            "source_line": 18253,
+            "raw": "丶\t900"
+          }
+        ],
+        "effective_compiler_weight": 900
+      }
+    ],
+    "p": [
+      {
+        "text": "心",
+        "code": "p",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 14116,
+        "raw": "心\tp",
+        "essay_rows": [
+          {
+            "text": "心",
+            "weight": 21110,
+            "weight_raw": "21110",
+            "source_line": 156112,
+            "raw": "心\t21110"
+          }
+        ],
+        "effective_compiler_weight": 21110
+      }
+    ],
+    "a": [
+      {
+        "text": "日",
+        "code": "a",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 27,
+        "raw": "日\ta",
+        "essay_rows": [
+          {
+            "text": "日",
+            "weight": 71052,
+            "weight_raw": "71052",
+            "source_line": 202591,
+            "raw": "日\t71052"
+          }
+        ],
+        "effective_compiler_weight": 71052
+      },
+      {
+        "text": "曰",
+        "code": "a",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 28,
+        "raw": "曰\ta",
+        "essay_rows": [
+          {
+            "text": "曰",
+            "weight": 3017,
+            "weight_raw": "3017",
+            "source_line": 208553,
+            "raw": "曰\t3017"
+          }
+        ],
+        "effective_compiler_weight": 3017
+      }
+    ],
+    "k": [
+      {
+        "text": "大",
+        "code": "k",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 8699,
+        "raw": "大\tk",
+        "essay_rows": [
+          {
+            "text": "大",
+            "weight": 107094,
+            "weight_raw": "107094",
+            "source_line": 108326,
+            "raw": "大\t107094"
+          }
+        ],
+        "effective_compiler_weight": 107094
+      },
+      {
+        "text": "乂",
+        "code": "k",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 8700,
+        "raw": "乂\tk",
+        "essay_rows": [
+          {
+            "text": "乂",
+            "weight": 611,
+            "weight_raw": "611",
+            "source_line": 19048,
+            "raw": "乂\t611"
+          }
+        ],
+        "effective_compiler_weight": 611
+      },
+      {
+        "text": "㐅",
+        "code": "k",
+        "source_file": "cangjie5.extended.dict.yaml",
+        "source_line": 2793,
+        "raw": "㐅\tk",
+        "essay_rows": [
+          {
+            "text": "㐅",
+            "weight": 1,
+            "weight_raw": "1",
+            "source_line": 14,
+            "raw": "㐅\t1"
+          }
+        ],
+        "effective_compiler_weight": 1
+      }
+    ],
+    "o": [
+      {
+        "text": "人",
+        "code": "o",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 12777,
+        "raw": "人\to",
+        "essay_rows": [
+          {
+            "text": "人",
+            "weight": 250956,
+            "weight_raw": "250956",
+            "source_line": 25935,
+            "raw": "人\t250956"
+          }
+        ],
+        "effective_compiler_weight": 250956
+      }
+    ],
+    "d": [
+      {
+        "text": "木",
+        "code": "d",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 2143,
+        "raw": "木\td",
+        "essay_rows": [
+          {
+            "text": "木",
+            "weight": 7336,
+            "weight_raw": "7336",
+            "source_line": 215616,
+            "raw": "木\t7336"
+          }
+        ],
+        "effective_compiler_weight": 7336
+      }
+    ],
+    "u": [
+      {
+        "text": "山",
+        "code": "u",
+        "source_file": "cangjie5.base.dict.yaml",
+        "source_line": 18629,
+        "raw": "山\tu",
+        "essay_rows": [
+          {
+            "text": "山",
+            "weight": 11877,
+            "weight_raw": "11877",
+            "source_line": 137820,
+            "raw": "山\t11877"
+          }
+        ],
+        "effective_compiler_weight": 11877
+      }
+    ]
+  }
+}

@@ -18,9 +18,9 @@ use crate::{
     CandidateSource, CompactTableByteSource, CompactTableStore, DartsDoubleArray,
     DictionaryLookupRecord, MemoryOwnerClass, RimeCorrectionEntry, RimeDictArtifactStatus,
     RimeDictRebuildExecutionReport, RimeDictRebuildPlan, RimeDictRebuildSources,
-    RimePrismBinParseError, RimePrismSpellingDescriptor, RimeTableBinAdvancedDataOptions,
-    RimeTableBinParseError, RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData,
-    TableEncoder, TableEntry, TableEntryWeightDomain,
+    RimePrismBinParseError, RimePrismRuntimePayload, RimePrismSpellingDescriptor,
+    RimeTableBinAdvancedDataOptions, RimeTableBinParseError, RimeToleranceRule, TableDictionary,
+    TableDictionaryAdvancedData, TableEncoder, TableEntry, TableEntryWeightDomain,
 };
 
 #[derive(Debug)]
@@ -2023,4 +2023,43 @@ fn put_offset(bytes: &mut [u8], field_offset: usize, target: usize) {
     let raw = i32::try_from(target as isize - field_offset as isize)
         .expect("fixture offset should fit i32");
     put_i32_le(bytes, field_offset, raw);
+}
+
+#[test]
+fn predictive_prism_lookup_is_breadth_first_and_limits_keys_before_descriptors() {
+    let syllabary = ["a", "aa", "aaa", "ab", "ac"].map(str::to_owned).to_vec();
+    let bytes = build_prism_bin(&syllabary, &[], 0x5904_d411, 0x5904_d412);
+    let owned = RimePrismRuntimePayload::from(
+        parse_rime_prism_bin_payload(bytes.clone()).expect("owned predictive prism should parse"),
+    );
+    let byte_source: Arc<dyn CompactTableByteSource> = Arc::new(TestPrismByteSource {
+        bytes: Arc::<[u8]>::from(bytes),
+        mapping_mode: "owned_test_bytes",
+    });
+    let byte_backed = parse_rime_prism_runtime_payload(byte_source)
+        .expect("byte-backed predictive prism should parse");
+
+    for (storage, prism) in [("owned", owned), ("byte-backed", byte_backed)] {
+        let breadth_first = prism
+            .predictive_canonical_codes_with_limit("a", &syllabary, 4)
+            .into_iter()
+            .map(|lookup| lookup.code)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            breadth_first,
+            ["a", "aa", "ab", "ac"],
+            "{storage}: exact key precedes breadth-first children; deeper aaa is outside limit"
+        );
+
+        // The second selected prism key (`aa`) has no valid descriptor in this
+        // deliberately shortened syllabary view. The key limit must still stop
+        // before `ab`; descriptor filtering cannot refill the window.
+        let shortened = ["a".to_owned()];
+        let limited_before_filter = prism
+            .predictive_canonical_codes_with_limit("a", &shortened, 2)
+            .into_iter()
+            .map(|lookup| lookup.code)
+            .collect::<Vec<_>>();
+        assert_eq!(limited_before_filter, ["a"], "{storage}: key-count limit");
+    }
 }

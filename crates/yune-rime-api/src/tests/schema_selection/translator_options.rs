@@ -989,6 +989,171 @@ dadan\t大单
 }
 
 #[test]
+fn select_schema_marks_upstream_table_sentence_policy_without_identity_or_profile_leak() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-marked-table-sentence-policy");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+
+    let schema = |schema_id: &str, marker: bool, enable_sentence: bool, profile: bool| {
+        let profile = if profile {
+            "yune:\n  profile: typeduck_jyutping\n"
+        } else {
+            ""
+        };
+        let marker = if marker {
+            "  yune_sentence_policy: upstream_script\n"
+        } else {
+            ""
+        };
+        format!(
+            "{profile}schema:\n  schema_id: {schema_id}\n  name: Marked table sentence policy\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: cangjie_policy\n  enable_completion: false\n  enable_sentence: {enable_sentence}\n{marker}"
+        )
+    };
+    for (schema_id, marker, enable_sentence, profile) in [
+        ("marked", true, true, false),
+        ("renamed_marked", true, true, false),
+        ("unmarked", false, true, false),
+        ("marked_disabled", true, false, false),
+        ("typeduck_marked", true, true, true),
+    ] {
+        fs::write(
+            staging.join(format!("{schema_id}.schema.yaml")),
+            schema(schema_id, marker, enable_sentence, profile),
+        )
+        .expect("schema config should be written");
+    }
+    fs::write(
+        staging.join("namespace_unmarked.schema.yaml"),
+        "\
+schema:
+  schema_id: namespace_unmarked
+  name: Namespace isolation control
+engine:
+  translators:
+    - table_translator@oracle
+translator:
+  yune_sentence_policy: upstream_script
+oracle:
+  dictionary: cangjie_policy
+  enable_completion: false
+  enable_sentence: true
+",
+    )
+    .expect("namespace control schema should be written");
+    fs::write(
+        staging.join("namespace_marked.schema.yaml"),
+        "\
+schema:
+  schema_id: namespace_marked
+  name: Namespace marker
+engine:
+  translators:
+    - table_translator@oracle
+oracle:
+  dictionary: cangjie_policy
+  enable_completion: false
+  enable_sentence: true
+  yune_sentence_policy: upstream_script
+",
+    )
+    .expect("namespace marker schema should be written");
+    fs::write(
+        shared.join("cangjie_policy.dict.yaml"),
+        "\
+---
+name: cangjie_policy
+version: '0.1'
+sort: by_weight
+columns: [text, code, weight]
+...
+
+粵\thwmvs\t1679
+拼\tqtt\t3088
+竹\th\t100000
+田\tw\t100000
+一\tm\t100000
+女\tv\t100000
+尸\ts\t100000
+手\tq\t100000
+廿\tt\t100000
+",
+    )
+    .expect("policy dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let candidates_for = |schema_id: &str| {
+        let session_id = RimeCreateSession();
+        let schema_id = CString::new(schema_id).expect("schema id should be valid");
+        // SAFETY: schema id is a valid NUL-terminated string.
+        assert_eq!(
+            unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+            TRUE
+        );
+        for ch in "hwmvsqtt".chars() {
+            assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+        }
+        let candidates = super::super::session_candidates_snapshot(session_id)
+            .expect("selected schema should expose a session")
+            .into_iter()
+            .map(|candidate| candidate.text)
+            .collect::<Vec<_>>();
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+        candidates
+    };
+
+    let marked = candidates_for("marked");
+    let renamed = candidates_for("renamed_marked");
+    let unmarked = candidates_for("unmarked");
+    let disabled = candidates_for("marked_disabled");
+    let typeduck = candidates_for("typeduck_marked");
+    let namespace_unmarked = candidates_for("namespace_unmarked");
+    let namespace_marked = candidates_for("namespace_marked");
+    assert_eq!(marked.first().map(String::as_str), Some("粵拼"));
+    assert_eq!(renamed, marked, "the marker must be schema-id invariant");
+    assert_eq!(
+        unmarked.first().map(String::as_str),
+        Some("竹田一女尸手廿廿"),
+        "the unmarked control must preserve the legacy competing segmentation"
+    );
+    assert!(
+        !disabled.iter().any(|candidate| candidate == "粵拼"),
+        "enable_sentence=false must override the marker"
+    );
+    assert_eq!(
+        typeduck.first().map(String::as_str),
+        Some("竹田一女尸手廿廿"),
+        "the TypeDuck profile must remain isolated from upstream sentence policy"
+    );
+    assert_eq!(
+        namespace_unmarked.first().map(String::as_str),
+        Some("竹田一女尸手廿廿"),
+        "the primary translator marker must not leak into a named namespace"
+    );
+    assert_eq!(
+        namespace_marked.first().map(String::as_str),
+        Some("粵拼"),
+        "the active translator namespace should own its explicit marker"
+    );
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn jyutping_typeduck_profile_requires_explicit_yune_profile_marker() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

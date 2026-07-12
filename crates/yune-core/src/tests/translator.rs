@@ -17,7 +17,8 @@ use crate::{
     PunctuationTranslator, ReverseLookupTranslator, RimeCorrectionEntry, RimePrismBinPayload,
     RimePrismSpellingDescriptor, RimeToleranceRule, SentenceCodeSpan, SentencePolicy,
     StaticTableTranslator, Status, TableDictionary, TableDictionaryAdvancedData, TableEntry,
-    TranslationResult, Translator, TranslatorScratch, UniquifierFilter, UpstreamSentenceModel,
+    TranslationMergePolicy, TranslationResult, Translator, TranslatorScratch, UniquifierFilter,
+    UpstreamSentenceModel,
 };
 
 struct DropFirstWindowFilter;
@@ -5155,6 +5156,7 @@ fn bounded_page_cache_rejects_results_with_more_than_64_rows() {
         candidates: rows,
         is_complete: false,
         full_count: Some(66),
+        merge_policy: crate::TranslationMergePolicy::Default,
     });
     let owner = translator
         .memory_owner_rows()
@@ -7836,4 +7838,261 @@ fn sort_by_weight_compiled_path_keeps_default_order_and_v2_weight_metadata() {
     assert!(reloaded.sort_by_weight());
     let translator = StaticTableTranslator::from_dictionary(reloaded);
     assert_na_candidate_texts(&translator, &["second", "first"]);
+}
+
+#[test]
+fn upstream_table_sentence_translation_keeps_one_poet_sentence_then_real_prefix_rows() {
+    const INPUT: &str = "takohaeosk";
+    const TARGET: &str = "\u{83ab}\u{4f2f}\u{6d22}";
+    const MODEL_ONLY_PREFIX: &str = "\u{83ab}\u{5165}";
+    let dictionary = TableDictionary::new([
+        TableEntry::new("tak", "\u{83ab}", 1_000.0),
+        TableEntry::new("oha", "\u{4f2f}", 1_000.0),
+        TableEntry::new("eosk", "\u{6d22}", 1_000.0),
+        TableEntry::new("oh", "\u{5165}", 900.0),
+        TableEntry::new("ta", "\u{6614}", 800.0),
+        TableEntry::new("t", "\u{5eff}", 700.0),
+    ]);
+    let vocabulary = vec![PresetVocabularyEntry::new(MODEL_ONLY_PREFIX, 10_000.0)];
+    let configure = |translator: StaticTableTranslator, policy| {
+        translator
+            .with_completion(true)
+            .with_sentence(true)
+            .with_sentence_policy(policy)
+            .with_preset_vocabulary(vocabulary.clone())
+            .with_upstream_sentence_model(100)
+    };
+
+    let legacy = configure(
+        StaticTableTranslator::from_dictionary(dictionary.clone()),
+        SentencePolicy::LegacyFallback,
+    );
+    assert!(
+        legacy
+            .translate(INPUT)
+            .iter()
+            .any(|candidate| candidate.text == MODEL_ONLY_PREFIX),
+        "the control must prove Poet reconstructed a phrase which is absent from the table"
+    );
+
+    let source = configure(
+        StaticTableTranslator::from_dictionary(dictionary.clone()),
+        SentencePolicy::UpstreamTable,
+    );
+    let table_bytes = build_table_bin(&dictionary, 0x5904_d402);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("upstream-table sentence fixture metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("upstream-table sentence byte-backed store should parse");
+    let byte_backed = configure(
+        StaticTableTranslator::from_compact_table_store(store, None),
+        SentencePolicy::UpstreamTable,
+    );
+
+    let expected = [
+        (TARGET, CandidateSource::Sentence),
+        (
+            "\u{83ab}",
+            CandidateSource::PartialTable {
+                consumed: 3,
+                recompose_on_default: false,
+            },
+        ),
+        (
+            "\u{6614}",
+            CandidateSource::PartialTable {
+                consumed: 2,
+                recompose_on_default: false,
+            },
+        ),
+        (
+            "\u{5eff}",
+            CandidateSource::PartialTable {
+                consumed: 1,
+                recompose_on_default: false,
+            },
+        ),
+    ];
+    for (storage, translator) in [("source", source), ("byte-backed", byte_backed)] {
+        let complete = translator.translate(INPUT);
+        assert_eq!(
+            complete
+                .iter()
+                .map(|candidate| (candidate.text.as_str(), candidate.source.clone()))
+                .collect::<Vec<_>>(),
+            expected,
+            "{storage}: one best sentence must be followed only by real longest-first prefix rows"
+        );
+        assert!(
+            complete
+                .iter()
+                .all(|candidate| candidate.text != MODEL_ONLY_PREFIX),
+            "{storage}: model-only prefix phrases must not leak into TableTranslator output"
+        );
+
+        for limit in 1..expected.len() {
+            let bounded = translator.translate_with_context_and_request(
+                INPUT,
+                &Status::default(),
+                &HashMap::new(),
+                &Context::default(),
+                CandidateRequest::bounded(limit).with_debug_full_count(true),
+            );
+            assert_eq!(
+                bounded.candidates,
+                complete[..limit],
+                "{storage}: bounded sentence translation must be a field-identical complete prefix at {limit}"
+            );
+            assert!(
+                bounded.full_count.is_some_and(|count| count > limit),
+                "{storage}: bounded sentence translation must retain a tail witness"
+            );
+        }
+    }
+}
+
+fn upstream_table_lazy_fixture_dictionary() -> TableDictionary {
+    TableDictionary::new([
+        TableEntry::new("q", "exact", 500.0),
+        TableEntry::new("qa", "a", 90.0),
+        // CharsetFilter hides this row, but LazyTableTranslation's raw
+        // entry_count and the 10->100 Skip boundary must still count it.
+        TableEntry::new("qa", "\u{20000}", 85.0),
+        TableEntry::new("qb", "b", 80.0),
+        TableEntry::new("qc", "c", 70.0),
+        TableEntry::new("qd", "d", 60.0),
+        TableEntry::new("qe", "e", 50.0),
+        TableEntry::new("qf", "f", 40.0),
+        TableEntry::new("qg", "g", 30.0),
+        TableEntry::new("qh", "h", 20.0),
+        TableEntry::new("qi", "i", 10.0),
+        // These keys first appear after the 10-key stage. The first row after
+        // raw Skip is deliberately lower-weight than its sibling: librime
+        // exposes j before sorting the remaining current heads and emitting k.
+        TableEntry::new("qj", "j", 1.0),
+        TableEntry::new("qk", "k", 1_000.0),
+    ])
+}
+
+fn upstream_table_lazy_translator(translator: StaticTableTranslator) -> StaticTableTranslator {
+    translator
+        .with_completion(true)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamTable)
+        .with_leading_syllable_reachability(true)
+}
+
+fn upstream_table_result(
+    translator: &StaticTableTranslator,
+    request: CandidateRequest,
+) -> TranslationResult {
+    translator.translate_with_context_and_request(
+        "q",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        request.with_filter_extended_cjk(true),
+    )
+}
+
+#[test]
+fn upstream_table_lazy_10_to_100_order_is_source_and_byte_backed_identical() {
+    let dictionary = upstream_table_lazy_fixture_dictionary();
+    let source =
+        upstream_table_lazy_translator(StaticTableTranslator::from_dictionary(dictionary.clone()));
+
+    let table_bytes = build_table_bin(&dictionary, 0x5904_d401);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("upstream-table byte-backed metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("upstream-table byte-backed store should parse");
+    let byte_backed = upstream_table_lazy_translator(
+        StaticTableTranslator::from_compact_table_store(store, None),
+    );
+
+    let expected = [
+        "exact", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k",
+    ];
+    for (storage, translator) in [("source", source), ("byte-backed", byte_backed)] {
+        let complete = upstream_table_result(&translator, CandidateRequest::unbounded());
+        let complete_texts = complete
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(complete_texts, expected, "{storage}: complete lazy order");
+        assert!(complete.is_complete, "{storage}: complete request");
+        assert_eq!(
+            complete.merge_policy,
+            crate::TranslationMergePolicy::UpstreamTable,
+            "{storage}: marked table result must request producer-head merge"
+        );
+
+        for limit in [10, 11] {
+            let bounded = upstream_table_result(&translator, CandidateRequest::bounded(limit));
+            let bounded_texts = bounded
+                .candidates
+                .iter()
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>();
+            assert_eq!(
+                bounded_texts,
+                expected[..limit],
+                "{storage}: bounded output must be a complete-list prefix at limit {limit}"
+            );
+            assert!(
+                !bounded.is_complete,
+                "{storage}: tail remains at limit {limit}"
+            );
+        }
+    }
+}
+
+#[test]
+fn upstream_table_lazy_order_coexists_with_default_on_leading_reachability() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("q", "Q", 100.0),
+        TableEntry::new("qa", "EXACT", 90.0),
+        TableEntry::new("qab", "COMPLETION", 80.0),
+    ]);
+    let translator =
+        upstream_table_lazy_translator(StaticTableTranslator::from_dictionary(dictionary));
+    let translate = |request| {
+        translator.translate_with_context_and_request(
+            "qa",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            request,
+        )
+    };
+
+    let complete = translate(CandidateRequest::unbounded());
+    let bounded = translate(CandidateRequest::bounded(3));
+    let texts = |result: &TranslationResult| {
+        result
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.clone())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(texts(&complete), ["EXACT", "COMPLETION", "Q"]);
+    assert_eq!(texts(&bounded), texts(&complete));
+    assert_eq!(bounded.merge_policy, TranslationMergePolicy::UpstreamTable);
+}
+
+#[test]
+fn unmarked_table_does_not_activate_upstream_table_merge_policy() {
+    let translator =
+        StaticTableTranslator::from_dictionary(upstream_table_lazy_fixture_dictionary())
+            .with_completion(true)
+            .with_sentence(true);
+    let result = upstream_table_result(&translator, CandidateRequest::bounded(12));
+    let texts = result
+        .candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(texts.first().copied(), Some("exact"));
+    assert_eq!(result.merge_policy, crate::TranslationMergePolicy::Default);
 }

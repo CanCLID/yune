@@ -2040,7 +2040,10 @@ impl UpstreamSentenceModel {
         spans: &[WeightedSentenceCodeSpan],
     ) -> Vec<RankedScriptPhraseCandidate> {
         self.ranked_script_phrase_candidates_for_weighted_code_spans_impl(
-            input, spans, None, false, None,
+            input,
+            spans,
+            CodeSpanGraphOptions::complete(false, false),
+            None,
         )
     }
 
@@ -2054,39 +2057,59 @@ impl UpstreamSentenceModel {
         self.ranked_script_phrase_candidates_for_weighted_code_spans_impl(
             input,
             spans,
-            Some(max_candidates.max(1)),
-            false,
-            Some(eligible_candidate),
+            CodeSpanGraphOptions {
+                root_only: true,
+                visible_limit: Some(max_candidates.max(1)),
+                eligible_candidate: Some(eligible_candidate),
+                ..CodeSpanGraphOptions::complete(false, false)
+            },
+            None,
         )
+    }
+
+    /// Computes the full-input direct-row K+1 prefix with the same complete,
+    /// unfiltered word-graph semantics as
+    /// `ranked_script_phrase_candidates_for_weighted_code_spans`. Returning
+    /// `None` means that accepted family exceeds `max_candidate_work`; no
+    /// truncated prefix is exposed to the caller. Partial graph rows remain
+    /// available while reconstructing the family but do not consume its
+    /// caller-visible work budget.
+    pub(crate) fn ranked_script_full_phrase_candidates_with_work_limit(
+        &self,
+        input: &str,
+        spans: &[WeightedSentenceCodeSpan],
+        max_candidate_work: usize,
+    ) -> Option<Vec<RankedScriptPhraseCandidate>> {
+        let probe_limit = max_candidate_work.saturating_add(1).max(1);
+        let candidates = self.ranked_script_phrase_candidates_for_weighted_code_spans_impl(
+            input,
+            spans,
+            CodeSpanGraphOptions {
+                visible_limit: Some(probe_limit),
+                ..CodeSpanGraphOptions::complete(false, false)
+            },
+            Some(input.len()),
+        );
+        (candidates.len() <= max_candidate_work).then_some(candidates)
     }
 
     fn ranked_script_phrase_candidates_for_weighted_code_spans_impl(
         &self,
         input: &str,
         spans: &[WeightedSentenceCodeSpan],
-        visible_limit: Option<usize>,
-        vocabulary_only: bool,
-        eligible_candidate: Option<&CandidateEligibility<'_>>,
+        graph_options: CodeSpanGraphOptions<'_>,
+        result_end: Option<usize>,
     ) -> Vec<RankedScriptPhraseCandidate> {
         if input.is_empty() || spans.is_empty() {
             return Vec::new();
         }
-        let graph = self.word_graph_for_code_spans(
-            input,
-            spans,
-            CodeSpanGraphOptions {
-                root_only: visible_limit.is_some(),
-                vocabulary_only,
-                // Source rows are scanned exactly, but every collector chunk
-                // retains only its first K+1 distinct eligible heads. The
-                // first K+1 unique rows of the union must occur inside that
-                // prefix of at least one chunk; later equal rows cannot precede
-                // an earlier equal head in the same stable chunk.
-                visible_limit,
-                eligible_candidate,
-                ..CodeSpanGraphOptions::complete(false, false)
-            },
-        );
+        let visible_limit = graph_options.visible_limit;
+        // Source rows are scanned exactly, but every collector chunk retains
+        // only its first K+1 distinct eligible heads. The first K+1 unique rows
+        // of the union must therefore occur inside that prefix of at least one
+        // chunk; later equal rows cannot precede an earlier equal head in the
+        // same stable chunk.
+        let graph = self.word_graph_for_code_spans(input, spans, graph_options);
         let Some(edges) = graph.get(&0) else {
             return Vec::new();
         };
@@ -2099,6 +2122,9 @@ impl UpstreamSentenceModel {
         let mut candidates = Vec::<RankedScriptPhraseCandidate>::new();
         let mut candidate_indices = HashMap::<String, usize>::new();
         for (end, entries) in edges {
+            if result_end.is_some_and(|required_end| *end != required_end) {
+                continue;
+            }
             // Pinned librime builds its canonical syllabary from a lexical
             // `std::set<string>`, discovers Table::Query accessors breadth
             // first by code depth, and then repeatedly applies MSVC's

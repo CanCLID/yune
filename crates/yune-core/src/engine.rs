@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -13,8 +13,8 @@ use crate::{
     CandidateRequest, CandidateSource, CommitRecord, Composition, Context, EchoTranslator,
     EngineInspectorSnapshot, FilterAuditRecord, KeyCode, KeyEvent, KeyModifiers,
     KeySequenceParseError, MemoryOwnerRow, MemoryStore, PageSnapshot, RerankResult, SegmentDebug,
-    Snapshot, StagedAiCandidates, Status, StorageDiagnosticsRow, Translator, UserDb,
-    UserDbCommitMetadata, UserDbLookupRequest, UserDbLookupResult,
+    Snapshot, StagedAiCandidates, Status, StorageDiagnosticsRow, TranslationMergePolicy,
+    Translator, UserDb, UserDbCommitMetadata, UserDbLookupRequest, UserDbLookupResult,
 };
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -58,20 +58,27 @@ struct ProducedCandidate {
     candidate: Candidate,
     upstream_script_translation: bool,
     producer_index: usize,
+    merge_policy: TranslationMergePolicy,
 }
 
 impl ProducedCandidate {
-    fn new(candidate: Candidate, upstream_script_translation: bool, producer_index: usize) -> Self {
+    fn new(
+        candidate: Candidate,
+        upstream_script_translation: bool,
+        producer_index: usize,
+        merge_policy: TranslationMergePolicy,
+    ) -> Self {
         Self {
             candidate,
             upstream_script_translation,
             producer_index,
+            merge_policy,
         }
     }
 }
 
 enum CandidateBatch {
-    Plain(Vec<Candidate>),
+    Plain(Vec<ProducedCandidate>),
     ProducerAware(Vec<ProducedCandidate>),
 }
 
@@ -89,14 +96,18 @@ impl CandidateBatch {
         candidates: Vec<Candidate>,
         upstream_script_translation: bool,
         producer_index: usize,
+        merge_policy: TranslationMergePolicy,
     ) {
+        let produced = candidates.into_iter().map(|candidate| {
+            ProducedCandidate::new(
+                candidate,
+                upstream_script_translation,
+                producer_index,
+                merge_policy,
+            )
+        });
         match self {
-            Self::Plain(batch) => batch.extend(candidates),
-            Self::ProducerAware(batch) => {
-                batch.extend(candidates.into_iter().map(|candidate| {
-                    ProducedCandidate::new(candidate, upstream_script_translation, producer_index)
-                }));
-            }
+            Self::Plain(batch) | Self::ProducerAware(batch) => batch.extend(produced),
         }
     }
 
@@ -109,10 +120,24 @@ impl CandidateBatch {
 
     fn sort_by_quality(&mut self) {
         match self {
-            Self::Plain(batch) => batch.sort_by(candidate_quality_order),
-            Self::ProducerAware(batch) => batch
+            Self::Plain(batch) | Self::ProducerAware(batch) => batch
                 .sort_by(|left, right| candidate_quality_order(&left.candidate, &right.candidate)),
         }
+    }
+
+    fn has_non_default_merge_policy(&self) -> bool {
+        match self {
+            Self::Plain(batch) | Self::ProducerAware(batch) => batch
+                .iter()
+                .any(|produced| produced.merge_policy != TranslationMergePolicy::Default),
+        }
+    }
+
+    fn merge_current_heads(&mut self) {
+        let batch = match self {
+            Self::Plain(batch) | Self::ProducerAware(batch) => batch,
+        };
+        remerge_translation_stream_heads(batch);
     }
 
     fn producer_aware_mut(&mut self) -> Option<&mut Vec<ProducedCandidate>> {
@@ -124,8 +149,7 @@ impl CandidateBatch {
 
     fn into_candidates(self) -> Vec<Candidate> {
         match self {
-            Self::Plain(batch) => batch,
-            Self::ProducerAware(batch) => batch
+            Self::Plain(batch) | Self::ProducerAware(batch) => batch
                 .into_iter()
                 .map(|produced| produced.candidate)
                 .collect(),
@@ -1551,7 +1575,12 @@ impl Engine {
                     };
                     crate::m37_record_translator(translator_start.elapsed());
                     candidate_list_complete &= result.is_complete;
-                    candidates.extend(result.candidates, upstream_script_translation, index);
+                    candidates.extend(
+                        result.candidates,
+                        upstream_script_translation,
+                        index,
+                        result.merge_policy,
+                    );
                 }
             } else {
                 for (index, translator) in self.translators.iter().enumerate() {
@@ -1567,7 +1596,12 @@ impl Engine {
                     );
                     crate::m37_record_translator(translator_start.elapsed());
                     candidate_list_complete &= result.is_complete;
-                    candidates.extend(result.candidates, upstream_script_translation, index);
+                    candidates.extend(
+                        result.candidates,
+                        upstream_script_translation,
+                        index,
+                        result.merge_policy,
+                    );
                 }
             }
             if self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping
@@ -1594,19 +1628,29 @@ impl Engine {
             for (index, translator) in self.translators.iter().enumerate() {
                 let upstream_script_translation = active_upstream_script_translation == Some(index);
                 let translator_start = Instant::now();
-                let translated = translator.translate_with_context(
+                let result = translator.translate_with_context_and_request(
                     &input,
                     &self.status,
                     &self.options,
                     &self.context,
+                    CandidateRequest::unbounded(),
                 );
                 crate::m37_record_translator(translator_start.elapsed());
-                candidates.extend(translated, upstream_script_translation, index);
+                candidates.extend(
+                    result.candidates,
+                    upstream_script_translation,
+                    index,
+                    result.merge_policy,
+                );
             }
             (candidates, true)
         };
         let sort_start = Instant::now();
-        candidates.sort_by_quality();
+        if candidates.has_non_default_merge_policy() {
+            candidates.merge_current_heads();
+        } else {
+            candidates.sort_by_quality();
+        }
         crate::m37_record_candidates_sorted(candidates.len());
         crate::m37_record_candidate_sort(sort_start.elapsed());
         let userdb_start = Instant::now();
@@ -1766,6 +1810,7 @@ fn merge_userdb_candidates(
                 } else {
                     usize::MAX
                 },
+                TranslationMergePolicy::Default,
             ),
         );
         script_stream_changed |= script_stream_user;
@@ -1822,6 +1867,89 @@ fn remerge_upstream_script_translation_stream(candidates: &mut Vec<ProducedCandi
     merged.extend(script_rows);
     merged.extend(other_rows);
     *candidates = merged;
+}
+
+fn remerge_translation_stream_heads(candidates: &mut Vec<ProducedCandidate>) {
+    if candidates.len() < 2 {
+        return;
+    }
+
+    // Translator results arrive contiguously in registration order. Preserve
+    // each result as an ordered stream: a non-default merge policy means its
+    // local iterator order is observable and must never be flattened into the
+    // engine's historical global quality sort.
+    let original = std::mem::take(candidates);
+    let capacity = original.len();
+    let mut streams = Vec::<VecDeque<ProducedCandidate>>::new();
+    for produced in original {
+        if streams
+            .last()
+            .and_then(VecDeque::front)
+            .is_some_and(|head| head.producer_index == produced.producer_index)
+        {
+            streams
+                .last_mut()
+                .expect("matching producer stream should exist")
+                .push_back(produced);
+        } else {
+            streams.push(VecDeque::from([produced]));
+        }
+    }
+
+    let mut merged = Vec::with_capacity(capacity);
+    while streams.iter().any(|stream| !stream.is_empty()) {
+        let active = streams
+            .iter()
+            .enumerate()
+            .filter_map(|(index, stream)| (!stream.is_empty()).then_some(index))
+            .collect::<Vec<_>>();
+        let mut elected = *active
+            .first()
+            .expect("at least one nonempty translation stream should remain");
+        for &next in active.iter().skip(1) {
+            let current_head = streams[elected]
+                .front()
+                .expect("elected translation should have a head");
+            let next_head = streams[next]
+                .front()
+                .expect("competing translation should have a head");
+            if translation_head_order(current_head, next_head) != Ordering::Greater {
+                // librime's MergedTranslation stops at the first translation
+                // whose Compare() does not yield to the next registered stream.
+                break;
+            }
+            elected = next;
+        }
+        merged.push(
+            streams[elected]
+                .pop_front()
+                .expect("elected translation head should remain"),
+        );
+    }
+    *candidates = merged;
+}
+
+fn translation_head_order(left: &ProducedCandidate, right: &ProducedCandidate) -> Ordering {
+    match left.merge_policy {
+        TranslationMergePolicy::Default | TranslationMergePolicy::UpstreamTable => {
+            candidate_quality_order(&left.candidate, &right.candidate)
+        }
+        TranslationMergePolicy::ReverseLookup {
+            normal_prefix_quality,
+        } => {
+            // Pinned ReverseLookupTranslation::Compare is deliberately
+            // asymmetric. A normally-spelled prefix lets the reverse stream
+            // outrank table completions; any reverse stream outranks a
+            // sentence. Otherwise it yields to the next registered stream.
+            if (normal_prefix_quality && right.candidate.source == CandidateSource::Completion)
+                || right.candidate.source == CandidateSource::Sentence
+            {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        }
+    }
 }
 
 fn equal_code_user_phrase_insert_index(user_quality: f32, candidates_len: usize) -> usize {

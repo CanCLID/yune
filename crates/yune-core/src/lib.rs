@@ -267,11 +267,30 @@ impl CandidateRequest {
     }
 }
 
+/// Controls how one translator's already-ordered candidate stream participates
+/// in the engine's cross-translator merge.
+///
+/// `Default` retains Yune's historical flat quality sort. `UpstreamTable`
+/// preserves the translator-local iterator order and asks the engine to elect
+/// between producer heads, matching librime's `MergedTranslation` boundary.
+/// Additional producer-specific comparison policies can extend this enum
+/// without changing the public C ABI.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum TranslationMergePolicy {
+    #[default]
+    Default,
+    UpstreamTable,
+    ReverseLookup {
+        normal_prefix_quality: bool,
+    },
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct TranslationResult {
     pub candidates: Vec<Candidate>,
     pub is_complete: bool,
     pub full_count: Option<usize>,
+    pub merge_policy: TranslationMergePolicy,
 }
 
 impl TranslationResult {
@@ -281,6 +300,7 @@ impl TranslationResult {
             candidates,
             is_complete: true,
             full_count: None,
+            merge_policy: TranslationMergePolicy::Default,
         }
     }
 
@@ -294,7 +314,14 @@ impl TranslationResult {
             is_complete: candidates.len() >= full_count,
             candidates,
             full_count: include_full_count.then_some(full_count),
+            merge_policy: TranslationMergePolicy::Default,
         }
+    }
+
+    #[must_use]
+    pub const fn with_merge_policy(mut self, merge_policy: TranslationMergePolicy) -> Self {
+        self.merge_policy = merge_policy;
+        self
     }
 }
 

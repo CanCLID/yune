@@ -179,16 +179,44 @@ pub(crate) fn schema_behavior_profile_from_config(schema_config: &Value) -> Sche
 fn sentence_policy_from_schema(
     schema_config: &Value,
     component_name: &str,
+    name_space: &str,
     enable_sentence: bool,
 ) -> SentencePolicy {
-    if matches!(component_name, "script_translator" | "r10n_translator")
-        && enable_sentence
-        && schema_behavior_profile_from_config(schema_config) == SchemaBehaviorProfile::Standard
+    if !enable_sentence
+        || schema_behavior_profile_from_config(schema_config) != SchemaBehaviorProfile::Standard
     {
-        SentencePolicy::UpstreamScript
-    } else {
-        SentencePolicy::LegacyFallback
+        return SentencePolicy::LegacyFallback;
     }
+
+    let explicit = find_config_value(schema_config, &format!("{name_space}/yune_sentence_policy"))
+        .and_then(config_scalar_string);
+    match (explicit.as_deref(), component_name) {
+        (Some("upstream_script"), "table_translator") => SentencePolicy::UpstreamTable,
+        (Some("upstream_script"), "script_translator" | "r10n_translator") => {
+            SentencePolicy::UpstreamScript
+        }
+        (Some(_), _) => SentencePolicy::LegacyFallback,
+        (None, "script_translator" | "r10n_translator") => SentencePolicy::UpstreamScript,
+        (None, _) => SentencePolicy::LegacyFallback,
+    }
+}
+
+fn schema_has_active_upstream_table_policy(schema_config: &Value) -> bool {
+    schema_string_list(schema_config, "engine/translators")
+        .iter()
+        .any(|component| {
+            let (component_name, name_space) = schema_component_prescription(component);
+            if component_name != "table_translator" {
+                return false;
+            }
+            let name_space = name_space.unwrap_or("translator");
+            let enable_sentence =
+                find_config_value(schema_config, &format!("{name_space}/enable_sentence"))
+                    .and_then(config_scalar_bool)
+                    .unwrap_or(true);
+            sentence_policy_from_schema(schema_config, component_name, name_space, enable_sentence)
+                == SentencePolicy::UpstreamTable
+        })
 }
 
 pub(crate) fn schema_component_prescription(component: &str) -> (&str, Option<&str>) {
@@ -304,7 +332,7 @@ fn install_schema_dictionary_translator_from_config(
             .and_then(config_scalar_bool)
             .unwrap_or(true);
     let sentence_policy =
-        sentence_policy_from_schema(schema_config, component_name, enable_sentence);
+        sentence_policy_from_schema(schema_config, component_name, name_space, enable_sentence);
     let sentence_over_completion = find_config_value(
         schema_config,
         &format!("{name_space}/sentence_over_completion"),
@@ -545,7 +573,10 @@ fn install_schema_dictionary_translator_from_config(
     if let Some(limit) = prediction_candidate_limit {
         translator = translator.with_prediction_candidate_limit(limit);
     }
-    if sentence_policy == SentencePolicy::UpstreamScript {
+    if matches!(
+        sentence_policy,
+        SentencePolicy::UpstreamScript | SentencePolicy::UpstreamTable
+    ) {
         let sentence_vocabulary = user_dict_name
             .as_deref()
             .map(load_dictionary_preset_vocabulary)
@@ -1116,19 +1147,62 @@ fn install_schema_reverse_lookup_translator_from_config(
         find_config_value(schema_config, &format!("{name_space}/enable_completion"))
             .and_then(config_scalar_bool)
             .unwrap_or(false);
+    let strict_spelling =
+        find_config_value(schema_config, &format!("{name_space}/strict_spelling"))
+            .and_then(config_scalar_bool)
+            .unwrap_or(false);
+    let upstream_table_validation = schema_has_active_upstream_table_policy(schema_config);
     let comment_format = schema_comment_format(schema_config, name_space);
     let spelling_algebra = spelling_algebra_for_dictionary(schema_config, name_space);
     let lazy_schema_config = schema_config.clone();
     let lazy_name_space = name_space.to_owned();
     let lazy_target_namespace = target_namespace;
+    let lazy_dictionary_name = raw_dictionary_name;
 
     session.engine.add_translator(
-        ReverseLookupTranslator::new_lazy(
+        ReverseLookupTranslator::new_lazy_with_prism_and_poet(
             move || {
-                let dictionary = dictionary_from_lazy_outcome(load_schema_table_dictionary(
-                    &lazy_schema_config,
-                    &lazy_name_space,
-                ))?;
+                let (dictionary, prism_payload, syllabary_codes, preset_vocabulary, poet_source) =
+                    if upstream_table_validation {
+                        // The marked upstream-validation reverse graph consumes
+                        // prism syllable IDs, so prefer the compact table path that
+                        // retains the compiled syllabary in artifact order.
+                        // Unsupported compact layouts still take the existing heap
+                        // retry and fail closed to legacy exact lookup.
+                        let loaded = reverse_lookup_dictionary_from_lazy_outcome(
+                            load_schema_table_dictionary_preferring_compact(
+                                &lazy_schema_config,
+                                &lazy_name_space,
+                            ),
+                        )?;
+                        let poet_source = loaded.poet_source;
+                        let preset_vocabulary =
+                            load_reverse_preset_vocabulary_if_needed(poet_source.as_ref(), || {
+                                load_dictionary_preset_vocabulary(&lazy_dictionary_name)
+                            });
+                        (
+                            loaded.dictionary,
+                            loaded.prism_payload,
+                            loaded.syllabary_codes,
+                            preset_vocabulary,
+                            poet_source,
+                        )
+                    } else {
+                        // Keep the ordinary product lane on the exact pre-4d
+                        // reverse-lookup conversion as well as its loader. In
+                        // particular, the legacy converter prefers a decoded
+                        // heap dictionary when both heap and compact views exist.
+                        (
+                            dictionary_from_lazy_outcome(load_schema_table_dictionary(
+                                &lazy_schema_config,
+                                &lazy_name_space,
+                            ))?,
+                            None,
+                            Vec::new(),
+                            Vec::new(),
+                            None,
+                        )
+                    };
                 let reverse_dictionary =
                     load_schema_reverse_dictionary(&lazy_schema_config, &lazy_target_namespace)
                         .or_else(|| {
@@ -1138,13 +1212,22 @@ fn install_schema_reverse_lookup_translator_from_config(
                             ))
                         })
                         .and_then(dictionary_from_lazy_outcome);
-                Some((dictionary, reverse_dictionary))
+                Some((
+                    dictionary,
+                    reverse_dictionary,
+                    prism_payload,
+                    syllabary_codes,
+                    preset_vocabulary,
+                    poet_source,
+                ))
             },
             prefix,
             suffix,
         )
         .with_tag(tag)
         .with_completion(enable_completion)
+        .with_strict_spelling(strict_spelling)
+        .with_upstream_table_validation(upstream_table_validation)
         .with_comment_format(&comment_format)
         .with_spelling_algebra(&spelling_algebra),
     );
@@ -1161,6 +1244,57 @@ fn dictionary_from_lazy_outcome(outcome: DictionaryLoadOutcome) -> Option<TableD
             dictionary.or_else(|| compact_store.map(|store| store.to_table_dictionary()))
         }
         DictionaryLoadOutcome::SourceFallback { dictionary, .. } => Some(*dictionary),
+        DictionaryLoadOutcome::NoUsablePath { .. } => None,
+    }
+}
+
+struct ReverseLookupDictionaryLoad {
+    dictionary: TableDictionary,
+    prism_payload: Option<RimePrismRuntimePayload>,
+    syllabary_codes: Vec<String>,
+    poet_source: Option<(Arc<dyn PoetByteSource>, u32)>,
+}
+
+fn reverse_lookup_dictionary_from_lazy_outcome(
+    outcome: DictionaryLoadOutcome,
+) -> Option<ReverseLookupDictionaryLoad> {
+    match outcome {
+        DictionaryLoadOutcome::Compiled(compiled) => {
+            let CompiledDictionary {
+                dictionary,
+                compact_store,
+                prism_payload,
+                poet_source,
+                ..
+            } = *compiled;
+            if let Some(store) = compact_store {
+                let syllabary_codes = store.syllabary_codes().to_vec();
+                return Some(ReverseLookupDictionaryLoad {
+                    dictionary: store.to_table_dictionary(),
+                    prism_payload,
+                    syllabary_codes,
+                    poet_source,
+                });
+            }
+            Some(ReverseLookupDictionaryLoad {
+                dictionary: dictionary?,
+                // A prism descriptor indexes the compiled table's syllabary.
+                // The heap parser does not retain that ID table, so fail closed
+                // to the legacy reverse path instead of pairing it with guessed
+                // canonical codes.
+                prism_payload: None,
+                syllabary_codes: Vec::new(),
+                poet_source,
+            })
+        }
+        DictionaryLoadOutcome::SourceFallback { dictionary, .. } => {
+            Some(ReverseLookupDictionaryLoad {
+                dictionary: *dictionary,
+                prism_payload: None,
+                syllabary_codes: Vec::new(),
+                poet_source: None,
+            })
+        }
         DictionaryLoadOutcome::NoUsablePath { .. } => None,
     }
 }
@@ -2581,6 +2715,35 @@ fn load_dictionary_preset_vocabulary(
     load_schema_preset_vocabulary(&vocabulary_name)
 }
 
+fn load_reverse_preset_vocabulary_if_needed<T>(
+    poet_source: Option<&T>,
+    loader: impl FnOnce() -> Vec<yune_core::PresetVocabularyEntry>,
+) -> Vec<yune_core::PresetVocabularyEntry> {
+    if poet_source.is_some() {
+        Vec::new()
+    } else {
+        loader()
+    }
+}
+
+#[cfg(test)]
+mod reverse_poet_loader_tests {
+    use super::load_reverse_preset_vocabulary_if_needed;
+    use std::cell::Cell;
+
+    #[test]
+    fn byte_backed_poet_source_never_invokes_the_preset_vocabulary_loader() {
+        let invoked = Cell::new(false);
+        let vocabulary = load_reverse_preset_vocabulary_if_needed(Some(&()), || {
+            invoked.set(true);
+            Vec::new()
+        });
+
+        assert!(vocabulary.is_empty());
+        assert!(!invoked.get());
+    }
+}
+
 pub(crate) fn load_luna_pinyin_preset_vocabularies() -> (
     Vec<yune_core::PresetVocabularyEntry>,
     Vec<yune_core::PresetVocabularyEntry>,
@@ -3105,18 +3268,28 @@ fn config_scalar_f32(value: &Value) -> Option<f32> {
 
 #[cfg(test)]
 mod sentence_policy_tests {
-    use super::{sentence_policy_from_schema, source_script_translator, SentencePolicy};
+    use super::{
+        schema_has_active_upstream_table_policy, sentence_policy_from_schema,
+        source_script_translator, SentencePolicy,
+    };
     use serde_yaml::Value;
     use yune_core::{
         CandidateSource, PresetVocabularyEntry, TableDictionary, TableEntry, Translator,
     };
 
     fn schema(schema_id: &str, profile: Option<&str>) -> Value {
+        schema_with_policy(schema_id, profile, None)
+    }
+
+    fn schema_with_policy(schema_id: &str, profile: Option<&str>, policy: Option<&str>) -> Value {
         let profile = profile
             .map(|profile| format!("yune:\n  profile: {profile}\n"))
             .unwrap_or_default();
+        let translator = policy
+            .map(|policy| format!("translator:\n  yune_sentence_policy: {policy}\n"))
+            .unwrap_or_default();
         serde_yaml::from_str(&format!(
-            "{profile}schema:\n  schema_id: {schema_id}\n  name: Policy fixture\n"
+            "{profile}{translator}schema:\n  schema_id: {schema_id}\n  name: Policy fixture\n"
         ))
         .expect("sentence policy fixture should parse")
     }
@@ -3125,30 +3298,123 @@ mod sentence_policy_tests {
     fn upstream_script_policy_depends_on_component_config_and_profile_not_schema_id() {
         for schema_id in ["jyut6ping3", "arbitrary_renamed_schema"] {
             assert_eq!(
-                sentence_policy_from_schema(&schema(schema_id, None), "script_translator", true),
+                sentence_policy_from_schema(
+                    &schema(schema_id, None),
+                    "script_translator",
+                    "translator",
+                    true,
+                ),
                 SentencePolicy::UpstreamScript,
             );
         }
         assert_eq!(
-            sentence_policy_from_schema(&schema("plain", None), "r10n_translator", true),
+            sentence_policy_from_schema(
+                &schema("plain", None),
+                "r10n_translator",
+                "translator",
+                true,
+            ),
             SentencePolicy::UpstreamScript,
         );
         assert_eq!(
             sentence_policy_from_schema(
                 &schema("arbitrary_renamed_schema", Some("typeduck_jyutping")),
                 "script_translator",
+                "translator",
                 true,
             ),
             SentencePolicy::LegacyFallback,
         );
         assert_eq!(
-            sentence_policy_from_schema(&schema("plain", None), "table_translator", true),
+            sentence_policy_from_schema(
+                &schema("plain", None),
+                "table_translator",
+                "translator",
+                true,
+            ),
             SentencePolicy::LegacyFallback,
         );
         assert_eq!(
-            sentence_policy_from_schema(&schema("plain", None), "script_translator", false),
+            sentence_policy_from_schema(
+                &schema("plain", None),
+                "script_translator",
+                "translator",
+                false,
+            ),
             SentencePolicy::LegacyFallback,
         );
+    }
+
+    #[test]
+    fn explicit_upstream_script_marker_selects_standard_table_policy_fail_closed() {
+        for schema_id in ["cangjie5", "renamed_validation_lane"] {
+            assert_eq!(
+                sentence_policy_from_schema(
+                    &schema_with_policy(schema_id, None, Some("upstream_script")),
+                    "table_translator",
+                    "translator",
+                    true,
+                ),
+                SentencePolicy::UpstreamTable,
+            );
+        }
+        assert_eq!(
+            sentence_policy_from_schema(
+                &schema_with_policy("plain", None, Some("legacy_fallback")),
+                "table_translator",
+                "translator",
+                true,
+            ),
+            SentencePolicy::LegacyFallback,
+        );
+        assert_eq!(
+            sentence_policy_from_schema(
+                &schema_with_policy("plain", None, Some("unknown")),
+                "table_translator",
+                "translator",
+                true,
+            ),
+            SentencePolicy::LegacyFallback,
+        );
+        assert_eq!(
+            sentence_policy_from_schema(
+                &schema_with_policy("plain", None, Some("upstream_script")),
+                "table_translator",
+                "translator",
+                false,
+            ),
+            SentencePolicy::LegacyFallback,
+        );
+        assert_eq!(
+            sentence_policy_from_schema(
+                &schema_with_policy("plain", Some("typeduck_jyutping"), Some("upstream_script"),),
+                "table_translator",
+                "translator",
+                true,
+            ),
+            SentencePolicy::LegacyFallback,
+        );
+    }
+
+    #[test]
+    fn active_upstream_table_policy_is_component_and_namespace_driven() {
+        let marked: Value = serde_yaml::from_str(
+            "schema:\n  schema_id: renamed\nengine:\n  translators: [table_translator]\ntranslator:\n  yune_sentence_policy: upstream_script\n  enable_sentence: true\n",
+        )
+        .expect("marked policy fixture should parse");
+        assert!(schema_has_active_upstream_table_policy(&marked));
+
+        let named: Value = serde_yaml::from_str(
+            "schema:\n  schema_id: renamed\nengine:\n  translators: [table_translator@validation]\nvalidation:\n  yune_sentence_policy: upstream_script\n  enable_sentence: true\n",
+        )
+        .expect("named policy fixture should parse");
+        assert!(schema_has_active_upstream_table_policy(&named));
+
+        let unmarked: Value = serde_yaml::from_str(
+            "schema:\n  schema_id: cangjie5\nengine:\n  translators: [table_translator]\ntranslator:\n  enable_sentence: true\n",
+        )
+        .expect("unmarked policy fixture should parse");
+        assert!(!schema_has_active_upstream_table_policy(&unmarked));
     }
 
     #[test]

@@ -9,6 +9,74 @@ pub struct DartsMatch {
     pub length: usize,
 }
 
+pub(crate) const MAX_DARTS_PREDICTIVE_NODE_WORK: usize = 65_536;
+pub(crate) const MAX_DARTS_PREDICTIVE_PATH_DEPTH: usize = 256;
+
+#[derive(Clone, Copy)]
+pub(crate) struct DartsPredictiveState {
+    pub(crate) node_pos: usize,
+    pub(crate) unit: u32,
+    pub(crate) length: usize,
+    pub(crate) parent: Option<usize>,
+    pub(crate) cycle_closed: bool,
+}
+
+pub(crate) enum DartsPredictivePush {
+    Accepted(usize),
+    ClosedCycle,
+    MalformedCycle,
+    Exhausted,
+}
+
+pub(crate) fn push_darts_predictive_state(
+    states: &mut Vec<DartsPredictiveState>,
+    parent: usize,
+    node_pos: usize,
+    unit: u32,
+    length: usize,
+    leaf_pos: Option<usize>,
+) -> DartsPredictivePush {
+    if length > MAX_DARTS_PREDICTIVE_PATH_DEPTH || states.len() >= MAX_DARTS_PREDICTIVE_NODE_WORK {
+        return DartsPredictivePush::Exhausted;
+    }
+    let Some(parent_state) = states.get(parent).copied() else {
+        return DartsPredictivePush::Exhausted;
+    };
+    let mut repeated_ancestor = false;
+    let mut leaf_overlaps_ancestor = false;
+    let mut ancestor = Some(parent);
+    while let Some(index) = ancestor {
+        let Some(state) = states.get(index) else {
+            return DartsPredictivePush::Exhausted;
+        };
+        if state.node_pos == node_pos {
+            repeated_ancestor = true;
+        }
+        leaf_overlaps_ancestor |= leaf_pos == Some(state.node_pos);
+        ancestor = state.parent;
+    }
+    // A DARTS value slot can resemble a labeled node during alphabet
+    // enumeration. Pinned real artifacts contain one such ancestry closure
+    // whose separate leaf remains valid, followed by finite side branches.
+    // Admit that closure once. A leaf pointer that aliases the active path is
+    // structurally malformed, while any later closure ends the bounded lap.
+    if repeated_ancestor && leaf_overlaps_ancestor {
+        return DartsPredictivePush::MalformedCycle;
+    }
+    if repeated_ancestor && parent_state.cycle_closed {
+        return DartsPredictivePush::ClosedCycle;
+    }
+    let index = states.len();
+    states.push(DartsPredictiveState {
+        node_pos,
+        unit,
+        length,
+        parent: Some(parent),
+        cycle_closed: parent_state.cycle_closed || repeated_ancestor,
+    });
+    DartsPredictivePush::Accepted(index)
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DartsDoubleArrayError {
     Empty,
@@ -160,6 +228,129 @@ impl DartsDoubleArray {
         }
         let leaf_pos = node_pos ^ usize::try_from(Self::offset(unit)).ok()?;
         self.units.get(leaf_pos).map(|leaf| Self::value(*leaf))
+    }
+
+    pub(crate) fn predictive_search_with_alphabet(
+        &self,
+        prefix: &[u8],
+        alphabet: &[u8],
+        limit: usize,
+    ) -> Vec<DartsMatch> {
+        let effective_limit = if limit == 0 { usize::MAX } else { limit };
+        let mut node_pos = 0usize;
+        let Some(mut unit) = self.units.get(node_pos).copied() else {
+            return Vec::new();
+        };
+        let mut states = vec![DartsPredictiveState {
+            node_pos,
+            unit,
+            length: 0,
+            parent: None,
+            cycle_closed: false,
+        }];
+        let mut state_index = 0usize;
+        for byte in prefix {
+            let Ok(offset) = usize::try_from(Self::offset(unit)) else {
+                return Vec::new();
+            };
+            node_pos ^= offset ^ usize::from(*byte);
+            let Some(next_unit) = self.units.get(node_pos).copied() else {
+                return Vec::new();
+            };
+            if Self::label(next_unit) != u32::from(*byte) {
+                return Vec::new();
+            }
+            let next_length = states[state_index].length.saturating_add(1);
+            let next_leaf_pos = Self::has_leaf(next_unit)
+                .then(|| node_pos ^ usize::try_from(Self::offset(next_unit)).unwrap_or(usize::MAX));
+            let DartsPredictivePush::Accepted(next_state_index) = push_darts_predictive_state(
+                &mut states,
+                state_index,
+                node_pos,
+                next_unit,
+                next_length,
+                next_leaf_pos,
+            ) else {
+                return Vec::new();
+            };
+            state_index = next_state_index;
+            unit = next_unit;
+        }
+
+        let mut matches = Vec::new();
+        if Self::has_leaf(unit) {
+            let Ok(offset) = usize::try_from(Self::offset(unit)) else {
+                return matches;
+            };
+            if let Some(leaf) = self.units.get(node_pos ^ offset) {
+                matches.push(DartsMatch {
+                    value: Self::value(*leaf),
+                    length: prefix.len(),
+                });
+                if matches.len() >= effective_limit {
+                    return matches;
+                }
+            }
+        }
+
+        let mut queue = std::collections::VecDeque::from([state_index]);
+        while let Some(parent_index) = queue.pop_front() {
+            let parent = states[parent_index];
+            let Ok(parent_offset) = usize::try_from(Self::offset(parent.unit)) else {
+                continue;
+            };
+            for byte in alphabet.iter().copied().filter(|byte| *byte != 0) {
+                let child_pos = parent.node_pos ^ parent_offset ^ usize::from(byte);
+                let Some(child_unit) = self.units.get(child_pos).copied() else {
+                    continue;
+                };
+                if Self::label(child_unit) != u32::from(byte) {
+                    continue;
+                }
+                let child_len = parent.length.saturating_add(1);
+                let child_leaf_pos = Self::has_leaf(child_unit).then(|| {
+                    child_pos ^ usize::try_from(Self::offset(child_unit)).unwrap_or(usize::MAX)
+                });
+                let child_index = match push_darts_predictive_state(
+                    &mut states,
+                    parent_index,
+                    child_pos,
+                    child_unit,
+                    child_len,
+                    child_leaf_pos,
+                ) {
+                    DartsPredictivePush::Accepted(index) => Some(index),
+                    // One bounded closure has already exposed its finite side
+                    // branches. Preserve DARTS's terminal leaf observation,
+                    // but do not enqueue another lap.
+                    DartsPredictivePush::ClosedCycle => None,
+                    // A leaf slot overlapping the active ancestry is a
+                    // structurally malformed DARTS path, not a false-positive
+                    // value-slot transition. Reject it before observing leaf.
+                    DartsPredictivePush::MalformedCycle => return Vec::new(),
+                    DartsPredictivePush::Exhausted => return Vec::new(),
+                };
+                if let Some(child_index) = child_index {
+                    queue.push_back(child_index);
+                }
+                if !Self::has_leaf(child_unit) {
+                    continue;
+                }
+                let Ok(child_offset) = usize::try_from(Self::offset(child_unit)) else {
+                    continue;
+                };
+                if let Some(leaf) = self.units.get(child_pos ^ child_offset) {
+                    matches.push(DartsMatch {
+                        value: Self::value(*leaf),
+                        length: child_len,
+                    });
+                    if matches.len() >= effective_limit {
+                        return matches;
+                    }
+                }
+            }
+        }
+        matches
     }
 
     #[must_use]
@@ -471,7 +662,7 @@ impl DartsBuilder {
 
 #[cfg(test)]
 mod large_offset_encoding_tests {
-    use super::DartsDoubleArray;
+    use super::{DartsDoubleArray, DartsMatch, MAX_DARTS_PREDICTIVE_PATH_DEPTH};
 
     #[test]
     fn compact_trie_preserves_frozen_layout_across_input_order() {
@@ -518,5 +709,72 @@ mod large_offset_encoding_tests {
                 assert_ne!(unit & (1 << 9), 0);
             }
         }
+    }
+
+    #[test]
+    fn predictive_search_rejects_a_malformed_owned_cycle() {
+        let mut units = vec![0; 98];
+        units[0] = DartsDoubleArray::unit(1, false, 0);
+        // For the `a` transition, offset 96 alternates positions 96 and 97.
+        // A valid DARTS trie never revisits a node; external bytes can.
+        units[96] = DartsDoubleArray::unit(96, false, b'a');
+        units[97] = DartsDoubleArray::unit(96, false, b'a');
+        let malformed =
+            DartsDoubleArray::from_units(units).expect("units are structurally present");
+
+        assert!(malformed
+            .predictive_search_with_alphabet(b"", b"a", 0)
+            .is_empty());
+    }
+
+    #[test]
+    fn predictive_search_rejects_a_leaf_bearing_owned_cycle_before_production_limit() {
+        let mut units = vec![0; 98];
+        units[0] = DartsDoubleArray::unit(1, false, 0);
+        units[96] = DartsDoubleArray::unit(96, true, b'a');
+        units[97] = DartsDoubleArray::unit(96, true, b'a');
+        let malformed =
+            DartsDoubleArray::from_units(units).expect("units are structurally present");
+
+        assert!(malformed
+            .predictive_search_with_alphabet(b"", b"a", 512)
+            .is_empty());
+    }
+
+    #[test]
+    fn predictive_search_preserves_path_dependent_repeated_owned_states() {
+        let mut units = vec![0; 124];
+        units[0] = DartsDoubleArray::unit(1, false, 0);
+        units[96] = DartsDoubleArray::unit(126, false, b'a');
+        units[99] = DartsDoubleArray::unit(125, false, b'b');
+        // Both `az` and `bz` reach slot 100. Predictive DARTS traversal is
+        // path-dependent, so a global visited set would incorrectly drop one.
+        units[100] = DartsDoubleArray::unit(1, true, b'z');
+        units[101] = 42;
+        let repeated = DartsDoubleArray::from_units(units).expect("units are structurally present");
+
+        assert_eq!(
+            repeated.predictive_search_with_alphabet(b"", b"abz", 0),
+            [
+                DartsMatch {
+                    value: 42,
+                    length: 2,
+                },
+                DartsMatch {
+                    value: 42,
+                    length: 2,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn predictive_search_rejects_owned_paths_over_the_depth_bound() {
+        let key = "a".repeat(MAX_DARTS_PREDICTIVE_PATH_DEPTH + 1);
+        let deep = DartsDoubleArray::build(&[(key, 7)]).expect("deep test key should build");
+
+        assert!(deep
+            .predictive_search_with_alphabet(b"", b"a", 512)
+            .is_empty());
     }
 }

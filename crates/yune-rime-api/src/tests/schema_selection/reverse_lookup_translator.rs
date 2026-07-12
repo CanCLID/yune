@@ -178,6 +178,362 @@ sort: original
 }
 
 #[test]
+fn marked_upstream_table_reverse_lookup_uses_table_absent_owned_poet_rows() {
+    assert_marked_upstream_table_reverse_lookup_poet_parity(false);
+}
+
+#[test]
+fn marked_upstream_table_reverse_lookup_uses_table_absent_byte_backed_poet_rows() {
+    assert_marked_upstream_table_reverse_lookup_poet_parity(true);
+}
+
+fn assert_marked_upstream_table_reverse_lookup_poet_parity(byte_backed_poet: bool) {
+    struct PoetEnvGuard(Option<std::ffi::OsString>);
+    impl Drop for PoetEnvGuard {
+        fn drop(&mut self) {
+            if let Some(value) = self.0.take() {
+                std::env::set_var("YUNE_POET_BYTE_BACKED", value);
+            } else {
+                std::env::remove_var("YUNE_POET_BYTE_BACKED");
+            }
+        }
+    }
+
+    let _guard = test_guard();
+    let _poet_env = PoetEnvGuard(std::env::var_os("YUNE_POET_BYTE_BACKED"));
+    if byte_backed_poet {
+        std::env::set_var("YUNE_POET_BYTE_BACKED", "1");
+    } else {
+        std::env::remove_var("YUNE_POET_BYTE_BACKED");
+    }
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir(if byte_backed_poet {
+        "marked-table-reverse-graph-byte-poet"
+    } else {
+        "marked-table-reverse-graph-owned-poet"
+    });
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+
+    fs::write(
+        staging.join("marked_table.schema.yaml"),
+        "\
+schema:
+  schema_id: marked_table
+  name: Marked table reverse graph
+engine:
+  segmentors:
+    - abc_segmentor
+  translators:
+    - reverse_lookup_translator
+    - table_translator
+abc_segmentor:
+  extra_tags: [reverse_lookup]
+translator:
+  dictionary: target
+  enable_completion: true
+  enable_sentence: true
+  yune_sentence_policy: upstream_script
+reverse_lookup:
+  dictionary: graph_lookup
+  prism: graph_prism
+  enable_completion: false
+",
+    )
+    .expect("schema config should be written");
+    fs::write(
+        staging.join("unmarked_table.schema.yaml"),
+        "\
+schema:
+  schema_id: unmarked_table
+  name: Unmarked table reverse lookup
+engine:
+  segmentors:
+    - abc_segmentor
+  translators:
+    - reverse_lookup_translator
+    - table_translator
+abc_segmentor:
+  extra_tags: [reverse_lookup]
+translator:
+  dictionary: target
+  enable_completion: true
+  enable_sentence: true
+reverse_lookup:
+  dictionary: graph_lookup
+  prism: graph_prism
+  enable_completion: false
+",
+    )
+    .expect("unmarked control schema config should be written");
+    let target_rows = [
+        ("莫", "tak", 10_000.0),
+        ("墓", "takg", 9_000.0),
+        ("幕", "takh", 8_000.0),
+        ("踏空", "reverse-01", 1.0),
+        ("塔克", "reverse-02", 1.0),
+        ("踏勘", "reverse-03", 1.0),
+        ("踏看", "reverse-04", 1.0),
+        ("他看", "reverse-05", 1.0),
+        ("他可", "reverse-06", 1.0),
+        ("她看", "reverse-07", 1.0),
+        ("它可", "reverse-08", 1.0),
+        ("她可", "reverse-09", 1.0),
+        ("塔卡", "reverse-10", 1.0),
+        ("他快", "reverse-11", 1.0),
+        ("他靠", "reverse-12", 1.0),
+        ("他肯", "reverse-13", 1.0),
+    ];
+    let mut target_yaml =
+        "---\nname: target\nversion: '0.1'\nsort: by_weight\ncolumns: [text, code, weight]\n...\n\n"
+            .to_owned();
+    for (text, code, weight) in target_rows {
+        target_yaml.push_str(&format!("{text}\t{code}\t{weight}\n"));
+    }
+    fs::write(shared.join("target.dict.yaml"), target_yaml)
+        .expect("target dictionary should be written");
+
+    let character_entries = [
+        ("ka", "卡"),
+        ("kan", "勘"),
+        ("kan", "看"),
+        ("kao", "靠"),
+        ("ke", "克"),
+        ("ke", "可"),
+        ("ken", "肯"),
+        ("kong", "空"),
+        ("kuai", "快"),
+        ("ta", "踏"),
+        ("ta", "塔"),
+        ("ta", "他"),
+        ("ta", "她"),
+        ("ta", "它"),
+    ];
+    let mut graph_source = "---\nname: graph_lookup\nversion: '0.1'\nsort: by_weight\nuse_preset_vocabulary: true\ncolumns: [text, code, weight]\n...\n\n".to_owned();
+    for (code, text) in character_entries {
+        graph_source.push_str(&format!("{text}\t{code}\t10000\n"));
+    }
+    fs::write(shared.join("graph_lookup.dict.yaml"), &graph_source)
+        .expect("reverse source dictionary should be written");
+    let vocabulary = [
+        ("踏空", 892.0),
+        ("塔克", 544.0),
+        ("踏勘", 543.0),
+        ("踏看", 401.0),
+        ("他看", 310.0),
+        ("他可", 178.0),
+        ("她看", 124.0),
+        ("它可", 116.0),
+        ("她可", 74.0),
+        ("塔卡", 72.0),
+        ("他快", 72.0),
+        ("他靠", 1.0),
+        ("他肯", 1.0),
+    ];
+    let essay = vocabulary
+        .iter()
+        .map(|(text, weight)| format!("{text}\t{weight}\n"))
+        .collect::<String>();
+    fs::write(shared.join("essay.txt"), &essay).expect("preset vocabulary should be written");
+    let compiled_dictionary = yune_core::TableDictionary::new(
+        character_entries
+            .iter()
+            .map(|(code, text)| yune_core::TableEntry::new(*code, *text, 10_000.0)),
+    );
+    assert!(compiled_dictionary
+        .entries()
+        .iter()
+        .all(|entry| !vocabulary.iter().any(|(text, _)| entry.text == *text)));
+    let checksum =
+        yune_core::rime_dict_source_checksum(0, [graph_source.as_bytes()], Some(essay.as_bytes()));
+    fs::write(
+        shared.join("graph_lookup.table.bin"),
+        yune_core::build_table_bin(&compiled_dictionary, checksum),
+    )
+    .expect("compiled reverse table should be written");
+    if byte_backed_poet {
+        let poet_vocabulary = vocabulary
+            .iter()
+            .map(|(text, weight)| yune_core::PresetVocabularyEntry::new(*text, *weight))
+            .collect::<Vec<_>>();
+        fs::write(
+            shared.join("graph_lookup.poet.bin"),
+            yune_core::build_poet_bin(
+                compiled_dictionary.entries().to_vec(),
+                &poet_vocabulary,
+                &poet_vocabulary,
+                checksum,
+            ),
+        )
+        .expect("compiled reverse Poet artifact should be written");
+    }
+    let mut syllabary = Vec::new();
+    for (code, _) in character_entries {
+        if !syllabary.iter().any(|existing| existing == code) {
+            syllabary.push(code.to_owned());
+        }
+    }
+    fs::write(
+        shared.join("graph_prism.prism.bin"),
+        yune_core::build_prism_bin(&syllabary, &[], checksum, 0),
+    )
+    .expect("compiled reverse prism should be written");
+    fs::write(
+        shared.join("graph_lookup.reverse.bin"),
+        yune_core::build_reverse_bin(&compiled_dictionary, checksum),
+    )
+    .expect("compiled reverse metadata should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("marked_table").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    for ch in "tak".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+
+    let candidates = super::super::session_candidates_snapshot(session_id)
+        .expect("session should exist")
+        .into_iter()
+        .map(|candidate| (candidate.text, candidate.source))
+        .collect::<Vec<_>>();
+    let diagnostics = crate::session_web_diagnostics_snapshot(session_id)
+        .expect("session diagnostics should exist");
+    let segment_tags = crate::sessions()
+        .lock()
+        .expect("session registry should not be poisoned")
+        .sessions
+        .get(&session_id)
+        .expect("session should exist")
+        .engine
+        .context()
+        .segment_tags
+        .clone();
+    let reverse_owner_rows = diagnostics
+        .memory_owner_rows
+        .iter()
+        .filter(|row| row.owner.starts_with("reverse_lookup."))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        candidates,
+        [
+            ("莫".to_owned(), CandidateSource::Table),
+            ("踏空".to_owned(), CandidateSource::ReverseLookup),
+            ("塔克".to_owned(), CandidateSource::ReverseLookup),
+            ("踏勘".to_owned(), CandidateSource::ReverseLookup),
+            ("踏看".to_owned(), CandidateSource::ReverseLookup),
+            ("他看".to_owned(), CandidateSource::ReverseLookup),
+            ("他可".to_owned(), CandidateSource::ReverseLookup),
+            ("她看".to_owned(), CandidateSource::ReverseLookup),
+            ("它可".to_owned(), CandidateSource::ReverseLookup),
+            ("她可".to_owned(), CandidateSource::ReverseLookup),
+            ("塔卡".to_owned(), CandidateSource::ReverseLookup),
+            ("他快".to_owned(), CandidateSource::ReverseLookup),
+            ("他靠".to_owned(), CandidateSource::ReverseLookup),
+            ("他肯".to_owned(), CandidateSource::ReverseLookup),
+            ("墓".to_owned(), CandidateSource::Completion),
+            ("幕".to_owned(), CandidateSource::Completion),
+        ],
+        "the full Engine merge must drain table-absent Poet rows between the exact table head and completions; tags={segment_tags:?}; reverse owners={reverse_owner_rows:#?}"
+    );
+    let prism_syllabary = diagnostics
+        .memory_owner_rows
+        .iter()
+        .find(|row| row.owner == "reverse_lookup.prism_syllabary")
+        .expect("loaded marked reverse translator should report its prism syllabary");
+    assert_eq!(prism_syllabary.item_count, syllabary.len());
+    assert!(
+        diagnostics
+            .memory_owner_rows
+            .iter()
+            .any(|row| row.owner.starts_with("prism.")),
+        "loaded marked reverse translator should retain the compiled prism runtime payload"
+    );
+    let poet_vocabulary_owner = diagnostics
+        .memory_owner_rows
+        .iter()
+        .find(|row| row.owner == "reverse_lookup.poet.vocabulary")
+        .expect("marked reverse lookup should retain its Poet vocabulary");
+    assert_eq!(poet_vocabulary_owner.item_count, vocabulary.len());
+    if byte_backed_poet {
+        assert!(
+            poet_vocabulary_owner.storage.starts_with("poet_bin:"),
+            "the generated poet.bin must own the marked reverse graph model: {poet_vocabulary_owner:#?}"
+        );
+    } else {
+        assert!(
+            !poet_vocabulary_owner.storage.starts_with("poet_bin:"),
+            "default capture must build the reverse Poet vocabulary from the owned preset recipe"
+        );
+    }
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+
+    let unmarked_session_id = RimeCreateSession();
+    let unmarked_schema_id =
+        CString::new("unmarked_table").expect("unmarked schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(unmarked_session_id, unmarked_schema_id.as_ptr()) },
+        TRUE
+    );
+    for ch in "tak".chars() {
+        assert_eq!(RimeProcessKey(unmarked_session_id, ch as c_int, 0), TRUE);
+    }
+    let unmarked_candidates = super::super::session_candidates_snapshot(unmarked_session_id)
+        .expect("unmarked session should exist")
+        .into_iter()
+        .map(|candidate| (candidate.text, candidate.source))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        unmarked_candidates,
+        [
+            ("莫".to_owned(), CandidateSource::Table),
+            ("墓".to_owned(), CandidateSource::Completion),
+            ("幕".to_owned(), CandidateSource::Completion),
+        ],
+        "an unmarked product schema must retain the pre-4d exact reverse-lookup path"
+    );
+    let unmarked_diagnostics = crate::session_web_diagnostics_snapshot(unmarked_session_id)
+        .expect("unmarked session diagnostics should exist");
+    let unmarked_prism_syllabary = unmarked_diagnostics
+        .memory_owner_rows
+        .iter()
+        .find(|row| row.owner == "reverse_lookup.prism_syllabary")
+        .expect("loaded unmarked reverse translator should report an empty prism syllabary");
+    assert_eq!(
+        unmarked_prism_syllabary.item_count, 0,
+        "the upstream-validation marker is the only authority for reverse graph activation"
+    );
+    assert!(
+        !unmarked_diagnostics
+            .memory_owner_rows
+            .iter()
+            .any(|row| row.owner.starts_with("reverse_lookup.poet.")),
+        "an unmarked product reverse translator must not retain the 4d Poet model"
+    );
+    assert_eq!(RimeDestroySession(unmarked_session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn select_schema_affix_prompt_matches_typeduck_v112_reverse_lookup_fixture_commit_preview() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
@@ -402,7 +758,9 @@ fn select_schema_served_jyutping_mobile_routes_bare_grave_to_luna_reverse_lookup
     let candidates =
         super::super::session_candidates_snapshot(session_id).expect("session should exist");
     assert!(
-        candidates.iter().any(|candidate| candidate.text == "\u{9019}"),
+        candidates
+            .iter()
+            .any(|candidate| candidate.text == "\u{9019}"),
         "expected bare-grave Luna reverse lookup candidate in {candidates:?}"
     );
 
@@ -495,8 +853,7 @@ fn select_schema_served_cangjie_routes_grave_jyutping_reverse_lookup() {
         .context()
         .segment_tags
         .clone();
-    let deferrals =
-        remaining_gear_deferrals_snapshot(session_id).expect("session should exist");
+    let deferrals = remaining_gear_deferrals_snapshot(session_id).expect("session should exist");
     assert!(
         candidates.iter().any(|candidate| candidate.text == "\u{4f60}"),
         "expected Cangjie schema Jyutping reverse lookup candidate in {candidates:?}; segment_tags={segment_tags:?}; deferrals={deferrals:?}"

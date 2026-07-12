@@ -106,6 +106,20 @@ import it separately; the wrapper never overwrites a tracked fixture.
 - The manifest recapture command writes raw and curated create-new outputs under
   ignored `target/`; review them first and import the curated bytes separately.
 
+### `cangjie5-competing-segmentation-source.json`
+
+- Milestone: M59 Increment 4d (CJ-1).
+- This is a deterministic, source-derived companion to the immutable
+  `cangjie5-composition.json` oracle. It binds the complete exact-code cohorts
+  and essay rows needed to reproduce both the intended multi-letter owners and
+  the one-letter root competitors for the three CJ-1 rows plus the Hong Kong
+  control.
+- Pinned sources: `rime/rime-cangjie` commit
+  `52d90a1b1312e74042b38c1cbc8142defbc53171` and `rime/rime-essay` commit
+  `48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed`.
+- The generator writes only to an absent output path. Regenerate elsewhere,
+  require byte identity, then import the reviewed UTF-8 JSON separately.
+
 ### `luna-pinyin-selection.json`
 
 - Input: `ni`

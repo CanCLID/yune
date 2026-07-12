@@ -2,7 +2,10 @@ use super::{CompactTableByteSource, RimeCorrectionEntry, RimeToleranceRule};
 use crate::dictionary::compiled::{
     parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le,
 };
-use crate::dictionary::double_array::{DartsDoubleArray, DartsMatch};
+use crate::dictionary::double_array::{
+    push_darts_predictive_state, DartsDoubleArray, DartsMatch, DartsPredictivePush,
+    DartsPredictiveState,
+};
 use crate::{MemoryOwnerClass, MemoryOwnerRow};
 use std::mem;
 use std::ops::ControlFlow;
@@ -39,6 +42,7 @@ pub struct RimePrismSpellingDescriptor {
 pub struct PrismLookupCode<'a> {
     pub code: &'a str,
     pub syllable_id: usize,
+    pub spelling_type: i32,
     pub normal: bool,
     pub abbreviation: bool,
     pub correction: bool,
@@ -164,6 +168,7 @@ impl RimePrismBinPayload {
             match visitor(PrismLookupCode {
                 code,
                 syllable_id: syllable_index,
+                spelling_type: descriptor.spelling_type,
                 normal: descriptor.spelling_type == 0,
                 abbreviation: descriptor.spelling_type == 2,
                 correction: descriptor.is_correction,
@@ -192,6 +197,7 @@ impl RimePrismBinPayload {
                 Some(PrismLookupCode {
                     code,
                     syllable_id: syllable_index,
+                    spelling_type: descriptor.spelling_type,
                     normal: descriptor.spelling_type == 0,
                     abbreviation: descriptor.spelling_type == 2,
                     correction: descriptor.is_correction,
@@ -404,6 +410,69 @@ impl RimePrismRuntimePayload {
         }
     }
 
+    /// Expands every prism key beginning with `prefix` in librime's breadth-
+    /// first key order, then resolves each selected key to canonical syllable
+    /// descriptors in source order. `limit` applies to prism keys before an
+    /// invalid or caller-filtered descriptor can disappear; zero means
+    /// unlimited, matching `Prism::ExpandSearch`.
+    #[must_use]
+    pub fn predictive_canonical_codes_with_limit<'a>(
+        &self,
+        prefix: &str,
+        syllabary_codes: &'a [String],
+        limit: usize,
+    ) -> Vec<PrismLookupCode<'a>> {
+        let alphabet = predictive_alphabet(syllabary_codes);
+        let matches = match &self.storage {
+            RimePrismRuntimeStorage::Owned(payload) => payload
+                .double_array
+                .as_ref()
+                .map(|double_array| {
+                    double_array.predictive_search_with_alphabet(
+                        prefix.as_bytes(),
+                        &alphabet,
+                        limit,
+                    )
+                })
+                .unwrap_or_default(),
+            RimePrismRuntimeStorage::ByteBacked(payload) => payload
+                .double_array
+                .map(|double_array| {
+                    double_array.predictive_search_with_alphabet(
+                        payload.source.bytes(),
+                        prefix.as_bytes(),
+                        &alphabet,
+                        limit,
+                    )
+                })
+                .unwrap_or_default(),
+        };
+
+        let mut lookups = Vec::new();
+        for matched in matches {
+            let Ok(spelling_index) = usize::try_from(matched.value) else {
+                continue;
+            };
+            match &self.storage {
+                RimePrismRuntimeStorage::Owned(payload) => {
+                    lookups.extend(payload.lookup_canonical_codes_for_index(
+                        spelling_index,
+                        syllabary_codes,
+                        usize::MAX,
+                    ))
+                }
+                RimePrismRuntimeStorage::ByteBacked(payload) => {
+                    lookups.extend(payload.lookup_canonical_codes_for_index(
+                        spelling_index,
+                        syllabary_codes,
+                        usize::MAX,
+                    ))
+                }
+            }
+        }
+        lookups
+    }
+
     /// Visits canonical codes for an exact deployed spelling in descriptor
     /// source order. Unlike the vector-returning lookup helpers, this path does
     /// not materialize every descriptor and permits the caller to stop early.
@@ -460,6 +529,17 @@ impl RimePrismRuntimePayload {
                 .trailing_ascii_digit_prefix_canonical_codes(spelling, syllabary_codes, limit),
         }
     }
+}
+
+fn predictive_alphabet(syllabary_codes: &[String]) -> Vec<u8> {
+    let mut alphabet = syllabary_codes
+        .iter()
+        .flat_map(|code| code.bytes())
+        .filter(|byte| *byte != 0)
+        .collect::<Vec<_>>();
+    alphabet.sort_unstable();
+    alphabet.dedup();
+    alphabet
 }
 
 impl ByteBackedRimePrismPayload {
@@ -579,6 +659,7 @@ impl ByteBackedRimePrismPayload {
             return visitor(PrismLookupCode {
                 code: &syllabary_codes[spelling_index],
                 syllable_id: spelling_index,
+                spelling_type: 0,
                 normal: true,
                 abbreviation: false,
                 correction: false,
@@ -606,6 +687,7 @@ impl ByteBackedRimePrismPayload {
             match visitor(PrismLookupCode {
                 code,
                 syllable_id: syllable_index,
+                spelling_type: descriptor.spelling_type,
                 normal: descriptor.spelling_type == 0,
                 abbreviation: descriptor.spelling_type == 2,
                 correction: descriptor.is_correction,
@@ -639,6 +721,7 @@ impl ByteBackedRimePrismPayload {
             return vec![PrismLookupCode {
                 code: &syllabary_codes[spelling_index],
                 syllable_id: spelling_index,
+                spelling_type: 0,
                 normal: true,
                 abbreviation: false,
                 correction: false,
@@ -667,6 +750,7 @@ impl ByteBackedRimePrismPayload {
             lookups.push(PrismLookupCode {
                 code,
                 syllable_id: syllable_index,
+                spelling_type: descriptor.spelling_type,
                 normal: descriptor.spelling_type == 0,
                 abbreviation: descriptor.spelling_type == 2,
                 correction: descriptor.is_correction,
@@ -794,6 +878,130 @@ impl ByteBackedPrismDoubleArray {
         }
         let leaf_pos = node_pos ^ usize::try_from(Self::offset(unit)).ok()?;
         self.unit(bytes, leaf_pos).map(Self::value)
+    }
+
+    fn predictive_search_with_alphabet(
+        self,
+        bytes: &[u8],
+        prefix: &[u8],
+        alphabet: &[u8],
+        limit: usize,
+    ) -> Vec<DartsMatch> {
+        let effective_limit = if limit == 0 { usize::MAX } else { limit };
+        let mut node_pos = 0usize;
+        let Some(mut unit) = self.unit(bytes, node_pos) else {
+            return Vec::new();
+        };
+        let mut states = vec![DartsPredictiveState {
+            node_pos,
+            unit,
+            length: 0,
+            parent: None,
+            cycle_closed: false,
+        }];
+        let mut state_index = 0usize;
+        for byte in prefix {
+            let Ok(offset) = usize::try_from(Self::offset(unit)) else {
+                return Vec::new();
+            };
+            node_pos ^= offset ^ usize::from(*byte);
+            let Some(next_unit) = self.unit(bytes, node_pos) else {
+                return Vec::new();
+            };
+            if Self::label(next_unit) != u32::from(*byte) {
+                return Vec::new();
+            }
+            let next_length = states[state_index].length.saturating_add(1);
+            let next_leaf_pos = Self::has_leaf(next_unit)
+                .then(|| node_pos ^ usize::try_from(Self::offset(next_unit)).unwrap_or(usize::MAX));
+            let DartsPredictivePush::Accepted(next_state_index) = push_darts_predictive_state(
+                &mut states,
+                state_index,
+                node_pos,
+                next_unit,
+                next_length,
+                next_leaf_pos,
+            ) else {
+                return Vec::new();
+            };
+            state_index = next_state_index;
+            unit = next_unit;
+        }
+
+        let mut matches = Vec::new();
+        if Self::has_leaf(unit) {
+            let Ok(offset) = usize::try_from(Self::offset(unit)) else {
+                return matches;
+            };
+            if let Some(leaf) = self.unit(bytes, node_pos ^ offset) {
+                matches.push(DartsMatch {
+                    value: Self::value(leaf),
+                    length: prefix.len(),
+                });
+                if matches.len() >= effective_limit {
+                    return matches;
+                }
+            }
+        }
+
+        let mut queue = std::collections::VecDeque::from([state_index]);
+        while let Some(parent_index) = queue.pop_front() {
+            let parent = states[parent_index];
+            let Ok(parent_offset) = usize::try_from(Self::offset(parent.unit)) else {
+                continue;
+            };
+            for byte in alphabet.iter().copied().filter(|byte| *byte != 0) {
+                let child_pos = parent.node_pos ^ parent_offset ^ usize::from(byte);
+                let Some(child_unit) = self.unit(bytes, child_pos) else {
+                    continue;
+                };
+                if Self::label(child_unit) != u32::from(byte) {
+                    continue;
+                }
+                let child_len = parent.length.saturating_add(1);
+                let child_leaf_pos = Self::has_leaf(child_unit).then(|| {
+                    child_pos ^ usize::try_from(Self::offset(child_unit)).unwrap_or(usize::MAX)
+                });
+                let child_index = match push_darts_predictive_state(
+                    &mut states,
+                    parent_index,
+                    child_pos,
+                    child_unit,
+                    child_len,
+                    child_leaf_pos,
+                ) {
+                    DartsPredictivePush::Accepted(index) => Some(index),
+                    // One bounded closure has already exposed its finite side
+                    // branches. Preserve DARTS's terminal leaf observation,
+                    // but do not enqueue another lap.
+                    DartsPredictivePush::ClosedCycle => None,
+                    // A leaf slot overlapping the active ancestry is a
+                    // structurally malformed DARTS path, not a false-positive
+                    // value-slot transition. Reject it before observing leaf.
+                    DartsPredictivePush::MalformedCycle => return Vec::new(),
+                    DartsPredictivePush::Exhausted => return Vec::new(),
+                };
+                if let Some(child_index) = child_index {
+                    queue.push_back(child_index);
+                }
+                if !Self::has_leaf(child_unit) {
+                    continue;
+                }
+                let Ok(child_offset) = usize::try_from(Self::offset(child_unit)) else {
+                    continue;
+                };
+                if let Some(leaf) = self.unit(bytes, child_pos ^ child_offset) {
+                    matches.push(DartsMatch {
+                        value: Self::value(leaf),
+                        length: child_len,
+                    });
+                    if matches.len() >= effective_limit {
+                        return matches;
+                    }
+                }
+            }
+        }
+        matches
     }
 
     fn common_prefix_search(self, bytes: &[u8], key: &str) -> Vec<DartsMatch> {
@@ -1703,6 +1911,100 @@ mod tests {
                 )
             })
             .collect()
+    }
+
+    #[test]
+    fn predictive_search_rejects_a_malformed_byte_backed_cycle() {
+        let mut units = vec![0u32; 98];
+        units[0] = 1 << 10;
+        // For the `a` transition, offset 96 alternates positions 96 and 97.
+        // The byte-backed reader must reject the repeated node rather than
+        // enqueueing the malformed external graph forever.
+        units[96] = (96 << 10) | u32::from(b'a');
+        units[97] = (96 << 10) | u32::from(b'a');
+        let bytes = units
+            .into_iter()
+            .flat_map(u32::to_le_bytes)
+            .collect::<Vec<_>>();
+        let malformed = ByteBackedPrismDoubleArray {
+            offset: 0,
+            unit_count: 98,
+        };
+
+        assert!(malformed
+            .predictive_search_with_alphabet(&bytes, b"", b"a", 0)
+            .is_empty());
+    }
+
+    #[test]
+    fn predictive_search_rejects_a_leaf_bearing_byte_cycle_before_production_limit() {
+        let mut units = vec![0u32; 98];
+        units[0] = 1 << 10;
+        units[96] = (96 << 10) | ByteBackedPrismDoubleArray::HAS_LEAF | u32::from(b'a');
+        units[97] = (96 << 10) | ByteBackedPrismDoubleArray::HAS_LEAF | u32::from(b'a');
+        let bytes = units
+            .into_iter()
+            .flat_map(u32::to_le_bytes)
+            .collect::<Vec<_>>();
+        let malformed = ByteBackedPrismDoubleArray {
+            offset: 0,
+            unit_count: 98,
+        };
+
+        assert!(malformed
+            .predictive_search_with_alphabet(&bytes, b"", b"a", 512)
+            .is_empty());
+    }
+
+    #[test]
+    fn predictive_search_preserves_path_dependent_repeated_byte_backed_states() {
+        let mut units = vec![0u32; 124];
+        units[0] = 1 << 10;
+        units[96] = (126 << 10) | u32::from(b'a');
+        units[99] = (125 << 10) | u32::from(b'b');
+        units[100] = (1 << 10) | ByteBackedPrismDoubleArray::HAS_LEAF | u32::from(b'z');
+        units[101] = 42;
+        let bytes = units
+            .into_iter()
+            .flat_map(u32::to_le_bytes)
+            .collect::<Vec<_>>();
+        let repeated = ByteBackedPrismDoubleArray {
+            offset: 0,
+            unit_count: 124,
+        };
+
+        assert_eq!(
+            repeated.predictive_search_with_alphabet(&bytes, b"", b"abz", 0),
+            [
+                DartsMatch {
+                    value: 42,
+                    length: 2,
+                },
+                DartsMatch {
+                    value: 42,
+                    length: 2,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn predictive_search_rejects_byte_backed_paths_over_the_depth_bound() {
+        let key = "a".repeat(crate::dictionary::double_array::MAX_DARTS_PREDICTIVE_PATH_DEPTH + 1);
+        let deep = DartsDoubleArray::build(&[(key, 7)]).expect("deep test key should build");
+        let bytes = deep
+            .units()
+            .iter()
+            .flat_map(|unit| unit.to_le_bytes())
+            .collect::<Vec<_>>();
+        let byte_backed = ByteBackedPrismDoubleArray {
+            offset: 0,
+            unit_count: deep.units().len(),
+        };
+
+        assert!(byte_backed
+            .predictive_search_with_alphabet(&bytes, b"", b"a", 512)
+            .is_empty());
     }
 
     fn runtime_payloads(

@@ -126,6 +126,19 @@
       "source_row_policy": "d48_cangjie5_exact_code_cohorts_for_char_by_char_composition",
       "capture_command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/capture-upstream-cangjie5.ps1 -OracleRoot 'target/upstream-oracle/1.17.0' -RawOutput 'target/m59-increment1-cangjie-final/cangjie-oracle-raw.json' -Output 'target/m59-increment1-cangjie-final/cangjie-oracle.json' -WorkRoot 'target/upstream-oracle/1.17.0/m59-cangjie-final-work' -KeepWorkRoot -ExpectedRimeDllSha256 '86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b' -ExpectedRimeDeployerSha256 '3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071' -ExpectedCangjieCommit '52d90a1b1312e74042b38c1cbc8142defbc53171' -ExpectedPreludeCommit '082425ea0684bca36474415d4a0e8db9b016487e' -ExpectedLunaPinyinCommit '18a80335c37522311f7cff02886cd81cec3b460a' -ExpectedEssayCommit '48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed' -ExpectedStrokeCommit '3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c' -ExpectedCantoneseCommit 'c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0' -ExpectedLoengfanCommit '987ac95b02f957e8764a2f45222a4006c188ed50'",
       "import_policy": "Capture raw and curated files to fresh ignored target paths, verify deterministic bytes and exact behavior diff, then import the reviewed curated bytes separately; the capture command never overwrites this tracked fixture."
+    },
+    {
+      "path": "cangjie5-competing-segmentation-source.json",
+      "milestone": "M59 Increment 4d",
+      "capture_date": "2026-07-12",
+      "sha256": "dbb9b3a1a5e6fcec4357914d7f6cedcdbca1c90e1bd40350b21cf475fa2e5122",
+      "source_row_policy": "m59_cangjie_cj1_complete_competing_segmentation_source",
+      "oracle_fixture": "cangjie5-composition.json",
+      "oracle_fixture_sha256": "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf",
+      "generator_path": "scripts/build-m59-cangjie-competing-fixture.py",
+      "generator_sha256": "1d652dfbac827b2fa12305ce2251cedab1a246426f4e2e480894f3473b8ceed5",
+      "generation_command": "python -B scripts/build-m59-cangjie-competing-fixture.py --oracle crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-composition.json --cangjie-dir <pinned-rime-cangjie> --essay <pinned-rime-essay>/essay.txt --output <fresh-absent-output>",
+      "import_policy": "Generate only to a fresh absent path, require byte identity with the reviewed fixture, then import separately. The historical oracle and Increment 1 packet remain immutable."
     }
   ]
 }

@@ -1,7 +1,8 @@
 use crate::{
-    AiConfidence, AiContext, AiOffReason, AiResult, Candidate, CandidateRanker, CandidateSource,
-    Context, Engine, MockAiRanker, RerankResult, SchemaBehaviorProfile, SentencePolicy,
-    StaticTableTranslator, Translator, UserDb,
+    AiConfidence, AiContext, AiOffReason, AiResult, Candidate, CandidateRanker, CandidateRequest,
+    CandidateSource, Context, Engine, MockAiRanker, RerankResult, SchemaBehaviorProfile,
+    SentencePolicy, StaticTableTranslator, TranslationMergePolicy, TranslationResult, Translator,
+    UserDb,
 };
 
 struct CommentTranslator;
@@ -34,6 +35,46 @@ impl Translator for CommentTranslator {
     }
 }
 
+struct OrderedMergeTranslator {
+    rows: Vec<Candidate>,
+    policy: TranslationMergePolicy,
+}
+
+impl Translator for OrderedMergeTranslator {
+    fn name(&self) -> &'static str {
+        "ordered_merge_translator"
+    }
+
+    fn translate(&self, _input: &str) -> Vec<Candidate> {
+        self.rows.clone()
+    }
+
+    fn translate_with_context_and_request(
+        &self,
+        input: &str,
+        _status: &crate::Status,
+        _options: &std::collections::HashMap<String, bool>,
+        _context: &Context,
+        _request: CandidateRequest,
+    ) -> TranslationResult {
+        TranslationResult::complete(self.translate(input)).with_merge_policy(self.policy)
+    }
+}
+
+fn ordered_merge_candidate(text: &str, quality: f32) -> Candidate {
+    ordered_merge_candidate_from(text, quality, CandidateSource::Table)
+}
+
+fn ordered_merge_candidate_from(text: &str, quality: f32, source: CandidateSource) -> Candidate {
+    Candidate {
+        text: text.to_owned(),
+        comment: String::new(),
+        preedit: None,
+        source,
+        quality,
+    }
+}
+
 fn ai_candidate(text: &str) -> Candidate {
     ai_candidate_with_confidence(text, 0.62)
 }
@@ -55,6 +96,97 @@ fn visible_ai_candidate_index(engine: &Engine) -> usize {
         .iter()
         .position(|candidate| candidate.source.is_ai())
         .expect("AI candidate should be visible")
+}
+
+#[test]
+fn default_translation_results_retain_the_historical_flat_quality_sort() {
+    let mut engine = Engine::new();
+    engine.add_translator(OrderedMergeTranslator {
+        rows: vec![
+            ordered_merge_candidate("LOCAL-FIRST", 1.0),
+            ordered_merge_candidate("LOCAL-SECOND", 100.0),
+        ],
+        policy: TranslationMergePolicy::Default,
+    });
+    engine.add_translator(OrderedMergeTranslator {
+        rows: vec![ordered_merge_candidate("OTHER", 50.0)],
+        policy: TranslationMergePolicy::Default,
+    });
+
+    engine.set_input("x");
+    let texts = engine
+        .context()
+        .candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(texts, ["LOCAL-SECOND", "OTHER", "LOCAL-FIRST", "x"]);
+}
+
+#[test]
+fn upstream_table_policy_preserves_local_order_and_merges_only_current_heads() {
+    let mut engine = Engine::new();
+    engine.add_translator(OrderedMergeTranslator {
+        rows: vec![
+            ordered_merge_candidate("LOCAL-FIRST", 1.0),
+            ordered_merge_candidate("LOCAL-SECOND", 100.0),
+        ],
+        policy: TranslationMergePolicy::UpstreamTable,
+    });
+    engine.add_translator(OrderedMergeTranslator {
+        rows: vec![ordered_merge_candidate("OTHER", 50.0)],
+        policy: TranslationMergePolicy::Default,
+    });
+
+    engine.set_input("x");
+    let texts = engine
+        .context()
+        .candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(texts, ["OTHER", "LOCAL-FIRST", "LOCAL-SECOND", "x"]);
+}
+
+#[test]
+fn normal_reverse_lookup_prefix_drains_between_table_exact_and_completions() {
+    let mut engine = Engine::new();
+    engine.add_translator(OrderedMergeTranslator {
+        rows: vec![
+            ordered_merge_candidate_from("REVERSE-1", 0.0, CandidateSource::ReverseLookup),
+            ordered_merge_candidate_from("REVERSE-2", 0.0, CandidateSource::ReverseLookup),
+        ],
+        policy: TranslationMergePolicy::ReverseLookup {
+            normal_prefix_quality: true,
+        },
+    });
+    engine.add_translator(OrderedMergeTranslator {
+        rows: vec![
+            ordered_merge_candidate_from("TABLE-EXACT", 100.0, CandidateSource::Table),
+            ordered_merge_candidate_from("TABLE-COMPLETION-1", 90.0, CandidateSource::Completion),
+            ordered_merge_candidate_from("TABLE-COMPLETION-2", 80.0, CandidateSource::Completion),
+        ],
+        policy: TranslationMergePolicy::UpstreamTable,
+    });
+
+    engine.set_input("x");
+    let texts = engine
+        .context()
+        .candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        texts,
+        [
+            "TABLE-EXACT",
+            "REVERSE-1",
+            "REVERSE-2",
+            "TABLE-COMPLETION-1",
+            "TABLE-COMPLETION-2",
+            "x",
+        ]
+    );
 }
 
 #[test]

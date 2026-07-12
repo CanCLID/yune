@@ -682,9 +682,9 @@ declared five-row abbreviation/segmentation surface is exact `5/5` for
 OpenCC-normalized text/position, preedit, and commit preview. The raw comparator
 remains visibly red at `1/5` solely for the already-declared Increment 4c
 siblings `僞`, `臥`, and `鉤`; there is zero unowned residual, no new exception,
-and no beyond-oracle-depth use. The designated Opus blocking review is pending,
-so 4c and every later engine-behavior increment remain blocked. Remaining
-closure is the 4b review resolution, 4c OpenCC variants, 4d Cangjie CJ-1, and 4e
+and no beyond-oracle-depth use. The designated Opus review independently
+reproduced the load-bearing gates and approved 4b, permitting 4c. Remaining
+closure is 4c OpenCC variants, 4d Cangjie CJ-1, and 4e
 Lane B exact order. Source-current WEB-04 is also red on two of four Octagram
 rows, reproduces before 4b, and is assigned to that existing untoned-Luna 4e
 boundary; it remains a final-closeout blocker, not a new exception. The

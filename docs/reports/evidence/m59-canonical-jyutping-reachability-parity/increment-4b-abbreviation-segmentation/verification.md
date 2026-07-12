@@ -116,8 +116,8 @@ mechanism, anti-gaming, or source-bound-receipt blocker. Two final independent
 packet reviews approved the specification/acceptance boundary and the
 code-quality, ABI, lifecycle, and evidence-integrity boundary after directly
 rechecking the native receipt and all packet files. The final publication audit
-reconciled 385 total files, 384 inventoried nonself paths, and 47,458,124 bytes;
-all paths, sizes, and SHA-256 hashes match, all 29 JSON files parse, relative
+reconciled every path and byte count recorded by the manifest; all paths, sizes,
+and SHA-256 hashes match, all 29 JSON files parse, relative
 links resolve, only declared text extensions are present, and no NUL byte is
 present. Because 313 imported performance receipts intentionally retain their
 original Windows line endings, the scoped `.gitattributes` rule disables text
@@ -125,5 +125,7 @@ normalization only for that raw evidence subtree. `git hash-object --path`
 versus `--no-filters` is identical for all 384 inventoried paths, proving the
 manifest also matches the bytes Git will commit.
 
-The designated external Opus blocking review remains pending. Increment 4c is
-not permitted until that review is returned and resolved.
+The designated external Opus review independently reran the load-bearing gates
+and approved 4b with no blocking finding. Increment 4c may begin. Its complete
+verdict and the carried nonblocking watch items are recorded in
+[`external-review-opus.md`](./external-review-opus.md).

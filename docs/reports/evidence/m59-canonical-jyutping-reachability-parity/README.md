@@ -25,9 +25,9 @@ regression guard, not an acceptance oracle.
 > passes. The `eb117c53` and `d2499358` packets are retained only as rejected
 > history for the oversized uncached prefix-family scan and later current-head
 > equal-weight review finding. This is an increment guard, not final
-> M59-REACH-04. The designated Opus blocking review is pending, so
-> `next_engine_increment_allowed: false`; Increment 4c and later behavior work
-> remain blocked, and M59 is open. Source-current WEB-04 is separately disclosed
+> M59-REACH-04. The designated Opus blocking review approved 4b with no blocking
+> finding, so `next_engine_increment_allowed: true` and Increment 4c may begin;
+> M59 remains open. Source-current WEB-04 is separately disclosed
 > red on two Octagram rows that reproduce before 4b; the existing untoned-Luna
 > 4e boundary must restore them before final closeout.
 >
@@ -107,7 +107,7 @@ regression guard, not an acceptance oracle.
 
 ## Artifact classification
 
-### VALID — Increment 4b landed packet (blocking review pending)
+### VALID — Increment 4b landed packet (blocking review approved)
 
 - `increment-4b-abbreviation-segmentation/` preserves the pre-lazy behavior,
   all red and provenance-rejected performance attempts, the owner-selected
@@ -117,8 +117,7 @@ regression guard, not an acceptance oracle.
   table payload.
 - Acceptance at this boundary is normalized `5/5`, raw `1/5` OpenCC-only, and
   performance `32/32` with zero individual failures. Its designated Opus review
-  is still blocking; it does not permit 4c or close Lane A, D-48, REACH-04, or
-  M59.
+  approved 4b, permitting 4c; it does not close Lane A, D-48, REACH-04, or M59.
 
 ### VALID — supplemental macOS repair evidence (source-scoped, not Windows acceptance)
 

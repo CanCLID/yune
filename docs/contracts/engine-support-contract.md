@@ -48,9 +48,9 @@ M59 Increment 4b implements only its declared abbreviation/segmentation surface:
 after normalization through the already-declared Increment 4c same-code OpenCC
 inventory, candidate text/position, preedit, and commit preview are exact `5/5`.
 The raw strict comparator remains fail-closed at `1/5` solely for `僞`, `臥`, and
-`鉤`; this creates no new exception and does not close Lane A. Increment 4c and
-later engine-behavior work remain blocked until the designated 4b review is
-returned and resolved.
+`鉤`; this creates no new exception and does not close Lane A. The designated
+external review approved 4b with no blocking finding, so Increment 4c may begin;
+the remaining D-48 lanes and final gates stay open.
 
 For the captured 37- and 59-character upstream Luna page-zero rows, the required
 shape is one best full-span sentence followed by the independent oracle phrase

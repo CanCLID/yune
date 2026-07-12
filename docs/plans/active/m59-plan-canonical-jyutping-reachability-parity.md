@@ -39,8 +39,8 @@
 > residuals, no new exception, and no beyond-oracle-depth use. All 32 signed
 > performance rows pass across all five source-bound runs, including every
 > individual observation and the 37/59-character rows. The designated Opus
-> blocking review is pending, so Increment 4c and every later engine-behavior
-> increment remain blocked.
+> blocking review independently reproduced the load-bearing gates and approved
+> 4b with no blocking finding, so Increment 4c may begin.
 > No D-48 lane, REACH-03/04, or final-gate row is implied complete here.
 >
 > Nothing remaining moves to M60 or another milestone. The 4a review,
@@ -99,9 +99,8 @@
 - **Blocking review/performance protocol:** 4a's blocking review, fix-forward,
   and explicit owner re-disposition are complete. Increment 4b is landed, its
   retained-ceiling lazy/page-bounded implementation passes all 32 signed rows
-  in five source-bound rounds, and its designated Opus blocking review is
-  pending. Increment 4c and later engine-behavior work remain blocked until that
-  review is returned and resolved. Other reviews remain nonblocking.
+  in five source-bound rounds, and its designated Opus review approved it with
+  no blocking finding. Increment 4c may begin. Other reviews remain nonblocking.
 - **Increment 2 complete (`e37ee011`, pushed 2026-07-10):** explicit
   TypeDuck-profile activation repaired the direct Cantonese and synthetic
   Windows harnesses without golden edits; one `Engine` policy now governs
@@ -139,7 +138,7 @@
   on 2026-07-11 with the recorded cross-weight/provenance/page-1 revisit
   triggers, which cleared the historical 4b start stop; 4b has since landed as
   the separate increment below.
-- **Increment 4b implemented through `d508e05b`; blocking review pending:** the
+- **Increment 4b implemented through `d508e05b`; blocking review approved:** the
   bounded/lazy abbreviation graph propagates prism spelling types, removes the
   former initial-`m`/two-syllable restriction, merges abbreviation families
   globally, and recomposes the longest recognized prefix without schema-id,
@@ -154,8 +153,9 @@
   long-input expansion guard also passes after generically bounding oversized
   uncached prefix families. This is an increment
   guard, not final M59-REACH-04. Evidence:
-  `increment-4b-abbreviation-segmentation/`. Increment 4c is blocked on the
-  designated Opus review. The packet also discloses that source-current WEB-04
+  `increment-4b-abbreviation-segmentation/`. The designated Opus review
+  independently reproduced the load-bearing gates and approved 4b, permitting
+  Increment 4c. The packet also discloses that source-current WEB-04
   is red on two Octagram rows, reproduces before 4b, and remains assigned to the
   existing untoned-Luna 4e/final-closeout boundary; no web-gate pass is claimed.
 - **Supplemental macOS 37/59 repair measured at source `89875ee2`:**

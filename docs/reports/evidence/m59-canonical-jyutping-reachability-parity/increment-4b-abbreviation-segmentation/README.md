@@ -1,8 +1,8 @@
 # M59 Increment 4b abbreviation/segmentation packet
 
-Status: implementation landed through `d508e05b`; designated Opus blocking
-review pending. Increment 4c and every later engine-behavior increment remain
-blocked. This packet does not close Lane A, D-48, M59-REACH-04, or M59.
+Status: implementation landed through `d508e05b`; the designated Opus review
+approved 4b with no blocking finding, so Increment 4c may begin. This packet
+does not close Lane A, D-48, M59-REACH-04, or M59.
 
 ## Behavior verdict
 
@@ -97,8 +97,10 @@ updates clear sessions and all shared translator/lookup caches.
 Earlier implementation reviews and an independent provenance-tool review found
 no 4b mechanism or evidence-tool blocker. Two final independent packet reviews
 also approved the completed native receipt, manifest, Git-filter integrity, and
-publication boundary. The externally designated Opus review remains pending;
-`next_engine_increment_allowed` stays `false` until its findings are returned
-and resolved. Exact verification and packet hashes are recorded in
+publication boundary. The externally designated Opus review then independently
+reproduced the load-bearing gates and approved 4b; its verdict and nonblocking
+watch items are recorded in
+[`external-review-opus.md`](./external-review-opus.md). Exact verification and
+packet hashes are recorded in
 [`verification.md`](./verification.md) and
 [`packet-manifest.json`](./packet-manifest.json).

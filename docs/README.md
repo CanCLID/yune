@@ -5,7 +5,7 @@ Start with [`conventions.md`](./conventions.md) for repository conventions, then
 ## Current Entry Points
 
 - [`conventions.md`](./conventions.md) - architecture, stack, repo structure, coding/testing conventions, integrations, risks, and planning-doc rules.
-- [`roadmap.md`](./roadmap.md) - current dashboard, active sequence, scope boundaries, and M37 readiness gates.
+- [`roadmap.md`](./roadmap.md) - current dashboard, active sequence, scope boundaries, and milestone readiness/closeout state.
 - [`requirements.md`](./requirements.md) - requirement IDs and milestone status.
 - [`decisions.md`](./decisions.md) - standing principles and decision log.
 

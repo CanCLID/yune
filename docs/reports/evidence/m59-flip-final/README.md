@@ -58,13 +58,22 @@ that earned the attribution here — the discipline M55 lacked:
   the longest syllabary code); **memory** by the schema-level precedence fix
   (the injection no longer fires on jyutping keystrokes where `prefix_fallback`
   did not apply per-request — Track B back to 80 MB, restoring the M58 contract).
-- Three thinnest rows (`n`, `hao`, 37-char) carry an owner-signed injection-on
-  ceiling = **pooled-worst of the committed injection-on runs × 1.05**; the 20
-  other standing rows are untouched. The bare-syllable-guard rows (`yi`, `chuang`)
+- Four rows (`n`, `hao`, 37-char, and the later-added 59-char row) carry an
+  owner-signed injection-on ceiling = **pooled-worst of the committed
+  injection-on observations × 1.05**. The first three use the five committed
+  `run-1..5` observations; the 59-char addendum uses those five plus the
+  independent `claude-verify` observation (`1.665 × 1.05 = 1.748`). The other
+  standing rows are untouched. The bare-syllable-guard rows (`yi`, `chuang`)
   are expected to show ≈ 0 feature cost — a nonzero cost there is a regression
   signal. See `../../../decisions.md` (M59 entry) and the pre-declared protocol in
-  `docs/plans/active/m59-plan-canonical-jyutping-reachability-parity.md`
+  `docs/plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`
   ("Flip perf-gate protocol").
+
+M59 final acceptance does not rebaseline this historical flip packet. Five
+fresh complete rounds at final behavior source `5879405c` pass `32/32`
+aggregate rows and `160/160` individual observations under the same signed
+ceilings. The final reconciliation is under
+`../m59-canonical-jyutping-reachability-parity/final-closeout/`.
 
 ## Gate-verdict rule (pre-declared)
 

@@ -1,9 +1,12 @@
 # M59 Canonical Parity + General Reachability Plan (reimplementation)
 
-> **CURRENT CLOSEOUT STATUS (2026-07-12): full Path A is locked; M59 is NOT
-> closeable.** The genuine Lane B **reachability mechanism** landed at `c89a8ea9`
-> and remains source-truthful and non-circular, but Lane B D-48 exact-order parity
-> is still open. Workspace deployment fidelity completed at `2ee0805f`.
+> **Milestone:** M59. **Status:** Complete (2026-07-13). **Track:** canonical
+> parity, schema-general reachability, and release/browser closeout.
+>
+> **FINAL CLOSEOUT:** full Path A closed under the D-47/D-48 contract. The
+> genuine Lane B reachability mechanism landed at `c89a8ea9`
+> and remains source-truthful and non-circular. Workspace deployment fidelity
+> completed at `2ee0805f`.
 > Increment 2's explicit TypeDuck activation and profile-driven unified forward
 > navigation landed at `e37ee011`; `cantonese_parity` is 41/41,
 > `typeduck_windows_boundary` is 4/4, physical/API controls are equivalent, and
@@ -45,8 +48,29 @@
 > ignored`, and the unmarked control is exact `12/12` against its pre-4d
 > capture. Its one-build/four-reuse five-round guard passes all 32 aggregate
 > median rows and all 160 individual observations under unchanged ceilings.
-> M59-PARITY-03 and CJ-1 are complete. Increment 4e Lane B exact order/WEB-04,
-> REACH-03/04, final evidence, and final gates remain open.
+> M59-PARITY-03 and CJ-1 are complete. Increment 4e is implemented at clean
+> production source `5879405c`: all seven captured Lane B inputs match pinned
+> librime page-for-page and position-for-position; the deployed 37- and
+> 59-character rows have the required one-best-sentence-then-phrase page shape;
+> and the source-built native WEB-04 runner is `8/8` across four plain/null and
+> four Octagram rows. Five fresh complete 17+1 rounds pass all `32/32` aggregate
+> rows and all `160/160` individual observations under unchanged signed ceilings,
+> so M59-PARITY-02 and M59-REACH-04 are complete. The tracked packet is
+> `increment-4e-lane-b-exact-order/` and its evidence commit is `d5af8304`.
+> Commit `5fa986d8` completes M59-REACH-03: both manifests contain the exact
+> 60-asset schema tree; the checked-in registry dispositions all 10 schema assets
+> and three configuration carriers; and nine executable validation rows cover
+> the fixed eight-row deployment matrix plus the directly selectable tracked
+> `jyut6ping3` schema. A newly discovered schema asset is added automatically as
+> a blocking open registry row. Final executable evidence now records the
+> nonduplicative native recovery, fail-closed Emscripten build, typecheck,
+> tracked-app/public-package builds, complete functional Playwright coverage,
+> and source-current WEB-04 proof. The three WEB-04 browser tests cover all four
+> ranking rows plus the plain-Luna and missing-model controls; M58's separate
+> focused row is green. WEB-04 is complete `5/5`, and all 11 M59 requirements
+> are complete. The 150-sample startup benchmark is not an M59 correctness gate,
+> and WEB-05's historical same-WASM comparison remains bound to its original
+> binary rather than being rebaselined across the final WASM.
 >
 > Nothing remaining moves to M60 or another milestone. The blocking-review
 > conditions for 4a and 4b are satisfied. Reviews for 4c and later non-4a/4b
@@ -82,6 +106,11 @@
 
 ## Status
 
+- **M59 complete (2026-07-13):** D-47 is green under unchanged signed ceilings;
+  D-48 Lane A, Lane B, and Cangjie are exact on their captured surfaces;
+  REACH-03, final evidence, native recovery, fail-closed WASM, package builds,
+  and source-current functional browser gates are closed. The final evidence
+  packet is `reports/evidence/m59-canonical-jyutping-reachability-parity/final-closeout/`.
 - **Prior execution REJECTED and reverted** (`c70774ce` reverts `77a9540a`): it
   faked reachability with per-input `match` arms replaying oracle candidates
   baked into `m59_canonical_jyutping.tsv`, plus circular tests; the luna hardcode
@@ -100,8 +129,8 @@
   and explicit owner re-disposition are complete. Increment 4b is landed, its
   retained-ceiling lazy/page-bounded implementation passes all 32 signed rows
   in five source-bound rounds, and its designated Opus review approved it with
-  no blocking finding. Increments 4c and 4d are complete; 4e is next. Other
-  reviews remain nonblocking.
+  no blocking finding. Increments 4c, 4d, and 4e are complete. Other reviews
+  remain nonblocking.
 - **Increment 2 complete (`e37ee011`, pushed 2026-07-10):** explicit
   TypeDuck-profile activation repaired the direct Cantonese and synthetic
   Windows harnesses without golden edits; one `Engine` policy now governs
@@ -138,7 +167,13 @@
   signed ratchet guard. The owner renewed the narrowly scoped class-3 exception
   on 2026-07-11 with the recorded cross-weight/provenance/page-1 revisit
   triggers, which cleared the historical 4b start stop; 4b has since landed as
-  the separate increment below.
+  the separate increment below. The binding wording is: limited to the complete
+  captured equal-weight residual after declared OpenCC normalization — 6,086
+  inversions, zero cross-weight inversions, and no beyond-oracle-depth use;
+  cause: librime's equal-weight import/traversal tie-break; mandatory revisit
+  for any cross-weight inversion, incomplete capture/provenance, or a tie
+  residual moving onto page 1 for a common input. It did not waive 4b, 4c, 4d,
+  or 4e.
 - **Increment 4b implemented through `d508e05b`; blocking review approved:** the
   bounded/lazy abbreviation graph propagates prism spelling types, removes the
   former initial-`m`/two-syllable restriction, merges abbreviation families
@@ -156,9 +191,10 @@
   guard, not final M59-REACH-04. Evidence:
   `increment-4b-abbreviation-segmentation/`. The designated Opus review
   independently reproduced the load-bearing gates and approved 4b, permitting
-  Increment 4c. The packet also discloses that source-current WEB-04
-  is red on two Octagram rows, reproduces before 4b, and remains assigned to the
-  existing untoned-Luna 4e/final-closeout boundary; no web-gate pass is claimed.
+  Increment 4c. At that historical boundary the packet also disclosed
+  source-current WEB-04 red on two Octagram rows, reproducing before 4b and
+  assigned to the existing untoned-Luna 4e/final-closeout boundary; no web-gate
+  pass was claimed by the 4b packet.
 - **Increment 4c implemented at `e11557e2`:** the named Hong Kong OpenCC chain
   now preserves ordered one-to-many exact `ConvertWord` output, stable family
   deduplication, and default-only partial recomposition without schema-id,
@@ -186,7 +222,36 @@
   owned and byte-backed predictive traversal both return the same 504 canonical
   `k` rows. Five fresh one-build/four-reuse rounds pass all 32 signed aggregate
   rows and all 160 individual observations under unchanged ceilings. Evidence:
-  `increment-4d-cangjie-cj1/`. M59-PARITY-03 is complete; 4e is next.
+  `increment-4d-cangjie-cj1/`. M59-PARITY-03 is complete.
+- **Increment 4e implemented at `5879405c`, packet `d5af8304`:** the complete
+  captured Lane B set (`moboyi`, `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`,
+  `guo`) is exact for candidate text, page number/size, page-local and global
+  position, and final-page state over tracked byte-backed Luna assets. The exact
+  deployed 37/59 page-shape gate is green. The source-built native WEB-04 runner
+  is `8/8`; final source-current Playwright also proves the three WEB-04 browser
+  cases covering all four ranking rows plus plain and missing-model controls.
+  Five fresh one-build/four-reuse performance rounds pass all
+  `32/32` aggregate rows and `160/160` individual observations under unchanged
+  ceilings, including `n`, `ni`, `hao`, and both long rows. M59-PARITY-02 and
+  M59-REACH-04 are complete.
+- **M59-REACH-03 implemented at `5fa986d8`:** the public and public-demo
+  manifests exactly cover 60 assets and match each other; the checked-in
+  `schema-acceptance-coverage.json` dispositions all 10 schema assets and three
+  configuration carriers, and links nine executable validation rows. The
+  manifest updater automatically discovers a new schema asset and creates a
+  blocking `status: open` acceptance row. The fixed eight-row deployment matrix
+  remains separate from the direct tracked `jyut6ping3` real-deploy row.
+- **Final gates complete:** the first broad native test run stopped at
+  `cantonese_parity` on a recorded host allocation failure after its completed
+  targets had passed. The interrupted and never-reached targets were resumed
+  without duplicating the broad run: Cantonese is `41/41`, all executed
+  remaining core/API tests pass with declared ignores preserved, doc-tests and
+  release build pass, and format/full-workspace Clippy remain green. The
+  fail-closed Emscripten build forbids native fallback and passes module/export
+  verification; typecheck and tracked/public builds pass. Unique functional
+  Playwright coverage is 79 passed with five declared public-mode skips. The
+  startup benchmark and cross-binary WEB-05 same-WASM row are explicitly not
+  M59 correctness gates.
 - **Supplemental macOS 37/59 repair measured at source `89875ee2`:**
   `71a80704` separates upstream Luna's one-best sentence from its independent
   phrase stream; `e5c57eb6` preserves ScriptTranslation display metadata;
@@ -525,9 +590,12 @@ amendment):
       re-frozen post-fix diff + owner-signed D-48 disposition table
       (`lane-a-ranking-fix-2026-07-09/re-diff/`). Residual classes are the named
       work items in the disposition table.
-- [x] **Lane B reachability mechanism DONE; D-48 exact order OPEN (landed `c89a8ea9`):** luna complete-list/page-turn injection
-      point traced + implemented; storage/prism facts recorded (luna is
-      Compact+prism → bounded syllabary); `moboyi`→莫伯洢 acceptance added as a real-path test (not a capture).
+- [x] **Lane B reachability mechanism DONE at `c89a8ea9`; D-48 exact order
+      CLOSED by 4e at `5879405c`:** luna complete-list/page-turn injection point
+      traced + implemented; storage/prism facts recorded (luna is Compact+prism
+      → bounded syllabary); `moboyi`→莫伯洢 acceptance added as a real-path test
+      (not a capture). The later complete seven-input 4e capture is page- and
+      position-exact against pinned librime.
 - [x] Fresh 13-input oracle and Yune all-page captures committed with full
       provenance under `increment-4c-opencc-variants/`; the historical red
       boundaries remain preserved in the 4a/4b packets.
@@ -547,14 +615,14 @@ amendment):
       re-frozen diff is empty for D-48 text/order and consumes no exception.
 
 ### Phase 3 — Implement per the diff (general mechanism)
-- [x] **(Lane B reachability mechanism DONE; D-48 exact order OPEN)** Luna leading-syllable injection (page-turn path, general,
+- [x] **(Lane B reachability mechanism DONE; D-48 exact order CLOSED by 4e)** Luna leading-syllable injection (page-turn path, general,
       no allowlist, no baked data); `is_last_page` fixed; phrase-before-single
       ordering. Typed capability `translator/leading_syllable_reachability`
       (distinct from broad `prefix_fallback`); bounded fetch capped; `ordered_mode`
       not widened (luna early-stop preserved); untoned relaxation gated to the lane.
 - [x] **(Lane A)** Canonical rime-cantonese fixes proven by the external diff are
       complete through 4c and scoped so Track A/luna typing is untouched.
-- [x] **(Lane B reachability mechanism DONE; D-48 exact order OPEN)** Byte-backed non-circular tests (`yune_web.rs`
+- [x] **(Lane B reachability mechanism DONE; D-48 exact order CLOSED by 4e)** Byte-backed non-circular tests (`yune_web.rs`
       `m59_luna_*`): `moboyi`→莫伯洢 + `zhongguo`/bare-syllable controls + phrase-before-single
       ordering; jyutping `zijiguk`→諮 / `beingo`→畀 stay green.
 - [x] **(Lane A)** the complete 13-input all-page capture includes canonical
@@ -568,9 +636,11 @@ amendment):
       (owner-approved).** The default-ON flip is the first honest injection-ON
       ratchet. CPU closed by the O(1) boundary skip + range cap; the +24 MB Track B
       regression closed by the schema-level precedence fix (80 MB restored). The
-      three thinnest rows (`n`, `hao`, 37-char) carry an owner-signed injection-on
-      ceiling (pooled-worst × 1.05); feature-off numbers + spreads preserved. Median
-      gate **green 23/23** across 5 committed runs. Evidence: `m59-flip-final/`
+      four adjusted rows (`n`, `hao`, 37-char, and the later-added 59-char row)
+      carry owner-signed injection-on ceilings (pooled-worst × 1.05); feature-off
+      numbers + spreads are preserved. The original five-run flip packet is green
+      `23/23`; the 59-char fourth-row addendum also includes the independent sixth
+      observation. Evidence: `m59-flip-final/`
       (gate-verdict.csv, README with the m37 decomposition as method) +
       `m59-flipoff-isolation/`. `hao`'s residual is a same-work timing artifact
       (m37: identical counts flip-off/on), not a removable computation.
@@ -588,8 +658,10 @@ amendment):
       `.../luna-lane-README.md`. Roadmap M59 row + Scope-Ledger row added.
 - [x] `requirements.md` M59 entry and `decisions.md` D-47/D-48 owner amendment
       sign-off.
-- [ ] Move this plan to `completed/` only when all remaining M59 parity,
-      evidence, and closeout gates land.
+- [x] Move this plan to `completed/` after final executable-evidence
+      reconciliation, source-current WEB-04 Playwright (including plain and
+      missing-model controls), and the native/WASM/app/manifest/browser/package
+      closeout gates land. Completed 2026-07-13.
 
 ## Phase 5 — Lane B corrective series (fable verified review, 2026-07-07)
 

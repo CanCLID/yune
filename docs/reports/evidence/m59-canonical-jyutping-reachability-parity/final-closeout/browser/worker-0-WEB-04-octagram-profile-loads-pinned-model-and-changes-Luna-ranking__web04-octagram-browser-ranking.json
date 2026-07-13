@@ -1,0 +1,454 @@
+{
+  "plainDiagnostic": {
+    "requestedSchemaId": "luna_pinyin",
+    "effectiveSchemaId": "luna_pinyin",
+    "delivered": false,
+    "modelId": null,
+    "expectedSha256": null,
+    "fallback": false,
+    "reason": "schema has no grammar/language",
+    "memoryBeforeBytes": 268435456,
+    "memoryAfterBytes": 268435456,
+    "memoryDeltaBytes": 0
+  },
+  "octagramDiagnostic": {
+    "requestedSchemaId": "luna_pinyin_octagram",
+    "effectiveSchemaId": "luna_pinyin_octagram",
+    "delivered": true,
+    "modelId": "zh-hant-t-essay-bgw",
+    "expectedSha256": "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+    "actualSha256": "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+    "bytes": 10513408,
+    "sourcePath": "dev/octagram/zh-hant-t-essay-bgw.gram",
+    "fallback": false,
+    "reason": "verified browser delivery cache hit; ranking rows prove engine grammar use",
+    "memoryBeforeBytes": 301989888,
+    "memoryAfterBytes": 301989888,
+    "memoryDeltaBytes": 0
+  },
+  "rows": [
+    {
+      "input": "youhuiyong",
+      "plainTop": "有會用",
+      "octagramTop": "優惠用"
+    },
+    {
+      "input": "jintianhuiyi",
+      "plainTop": "今天回憶",
+      "octagramTop": "今天會議"
+    },
+    {
+      "input": "jintianwanshangyouhui",
+      "plainTop": "今天晚上優惠",
+      "octagramTop": "今天晚上又會"
+    },
+    {
+      "input": "gegeguojiayougegeguojiadeguoge",
+      "plainTop": "各個國家有各個國家德國個",
+      "octagramTop": "各個國家有各個國家的國歌"
+    }
+  ],
+  "plainEvidence": {
+    "youhuiyong": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "有會用",
+          "note": null,
+          "source": null,
+          "rowText": "1.有會用"
+        },
+        {
+          "index": 1,
+          "text": "優惠",
+          "note": null,
+          "source": null,
+          "rowText": "2.優惠"
+        },
+        {
+          "index": 2,
+          "text": "又會",
+          "note": null,
+          "source": null,
+          "rowText": "3.又會"
+        },
+        {
+          "index": 3,
+          "text": "幽會",
+          "note": null,
+          "source": null,
+          "rowText": "4.幽會"
+        },
+        {
+          "index": 4,
+          "text": "游回",
+          "note": null,
+          "source": null,
+          "rowText": "5.游回"
+        },
+        {
+          "index": 5,
+          "text": "油灰",
+          "note": null,
+          "source": null,
+          "rowText": "6.油灰"
+        }
+      ]
+    },
+    "jintianhuiyi": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "今天回憶",
+          "note": null,
+          "source": null,
+          "rowText": "1.今天回憶"
+        },
+        {
+          "index": 1,
+          "text": "今天會",
+          "note": null,
+          "source": null,
+          "rowText": "2.今天會"
+        },
+        {
+          "index": 2,
+          "text": "今天",
+          "note": null,
+          "source": null,
+          "rowText": "3.今天"
+        },
+        {
+          "index": 3,
+          "text": "金田",
+          "note": null,
+          "source": null,
+          "rowText": "4.金田"
+        },
+        {
+          "index": 4,
+          "text": "金天",
+          "note": null,
+          "source": null,
+          "rowText": "5.金天"
+        },
+        {
+          "index": 5,
+          "text": "浸提",
+          "note": null,
+          "source": null,
+          "rowText": "6.浸提"
+        }
+      ]
+    },
+    "jintianwanshangyouhui": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "今天晚上優惠",
+          "note": null,
+          "source": null,
+          "rowText": "1.今天晚上優惠"
+        },
+        {
+          "index": 1,
+          "text": "今天晚上",
+          "note": null,
+          "source": null,
+          "rowText": "2.今天晚上"
+        },
+        {
+          "index": 2,
+          "text": "今天",
+          "note": null,
+          "source": null,
+          "rowText": "3.今天"
+        },
+        {
+          "index": 3,
+          "text": "金田",
+          "note": null,
+          "source": null,
+          "rowText": "4.金田"
+        },
+        {
+          "index": 4,
+          "text": "金天",
+          "note": null,
+          "source": null,
+          "rowText": "5.金天"
+        },
+        {
+          "index": 5,
+          "text": "浸提",
+          "note": null,
+          "source": null,
+          "rowText": "6.浸提"
+        }
+      ]
+    },
+    "gegeguojiayougegeguojiadeguoge": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "各個國家有各個國家德國個",
+          "note": null,
+          "source": null,
+          "rowText": "1.各個國家有各個國家德國個"
+        },
+        {
+          "index": 1,
+          "text": "各個國家",
+          "note": null,
+          "source": null,
+          "rowText": "2.各個國家"
+        },
+        {
+          "index": 2,
+          "text": "各個",
+          "note": null,
+          "source": null,
+          "rowText": "3.各個"
+        },
+        {
+          "index": 3,
+          "text": "哥哥",
+          "note": null,
+          "source": null,
+          "rowText": "4.哥哥"
+        },
+        {
+          "index": 4,
+          "text": "個個",
+          "note": null,
+          "source": null,
+          "rowText": "5.個個"
+        },
+        {
+          "index": 5,
+          "text": "格格",
+          "note": null,
+          "source": null,
+          "rowText": "6.格格"
+        }
+      ]
+    }
+  },
+  "octagramEvidence": {
+    "youhuiyong": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "優惠用",
+          "note": null,
+          "source": null,
+          "rowText": "1.優惠用"
+        },
+        {
+          "index": 1,
+          "text": "優惠",
+          "note": null,
+          "source": null,
+          "rowText": "2.優惠"
+        },
+        {
+          "index": 2,
+          "text": "又會",
+          "note": null,
+          "source": null,
+          "rowText": "3.又會"
+        },
+        {
+          "index": 3,
+          "text": "幽會",
+          "note": null,
+          "source": null,
+          "rowText": "4.幽會"
+        },
+        {
+          "index": 4,
+          "text": "游回",
+          "note": null,
+          "source": null,
+          "rowText": "5.游回"
+        },
+        {
+          "index": 5,
+          "text": "油灰",
+          "note": null,
+          "source": null,
+          "rowText": "6.油灰"
+        }
+      ]
+    },
+    "jintianhuiyi": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "今天會議",
+          "note": null,
+          "source": null,
+          "rowText": "1.今天會議"
+        },
+        {
+          "index": 1,
+          "text": "今天會",
+          "note": null,
+          "source": null,
+          "rowText": "2.今天會"
+        },
+        {
+          "index": 2,
+          "text": "今天",
+          "note": null,
+          "source": null,
+          "rowText": "3.今天"
+        },
+        {
+          "index": 3,
+          "text": "金田",
+          "note": null,
+          "source": null,
+          "rowText": "4.金田"
+        },
+        {
+          "index": 4,
+          "text": "金天",
+          "note": null,
+          "source": null,
+          "rowText": "5.金天"
+        },
+        {
+          "index": 5,
+          "text": "浸提",
+          "note": null,
+          "source": null,
+          "rowText": "6.浸提"
+        }
+      ]
+    },
+    "jintianwanshangyouhui": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "今天晚上又會",
+          "note": null,
+          "source": null,
+          "rowText": "1.今天晚上又會"
+        },
+        {
+          "index": 1,
+          "text": "今天晚上",
+          "note": null,
+          "source": null,
+          "rowText": "2.今天晚上"
+        },
+        {
+          "index": 2,
+          "text": "今天",
+          "note": null,
+          "source": null,
+          "rowText": "3.今天"
+        },
+        {
+          "index": 3,
+          "text": "金田",
+          "note": null,
+          "source": null,
+          "rowText": "4.金田"
+        },
+        {
+          "index": 4,
+          "text": "金天",
+          "note": null,
+          "source": null,
+          "rowText": "5.金天"
+        },
+        {
+          "index": 5,
+          "text": "浸提",
+          "note": null,
+          "source": null,
+          "rowText": "6.浸提"
+        }
+      ]
+    },
+    "gegeguojiayougegeguojiadeguoge": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "各個國家有各個國家的國歌",
+          "note": null,
+          "source": null,
+          "rowText": "1.各個國家有各個國家的國歌"
+        },
+        {
+          "index": 1,
+          "text": "各個國家",
+          "note": null,
+          "source": null,
+          "rowText": "2.各個國家"
+        },
+        {
+          "index": 2,
+          "text": "各個",
+          "note": null,
+          "source": null,
+          "rowText": "3.各個"
+        },
+        {
+          "index": 3,
+          "text": "哥哥",
+          "note": null,
+          "source": null,
+          "rowText": "4.哥哥"
+        },
+        {
+          "index": 4,
+          "text": "個個",
+          "note": null,
+          "source": null,
+          "rowText": "5.個個"
+        },
+        {
+          "index": 5,
+          "text": "格格",
+          "note": null,
+          "source": null,
+          "rowText": "6.格格"
+        }
+      ]
+    }
+  },
+  "engineProof": "All four rows first matched plain Luna tops, then changed to the octagram oracle tops after the dedicated profile delivered the pinned model.",
+  "memoryHighWater": {
+    "note": "Memory numbers are schema-select/redeploy WASM heap high-water deltas. They include JS fetch/cache, MEMFS delivery, and engine state; they are not model-only attribution.",
+    "plain": {
+      "beforeBytes": 268435456,
+      "afterBytes": 268435456,
+      "deltaBytes": 0
+    },
+    "octagram": {
+      "beforeBytes": 301989888,
+      "afterBytes": 301989888,
+      "deltaBytes": 0
+    },
+    "web03FairLaneBaselineMiB": 64
+  }
+}

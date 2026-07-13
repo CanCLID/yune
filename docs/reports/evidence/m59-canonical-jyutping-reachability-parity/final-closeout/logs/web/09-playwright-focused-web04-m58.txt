@@ -1,0 +1,8 @@
+
+Running 4 tests using 1 worker
+
+[1/4] yune-web.spec.ts:1426:3 › yune-web Browser E2E › WEB-04 octagram profile loads pinned model and changes Luna ranking
+[2/4] yune-web.spec.ts:1537:3 › yune-web Browser E2E › WEB-04 plain Luna remains default-off without grammar model
+[3/4] yune-web.spec.ts:1561:3 › yune-web Browser E2E › WEB-04 missing octagram model fails the octagram evidence gate
+[4/4] yune-web.spec.ts:1642:3 › yune-web Browser E2E › M58 yune-web TypeDuck profile reaches oracle-ranked reported candidates @smoke
+  4 passed (40.3s)

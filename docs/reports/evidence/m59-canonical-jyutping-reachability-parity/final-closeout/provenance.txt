@@ -1,0 +1,19 @@
+captured_at_utc=2026-07-13T08:19:22.2010452Z
+cwd=C:\Users\laubonghaudoi\Documents\GitHub\yune
+production_source_commit=5fa986d80a6f1481f7c04c64af41467d3767bf61
+origin_main_at_capture=5fa986d80a6f1481f7c04c64af41467d3767bf61
+production_source_tree=43cb88d4215b3e71b8fd4a0ffb1b889f5b6b66e7
+final_packet_commit=commit containing this file
+pinned_librime=33e78140250125871856cdc5b42ddc6a5fcd3cd4
+pinned_typeduck=74cb52b78fb2411137a7643f6c8bc6517acfde69
+os=Microsoft Windows NT 10.0.26200.0
+powershell=5.1.26100.8655
+rustc=rustc 1.96.0 (ac68faa20 2026-05-25)
+cargo=cargo 1.96.0 (30a34c682 2026-05-25)
+node=v24.16.0
+npm=11.13.0
+emcc=emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.0 (afa15e0c56d1292e073c2c91bafc1d5e0cdf0dd3)
+wasm_requirement=YUNE_WEB_WASM_REQUIRE_EMSCRIPTEN=1
+startup_benchmark_disposition=not run; 150-sample historical measurement suite is not an M59 correctness gate
+web05_same_wasm_disposition=not rebaselined; historical control requires its pinned older wasm hash
+tracked_production_code_diff_after_source_commit=none; closeout worktree changes are policy, docs, evidence, and E2E assertions only

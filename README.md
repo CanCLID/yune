@@ -112,15 +112,18 @@ Yune is an active engine project.
   capture at `f780410c`, including the user-specified `zijiguk` / `諮議局`
   case, which returns `諮議局` first and did not produce a canonical fix. The
   M55 expanded oracle sentence fixtures also surfaced known, recorded gaps.
-  Current reconciled evidence repairs the final 37/59 candidate text/order,
-  but some single-letter pages and intermediate long prefixes still differ in
-  candidate text, comments, or preedit — disclosed correctness debt, not
-  silent drift. `yune-web` has real in-browser validation (TypeDuck-Web); the
+  M59's current named acceptance closes canonical Lane A strict `13/13` over
+  5,705 candidate positions, marked Cangjie strict `12/12` with `3 passed / 0
+  ignored`, and the seven-input upstream Luna Lane B page- and position-exact,
+  including the deployed 37/59 one-best-sentence-then-phrase page shape. This
+  is exact parity for those captured lanes, not a universal all-Luna or
+  all-schema ordering claim. `yune-web` has real in-browser validation
+  (TypeDuck-Web); the
   TypeDuck-Windows backend has package/header, profile-ABI, and stock
   real-server IPC compatibility smoke through the named profile accessor,
   while interactive TSF typing and visible candidate UI remain Phase 2
   product/frontend work.
-- **Current work:** milestones M38-M58 are complete, with M55 closed under a
+- **Current work:** milestones M38-M59 are complete, with M55 closed under a
   2026-07-04 corrective re-baseline: the benchmark now reads context after
   every keypress (the interactive shape), three pre-corrective closeout
   mechanisms were identified as measurement artifacts and reverted, and the
@@ -129,11 +132,13 @@ Yune is an active engine project.
   twice on the honest metric and re-run green at M58 closeout. M58 also fixed
   current `yune-web` TypeDuck/profile reachability for `beingo` / `畀` and
   `zi` / `諮` by short-input profile-ranked paging, without first-page promotion.
-  The current-main M59 Mac diagnostic finds six aggregate Track A wins and
-  eleven losses; the apparent 37/59 aggregate wins are not behavior-normalized,
-  while `n`/`zh` execute `8.682x`/`4.092x` librime's instructions.
-  This is a lane-specific bounded-gap result, not a blanket claim
-  that any row set is faster than librime.
+  M59 is complete under the full D-47/D-48 contract. The final behavior source
+  `5879405c` passes all 32 aggregate and all 160 individual signed-ratchet
+  observations, while `5fa986d8` reconciles the exact 60-asset shipped schema
+  tree to 10 schema-asset dispositions, three configuration carriers, and nine
+  executable validation rows. Final fail-closed Emscripten, app/public builds,
+  native recovery, and source-current functional Playwright gates are recorded
+  in the closeout packet; WEB-04 is restored to complete at `5/5`.
 - **Public demo:** `yune-web` is deployed at <https://yune-web.pages.dev>. It's
   a Yune engine demo, not a claim that browser-level performance is solved.
 - **AI posture:** the AI layer exists but is default-off, local-only in the web
@@ -203,10 +208,10 @@ lower is better) remain the gate:
   but cost `4.6x`/`3.2x` on the sentence rows. M59's sentence/phrase index
   extends the current artifact to `YUNE-POET/3`; `/2` is deliberately rejected
   and rebuilt, so the M55 numbers remain historical rather than being silently
-  attributed to `/3`. The current deployed `/3` byte-backed control emits zero
-  candidates on all 99 prefixes; behavior must be recovered before any memory
-  or speed claim, followed by incremental/lazy indexing rather than an assumed
-  direct scratch port. The browser `luna_pinyin` gap
+  attributed to `/3`. M59's `/3` path now supplies the named exact Lane B and
+  37/59 page-shape behavior and passes the unchanged signed performance gate;
+  no new byte-backed poet memory win is claimed from that behavior result. The
+  browser `luna_pinyin` gap
   (`64 MiB` vs My RIME `16 MiB`) is a separate lane. The Jyutping product path is **not** a like-for-like
   comparison (TypeDuck multilingual dictionary); M47 byte-backed the shipping
   keyboard profile to about `67 MB` working set / `22 MB` private.
@@ -216,8 +221,9 @@ lower is better) remain the gate:
   `347.975 us`), and it remains TypeDuck/profile product-path evidence rather
   than canonical `rime-cantonese` candidate-oracle evidence.
 
-The current-main Mac packet at `afb7079b` is diagnostic, not a new gate. Yune
-wins 6/17 aggregate Track A rows and loses 11. Its 37/59 aggregate ratios are
+The historical source-bound Mac packet at `afb7079b` is diagnostic, not a new
+gate or current-main proof. At that source Yune wins 6/17 aggregate Track A rows
+and loses 11. Its 37/59 aggregate ratios are
 `0.399x`/`0.205x`, but candidate-text-different prefixes dominate those wins;
 the text-matched sensitivity is `1.420x`/`1.204x`. `n`/`zh` use
 `8.682x`/`4.092x` librime's instructions. Allocator and platform effects are
@@ -228,6 +234,7 @@ Current reports:
 - [docs/reports/yune-vs-librime-performance.md](docs/reports/yune-vs-librime-performance.md)
 - [docs/reports/yune-vs-librime-root-cause-analysis.md](docs/reports/yune-vs-librime-root-cause-analysis.md)
 - [M59 post-fix macOS root-cause packet](docs/reports/evidence/m59-post-fix-root-cause-20260711/)
+- [M59 final evidence ledger](docs/reports/evidence/m59-canonical-jyutping-reachability-parity/README.md)
 
 ## Quick Start
 

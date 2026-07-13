@@ -1,0 +1,612 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.36s
+     Running unittests src\lib.rs (C:\m59-final-native-target\debug\deps\yune_rime_api-20127c4c376117c2.exe)
+
+running 365 tests
+test schema_install::compiled_poet_checksum_tests::upstream_luna_marisa_poet_uses_source_checksum ... ok
+test schema_install::compiled_poet_checksum_tests::macos_upstream_luna_marisa_poet_uses_source_checksum ... ok
+test schema_install::compiled_poet_checksum_tests::normal_compiled_poet_uses_table_metadata_checksum ... ok
+test schema_install::dictionary_source_checksum_tests::plain_source_checksum_has_no_implicit_dependency ... ok
+test schema_install::dictionary_source_checksum_tests::explicit_vocabulary_name_is_used_even_when_boolean_is_false ... ok
+test schema_install::dictionary_source_checksum_tests::explicit_empty_vocabulary_falls_back_to_essay ... ok
+test deployment::tests::empty_dictionary_namespace_yields_no_build_request ... ok
+test schema_install::dictionary_source_checksum_tests::preset_true_uses_default_essay_after_dictionary_sources ... ok
+test schema_install::dictionary_source_checksum_tests::non_scalar_import_items_are_skipped_without_reordering_scalars ... ok
+test schema_install::dictionary_source_checksum_tests::imports_are_hashed_in_declared_order_and_self_import_is_skipped ... ok
+test deployment::tests::disabled_dictionary_lookup_filter_yields_no_side_artifact_request ... ok
+test schema_install::dictionary_source_checksum_tests::required_import_missing_fails_closed_but_missing_vocabulary_hashes_no_bytes ... ok
+test schema_install::dictionary_source_checksum_tests::tracked_stroke_inline_comment_activates_default_essay ... ok
+test schema_install::reverse_poet_loader_tests::byte_backed_poet_source_never_invokes_the_preset_vocabulary_loader ... ok
+test deployment::tests::lookup_record_gate_does_not_invalidate_unrelated_dictionary_artifacts ... ok
+test schema_install::sentence_policy_tests::active_upstream_table_policy_is_component_and_namespace_driven ... ok
+test schema_install::upstream_script_translation_limit_tests::absent_limits_use_upstream_script_translator_defaults ... ok
+test schema_install::sentence_policy_tests::explicit_upstream_script_marker_selects_standard_table_policy_fail_closed ... ok
+test schema_install::upstream_script_translation_limit_tests::explicit_namespaced_limits_are_preserved ... ok
+test schema_install::sentence_policy_tests::upstream_script_policy_depends_on_component_config_and_profile_not_schema_id ... ok
+test schema_install::upstream_script_translation_limit_tests::negative_homophones_preserve_pinned_effectively_unbounded_comparison ... ok
+test schema_install::upstream_script_translation_limit_tests::max_sentences_is_capped_at_upstream_safety_limit ... ok
+test schema_install::upstream_script_translation_limit_tests::sentence_cutoff_threshold_uses_namespaced_override ... ok
+test schema_install::upstream_script_translation_limit_tests::zero_sentences_is_raised_but_zero_homophones_disables_sentence_graph_rows ... ok
+test tests::abi::rime_frontend_struct_layout_matches_librime_header ... ok
+test tests::abi::rime_api_function_table_layout_matches_librime_header ... ok
+test schema_install::sentence_policy_tests::untoned_source_fallback_builds_the_standard_script_surface_graph ... ok
+test schema_install::sentence_policy_tests::source_fallback_builds_the_script_surface_graph ... ok
+test deployment::tests::poet_dict_file_checksum_from_path_reads_generated_artifact_header ... ok
+test tests::candidate_api::alternative_select_keys_beyond_page_size_are_consumed_like_librime_selector ... ok
+test deployment::tests::table_weight_upgrade_probe_reads_only_declared_header_metadata ... ok
+test tests::candidate_api::alternative_select_keys_keep_keypad_digit_fallback_like_librime_selector ... ok
+test tests::candidate_api::alternative_select_keys_select_current_page_candidates_like_librime_selector ... ok
+test tests::candidate_api::alternative_select_keys_suppress_unlisted_ascii_digit_fallback_like_librime_selector ... ok
+test tests::candidate_api::candidate_list_can_start_from_index_and_rejects_empty_menu ... ok
+test tests::candidate_api::current_page_candidate_apis_use_selected_schema_page_size_like_librime ... ok
+test tests::candidate_api::delete_candidate_apis_remove_menu_items_without_commit ... ok
+test tests::candidate_api::highlight_candidate_apis_move_selection_without_commit ... ok
+test tests::candidate_api::iterates_candidate_list_from_current_context ... ok
+test tests::candidate_api::physical_and_api_page_down_share_short_typeduck_bounded_state ... ok
+test tests::candidate_api::select_candidate_apis_commit_current_candidates ... ok
+test tests::config_api::config_clear_uses_librime_null_write_semantics ... ok
+test tests::config_api::config_get_and_set_item_copy_subtrees ... ok
+test tests::config_api::config_get_cstring_keeps_previous_read_only_borrows_alive ... ok
+test tests::config_api::config_get_string_allows_zero_length_buffers ... ok
+test tests::config_api::config_set_create_clear_and_close_work ... ok
+test tests::config_api::config_iterators_expose_list_and_map_paths ... ok
+test tests::config_api::config_list_append_creates_and_extends_lists ... ok
+test tests::config_api::config_list_append_rejects_invalid_and_non_list_targets ... ok
+test tests::config_api::config_list_append_scalar_variants_round_trip_through_accessors ... ok
+test tests::config_api::config_list_references_follow_librime_strtoul_parsing ... ok
+test tests::config_api::config_load_string_and_scalar_accessors_work ... ok
+test tests::config_api::config_load_string_initializes_before_librime_parse_failure ... ok
+test tests::config_api::config_numeric_getters_accept_librime_stoi_stod_prefixes ... ok
+test tests::config_api::config_open_apis_load_runtime_yaml_files ... ok
+test tests::config_api::config_paths_preserve_librime_empty_segments_after_leading_slashes ... ok
+test tests::config_api::config_scalar_access_matches_librime_string_backed_values ... ok
+test tests::config_api::config_get_string_uses_librime_strncpy_copy_semantics ... ok
+test tests::config_api::config_set_rejects_child_paths_under_existing_scalar_nodes ... ok
+test tests::config_api::config_set_supports_librime_list_key_paths ... ok
+test tests::config_api::config_update_signature_writes_runtime_metadata ... ok
+test tests::config_api::default_rime_api_exposes_upstream_config_list_contract ... ok
+test tests::context_status::rejects_invalid_context_requests ... ok
+test tests::deployment::deploy_config_file_applies_explicit_root_patch_without_auto_custom_patch ... ok
+test tests::context_status::returns_context_with_preedit_and_candidate_page ... ok
+test tests::context_status::returns_status_with_schema_and_composing_flags ... ok
+test tests::context_status::rime_context_clear_respects_librime_versioned_tail_members ... ok
+test tests::context_status::rime_context_hides_candidate_entries_when_librime_hide_candidate_option_is_set ... ok
+test tests::context_status::rime_context_includes_librime_commit_text_preview_for_current_selection ... ok
+test tests::context_status::rime_context_reads_librime_menu_settings_from_selected_schema ... ok
+test tests::context_status::rime_status_clear_preserves_librime_struct_data_size ... ok
+test tests::context_status::state_label_apis_read_selected_schema_switches ... ok
+test tests::deployment::clean_old_log_files_removes_stale_app_logs ... ok
+test tests::deployment::cleanup_trash_moves_librime_deployer_artifacts ... ok
+test tests::deployment::deploy_config_file_applies_custom_patch_and_tracks_freshness ... ok
+test tests::context_status::rejects_invalid_status_requests ... ok
+test tests::deployment::deploy_config_file_applies_external_root_include_reference ... ok
+test tests::deployment::deploy_config_file_applies_external_root_patch_reference ... ok
+test tests::deployment::deploy_config_file_applies_local_root_patch_reference ... ok
+test tests::deployment::deploy_config_file_applies_nested_external_include_references ... ok
+test tests::deployment::deploy_config_file_applies_nested_patch_directives ... ok
+test tests::deployment::deploy_config_file_copies_shared_yaml_to_staging ... ok
+test tests::deployment::deploy_config_file_expands_include_directives_inside_patch_values ... ok
+test tests::deployment::deploy_config_file_merges_include_directives_into_list_nodes ... ok
+test tests::deployment::deploy_config_file_supports_librime_list_position_references ... ok
+test tests::deployment::deploy_config_file_trashes_deprecated_user_copy ... ok
+test tests::deployment::deploy_config_file_uses_build_info_freshness ... ok
+test tests::deployment::deploy_schema_expands_librime_key_binder_import_preset ... ok
+test tests::deployment::deploy_schema_expands_librime_punctuator_import_preset ... ok
+test tests::deployment::deploy_schema_expands_librime_recognizer_import_preset ... ok
+test tests::deployment::deploy_schema_file_applies_custom_patch_after_explicit_root_patch ... ok
+test tests::deployment::deploy_schema_file_applies_typeduck_common_disable_completion_patch ... ok
+test tests::deployment::deploy_schema_file_keeps_typeduck_optional_common_disable_completion_patch_inactive ... ok
+test tests::deployment::deploy_schema_validates_and_copies_shared_schema_to_staging ... ok
+test tests::deployment::installation_update_creates_metadata_and_refreshes_runtime_paths ... ok
+test schema_install::compiled_poet_checksum_tests::dependency_aware_luna_freshness_keeps_raw_source_poet_exception ... ok
+test tests::deployment::maintenance_and_deployment_shims_are_deterministic ... ok
+test tests::deployment::maintenance_on_workspace_change_detects_yaml_modifications ... ok
+test tests::deployment::maintenance_on_workspace_change_ignores_installation_metadata_churn ... ok
+test tests::deployment::prebuild_all_schemas_deploys_shared_schema_files ... ok
+test tests::deployment::setup_and_initialize_expose_runtime_metadata_paths ... ok
+test tests::deployment::setup_reads_existing_installation_metadata ... ok
+test tests::deployment::setup_respects_rime_traits_data_size_for_newer_path_fields ... ok
+test tests::deployment::sync_user_data_emits_librime_deploy_notifications ... ok
+test tests::deployment::targeted_workspace_update_invalidates_shared_translators_before_mutation ... ok
+test tests::deployment::workspace_update_deploys_default_schemas_and_dependencies ... ok
+test tests::deployment::workspace_update_fails_for_malformed_dependency_and_deploys_valid_sibling ... ok
+test tests::deployment::workspace_update_fails_for_malformed_top_level_and_deploys_valid_sibling ... ok
+test tests::deployment::workspace_update_fails_for_missing_top_level_and_deploys_valid_sibling ... ok
+test tests::deployment::workspace_update_fails_for_unsafe_or_missing_dictionary_artifacts ... ok
+test tests::deployment::workspace_update_rebuilds_after_pack_changes_and_honors_force_flags ... ok
+test tests::deployment::workspace_update_rebuilds_source_dictionary_artifacts_and_reuses_fresh_outputs ... ok
+test tests::deployment::workspace_update_rebuilds_typeduck_dictionary_lookup_filter_artifacts ... ok
+test tests::deployment::workspace_update_reuses_prebuilt_artifacts_when_source_is_missing ... ok
+warning:missing_schema_dependency:absent_dependency
+warning:missing_schema_dependency:absent_dependency
+test tests::deployment::workspace_update_skips_absent_dependency ... ok
+test tests::deployment::workspace_update_writes_configured_translator_prism_stem ... ok
+test tests::dictionary_data::dictionary_data_correction_source_and_compiled_paths_match_without_userdb_learning ... ok
+test tests::dictionary_data::dictionary_data_dual_mapped_prism_rejects_malformed_tip_pointer ... ok
+test tests::dictionary_data::dictionary_data_falls_back_to_source_when_compiled_is_missing ... ok
+test tests::dictionary_data::dictionary_data_ignores_compiled_poet_artifact_until_explicitly_enabled ... ok
+test tests::dictionary_data::dictionary_data_invalidates_cached_poet_when_same_path_artifact_is_replaced ... ok
+test tests::dictionary_data::dictionary_data_malformed_correction_tolerance_sections_fail_closed ... ok
+test tests::dictionary_data::dictionary_data_malformed_payloads_are_schema_visible_failures ... ok
+test tests::dictionary_data::dictionary_data_prefers_fresh_compiled_payloads_and_matches_source_order ... ok
+test tests::dictionary_data::dictionary_data_records_no_usable_path_without_empty_success ... ok
+test tests::librime_signature_modified_time_uses_ctime_shape ... ok
+test tests::dictionary_data::dictionary_data_rejects_corrupt_compiled_artifacts_without_source_fallback ... ok
+test tests::dictionary_data::dictionary_data_rejects_unsafe_resource_ids_before_lookup ... ok
+test tests::dictionary_data::dictionary_data_reverse_dict_settings_comments_match_source_and_compiled_paths ... ok
+test tests::dictionary_data::dictionary_data_standard_schema_retries_unsupported_compact_as_compiled_owned_heap ... ok
+test tests::dictionary_data::dictionary_data_standard_schema_selects_compatible_compiled_byte_backed_storage ... ok
+test tests::dictionary_data::dictionary_data_stem_source_and_compiled_paths_match_without_userdb_learning ... ok
+test tests::dictionary_data::dictionary_data_tolerance_source_and_compiled_paths_match_exact_first_ordering ... ok
+test tests::resource_id::config_resource_ids_accept_logical_names_and_expected_suffixes ... ok
+test tests::resource_id::config_resource_ids_reject_filesystem_syntax ... ok
+test tests::resource_id::data_resource_ids_accept_logical_file_names ... ok
+test tests::resource_id::data_resource_ids_reject_filesystem_syntax ... ok
+test tests::dictionary_data::dictionary_data_typeduck_profile_byte_backed_sort_original_preserves_order ... ok
+test tests::dictionary_data::dictionary_data_unite_encoder_payloads_do_not_require_predictive_userdb_learning ... ok
+test tests::dictionary_data::dictionary_data_vocabulary_phrase_injection_matches_source_and_compiled_paths ... ok
+test tests::distribution_schema_comparison::distribution_cangjie5_chain_records_focused_findings ... ok
+test tests::distribution_schema_comparison::distribution_luna_pinyin_chain_matches_focused_librime_observations ... ok
+test tests::levers::built_in_levers_module_exposes_available_schema_list ... ok
+test tests::levers::levers_custom_settings_load_modify_and_save_custom_yaml ... ok
+test tests::levers::levers_hotkeys_are_read_from_deployed_default_config ... ok
+test tests::lifecycle_safety::dictionary_translator_cache_survives_finalize_but_releases_on_cleanup_and_root_change ... ok
+test tests::lifecycle_safety::lifecycle_safety_notification_handler_replacement_and_clearing_are_deterministic ... ok
+test tests::lifecycle_safety::lifecycle_safety_records_multithreaded_frontend_behavior_as_out_of_scope ... ok
+test tests::resource_id::user_dict_names_accept_logical_names_only ... ok
+test tests::resource_id::user_dict_names_reject_paths_and_userdb_suffixes ... ok
+test tests::lifecycle_safety::lifecycle_safety_repeated_session_destroy_and_cleanup_reject_stale_handles ... ok
+test tests::lifecycle_safety::lifecycle_safety_repeated_setup_initialize_finalize_is_deterministic ... ok
+test tests::runtime::maps_bool_to_rime_bool ... ok
+test tests::runtime::key_table_exposes_librime_style_modifier_and_key_name_lookup ... ok
+test tests::lifecycle_safety::lifecycle_safety_schema_switching_and_deployment_emit_ordered_notifications ... ok
+test tests::resource_id::config_api_rejects_unsafe_resource_ids ... ok
+test tests::resource_id::deployment_rejects_unsafe_logical_filenames ... ok
+test tests::resource_id::levers_custom_settings_reject_unsafe_config_ids ... ok
+test tests::resource_id::plain_luna_pinyin_without_grammar_language_keeps_null_grammar_behavior ... ok
+test tests::resource_id::runtime_path_helpers_reject_unsafe_resource_ids ... ok
+test tests::resource_id::schema_dictionary_loading_rejects_unsafe_dictionary_name ... ok
+test tests::resource_id::schema_octagram_loading_allows_named_web04_luna_pinyin_octagram_profile ... ok
+test tests::resource_id::schema_octagram_loading_follows_explicit_config_for_a_renamed_standard_schema ... ok
+test tests::resource_id::schema_octagram_loading_rejects_corrupt_gram_without_silent_grammar_success ... ok
+test tests::resource_id::schema_octagram_loading_rejects_unsafe_grammar_language_name ... ok
+test tests::resource_id::schema_octagram_loading_uses_logical_gram_resource_for_luna_pinyin ... ok
+test tests::resource_id::userdb_apis_reject_unsafe_logical_dict_names_but_keep_file_paths ... ok
+test tests::resource_id::web04_luna_pinyin_octagram_invalid_grammar_language_fails_visibly ... ok
+test tests::runtime::notification_handler_receives_runtime_events_and_can_be_cleared ... ok
+test tests::runtime::registers_and_finds_modules_by_name ... ok
+test tests::runtime::rime_get_api_exposes_current_function_table ... ok
+test tests::runtime::sets_and_gets_runtime_options ... ok
+test tests::runtime::sets_and_gets_runtime_properties ... ok
+test tests::runtime::simulates_librime_style_key_sequences ... ok
+test tests::schema_api::gets_and_frees_available_schema_list ... ok
+test tests::schema_api::schema_list_returns_false_when_default_config_has_no_schema_list ... ok
+test tests::schema_processors::backspace_key_removes_input_before_caret_like_librime_editor_back ... ok
+test tests::schema_processors::control_ascii_digits_select_candidates_like_librime_selector_keys ... ok
+test tests::schema_processors::control_backspace_key_removes_previous_input_like_librime_editor_back_syllable ... ok
+test tests::schema_processors::control_delete_key_removes_highlighted_candidate_like_librime_editor_delete_candidate ... ok
+test tests::schema_processors::control_keypad_digits_select_candidates_like_librime_selector_keys ... ok
+test tests::schema_processors::control_left_right_keys_jump_syllable_span_like_librime_navigator_keys ... ok
+test tests::schema_processors::control_return_key_commits_raw_input_like_librime_fluid_editor ... ok
+test tests::schema_processors::control_shift_digits_select_candidates_like_librime_selector_fallback ... ok
+test tests::schema_processors::control_shift_return_key_commits_selected_comment_like_librime_fluid_editor ... ok
+test tests::schema_processors::control_up_down_keys_jump_syllable_span_like_librime_vertical_navigator_keys ... ok
+test tests::schema_processors::delete_key_removes_input_at_caret_like_librime_editor_delete_key ... ok
+test tests::schema_processors::escape_clears_composition_like_librime_editor_cancel_key ... ok
+test tests::schema_processors::home_end_keys_fall_back_to_librime_navigator_caret_movement ... ok
+test tests::schema_processors::home_end_keys_reset_candidate_highlight_like_librime_selector_keys ... ok
+test tests::schema_processors::keypad_digits_select_candidates_like_librime_selector_keys ... ok
+test tests::schema_processors::keypad_enter_commits_composition_like_librime_return_key ... ok
+test tests::schema_processors::keypad_left_right_keys_move_caret_by_char_with_librime_navigator_looping ... ok
+test tests::schema_processors::left_right_keys_move_caret_like_librime_navigator_keys ... ok
+test tests::schema_processors::linear_selector_arrow_keys_follow_librime_layout_bindings ... ok
+test tests::schema_processors::page_keys_move_candidate_page_like_librime_selector_keys ... ok
+test tests::schema_processors::schema_ascii_composer_caps_lock_switch_key_clears_composition ... ok
+test tests::schema_processors::schema_ascii_composer_inline_ascii_mode_ends_with_composition ... ok
+test tests::schema_processors::schema_ascii_composer_rejects_direct_ascii_and_edits_inline_ascii ... ok
+test tests::schema_processors::schema_ascii_composer_switch_key_falls_back_to_default_commit_text ... ok
+test tests::schema_processors::schema_ascii_composer_switch_key_handles_eisu_toggle ... ok
+test tests::schema_processors::schema_ascii_composer_switch_key_handles_shift_release_commit_code ... ok
+test tests::schema_processors::schema_ascii_segmentor_uses_raw_tag_in_ascii_mode ... ok
+test tests::schema_processors::schema_chord_composer_binding_commits_raw_sequence ... ok
+test tests::schema_processors::schema_chord_composer_cancels_active_chord_on_function_key ... ok
+test tests::schema_processors::schema_chord_composer_clears_raw_sequence_after_context_commit ... ok
+test tests::schema_processors::schema_chord_composer_clears_raw_sequence_after_direct_commit_output ... ok
+test tests::schema_processors::schema_chord_composer_exposes_prompt_while_chording ... ok
+test tests::schema_processors::schema_chord_composer_honors_modifier_use_options ... ok
+test tests::schema_processors::schema_chord_composer_serializes_chord_on_key_release ... ok
+test tests::schema_processors::schema_chord_shape_punctuation_fallback_chain_matches_librime ... ok
+test tests::schema_processors::schema_editor_bindings_override_default_keymap ... ok
+test tests::schema_processors::schema_editor_char_handler_controls_printable_keys ... ok
+test tests::schema_processors::schema_editor_navigator_selector_spans_match_librime ... ok
+test tests::schema_processors::schema_express_editor_return_commits_raw_input ... ok
+test tests::schema_processors::schema_fallback_segmentor_tags_unclaimed_input_as_raw ... ok
+test tests::schema_processors::schema_key_binder_processor_loads_namespaced_prescription ... ok
+test tests::schema_processors::schema_key_binder_processor_matches_paging_condition_after_page_navigation ... ok
+test tests::schema_processors::schema_key_binder_processor_prefers_later_same_condition_binding ... ok
+test tests::schema_processors::schema_key_binder_processor_redirects_send_bindings ... ok
+test tests::schema_processors::schema_key_binder_processor_reinterprets_period_paging_before_letters ... ok
+test tests::schema_processors::schema_key_binder_processor_selects_schemas_from_bindings ... ok
+test tests::schema_processors::schema_key_binder_processor_sets_and_unsets_switch_options ... ok
+test tests::schema_processors::schema_key_binder_processor_toggles_options_from_bindings ... ok
+test tests::schema_processors::schema_key_binder_processor_toggles_switches_by_index ... ok
+test tests::schema_processors::schema_navigator_bindings_override_default_keymap ... ok
+test tests::schema_processors::schema_navigator_syllable_jump_position_honors_delimiters ... ok
+test tests::schema_processors::schema_punct_segmentor_tags_punctuation_exclusively ... ok
+test tests::schema_processors::schema_punct_segmentor_translates_digit_separator_as_number_punctuation ... ok
+test tests::schema_processors::schema_punctuator_candidates_expose_librime_shape_comments ... ok
+test tests::schema_processors::schema_punctuator_processor_commits_digit_separator_after_number ... ok
+test tests::schema_processors::schema_punctuator_processor_cycles_alternating_punctuation ... ok
+test tests::schema_processors::schema_punctuator_processor_handles_commit_and_unique_preview_punctuation ... ok
+test tests::schema_processors::schema_punctuator_processor_keeps_default_digit_separator_until_next_key ... ok
+test tests::schema_processors::schema_punctuator_processor_loads_namespaced_prescriptions ... ok
+test tests::schema_processors::schema_punctuator_processor_previews_paired_punctuation_alternately ... ok
+test tests::schema_processors::schema_recognizer_processor_accepts_space_for_librime_patterns ... ok
+test tests::schema_processors::schema_selector_bindings_override_default_layout_keymap ... ok
+test tests::schema_processors::schema_speller_non_auto_keeps_default_on_reachability_conversion ... ok
+test tests::schema_processors::shift_ascii_digits_select_candidates_like_librime_selector_keys ... ok
+test tests::schema_selection::m21_gap_01_sentence_composition_probe ... ignored, diagnostic: writes M21-GAP-01 Yune real-assets candidate evidence
+test tests::schema_processors::shift_backspace_key_uses_librime_editor_shift_as_control_fallback ... ok
+test tests::schema_processors::shift_delete_key_removes_highlighted_candidate_like_librime_editor_shift_as_control_fallback ... ok
+test tests::schema_processors::shift_escape_clears_composition_like_librime_editor_cancel_fallback ... ok
+test tests::schema_processors::shift_home_end_keys_ignore_shift_like_librime_navigator ... ok
+test tests::schema_processors::shift_keypad_digits_select_candidates_like_librime_selector_keys ... ok
+test tests::schema_processors::shift_keypad_left_right_keys_ignore_shift_like_librime_navigator ... ok
+test tests::schema_processors::shift_keypad_up_down_keys_ignore_shift_like_librime_navigator ... ok
+test tests::schema_processors::shift_left_right_keys_fall_back_to_control_syllable_jump_like_librime_navigator ... ok
+test tests::schema_processors::shift_printable_keys_enter_input_and_shift_space_confirms_like_librime_editor ... ok
+test tests::schema_processors::shift_return_key_commits_script_text_like_librime_fluid_editor ... ok
+test tests::schema_processors::shift_up_down_keys_fall_back_to_control_syllable_jump_like_librime_navigator ... ok
+test tests::schema_processors::up_down_keys_move_candidate_highlight_like_librime_selector_keys ... ok
+test tests::schema_selection::fresh_session_uses_first_deployed_schema_for_schema_specific_settings ... ok
+test tests::schema_selection::gets_and_selects_current_schema ... ok
+test tests::schema_selection::jyutping_typeduck_profile_requires_explicit_yune_profile_marker ... ok
+test tests::schema_selection::marked_upstream_table_reverse_lookup_uses_table_absent_byte_backed_poet_rows ... ok
+test tests::schema_selection::marked_upstream_table_reverse_lookup_uses_table_absent_owned_poet_rows ... ok
+test tests::schema_selection::reverse_lookup_translator_loads_lookup_dictionary_on_first_use ... ok
+test tests::schema_selection::schema_dictionary_correction_gate_is_independent_of_completion ... ok
+test tests::schema_selection::schema_large_cantonese_dictionary_keeps_fork_fuzzy_algebra ... ok
+test tests::schema_selection::schema_namespaced_translator_spelling_algebra_is_explicit ... ok
+test tests::schema_selection::schema_opencc_filter_chain_integration_matches_librime_limited_maps ... ok
+test tests::schema_selection::schema_selection_defers_poet_grammar_contextual_translation ... ok
+test tests::schema_selection::schema_selection_defers_unity_table_encoder_payloads ... ok
+test tests::schema_selection::schema_selection_recognizes_memory_or_defers_learning ... ok
+test tests::schema_selection::schema_spelling_algebra_generated_spellings_match_librime ... ok
+test tests::schema_selection::schema_tolerance_lookup_yaml_backed_ranking_matches_librime ... ok
+test tests::schema_selection::schema_translator_preedit_format_applies_letter_to_tone_without_changing_input ... ok
+test tests::schema_selection::schema_translator_preedit_format_leaves_partial_letter_tone_completion_raw ... ok
+test tests::schema_selection::select_schema_affix_prompt_matches_typeduck_v112_reverse_lookup_fixture_commit_preview ... ok
+test tests::schema_selection::select_schema_affix_segmentor_tags_are_exclusive_like_librime ... ok
+test tests::schema_selection::select_schema_affix_segmentor_tags_librime_prefixed_lookup ... ok
+test tests::schema_selection::select_schema_applies_librime_filter_tag_options ... ok
+test tests::schema_selection::select_schema_applies_librime_history_translator_tag_option ... ok
+test tests::schema_selection::select_schema_applies_librime_script_translator_word_completion_option ... ok
+test tests::schema_selection::select_schema_applies_librime_switch_reset_options ... ok
+test tests::schema_selection::select_schema_applies_librime_table_translator_sentence_options ... ok
+test tests::schema_selection::select_schema_applies_librime_translator_charset_filter_option ... ok
+test tests::schema_selection::select_schema_applies_librime_translator_comment_format ... ok
+test tests::schema_selection::select_schema_applies_librime_translator_completion_option ... ok
+test tests::schema_selection::select_schema_applies_librime_translator_delimiter_option ... ok
+test tests::schema_selection::select_schema_applies_librime_translator_dictionary_exclude ... ok
+test tests::schema_selection::select_schema_applies_librime_translator_initial_quality ... ok
+test tests::schema_selection::select_schema_applies_librime_translator_tag_options ... ok
+test tests::schema_selection::select_schema_can_skip_namespaced_translator_load_for_optional_ui_pack ... ok
+test tests::schema_selection::select_schema_can_skip_typeduck_dictionary_lookup_records_for_keyboard_profile ... ok
+test tests::schema_selection::select_schema_compares_script_heads_in_compiled_weight_namespace ... ok
+test tests::schema_selection::select_schema_encodes_rule_based_dictionary_and_preset_phrases ... ok
+test tests::schema_selection::select_schema_installs_echo_translator_only_when_declared ... ok
+test tests::schema_selection::select_schema_loads_librime_charset_filter_alias ... ok
+test tests::schema_selection::select_schema_loads_librime_dictionary_packs ... ok
+test tests::schema_selection::select_schema_loads_librime_history_translator ... ok
+test tests::schema_selection::select_schema_loads_librime_punctuator_shape_and_symbol_definitions ... ok
+test tests::schema_selection::select_schema_loads_librime_r10n_translator_alias ... ok
+test tests::schema_selection::select_schema_loads_librime_reverse_lookup_filter ... ok
+test tests::schema_selection::select_schema_loads_librime_reverse_lookup_filter_filter_namespace_alias ... ok
+test tests::schema_selection::select_schema_loads_librime_reverse_lookup_translator ... ok
+test tests::schema_selection::select_schema_loads_librime_simplifier_excluded_types ... ok
+test tests::schema_selection::select_schema_loads_librime_simplifier_filter ... ok
+test tests::schema_selection::select_schema_loads_librime_simplifier_opencc_config ... ok
+test tests::schema_selection::select_schema_loads_librime_single_char_filter ... ok
+test tests::schema_selection::select_schema_loads_librime_switch_translator_candidates ... ok
+test tests::schema_selection::select_schema_loads_librime_uniquifier_filter ... ok
+test tests::schema_selection::select_schema_loads_namespaced_librime_charset_filter_alias ... ok
+test tests::schema_selection::select_schema_loads_namespaced_librime_reverse_lookup_filter ... ok
+test tests::schema_selection::select_schema_loads_namespaced_librime_table_translator ... ok
+test tests::schema_selection::select_schema_loads_reverse_lookup_completion_when_enabled ... ok
+test tests::schema_selection::select_schema_loads_typeduck_dictionary_lookup_filter ... ok
+test tests::schema_selection::select_schema_loads_upstream_output_standard_simplifiers ... ok
+test tests::schema_selection::select_schema_marks_upstream_table_sentence_policy_without_identity_or_profile_leak ... ok
+test tests::schema_selection::select_schema_matcher_segmentor_adds_librime_recognizer_pattern_tags ... ok
+test tests::schema_selection::select_schema_matcher_segmentor_segmentor_namespace_reads_recognizer_patterns ... ok
+test tests::schema_selection::select_schema_matcher_segmentor_uses_librime_sorted_recognizer_pattern_tags ... ok
+test tests::schema_selection::select_schema_matches_librime_opencc_convert_word_for_source_and_compiled_tables ... ok
+test tests::schema_selection::select_schema_parses_librime_history_translator_numeric_scalars ... ok
+test tests::schema_selection::select_schema_prediction_never_first_applies_to_learned_prefix_predictions ... ok
+test tests::schema_selection::select_schema_preserves_equal_weight_script_translator_prescription_order ... ok
+test tests::schema_selection::select_schema_preserves_librime_filter_prescription_order ... ok
+test tests::schema_selection::select_schema_restores_librime_switcher_saved_options ... ok
+test tests::schema_selection::select_schema_reuses_built_table_translator_until_dictionary_changes ... ok
+test tests::schema_selection::select_schema_reverse_lookup_filter_updates_sentence_candidates ... ok
+test tests::schema_selection::select_schema_reverse_lookup_translator_honors_librime_tag ... ok
+test tests::schema_selection::select_schema_served_cangjie_routes_grave_jyutping_reverse_lookup ... ok
+test tests::schema_selection::select_schema_served_jyutping_mobile_routes_bare_grave_to_luna_reverse_lookup ... ok
+test tests::schema_selection::select_schema_switch_translator_folds_and_unfolds_options ... ok
+test tests::schema_selection::select_schema_switch_translator_folds_default_radio_option ... ok
+test tests::schema_selection::select_schema_switch_translator_honors_librime_fold_options_default ... ok
+test tests::schema_selection::select_schema_switch_translator_normalizes_radio_group_selection ... ok
+test tests::schema_selection::select_schema_switch_translator_persists_librime_save_options ... ok
+test tests::schema_selection::select_schema_switch_translator_preserves_missing_state_indices_like_librime ... ok
+test tests::session_api::m37_metrics_exports_snapshot_json_for_loaded_benchmarks ... ok
+test tests::schema_selection::select_schema_treats_librime_history_translator_translator_namespace_as_history ... ok
+test tests::schema_selection::select_schema_treats_librime_reverse_lookup_translator_namespace_as_reverse_lookup ... ok
+test tests::schema_selection::select_schema_treats_librime_simplifier_filter_namespace_as_simplifier ... ok
+test tests::schema_selection::select_schema_uses_deployed_schema_name_like_librime ... ok
+test tests::schema_selection::select_schema_uses_preset_vocabulary_for_dictionary_weights ... ok
+test tests::schema_selection::select_schema_wires_prediction_threshold_and_never_first_options ... ok
+test tests::schema_selection::select_schema_wires_typeduck_table_translator_comment_options ... ok
+test tests::session_api::accumulates_unread_commit_text_like_librime_session ... ok
+test tests::session_api::cleanup_stale_sessions_matches_librime_activity_lifespan ... ok
+test tests::session_api::clears_composition_without_creating_commit ... ok
+test tests::userdb::userdb_backup_restore_exports_typed_metadata_and_records ... ok
+test tests::session_api::creates_finds_and_destroys_sessions ... ok
+test tests::session_api::finalize_clears_sessions_but_preserves_notification_handler ... ok
+test tests::session_api::get_context_uses_page_snapshot_without_full_candidate_clone ... ok
+test tests::session_api::gets_and_sets_input_and_caret_position ... ok
+test tests::session_api::m43_memory_owner_profile_exports_required_session_rows ... ok
+test tests::session_api::process_key_commits_numeric_candidate_selection ... ok
+test tests::session_api::processes_ascii_keys_and_returns_unread_commit_once ... ok
+test tests::session_api::rejects_unknown_sessions_and_modified_keys ... ok
+test tests::session_api::rime_commit_clear_preserves_librime_struct_data_size ... ok
+test tests::session_api::session_registry_poison_recovery_preserves_followup_happy_path ... ok
+test tests::userdb::levers_user_dict_file_operations_handle_plain_userdb_files ... ok
+test tests::userdb::levers_user_dict_iterator_lists_userdb_entries ... ok
+test tests::userdb::runtime_userdb_commit_exports_learned_full_code ... ok
+test tests::session_api::commits_composition_explicitly_and_returns_unread_commit ... ok
+test tests::userdb::userdb_corrupt_committed_store_fails_closed_but_keeps_table_candidates ... ok
+test tests::userdb::userdb_file_store_format_freeze_and_bad_import_rollback ... ok
+test tests::userdb::userdb_learning_persists_session_commits_and_reloads_candidates ... ok
+test tests::userdb::userdb_learning_survives_full_rime_reinitialize ... ok
+test tests::userdb::userdb_recovery_interrupted_temp_write_keeps_last_committed_store_readable ... ok
+test tests::userdb::userdb_rejects_malformed_logical_names_before_store_creation ... ok
+test tests::userdb::userdb_sync_merges_plain_snapshots_and_backs_up_current_state ... ok
+test tests::userdb::userdb_sync_partial_peer_failure_merges_valid_snapshots_and_reports_failure ... ok
+
+test result: ok. 364 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 45.94s
+
+     Running unittests src\bin\yune_web_module.rs (C:\m59-final-native-target\debug\deps\yune_web_module-d14aff9a42083612.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\abi_abuse.rs (C:\m59-final-native-target\debug\deps\abi_abuse-df0d47753bc4e853.exe)
+
+running 5 tests
+test abi_cross_thread_session_lookup_is_tolerated ... ok
+test abi_null_and_out_of_order_calls_return_failure_without_poisoning_followup ... ok
+test abi_guard_inventory_matches_no_mangle_exports ... ok
+test abi_followup_runtime_path_call_survives_abuse_suite ... ok
+test abi_random_logical_strings_do_not_panic ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests\cold_start_conformance.rs (C:\m59-final-native-target\debug\deps\cold_start_conformance-a1f9a9481407fa59.exe)
+
+running 1 test
+test product_schema_cold_then_warm_starts_conform_from_isolated_build_output has been running for over 60 seconds
+test product_schema_cold_then_warm_starts_conform_from_isolated_build_output ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 192.43s
+
+     Running tests\dynamic_loader.rs (C:\m59-final-native-target\debug\deps\dynamic_loader-0fb02c0a5190e92f.exe)
+
+running 3 tests
+test dynamic_loader_harness_loads_packaged_yune_windows_profile_dll ... ok
+test dynamic_loader_harness_loads_packaged_typeduck_profile_dll ... ok
+test dynamic_loader_harness_loads_cargo_cdylib_and_api_table ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.35s
+
+     Running tests\frontend_client.rs (C:\m59-final-native-target\debug\deps\frontend_client-da12ca9edcebf304.exe)
+
+running 35 tests
+test frontend_style_api_table_can_commit_clear_and_delete_composition ... ok
+test frontend_style_api_table_can_iterate_candidates ... ok
+test frontend_style_api_table_can_edit_input_and_caret ... ok
+test frontend_style_api_table_can_iterate_candidates_from_index ... ok
+test frontend_style_api_table_can_update_config_signatures ... ok
+test frontend_style_api_table_can_open_runtime_configs ... ok
+test frontend_style_api_table_can_drive_basic_composition_flow ... ok
+test frontend_style_api_table_can_mutate_in_memory_configs ... ok
+test frontend_style_api_table_can_read_schema_state_labels ... ok
+test frontend_style_api_table_can_manage_levers_user_dicts ... ok
+test frontend_style_api_table_can_page_schema_dictionary_candidates ... ok
+test frontend_style_api_table_can_read_in_memory_configs ... ok
+test frontend_style_api_table_can_read_runtime_paths ... ok
+test frontend_style_api_table_can_read_schema_lists_and_modules ... ok
+test frontend_style_api_table_can_manage_runtime_state ... ok
+test frontend_style_api_table_can_receive_runtime_notifications ... ok
+test frontend_style_api_table_can_run_deployment_and_maintenance ... ok
+test frontend_style_api_table_can_simulate_key_sequences ... ok
+test frontend_style_api_table_can_customize_levers_settings ... ok
+test frontend_style_api_table_can_use_builtin_levers_module ... ok
+test frontend_style_full_shape_formats_commits_and_unhandled_ascii_keys ... ok
+test frontend_style_raw_segment_selector_does_not_select_candidates ... ok
+test frontend_style_schema_dictionary_loads_import_tables ... ok
+test frontend_style_schema_list_translator_fix_order_uses_configured_order ... ok
+test frontend_style_schema_list_translator_hides_lone_schema_when_configured ... ok
+test frontend_style_schema_list_translator_lists_and_selects_schemas ... ok
+test frontend_style_schema_list_translator_orders_by_access_time ... ok
+test frontend_style_schema_speller_algebra_expands_table_lookup_spellings ... ok
+test frontend_style_schema_speller_auto_clear_modes ... ok
+test frontend_style_schema_speller_auto_select_pattern_gates_unique_candidate ... ok
+test frontend_style_schema_speller_auto_selects_at_max_code_length ... ok
+test frontend_style_schema_speller_auto_selects_previous_match_with_express_editor ... ok
+test frontend_style_schema_speller_auto_selects_unique_table_candidate ... ok
+test frontend_style_schema_speller_gates_spelling_input ... ok
+test frontend_style_userdb_learning_survives_session_recreation ... ok
+
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+     Running tests\frontend_hosts.rs (C:\m59-final-native-target\debug\deps\frontend_hosts-810cbd066182ba3c.exe)
+
+running 5 tests
+test frontend_host_trace_fixture_contract_is_sanitized ... ok
+test native_frontends_squirrel_fixture_is_sanitized_and_matches_trace_contract ... ok
+test native_frontends_squirrel_lifecycle_is_source_modeled_through_yune_abi ... ok
+test yune_web_basic_fixture_is_sanitized_and_matches_trace_contract ... ok
+test yune_web_wrapper_lifecycle_is_validated_through_yune_abi ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests\native_memory_probe.rs (C:\m59-final-native-target\debug\deps\native_memory_probe-6491b7775ec25674.exe)
+
+running 1 test
+test native_memory_probe_reports_working_set ... ignored, evidence-only: set YUNE_MEM_SCHEMA and run one schema per process
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\typeduck_profile_abi_surface.rs (C:\m59-final-native-target\debug\deps\typeduck_profile_abi_surface-2d3d5b535053ae14.exe)
+
+running 3 tests
+test default_rime_api_stays_upstream_sized_while_profile_is_larger ... ok
+test typeduck_profile_append_string_slot_creates_and_extends_lists ... ok
+test typeduck_profile_append_scalar_slots_round_trip_through_profile_table ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\typeduck_windows_boundary.rs (C:\m59-final-native-target\debug\deps\typeduck_windows_boundary-dd0276a7deb23675.exe)
+
+running 4 tests
+test yune_abi_compiled_lookup_jyut6ping3_ngohaig_comments_match_v112 ... ok
+test yune_abi_jyut6ping3_ngohaig_comments_match_v112 ... ok
+test yune_abi_repeated_jyut6ping3_session_lifecycle_stays_responsive ... ok
+test yune_abi_schema_open_tolerates_uninitialized_config_slot_like_typeduck_windows ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests\yune_web.rs (C:\m59-final-native-target\debug\deps\yune_web-3aa197555b18db7d.exe)
+
+running 54 tests
+test m28_partial_selection_real_assets_commits_only_consumed_span_and_recomposes ... ok
+test web02_public_demo_storage_diagnostics_exports_owner_rows ... ignored, WEB-02 evidence-only: writes public-demo storage diagnostics to YUNE_WEB02_EVIDENCE_DIR
+test m31_yune_web_hk2s_option_changes_real_asset_candidates has been running for over 60 seconds
+test m58_yune_web_browser_app_assets_reach_prefix_candidate_for_long_reported_input has been running for over 60 seconds
+test m58_yune_web_browser_app_assets_reach_profile_ranked_report_candidates has been running for over 60 seconds
+test m58_yune_web_page_down_key_reaches_prefix_candidate_for_long_reported_input has been running for over 60 seconds
+test m59_luna_bare_syllable_keeps_full_exact_singles_on_page_zero has been running for over 60 seconds
+test m59_luna_long_sentence_page_order_matches_pinned_oracle_on_byte_backed_product has been running for over 60 seconds
+test m59_luna_moboyi_composes_mo_bo_yi_on_byte_backed_product has been running for over 60 seconds
+test m59_luna_moboyi_leading_singles_reachable_after_phrases has been running for over 60 seconds
+test m59_luna_zhongguo_completion_class_reaches_leading_singles has been running for over 60 seconds
+test m59_reachability::m59_correction_oracle_source_and_compiled_deploy_paths_match_complete_order has been running for over 60 seconds
+test m59_reachability::m59_lane_b_product_matches_complete_pinned_librime_order has been running for over 60 seconds
+test m59_reachability::m59_manifest_plain_jyut6ping3_real_deploy_default_on_and_explicit_false has been running for over 60 seconds
+test m59_reachability::m59_product_zi_selection_consumes_the_full_surface_spelling has been running for over 60 seconds
+test m59_reachability::m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false has been running for over 60 seconds
+test m59_real_typeduck_profile_variants_hk_preserves_captured_sibling_order has been running for over 60 seconds
+test web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion has been running for over 60 seconds
+test m31_yune_web_hk2s_option_changes_real_asset_candidates ... ok
+test m58_yune_web_browser_app_assets_reach_prefix_candidate_for_long_reported_input ... ok
+test web03_regenerates_public_schema_compiled_assets_from_clean_rebuild ... ignored, WEB-03 evidence-only: set YUNE_WEB03_EVIDENCE_DIR and optionally YUNE_WEB03_APPLY_ASSETS=1
+test m58_yune_web_browser_app_assets_reach_profile_ranked_report_candidates ... ok
+test m58_yune_web_page_down_key_reaches_prefix_candidate_for_long_reported_input ... ok
+test m59_luna_bare_syllable_keeps_full_exact_singles_on_page_zero ... ok
+test m59_luna_long_sentence_page_order_matches_pinned_oracle_on_byte_backed_product ... ok
+test m59_luna_moboyi_composes_mo_bo_yi_on_byte_backed_product ... ok
+test m59_luna_moboyi_leading_singles_reachable_after_phrases ... ok
+test m59_luna_zhongguo_completion_class_reaches_leading_singles ... ok
+test m59_reachability::m59_correction_oracle_source_and_compiled_deploy_paths_match_complete_order ... ok
+test m59_reachability::m59_lane_b_product_matches_complete_pinned_librime_order ... ok
+test web03_public_demo_launch_schemas_byte_back_compiled_assets has been running for over 60 seconds
+test yune_web_adapter_accepts_deployed_schema_dictionary_for_inherited_source_schema has been running for over 60 seconds
+test yune_web_adapter_ai_rows_do_not_auto_commit_and_do_not_write_userdb has been running for over 60 seconds
+test yune_web_adapter_browser_app_assets_compose_reported_multi_syllable_words has been running for over 60 seconds
+test yune_web_adapter_browser_app_assets_enrich_visible_lookup_candidates has been running for over 60 seconds
+test yune_web_adapter_browser_app_assets_load_jyutping_mandarin_pinyin_reverse_lookup has been running for over 60 seconds
+test yune_web_adapter_browser_app_assets_load_public_mobile_schema has been running for over 60 seconds
+test yune_web_adapter_classic_commit_writes_userdb has been running for over 60 seconds
+test yune_web_adapter_comments_intact_keyboard_profile_skips_translator_lookup_payload has been running for over 60 seconds
+test yune_web_adapter_composes_source_dictionary_with_mobile_schema_algebra has been running for over 60 seconds
+test yune_web_adapter_customized_sentence_mode_commits_multisyllable_phrase has been running for over 60 seconds
+test m59_reachability::m59_manifest_plain_jyut6ping3_real_deploy_default_on_and_explicit_false ... ok
+test yune_web_adapter_customizes_dictionary_exclude_as_yaml_list has been running for over 60 seconds
+test m59_reachability::m59_product_zi_selection_consumes_the_full_surface_spelling ... ok
+test yune_web_adapter_deploy_and_customize_are_explicit has been running for over 60 seconds
+test m59_reachability::m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false ... ok
+test m59_real_typeduck_profile_variants_hk_preserves_captured_sibling_order ... ok
+test web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion ... ok
+test web03_public_demo_launch_schemas_byte_back_compiled_assets ... ok
+test yune_web_adapter_accepts_deployed_schema_dictionary_for_inherited_source_schema ... ok
+test yune_web_adapter_ai_rows_do_not_auto_commit_and_do_not_write_userdb ... ok
+test yune_web_adapter_browser_app_assets_compose_reported_multi_syllable_words ... ok
+test yune_web_adapter_browser_app_assets_enrich_visible_lookup_candidates ... ok
+test yune_web_adapter_browser_app_assets_load_jyutping_mandarin_pinyin_reverse_lookup ... ok
+test yune_web_adapter_browser_app_assets_load_public_mobile_schema ... ok
+test yune_web_adapter_classic_commit_writes_userdb ... ok
+test yune_web_adapter_comments_intact_keyboard_profile_skips_translator_lookup_payload ... ok
+test yune_web_adapter_composes_source_dictionary_with_mobile_schema_algebra ... ok
+test yune_web_adapter_customized_sentence_mode_commits_multisyllable_phrase ... ok
+test yune_web_adapter_customizes_dictionary_exclude_as_yaml_list ... ok
+test yune_web_adapter_deploy_and_customize_are_explicit ... ok
+test yune_web_adapter_deploys_browser_real_assets_after_customize has been running for over 60 seconds
+test yune_web_adapter_deploys_browser_real_assets_after_init has been running for over 60 seconds
+test yune_web_adapter_disabling_ai_clears_staged_rows_for_current_input has been running for over 60 seconds
+test yune_web_adapter_documents_browser_host_layout_constraints has been running for over 60 seconds
+test yune_web_adapter_handles_null_inputs_and_response_freeing has been running for over 60 seconds
+test yune_web_adapter_inspector_is_opt_in_and_preserves_classic_candidate_output has been running for over 60 seconds
+test yune_web_adapter_keyboard_profile_optouts_keep_jyutping_core_behavior has been running for over 60 seconds
+test yune_web_adapter_m28_followup_space_partial_candidate_recomposes has been running for over 60 seconds
+test yune_web_adapter_m28_followup_upstream_style_phrase_prefix_ranking has been running for over 60 seconds
+test yune_web_adapter_processes_keys_and_returns_json_state has been running for over 60 seconds
+test yune_web_adapter_real_assets_browser_defaults_keep_correction_nri_first has been running for over 60 seconds
+test yune_web_adapter_real_assets_correction_enabled_reorders_nri has been running for over 60 seconds
+test yune_web_adapter_real_assets_emit_oracle_dictionary_panel_comments has been running for over 60 seconds
+test yune_web_adapter_real_assets_page_size_customize_limits_context_page has been running for over 60 seconds
+test yune_web_adapter_real_assets_prefix_fallback_commits_consumed_span has been running for over 60 seconds
+test yune_web_adapter_real_assets_preserve_profile_full_shape_state_labels has been running for over 60 seconds
+test yune_web_adapter_deploys_browser_real_assets_after_customize ... ok
+test yune_web_adapter_real_assets_sentence_mode_commits_multisyllable_phrase has been running for over 60 seconds
+test yune_web_adapter_deploys_browser_real_assets_after_init ... ok
+test yune_web_adapter_disabling_ai_clears_staged_rows_for_current_input ... ok
+test yune_web_adapter_documents_browser_host_layout_constraints ... ok
+test yune_web_adapter_handles_null_inputs_and_response_freeing ... ok
+test yune_web_adapter_inspector_is_opt_in_and_preserves_classic_candidate_output ... ok
+test yune_web_export_allowlist_matches_rust_anchor_and_ts_runtime ... ok
+test yune_web_adapter_keyboard_profile_optouts_keep_jyutping_core_behavior ... ok
+test yune_web_adapter_set_option_updates_session_status has been running for over 60 seconds
+test yune_web_adapter_stage_ai_is_default_off_and_second_pass_source_labeled has been running for over 60 seconds
+test yune_web_adapter_storage_diagnostics_reports_live_jyutping_storage has been running for over 60 seconds
+test yune_web_adapter_supports_page_candidate_actions_and_commits has been running for over 60 seconds
+test yune_web_adapter_m28_followup_space_partial_candidate_recomposes ... ok
+test yune_web_adapter_m28_followup_upstream_style_phrase_prefix_ranking ... ok
+test yune_web_adapter_processes_keys_and_returns_json_state ... ok
+test yune_web_adapter_real_assets_browser_defaults_keep_correction_nri_first ... ok
+test yune_web_adapter_real_assets_correction_enabled_reorders_nri ... ok
+test yune_web_adapter_real_assets_emit_oracle_dictionary_panel_comments ... ok
+test yune_web_adapter_real_assets_page_size_customize_limits_context_page ... ok
+test yune_web_adapter_real_assets_prefix_fallback_commits_consumed_span ... ok
+test yune_web_adapter_real_assets_preserve_profile_full_shape_state_labels ... ok
+test yune_web_adapter_real_assets_sentence_mode_commits_multisyllable_phrase ... ok
+test yune_web_adapter_set_option_updates_session_status ... ok
+test yune_web_adapter_stage_ai_is_default_off_and_second_pass_source_labeled ... ok
+test yune_web_adapter_storage_diagnostics_reports_live_jyutping_storage ... ok
+test yune_web_adapter_supports_page_candidate_actions_and_commits ... ok
+
+test result: ok. 52 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 2410.49s
+
+     Running tests\yune_windows_profile_abi_surface.rs (C:\m59-final-native-target\debug\deps\yune_windows_profile_abi_surface-547ecc45e8e57c66.exe)
+
+running 4 tests
+test default_rime_api_stays_upstream_sized_while_yune_windows_profile_is_larger ... ok
+test yune_windows_profile_accessor_aliases_current_profile_table ... ok
+test yune_windows_profile_append_string_slot_creates_and_extends_lists ... ok
+test yune_windows_profile_append_scalar_slots_round_trip_through_profile_table ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests yune_rime_api
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

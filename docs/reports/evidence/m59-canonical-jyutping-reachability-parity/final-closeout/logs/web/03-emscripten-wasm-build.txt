@@ -1,0 +1,56 @@
+bash.exe :    Compiling yune-core v0.1.0 (C:\Users\laubonghaudoi\Documents\GitHub\yune\crates\yune-core)
+At line:2 char:392
++ ... -build.sh'; & $bash -lc $script *> 'C:\m59-final-closeout-5fa986d8\we ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling yu...ates\yune-core):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Compiling yune-rime-api v0.1.0 (C:\Users\laubonghaudoi\Documents\GitHub\yune\crates\yune-rime-api)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.27s
+Yune web native exports verified: /c/Users/laubonghaudoi/Documents/GitHub/yune/target/debug/yune_rime_api.dll.lib
+   Compiling proc-macro2 v1.0.106
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.45
+   Compiling utf8parse v0.2.2
+   Compiling anstyle v1.0.14
+   Compiling colorchoice v1.0.5
+   Compiling is_terminal_polyfill v1.70.2
+   Compiling serde_core v1.0.228
+   Compiling libc v0.2.186
+   Compiling anstyle-query v1.1.5
+   Compiling memchr v2.8.0
+   Compiling clap_lex v1.1.0
+   Compiling heck v0.5.0
+   Compiling strsim v0.11.1
+   Compiling zmij v1.0.21
+   Compiling serde v1.0.228
+   Compiling regex-syntax v0.8.10
+   Compiling anstyle-parse v1.0.0
+   Compiling equivalent v1.0.2
+   Compiling serde_json v1.0.149
+   Compiling hashbrown v0.17.0
+   Compiling itoa v1.0.18
+   Compiling anstream v1.0.0
+   Compiling unsafe-libyaml v0.2.11
+   Compiling ryu v1.0.23
+   Compiling aho-corasick v1.1.4
+   Compiling clap_builder v4.6.0
+   Compiling indexmap v2.14.0
+   Compiling memmap2 v0.9.11
+   Compiling syn v2.0.117
+   Compiling regex-automata v0.4.14
+   Compiling serde_yaml v0.9.34+deprecated
+   Compiling clap_derive v4.6.1
+   Compiling regex v1.12.3
+   Compiling clap v4.6.1
+   Compiling rsmarisa v0.4.2
+   Compiling yune-core v0.1.0 (C:\Users\laubonghaudoi\Documents\GitHub\yune\crates\yune-core)
+   Compiling yune-rime-api v0.1.0 (C:\Users\laubonghaudoi\Documents\GitHub\yune\crates\yune-rime-api)
+    Finished `release` profile [optimized] target(s) in 1m 19s
+Yune web Emscripten JS glue patched for growable-memory browser API compatibility (2 path(s)).
+Yune web browser WASM post-optimization skipped: wasm-opt could not validate this Emscripten module
+Yune web WASM export verification falling back to JS glue scan after llvm-nm could not prove all exports.
+Yune web browser module smoke verified: yune_web_response_handled + FS write/read
+Yune web browser WASM verified: /c/Users/laubonghaudoi/Documents/GitHub/yune/target/wasm32-unknown-emscripten/release/yune-web.wasm
+Yune web Emscripten JS glue verified: /c/Users/laubonghaudoi/Documents/GitHub/yune/target/wasm32-unknown-emscripten/release/yune-web.js
+Yune web browser WASM build profile: release

@@ -1,10 +1,20 @@
-# Current Yune Performance Dashboard
+# Yune Performance Dashboard
 
-Date: 2026-07-11 (current-main post-fix macOS diagnosis at `afb7079b`;
-standing gate remains the signed Windows corrective/M59 ratchet)
+Date: 2026-07-13 (M59 final acceptance plus historical diagnostics)
 
-This dashboard shows the current benchmark state only. Older milestone closeout
-narrative and superseded benchmark rows remain in
+> **M59 supersession:** final Windows behavior source `5879405c` restores the
+> named `/3` behavior, matches the accepted Lane A/Lane B/Cangjie and deployed
+> 37/59 surfaces, and passes the unchanged signed ratchet at `32/32` aggregate
+> rows and `160/160` individual observations. `5fa986d8` adds the final 60-asset
+> REACH-03 registry without changing production behavior. Every `afb7079b`
+> macOS table, `6/17` read, `n`/`zh` diagnosis, and `/3` zero-candidate statement
+> below is a historical, source-bound diagnostic—not current-main acceptance or
+> a current optimization claim. No exact-current cross-platform rerun has
+> replaced it. Final evidence:
+> [`evidence/m59-canonical-jyutping-reachability-parity/final-closeout/`](./evidence/m59-canonical-jyutping-reachability-parity/final-closeout/).
+
+This dashboard preserves the standing gate and historical diagnostic context.
+Older milestone closeout narrative and superseded benchmark rows remain in
 [`history/2026-06-28-yune-vs-librime-performance-pre-current-dashboard.md`](./history/2026-06-28-yune-vs-librime-performance-pre-current-dashboard.md).
 
 **Measurement note (load-bearing):** as of the 2026-07-04 corrective series the
@@ -26,7 +36,7 @@ keeps compact storage active, and restores the expected model shape
 abbreviation vocabulary). Evidence:
 [`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
 
-> **Current-main macOS supersession:** the M57 cross-platform table formerly
+> **Historical macOS diagnostic:** the M57 cross-platform table formerly
 > carried by this dashboard is historical. The five-round `afb7079b` packet
 > supersedes its performance interpretation. Current Mac Yune is 37-53% slower
 > than near-code Windows on `n`/`ni`/`hao`, while current long aggregate wins
@@ -52,7 +62,7 @@ explicit sign-off.
 
 ## Technical Summary
 
-- **Current-main Mac diagnostic**: Yune wins 6/17 aggregate Track A rows and
+- **Historical Mac diagnostic (`afb7079b`)**: Yune wins 6/17 aggregate Track A rows and
   loses 11. The 37/59 aggregate ratios (`0.399x`/`0.205x`) are not behavior-
   normalized; text-matched prefix sensitivity is `1.420x`/`1.204x`. `n`/`zh`
   use `8.682x`/`4.092x` librime's instructions. Allocator/platform effects are
@@ -101,7 +111,7 @@ explicit sign-off.
   to ready (`1000 ms` vs `634 ms`), but faster on first input (`74 ms` vs
   `95 ms`).
 
-## Current Evidence Bundle
+## Evidence Bundles
 
 Corrective evidence root (decision runs, gate runs, README):
 [`evidence/m55-native-match-or-beat/corrective-2026-07-04/`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/).
@@ -112,7 +122,7 @@ M57 macOS verification repair evidence:
 M58 Jyutping/profile corrective closeout evidence:
 [`evidence/m58-jyutping-exact-before-fuzzy/`](./evidence/m58-jyutping-exact-before-fuzzy/).
 
-Current-main post-fix macOS diagnostic:
+Historical source-bound post-fix macOS diagnostic:
 [`evidence/m59-post-fix-root-cause-20260711/`](./evidence/m59-post-fix-root-cause-20260711/).
 
 Standing gate artifact:
@@ -146,9 +156,9 @@ The visualization below is regenerated from the corrective gate run D:
 
 ![Native Track A latency across all input dimensions, Yune vs librime 1.17.0](./evidence/dashboard-visuals-2026-07-04/native-track-a-latency-ratios.svg)
 
-## Native Track A — current Mac vs near-code Windows
+## Native Track A — historical Mac vs near-code Windows
 
-The current diagnostic compares Mac `afb7079b` with Windows Increment 4a at
+The historical diagnostic compares Mac `afb7079b` with Windows Increment 4a at
 `ca52ec42`. This is a machine/source/compiler comparison, not an OS-only
 experiment: CPU, compiler, linker, allocator, OS, payload metadata, background
 load, and the commits differ.

@@ -1,0 +1,48 @@
+
+Running 22 tests using 1 worker
+
+[1/22] yune-web.spec.ts:4863:3 › yune-web Browser E2E › M20 guided scenarios use real yune-web assets
+[2/22] yune-web.spec.ts:4907:3 › yune-web Browser E2E › M20 combine_candidates changes real candidate output
+[3/22] yune-web.spec.ts:4937:3 › yune-web Browser E2E › M20 prediction threshold changes real candidate output
+[4/22] yune-web.spec.ts:4976:3 › yune-web Browser E2E › Shift toggles ASCII mode from focused input
+[5/22] yune-web.spec.ts:5018:3 › yune-web Browser E2E › M20 live session controls use setOption-visible output
+[6/22] yune-web.spec.ts:5051:3 › yune-web Browser E2E › M20 display controls change rendering and record mobile-only side-lookup limits
+[7/22] yune-web.spec.ts:5124:3 › yune-web Browser E2E › M16 combine candidates browser default matches M14
+[8/22] yune-web.spec.ts:5141:3 › yune-web Browser E2E › M16 sentence composition browser path matches M14 @smoke
+[9/22] yune-web.spec.ts:5190:3 › yune-web Browser E2E › M16 completion browser path matches M14
+[10/22] yune-web.spec.ts:5207:3 › yune-web Browser E2E › M16 correction browser path matches M14 visible before/after
+[11/22] yune-web.spec.ts:5298:3 › yune-web Browser E2E › M16 simplification toggle converts browser candidates through OpenCC
+[12/22] yune-web.spec.ts:5318:3 › yune-web Browser E2E › M16 schema menu and userdb pronunciation limits are explicit
+[13/22] yune-web.spec.ts:5362:3 › yune-web Browser E2E › Candidate paging
+[14/22] yune-web.spec.ts:5382:3 › yune-web Browser E2E › Keyboard paging shortcuts do not error
+[15/22] yune-web.spec.ts:5418:3 › yune-web Browser E2E › Candidate selection → commit output
+[16/22] yune-web.spec.ts:5441:3 › yune-web Browser E2E › Number keys commit visible candidates
+  1) yune-web.spec.ts:5441:3 › yune-web Browser E2E › Number keys commit visible candidates ────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "外"
+    Received: "俄"
+
+      5443 |     const inputField = composeInput(page);
+      5444 |     const beforeSelection = await readCandidatePanelSnapshot(page, false);
+    > 5445 |     expect(beforeSelection.candidates[1].text).toBe("外");
+           |                                                ^
+      5446 |
+      5447 |     await page.keyboard.press("2");
+      5448 |     await expect(inputField).toHaveValue("外", { timeout: 5000 });
+        at C:\Users\laubonghaudoi\Documents\GitHub\yune\apps\yune-web\e2e\yune-web.spec.ts:5445:48
+
+    Error Context: test-results\yune-web-yune-web-Browser--71d6f-s-commit-visible-candidates\error-context.md
+
+
+[17/22] yune-web.spec.ts:5456:3 › yune-web Browser E2E › Deletion removes candidate or triggers delete path
+[18/22] yune-web.spec.ts:5480:3 › yune-web Browser E2E › Backspace mutates composition
+[19/22] yune-web.spec.ts:5504:3 › yune-web Browser E2E › Deploy returns visible success/error evidence
+[20/22] yune-web.spec.ts:5546:3 › yune-web Browser E2E › Customize returns visible success/error evidence
+[21/22] yune-web.spec.ts:5606:3 › yune-web Browser E2E › Persistence sync after deploy/customize mutations
+[22/22] yune-web.spec.ts:5637:3 › yune-web Browser E2E › Reload/reinitialize preserves persisted state
+  1 failed
+    yune-web.spec.ts:5441:3 › yune-web Browser E2E › Number keys commit visible candidates ─────────
+  6 did not run
+  15 passed (47.9s)

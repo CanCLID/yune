@@ -1,6 +1,6 @@
 # Engine Support Contract
 
-Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI; updated by M56 to add productization hardening policies for compiled-artifact staleness, user-data lifecycle, ABI crash behavior, threading, poison recovery, and release panic strategy without widening the ABI; clarified by M59 Increment 4a for upstream Luna ScriptTranslation page shape and compiled-weight domains, by Increment 4b for bounded abbreviation production and shared-cache lifecycle, and by Increment 4c for ordered one-to-many OpenCC conversion, again without ABI widening.
+Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI; updated by M56 to add productization hardening policies for compiled-artifact staleness, user-data lifecycle, ABI crash behavior, threading, poison recovery, and release panic strategy without widening the ABI; clarified by M59 Increment 4a for upstream Luna ScriptTranslation page shape and compiled-weight domains, by Increment 4b for bounded abbreviation production and shared-cache lifecycle, by Increment 4c for ordered one-to-many OpenCC conversion, by Increment 4d for the explicit upstream-table Cangjie validation policy, and by Increment 4e for exact Luna complete-list ordering, again without ABI widening.
 
 This contract defines Yune's launch-facing engine support boundary. It is a
 contract for engine behavior, storage, ABI shape, and evidence lanes; it is not
@@ -54,13 +54,39 @@ family stably, and uses only default variants for partial segmentation.
 Candidate comments are not part of Lane A's D-48 text/order acceptance and
 retain 854 disclosed non-gating differences; canonical comment byte identity
 is not claimed. TypeDuck comment/profile parity remains its separate profile
-contract. Cangjie and Lane B D-48 lanes and final gates stay open; 4d is next.
+contract.
+
+M59 Increment 4d closes the marked upstream-Cangjie lane at strict all-page
+`12/12`, including `tak 30/30`; the owning suite is `3 passed / 0 ignored`, and
+the separately captured unmarked control remains exact `12/12`. M59 Increment
+4e closes all seven captured upstream Luna inputs (`moboyi`, `boyi`, `yi`,
+`zhonggao`, `zhongguo`, `gao`, `guo`) for candidate text, page shape, page-local
+and global position, and terminal-page state over tracked byte-backed assets.
+All three D-48 lanes are complete without a final-capture exception.
 
 For the captured 37- and 59-character upstream Luna page-zero rows, the required
 shape is one best full-span sentence followed by the independent oracle phrase
 stream. That is a target-specific capture, not a claim that every Luna input
-always has exactly one full-span candidate. It does not close M59's separate
-seven-input Lane B complete-list requirement.
+always has exactly one full-span candidate. Increment 4e proves this page shape
+alongside, but separately from, its seven-input Lane B complete-list contract.
+
+## Schema-General Reachability Acceptance
+
+M59 makes `leading_syllable_reachability` default-on for every schema while
+retaining TypeDuck-profile `prefix_fallback` precedence. Commit `5fa986d8`
+binds that contract to the shipped surface: both manifests cover the exact
+60-asset schema tree; the registry dispositions 10 schema assets and three
+configuration carriers; and nine executable validation rows link the fixed
+eight-row deploy matrix plus the direct selectable tracked `jyut6ping3` path.
+New schema assets enter the registry as blocking open rows. This is an
+acceptance/audit rule, not a schema-id gate or ABI surface.
+
+M59 closes this contract with source-current native, fail-closed Emscripten,
+tracked-app/public-package, and functional-browser evidence. WEB-04 is complete
+at `5/5`: the browser proves all four Octagram ranking rows, the plain-Luna
+default-off control, and missing-model fail-closed behavior. The historical
+WEB-05 same-WASM comparison remains bound to its original binary and was not
+rebaselined as a cross-binary M59 gate.
 
 ### Upstream Luna Compiled-Weight Semantics
 

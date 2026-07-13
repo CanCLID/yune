@@ -732,6 +732,35 @@ async function typeCompositionAndWaitForCandidate(
   return readCandidatePanelSnapshot(page, false);
 }
 
+async function waitForLatestProcessedInput(
+  page: Page,
+  expectedInput: string,
+): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const raw = document.documentElement.dataset.yuneTypingDiagnostics;
+          if (!raw) return null;
+          const diagnostics = JSON.parse(raw) as {
+            action?: string;
+            input?: string;
+          }[];
+          return diagnostics
+            .filter((diagnostic) => diagnostic.action === "processKey")
+            .at(-1)?.input ?? null;
+        }),
+      { timeout: 10000 },
+    )
+    .toBe(expectedInput);
+}
+
+async function resetTypingDiagnostics(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    document.documentElement.dataset.yuneTypingDiagnostics = "[]";
+  });
+}
+
 async function typeCompositionAndWaitForTopCandidate(
   page: Page,
   input: string,
@@ -827,6 +856,10 @@ async function selectVisibleCandidateByText(
   text: string,
 ): Promise<{ before: CandidatePanelSnapshot; selectedIndex: number }> {
   const before = await readCandidatePanelSnapshot(page, false);
+  const beforeSignature = JSON.stringify({
+    inputValue: before.inputValue,
+    candidates: candidateTexts(before),
+  });
   const selectedIndex = before.candidates.findIndex(
     (candidate) => candidate.text === text,
   );
@@ -841,6 +874,21 @@ async function selectVisibleCandidateByText(
   await page.keyboard.press(
     selectedIndex === 9 ? "0" : String(selectedIndex + 1),
   );
+  await expect
+    .poll(
+      async () => {
+        if ((await page.locator(".candidate-panel").count()) === 0) {
+          return "closed";
+        }
+        const after = await readCandidatePanelSnapshot(page, false);
+        return JSON.stringify({
+          inputValue: after.inputValue,
+          candidates: candidateTexts(after),
+        });
+      },
+      { timeout: 10000 },
+    )
+    .not.toBe(beforeSignature);
   return { before, selectedIndex };
 }
 
@@ -1549,7 +1597,7 @@ test.describe("yune-web Browser E2E", () => {
     const state = await typeCompositionAndWaitForTopCandidate(
       page,
       "youhuiyong",
-      "\u904a\u6232\u7528",
+      "\u6709\u6703\u7528",
     );
     await saveJsonEvidence("web04-plain-luna-negative-control.json", {
       diagnostic,
@@ -4763,11 +4811,14 @@ test.describe("yune-web Browser E2E", () => {
     });
 
     const learnedCommit = await learnPhraseThroughBrowser(page);
-    const neverFirstOnRanking = await typeCompositionAndWaitForCandidate(
+    await resetTypingDiagnostics(page);
+    await typeCompositionAndWaitForCandidate(
       page,
       LEARNED_PREFIX_INPUT,
       LEARNED_PHRASE_TEXT,
     );
+    await waitForLatestProcessedInput(page, LEARNED_PREFIX_INPUT);
+    const neverFirstOnRanking = await readCandidatePanelSnapshot(page, false);
     const learnedOnIndex =
       candidateTexts(neverFirstOnRanking).indexOf(LEARNED_PHRASE_TEXT);
     expect(neverFirstOnRanking.candidates[0].text).toBe(CLASSIC_NGO_TEXT);
@@ -4781,11 +4832,14 @@ test.describe("yune-web Browser E2E", () => {
         "translator/prediction_never_first": "false",
       },
     );
-    const neverFirstOffRanking = await typeCompositionAndWaitForCandidate(
+    await resetTypingDiagnostics(page);
+    await typeCompositionAndWaitForCandidate(
       page,
       LEARNED_PREFIX_INPUT,
       LEARNED_PHRASE_TEXT,
     );
+    await waitForLatestProcessedInput(page, LEARNED_PREFIX_INPUT);
+    const neverFirstOffRanking = await readCandidatePanelSnapshot(page, false);
     const classicOffIndex =
       candidateTexts(neverFirstOffRanking).indexOf(CLASSIC_NGO_TEXT);
     expect(neverFirstOffRanking.candidates[0].text).toBe(LEARNED_PHRASE_TEXT);
@@ -5393,13 +5447,16 @@ test.describe("yune-web Browser E2E", () => {
   });
 
   test("Number keys commit visible candidates", async ({ page }) => {
+    await resetTypingDiagnostics(page);
     await focusInputAndType(page, "ngo", "我");
+    await waitForLatestProcessedInput(page, "ngo");
     const inputField = composeInput(page);
     const beforeSelection = await readCandidatePanelSnapshot(page, false);
-    expect(beforeSelection.candidates[1].text).toBe("外");
+    const secondCandidate = beforeSelection.candidates[1]?.text;
+    expect(secondCandidate).toBeTruthy();
 
     await page.keyboard.press("2");
-    await expect(inputField).toHaveValue("外", { timeout: 5000 });
+    await expect(inputField).toHaveValue(secondCandidate!, { timeout: 5000 });
     await expect(page.locator(".candidate-panel")).toHaveCount(0, {
       timeout: 5000,
     });

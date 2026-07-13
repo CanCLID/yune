@@ -567,8 +567,8 @@ committed-asset test asserting the six reported words (`d1c0171a`).
 
 **D-47 / M59-DEFAULT-ON-REACHABILITY — Leading-single reachability is an
 engine-level default for every schema, and its measured per-keystroke cost gets a
-3-row owner-signed injection-on ceiling.** Per the owner amendment (2026-07-07,
-recorded in `docs/plans/active/m59-plan-canonical-jyutping-reachability-parity.md`)
+4-row owner-signed injection-on ceiling.** Per the owner amendment (2026-07-07,
+recorded in `docs/plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`)
 composing an arbitrary non-lexicon phrase one character at a time
 (`moboyi`→莫伯洢) must work on **every** schema by default with no per-schema
 adaptation. The flip makes `leading_syllable_reachability` default **on** in
@@ -588,10 +588,11 @@ The flip is the **first honest ratchet measurement with the injection actually o
 without the flag (the finding-#8 hole). A provenance guard now fails the benchmark
 if the deployed luna and the shipped web-product luna disagree on the reachability
 state. The injection-off M55 ceilings were built as `baseline × 1.05`, a noise
-band the feature's real per-keystroke cost partly eats on the three thinnest rows.
-**Owner decision (2026-07-08):** re-derive an injection-on ceiling for exactly
+band the feature's real per-keystroke cost partly eats on the rows with the least
+headroom. **Initial owner decision (2026-07-08):** re-derive an injection-on ceiling for exactly
 `n`, `hao`, and the 37-char row = **pooled-worst of the committed injection-on runs
-× 1.05**; the other 20 standing rows are untouched; the injection-off numbers +
+× 1.05**; the 59-char fourth-row addendum follows below. The other standing rows
+are untouched; the injection-off numbers +
 per-row `spread_pct` are preserved in `m55-thresholds.csv` as the feature-cost
 record. Protocol upgrades landed with it: a `spread_pct` column on every gate row,
 and a written **median-of-committed-runs** gate-verdict rule (a row passes iff its
@@ -634,6 +635,35 @@ threshold relaxation, or observation deletion. `n`, `ni`, `hao`, and the
 37/59-character rows pass. This remains increment evidence rather than final
 M59-REACH-04 acceptance after 4d and 4e.
 
+_Addendum 2026-07-13 (M59 Increment 4e / final behavior acceptance):_ five
+fresh complete 17+1 rounds at clean production source `5879405c` pass all
+`32/32` aggregate rows and all `160/160` individual observations under the
+unchanged signed ceilings. The guarded medians include `n 0.208x`, `ni 0.246x`,
+`hao 0.284x`, the 37-character row `0.022x`, and the 59-character row `0.010x`.
+The predeclared short-key owner stop was not triggered. M59-REACH-04 is complete;
+no ceiling or exception changed.
+
+_Addendum 2026-07-13 (M59-REACH-03):_ commit `5fa986d8` makes the shipped-schema
+acceptance surface fail closed. Both manifests cover the exact 60-asset schema
+tree; the checked-in registry dispositions all 10 schema assets and three
+configuration carriers and links nine executable validation rows. The fixed
+eight-row deployment matrix remains distinct from the direct selectable
+tracked-`jyut6ping3` real-deploy row. A newly discovered schema asset is added
+to the manifest and registry as `status: open`, so it cannot silently inherit an
+acceptance claim. The dual `prefix_fallback` / `leading_syllable_reachability`
+mechanism and TypeDuck profile precedence remain unchanged.
+
+_Closeout 2026-07-13:_ the final packet records a nonduplicative native
+recovery after a host allocation abort, a fail-closed Emscripten build,
+typecheck, tracked-app and public-package builds, and complete functional
+Playwright coverage. WEB-04 passes its three source-current browser tests
+(four ranking rows plus plain-Luna and missing-model controls), while M58 passes
+its separate focused row. The unrelated 150-sample startup benchmark is not an
+M59 correctness gate. WEB-05's historical same-WASM comparison remains bound
+to its original binary and was not rebaselined across the new WASM. M59 closes
+with all 11 requirements complete and no ceiling, ABI, schema-id, or exception
+change.
+
 **D-48 / PER-LANE-RANKING-PARITY-POLICY — Ranking-order parity is required for
 three lanes; the TypeDuck profile lane keeps reachability + comment parity only.**
 Owner FINAL decision 2026-07-08, resolving what "parity" means per lane:
@@ -660,6 +690,15 @@ Owner FINAL decision 2026-07-08, resolving what "parity" means per lane:
    v1.1.2) remain as regression pins — **do not extend, do not delete.**
    Multilingual comment behavior stays oracle-backed against TypeDuck `v1.1.2`.
 
+**Owner-signed M59 Increment 4a class-3 exception (renewed 2026-07-11):** the
+exception is limited to the complete captured equal-weight residual after the
+declared OpenCC normalization: **6,086 inversions, zero cross-weight inversions,
+and no beyond-oracle-depth use**. The cause is librime's equal-weight
+import/traversal tie-break. Revisit is mandatory if any cross-weight inversion
+appears, capture/provenance is incomplete, or a tie residual moves onto page 1
+for a common input. This exception did not waive 4b, 4c, 4d, or 4e and is not
+consumed by the final strict Lane A capture.
+
 **2026-07-11 supplemental macOS application.** At independently measured source
 commit `89875ee2`, the expanded Luna 37/59 page-zero sentence/phrase slice
 follows D-48 exactly without an exception. This is a bounded follow-up to, not a
@@ -683,7 +722,7 @@ ceiling, exception, or new milestone.
 Extends D-24 (oracle precedence), D-31 (upstream-wins-on-composition-conflict +
 fork-as-profile-oracle), and D-47 (the schema-general reachability guarantee, of
 which order parity is the stricter sibling for the three named lanes). _Outcome:
-Pending overall; Lane A complete — Increment 4c at clean source `e11557e2`
+complete for all three required lanes — Increment 4c at clean source `e11557e2`
 matches the complete 13-input all-page canonical capture at strict `13/13`
 across 5,705 candidate text/order/position rows, page shape, preedit, and commit
 preview. Ordered one-to-many OpenCC conversion closes the declared `僞`, `臥`,
@@ -691,12 +730,14 @@ and `鉤` residue. No exception or beyond-depth row is consumed, so the renewed
 4a class-3 disposition remains recorded but is unused by the final capture.
 Canonical comments retain 854 explicitly non-gating differences outside this
 text/order contract; no whole-capture byte identity or canonical comment parity
-is claimed. Remaining D-48 closure is 4d Cangjie CJ-1 and 4e Lane B exact
-order. Source-current WEB-04 is also red on two of four Octagram
-rows, reproduces before 4b, and is assigned to that existing untoned-Luna 4e
-boundary; it remains a final-closeout blocker, not a new exception. The
-supplemental macOS `89875ee2` evidence closes only its
-exact 37/59 source-scoped slice and changes none of these statuses._
+is claimed. Increment 4d at clean source `38e759f6` closes Cangjie with marked
+strict `12/12`, the owning suite at 3 passed / 0 ignored, and unmarked exact
+`12/12`. Increment 4e at clean source `5879405c` closes Lane B page- and
+position-exact for all seven captured inputs, with no new exception. Native
+WEB-04 behavior is `8/8`, and source-current Playwright closes the three WEB-04
+browser rows including the plain and missing-model controls. This browser proof
+is not a D-48 exception. The supplemental macOS `89875ee2` evidence remains
+historical source-scoped provenance for its exact 37/59 slice._
 
 ### Initialization notes (process decisions)
 
@@ -712,9 +753,15 @@ exact 37/59 source-scoped slice and changes none of these statuses._
 
 ---
 
-_Last updated: 2026-07-11 - D-30 and D-48 now record the supplemental, source-scoped macOS Luna 37/59 page-zero repair measured at `89875ee2`, including the compiled natural-log weight domain, inclusive 5% pronunciation boundary, bounded exact-user scope, and unchanged ABI/threshold posture. The authoritative Windows Increment 4a packet remains at `ca52ec42` plus review fix `2257fbbe`: its strict Lane A comparator is `2/5`, and on 2026-07-11 the owner renewed the narrowly scoped D-48 class-3 exception for all `6,086` captured equal-weight inversions (zero cross-weight inversions and no beyond-oracle-depth use) with the recorded cross-weight, provenance, and common-input page-1 revisit triggers, permitting 4b to start. The macOS evidence did not cause or supersede that disposition, and no combined/reconciled commit is claimed measured. A post-WEB-03 correctness follow-up fixed a `DartsDoubleArray` prism construction bug that corrupted the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words (`litbiu -> 列表` etc.); the four affected prisms were regenerated and the user-visible words are now locked by trie-level and committed-asset regression tests (`a76fcd59`, `d1c0171a`). D-46 records WEB-03 complete after the phrase-composition follow-up: regenerated launch compiled assets and native byte-backed storage are now a delivery contract, fresh Emscripten/Playwright evidence shows the shipping public-demo `full-jyutping` browser row at `160.0 MiB` ready/peak/steady, and follow-up gates restore byte-backed `ngogokdak -> 我覺得` plus `zouhapci` visible lookup rows. The old `893.1 MiB` value remains only as a synthetic no-launch-assets negative control. D-45 records WEB-02 complete as the historical public-demo Jyutping source-fallback owner classification: shipped `Rime::Prism/3.0` assets forced `owned_heap` and retained `translator.entries_by_code` rows totaling `529,602,374 B`; WEB-03 fixed that launch path. D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and the pre-WEB-03 browser Jyutping row remained `893.1 MiB`, so M46 closed as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` did not reduce settled linear memory, 48 MiB worsened Luna, and pre-WEB-03 Jyutping remained `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._
+_Prior update: 2026-07-11 - D-30 and D-48 now record the supplemental, source-scoped macOS Luna 37/59 page-zero repair measured at `89875ee2`, including the compiled natural-log weight domain, inclusive 5% pronunciation boundary, bounded exact-user scope, and unchanged ABI/threshold posture. The authoritative Windows Increment 4a packet remains at `ca52ec42` plus review fix `2257fbbe`: its strict Lane A comparator is `2/5`, and on 2026-07-11 the owner renewed the narrowly scoped D-48 class-3 exception for all `6,086` captured equal-weight inversions (zero cross-weight inversions and no beyond-oracle-depth use) with the recorded cross-weight, provenance, and common-input page-1 revisit triggers, permitting 4b to start. The macOS evidence did not cause or supersede that disposition, and no combined/reconciled commit is claimed measured. A post-WEB-03 correctness follow-up fixed a `DartsDoubleArray` prism construction bug that corrupted the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words (`litbiu -> 列表` etc.); the four affected prisms were regenerated and the user-visible words are now locked by trie-level and committed-asset regression tests (`a76fcd59`, `d1c0171a`). D-46 records WEB-03 complete after the phrase-composition follow-up: regenerated launch compiled assets and native byte-backed storage are now a delivery contract, fresh Emscripten/Playwright evidence shows the shipping public-demo `full-jyutping` browser row at `160.0 MiB` ready/peak/steady, and follow-up gates restore byte-backed `ngogokdak -> 我覺得` plus `zouhapci` visible lookup rows. The old `893.1 MiB` value remains only as a synthetic no-launch-assets negative control. D-45 records WEB-02 complete as the historical public-demo Jyutping source-fallback owner classification: shipped `Rime::Prism/3.0` assets forced `owned_heap` and retained `translator.entries_by_code` rows totaling `529,602,374 B`; WEB-03 fixed that launch path. D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and the pre-WEB-03 browser Jyutping row remained `893.1 MiB`, so M46 closed as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` did not reduce settled linear memory, 48 MiB worsened Luna, and pre-WEB-03 Jyutping remained `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._
 
-_Current update: 2026-07-12 - D-47 records Increment 4c's unchanged-ceiling
-five-round median guard with both individual failures preserved. D-48 records
-Lane A strict `13/13`, no exception use, the historical class-3 disposition
-unused by final capture, and remaining 4d/4e closure._
+_Current update: 2026-07-13 - M59 is complete. D-47 records the four adjusted
+rows, final Increment 4e performance acceptance (`32/32` aggregate, `160/160`
+individual), and REACH-03's fail-closed 60-asset/10-schema-asset/three-carrier/
+nine-validation-row registry. D-48 records all three required lanes complete:
+Lane A strict `13/13`, Cangjie marked strict `12/12` with 3 passed / 0 ignored
+and unmarked exact `12/12`, and Lane B exact across all seven captured inputs.
+The renewed 4a class-3 exception remains recorded exactly and unused by final
+Lane A. Source-current WEB-04 Playwright, native recovery, fail-closed WASM,
+tracked-app/public-package builds, and final evidence reconciliation are
+complete without rebaselining the unrelated WEB-05 same-WASM history._

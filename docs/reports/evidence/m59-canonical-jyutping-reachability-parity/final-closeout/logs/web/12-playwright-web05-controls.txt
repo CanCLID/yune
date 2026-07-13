@@ -1,0 +1,10 @@
+
+Running 5 tests using 1 worker
+
+[1/5] web05-control-surface.spec.ts:213:1 › WEB-05 deploy and diagnostics controls expose observable state
+[2/5] web05-control-surface.spec.ts:284:1 › WEB-05 option controls synchronize through optionChanged
+[3/5] web05-control-surface.spec.ts:311:1 › WEB-05 inspector renders parsed debug fields
+[4/5] web05-control-surface.spec.ts:323:1 › WEB-05 dev-power controls are visible only in the harness
+[5/5] web05-control-surface.spec.ts:343:1 › WEB-05 public demo hides debug and admin controls
+  1 skipped
+  4 passed (4.8s)

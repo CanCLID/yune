@@ -1,0 +1,10 @@
+
+Running 6 tests using 1 worker
+
+[1/6] yune-web.spec.ts:5457:3 › yune-web Browser E2E › Deletion removes candidate or triggers delete path
+[2/6] yune-web.spec.ts:5481:3 › yune-web Browser E2E › Backspace mutates composition
+[3/6] yune-web.spec.ts:5505:3 › yune-web Browser E2E › Deploy returns visible success/error evidence
+[4/6] yune-web.spec.ts:5547:3 › yune-web Browser E2E › Customize returns visible success/error evidence
+[5/6] yune-web.spec.ts:5607:3 › yune-web Browser E2E › Persistence sync after deploy/customize mutations
+[6/6] yune-web.spec.ts:5638:3 › yune-web Browser E2E › Reload/reinitialize preserves persisted state
+  6 passed (16.3s)

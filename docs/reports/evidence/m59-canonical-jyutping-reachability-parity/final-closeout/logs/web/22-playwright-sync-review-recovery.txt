@@ -1,0 +1,5 @@
+Running 2 tests using 1 worker
+
+[1/2] yune-web.spec.ts:4806:3 › yune-web Browser E2E › M20 Prediction never first persists schema customization @smoke
+[2/2] yune-web.spec.ts:5449:3 › yune-web Browser E2E › Number keys commit visible candidates
+  2 passed (6.8s)

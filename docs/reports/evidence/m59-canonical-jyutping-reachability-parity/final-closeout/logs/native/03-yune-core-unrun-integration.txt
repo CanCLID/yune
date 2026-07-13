@@ -1,0 +1,126 @@
+   Compiling yune-core v0.1.0 (C:\Users\laubonghaudoi\Documents\GitHub\yune\crates\yune-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.40s
+     Running tests\oracle_fixture_provenance.rs (C:\m59-final-native-target\debug\deps\oracle_fixture_provenance-5564d249c58fbc93.exe)
+
+running 18 tests
+test upstream_jyutping_fixture_has_hybrid_provenance ... ok
+test upstream_m18_prism_fixture_has_non_circular_source_provenance ... ok
+test oracle_fixture_roots_have_machine_readable_provenance ... ok
+test upstream_m18_punctuation_fixture_has_non_circular_source_provenance ... ok
+test upstream_bopomofo_fixture_has_non_circular_source_provenance ... ok
+test upstream_double_pinyin_fixture_has_non_circular_source_provenance ... ok
+test upstream_cangjie5_fixture_has_non_circular_source_provenance ... ok
+test m59_librime_log_weight_table_fixture_has_non_circular_provenance ... ok
+test typeduck_v112_m21_prediction_ranking_fixture_has_non_circular_source_provenance ... ok
+test typeduck_v112_fork_parity_fixtures_have_non_circular_source_provenance ... ok
+test typeduck_v112_m21_sentence_composition_fixture_has_non_circular_source_provenance ... ok
+test m59_transformed_algebra_whole_input_fixtures_are_oracle_captured ... ok
+test typeduck_v112_m21_closeout_fixture_has_non_circular_source_provenance ... ok
+test upstream_schema_breadth_fixture_families_are_all_present ... ok
+test upstream_octagram_fixtures_have_non_circular_source_provenance_and_verification ... ok
+test typeduck_v112_m14_fixtures_have_non_circular_source_provenance ... ok
+test upstream_luna_pinyin_fixtures_have_non_circular_source_provenance ... ok
+test m58_canonical_cantonese_capture_has_sanitized_provenance ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests\upstream_algebra_properties.rs (C:\m59-final-native-target\debug\deps\upstream_algebra_properties-2318f2b23b418194.exe)
+
+running 8 tests
+test correction_spelling_fixture_and_preserved_text_packet_are_hash_bound ... ok
+test identity_prism_rejects_spelling_count_larger_than_its_darts_storage ... ok
+test upstream_identity_prism_runtime_path_stays_byte_backed_and_implicit ... ok
+test yune_generated_prism_keeps_partial_match_erase_inert ... ok
+test yune_generated_prism_accumulates_deployed_credibility_as_double ... ok
+test yune_generated_prism_matches_upstream_same_surface_collision_merge ... ok
+test upstream_algebra_property_fixture_is_pinned_to_librime_1_17_0 ... ok
+test yune_generated_prism_preserves_properties_through_ordinary_xform ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\upstream_cangjie5_composition_parity.rs (C:\m59-final-native-target\debug\deps\upstream_cangjie5_composition_parity-e87bcb9800aef464.exe)
+
+running 3 tests
+test upstream_cangjie5_composition_fixture_is_locked ... ok
+test yune_cangjie5_composes_each_constituent_char_at_top ... ok
+test upstream_sentence_policy_beats_pinned_cj1_root_competitors ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\upstream_cangjie_parity.rs (C:\m59-final-native-target\debug\deps\upstream_cangjie_parity-c58a35fee4345bfa.exe)
+
+running 4 tests
+test cangjie5_phrase_encoder_full_page_parity_is_blocked ... ignored, blocked: cangjie5 full page phrase/table-encoder interleave and no-match classification need a broader upstream compiled-language-model fixture in M17
+test upstream_cangjie5_fixture_is_locked ... ok
+test yune_cangjie5_exact_code_prefix_matches_upstream_table_rows ... ok
+test yune_cangjie5_engine_commits_exact_code_top_candidate ... ok
+
+test result: ok. 3 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\upstream_double_pinyin_parity.rs (C:\m59-final-native-target\debug\deps\upstream_double_pinyin_parity-9074b003eee9d09c.exe)
+
+running 4 tests
+test double_pinyin_sentence_lattice_parity_is_blocked ... ignored, blocked: Shuangpin phrase/sentence lattice parity depends on the upstream compiled language model tracked by M17
+test upstream_double_pinyin_fixture_is_locked ... ok
+test yune_double_pinyin_algebra_matches_upstream_first_page ... ok
+test yune_double_pinyin_engine_actions_match_upstream_snapshots ... ok
+
+test result: ok. 3 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\upstream_luna_leading_single_composition.rs (C:\m59-final-native-target\debug\deps\upstream_luna_leading_single_composition-8922115662dae599.exe)
+
+running 5 tests
+test oracle_reaches_each_leading_single_at_captured_position ... ok
+test oracle_capture_binds_clean_deterministic_query_bytes ... ok
+test oracle_composes_moboyi_to_the_non_lexicon_phrase_by_partial_selection ... ok
+test oracle_provenance_header_is_librime_1_17_0 ... ok
+test oracle_full_order_capture_is_complete_and_position_preserving ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\upstream_luna_pinyin_parity.rs (C:\m59-final-native-target\debug\deps\upstream_luna_pinyin_parity-56fa904cd1665917.exe)
+
+running 28 tests
+test capture_phase3r_access_volume_csv ... ignored, evidence capture: writes M55 Phase 3R access-volume CSV when YUNE_M55_PHASE3R_VOLUME_CSV is set
+test capture_phase3r_incremental_key_sequence_volume_csv ... ignored, evidence capture: writes M55 Phase 3R per-key product-path CSV when YUNE_M55_PHASE3R_KEY_SEQUENCE_VOLUME_CSV is set
+test capture_phase3r_incremental_product_access_volume_csv ... ignored, evidence capture: writes M55 Phase 3R incremental product-path CSV when YUNE_M55_PHASE3R_INCREMENTAL_VOLUME_CSV is set
+test upstream_luna_pinyin_fixture_is_locked ... ok
+test punctuation_candidates_match_upstream_fixture ... ok
+test ascii_punct_option_processor_bypass_matches_upstream_fixture ... ok
+test punctuation_processor_commit_confirm_pair_and_list_match_upstream_fixture ... ok
+test full_dictionary_selection_uses_all_exact_code_rows_and_essay_weights ... ok
+test reverse_lookup_candidates_match_upstream_fixture ... ok
+test full_pipeline_paging_matches_upstream_action_fixture ... ok
+test default_owned_model_matches_librime_page_from_compiled_log_weight_bytes ... ok
+test full_pipeline_selection_and_space_commit_match_upstream_action_fixture ... ok
+test full_sentence_lattice_parity_for_zhongguo_matches_upstream_fixture ... ok
+test yune_table_translator_matches_upstream_luna_pinyin_single_code_first_page ... ok
+test options_fixture_matches_supported_yune_option_paths ... ok
+test expanded_sentence_fixture_covers_phase3r_rows ... ok
+test upstream_sentence_completion_beijing ... ok
+test upstream_sentence_phrase_bianchengyuyan ... ok
+test upstream_sentence_phrase_beijingshi ... ok
+test expanded_sentence_green_rows_match_upstream_before_graph_work ... ok
+test upstream_sentence_mixed_jintiantianqihenhao ... ok
+test upstream_sentence_phrase_ceshiyixia ... ok
+test upstream_sentence_phrase_rengongzhineng ... ok
+test upstream_sentence_benchmark_37 ... ok
+test upstream_sentence_mixed_woxiangqubeijing ... ok
+test upstream_sentence_phrase_zhongguoren ... ok
+test upstream_sentence_benchmark_59 ... ok
+test zhongguo_phrase_mechanics_matches_upstream_sentence_fixture ... ok
+
+test result: ok. 25 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests\upstream_zhuyin_parity.rs (C:\m59-final-native-target\debug\deps\upstream_zhuyin_parity-ee624a617a7fa699.exe)
+
+running 6 tests
+test bopomofo_first_tone_space_speller_parity_is_blocked ... ignored, blocked: bopomofo first-tone literal Space requires schema speller/use_space and fluency-editor behavior outside the core translator slice
+test bopomofo_sentence_lattice_parity_is_blocked ... ignored, blocked: bopomofo phrase/sentence lattice parity depends on the upstream compiled language model tracked by M17
+test bopomofo_tone_digit_key_sequence_parity_is_blocked ... ignored, blocked: bopomofo digit tone keys require schema speller handling so digits are input, not numeric candidate selection
+test upstream_bopomofo_fixture_is_locked ... ok
+test yune_bopomofo_algebra_matches_upstream_first_page ... ok
+test yune_bopomofo_engine_set_input_matches_tone_key_cases ... ok
+
+test result: ok. 3 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.03s
+

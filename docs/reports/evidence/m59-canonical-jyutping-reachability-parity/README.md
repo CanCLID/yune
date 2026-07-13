@@ -10,7 +10,50 @@ pinned `rime/rime-cantonese` vs `librime 1.17.0` + `rime-cantonese`; **Lane B** 
 Yune `luna_pinyin` vs `librime 1.17.0` + upstream luna. TypeDuck profile is a
 regression guard, not an acceptance oracle.
 
-> **Current update (2026-07-12):**
+> **Final closeout (2026-07-13):**
+> [`final-closeout/`](./final-closeout/) is the source-current release/browser
+> reconciliation packet for production source `5fa986d8`. It retains the
+> successful prefix of the exact native gate, records the host-allocation abort
+> at `cantonese_parity`, and resumes only the interrupted and never-reached
+> targets: Cantonese `41/41`, all executed remaining core/API tests green with
+> declared ignores preserved, doc-tests green, and release build green. The web
+> lane records a fail-closed Emscripten build, typecheck, tracked-app and public-
+> package builds, and 79 unique functional Playwright passes with five declared
+> public-mode skips. WEB-04's three source-current browser tests cover all four
+> ranking rows plus the plain-Luna and missing-model controls; the separate M58
+> focused row also passes. WEB-04 is complete `5/5`, M59-EVIDENCE-01 and
+> M59-GATES-01 are complete, and M59 closes at `11/11` requirements.
+>
+> The 150-sample startup benchmark is explicitly outside M59 correctness and
+> was not run. WEB-05's same-WASM comparison remains historical and bound to its
+> original WASM hash; it was not quietly rebaselined across the final binary.
+> All functional failures and targeted recoveries are preserved, and the packet
+> stores text receipts and hashes rather than generated binaries.
+>
+> **Final behavior/performance basis:**
+> [`increment-4e-lane-b-exact-order/`](./increment-4e-lane-b-exact-order/) is
+> the accepted Increment 4e packet for clean production source `5879405c` and
+> evidence commit `d5af8304`. All captured pages for `moboyi`, `boyi`, `yi`,
+> `zhonggao`, `zhongguo`, `gao`, and `guo` match pinned librime candidate text,
+> page shape, position, and terminal-page state over tracked byte-backed Luna
+> assets. The exact deployed 37/59-character product gate is green. Native
+> WEB-04 behavior is `8/8` across four plain/null and four Octagram rows; this is
+> not a source-current Playwright/browser claim. Five fresh complete 17+1 rounds
+> pass all `32/32` aggregate rows and all `160/160` individual observations
+> under unchanged signed ceilings. M59-PARITY-02 and M59-REACH-04 are complete.
+>
+> Commit `5fa986d8` completes M59-REACH-03 without adding binary evidence. The
+> public and public-demo manifests are identical and cover the exact 60-asset
+> schema tree. `apps/yune-web/schema-acceptance-coverage.json` dispositions all
+> 10 schema assets and three configuration carriers and links nine executable
+> validation rows: the fixed eight-row default-on/explicit-false matrix plus a
+> direct real-deploy row for selectable tracked `jyut6ping3`. The updater adds
+> newly discovered schema assets automatically and creates a blocking open
+> acceptance row; the checker rejects manifest/tree, carrier, runtime, or
+> acceptance drift. The final-closeout packet reconciles this source with all
+> other accepted increments and the source-current release/browser gates.
+>
+> **Historical Increment 4d update (2026-07-12):**
 > [`increment-4d-cangjie-cj1/`](./increment-4d-cangjie-cj1/) is the final
 > Increment 4d packet bound to clean source `38e759f6`. The explicit
 > validation-only marker value `upstream_script` selects the internal
@@ -22,8 +65,9 @@ regression guard, not an acceptance oracle.
 > predictive traversal audit (`504/504` with identical rows), and five fresh
 > one-build/four-reuse performance rounds. All 32 aggregate median rows and all
 > 160 individual observations pass unchanged ceilings. M59-PARITY-03 is
-> complete. Lane B/WEB-04, REACH-03/04, final evidence, final gates, and M59
-> remain open.
+> complete. At that historical boundary Lane B/WEB-04, REACH-03/04, final
+> evidence, final gates, and M59 remained open; the current update above
+> supersedes only those status words, not the packet-local claim.
 >
 > [`increment-4c-opencc-variants/`](./increment-4c-opencc-variants/) is the
 > Increment 4c packet bound to clean source `e11557e2`. Ordered whole-word
@@ -38,8 +82,8 @@ regression guard, not an acceptance oracle.
 > text/order contract; no whole-capture byte identity or canonical comment
 > parity is claimed. Five fresh one-build/four-reuse performance rounds pass all
 > 32 aggregate median rows under unchanged ceilings and preserve two individual
-> red observations. Lane A is complete; 4e Lane B/WEB-04,
-> REACH-03/04, final evidence, and final gates remain open.
+> red observations. At that historical boundary Lane A was complete while 4e,
+> REACH-03/04, final evidence, and final gates remained open.
 >
 > [`increment-4b-abbreviation-segmentation/`](./increment-4b-abbreviation-segmentation/)
 > is the landed Increment 4b packet. The implementation chain runs through
@@ -57,9 +101,9 @@ regression guard, not an acceptance oracle.
 > equal-weight review finding. This is an increment guard, not final
 > M59-REACH-04. The designated Opus blocking review approved 4b with no blocking
 > finding, so `next_engine_increment_allowed: true` and Increment 4c may begin;
-> M59 remains open. Source-current WEB-04 is separately disclosed
-> red on two Octagram rows that reproduce before 4b; the existing untoned-Luna
-> 4e boundary must restore them before final closeout.
+> M59 remained open at that boundary. The packet separately disclosed the then-
+> source-current WEB-04 red on two Octagram rows that reproduced before 4b and
+> assigned restoration to the existing untoned-Luna 4e boundary.
 >
 > [`increment-4a-sentence-ordering/`](./increment-4a-sentence-ordering/) is the
 > review packet for mechanism commit `ca52ec42` and blocking-review fix
@@ -77,8 +121,11 @@ regression guard, not an acceptance oracle.
 > resolved. On 2026-07-11 the owner renewed the narrowly scoped D-48 class-3
 > exception for the complete captured equal-weight residual (`6,086`
 > inversions, zero cross-weight inversions, no beyond-oracle-depth use), with
-> mandatory cross-weight/provenance/common-input-page-1 revisit triggers. 4b is
-> permitted to start; no D-48 lane is closed, and this packet is not final
+> cause attributed to librime's equal-weight import/traversal tie-break and
+> mandatory revisit for any cross-weight inversion, incomplete capture or
+> provenance, or a tie residual moving onto page 1 for a common input. It did
+> not waive 4b, 4c, 4d, or 4e. At that historical boundary 4b was permitted to
+> start; no D-48 lane was closed, and this packet was not final
 > M59-REACH-04 evidence.
 >
 > [`increment-4a-luna-script-translation-order/`](./increment-4a-luna-script-translation-order/)
@@ -137,6 +184,43 @@ regression guard, not an acceptance oracle.
 > by the clean Increment 4d packet above.
 
 ## Artifact classification
+
+### VALID — Final closeout reconciliation
+
+- `final-closeout/` binds the final source, D-47/D-48 outcomes, native
+  nonduplicative recovery, fail-closed Emscripten/typecheck/build/package
+  receipts, schema/model hashes, and complete functional browser accounting.
+- WEB-04 is source-current and complete `5/5`. The three browser cases cover
+  all four ranking rows, plain Luna, and missing-model fail-closed behavior;
+  the separate M58 focused row also passes.
+- The startup benchmark is explicitly excluded as unrelated to M59 correctness,
+  and the historical WEB-05 same-WASM row is not rebaselined across binaries.
+  The packet contains no generated binary payload.
+
+### VALID — Increment 4e Lane B and final performance acceptance packet
+
+- `increment-4e-lane-b-exact-order/` preserves the complete seven-input Lane B
+  comparator, the exact deployed 37/59 page-shape proof, native WEB-04 `8/8`
+  outputs, five untouched text-only performance rounds, aggregate provenance,
+  focused verification, and two independent reviews. It contains no DLL, CLI,
+  benchmark executable, grammar model, compiled table, deployed tree, or other
+  binary payload.
+- Acceptance is Lane B exact page/position order for all seven captured inputs,
+  long-row page shape exact, native WEB-04 `8/8`, and performance `32/32`
+  aggregate plus `160/160` individual observations under unchanged ceilings.
+  It closes M59-PARITY-02 and M59-REACH-04. Browser/Playwright and final M59
+  closeout claims remain outside this packet.
+
+### VALID — M59-REACH-03 shipped-schema coverage
+
+- Commit `5fa986d8` checks in the exact 60-asset manifest/tree reconciliation,
+  10 schema-asset dispositions, three configuration carriers, and nine linked
+  executable validation rows. The direct selectable `jyut6ping3` row is kept
+  separate from the fixed eight-row deployment matrix.
+- Manifest updating is fail-closed for future schemas: discovery creates an
+  open acceptance row rather than silently treating the asset as covered. This
+  closes M59-REACH-03; no generated schema binary is copied into this evidence
+  ledger.
 
 ### VALID — Increment 4d Cangjie CJ-1 acceptance packet
 

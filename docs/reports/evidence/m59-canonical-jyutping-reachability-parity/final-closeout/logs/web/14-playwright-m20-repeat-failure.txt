@@ -1,0 +1,25 @@
+
+Running 1 test using 1 worker
+
+[1/1] yune-web.spec.ts:4777:3 › yune-web Browser E2E › M20 Prediction never first persists schema customization @smoke
+  1) yune-web.spec.ts:4777:3 › yune-web Browser E2E › M20 Prediction never first persists schema customization @smoke 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "我"
+    Received: "五"
+
+      4790 |     const learnedOnIndex =
+      4791 |       candidateTexts(neverFirstOnRanking).indexOf(LEARNED_PHRASE_TEXT);
+    > 4792 |     expect(neverFirstOnRanking.candidates[0].text).toBe(CLASSIC_NGO_TEXT);
+           |                                                    ^
+      4793 |     expect(learnedOnIndex).toBeGreaterThan(0);
+      4794 |
+      4795 |     const neverFirstOff = await setPreferenceToggleAndWaitForSettings(
+        at C:\Users\laubonghaudoi\Documents\GitHub\yune\apps\yune-web\e2e\yune-web.spec.ts:4792:52
+
+    Error Context: test-results\yune-web-yune-web-Browser--19f06--schema-customization-smoke\error-context.md
+
+
+  1 failed
+    yune-web.spec.ts:4777:3 › yune-web Browser E2E › M20 Prediction never first persists schema customization @smoke 

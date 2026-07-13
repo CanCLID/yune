@@ -1006,7 +1006,7 @@ mapping for common multi-syllable words (see WEB03-10).
 
 ## WEB-04 Octagram Debug Harness Requirements
 
-**Status: reopened under M59 Increment 4e.** WEB-04 originally made the
+**Status: complete; source-current browser behavior re-proved by M59.** WEB-04 originally made the
 completed M54 native octagram grammar
 feature observable in the tracked `apps/yune-web` harness through a default-off
 `luna_pinyin_octagram` profile. It does not broaden the engine support contract,
@@ -1027,13 +1027,14 @@ performance improvement. Evidence:
   octagram profile through the existing `extraSharedAssets` seam, validates byte
   size and SHA256, and reports delivered/fallback/checksum/schema-select
   high-water memory diagnostics.
-- [ ] **WEB04-OCTAGRAM-04**: Playwright evidence proves the octagram profile
+- [x] **WEB04-OCTAGRAM-04**: Playwright evidence proves the octagram profile
   delivers the pinned model and changes all four named rows versus plain Luna,
   proves plain Luna remains unchanged as the negative control, and fails closed
   when the model is missing instead of passing on fallback output. The original
-  closeout proved this row, but source-current M59 is red on two Octagram cases;
-  the failure reproduces before 4b and must be restored by the untoned-Luna 4e
-  merge/order increment before M59 closeout.
+  closeout proved this row. M59 Increment 4e restores the source-built native
+  plain/null plus Octagram gate to `8/8`; final source-current Playwright passes
+  all three WEB-04 browser cases, covering all four Octagram ranking rows plus
+  the plain and missing-model controls.
 - [x] **WEB04-OCTAGRAM-05**: WEB-04 leaves `crates/`,
   `packages/yune-web-runtime`, default `rime_get_api()`, and the support
   contract unchanged; it is browser harness dogfooding/observability only.
@@ -1494,11 +1495,10 @@ residual, not a candidate-behavior blocker.
 
 ### M59 Schema-General Single-Character Reachability + Canonical Parity
 
-**Status: in progress — Lane B reachability mechanism landed; Increment 4c
-closes strict Lane A `13/13` with no exception consumed; Increment 4d closes
-Cangjie CJ-1 at strict `12/12` and 3 passed / 0 ignored; 4e Lane B remains open;
-the supplemental macOS source `89875ee2` repairs only the
-expanded Luna 37/59 page-zero sentence/phrase slice; NOT closeable.**
+**Status: complete under the full D-47/D-48 Path A contract.** Increment 4c closes strict Lane A `13/13` with no exception
+consumed; Increment 4d closes Cangjie CJ-1 at strict `12/12` and 3 passed / 0
+ignored; Increment 4e closes the seven-input Lane B exact-order lane and final
+performance acceptance; commit `5fa986d8` closes shipped-schema coverage.
 M59 delivers the owner requirement that
 composing an arbitrary non-lexicon phrase one character at a time works on
 **every** schema. GPT's first execution was gamed (per-input
@@ -1507,8 +1507,7 @@ tests) and was reverted; the luna lane was reimplemented as a genuine general
 mechanism and landed (`c89a8ea9`). Owner amendment (2026-07-07) made the behavior
 a **default-ON, schema-general guarantee** delivered in M59, not M60.
 Increment 3b (`2cb7e411`) completes that default-on transformed-algebra
-guarantee and M59-REACH-02; manifest-derived REACH-03 and final-commit REACH-04
-remain open. Increment 4a (`ca52ec42`) implements
+guarantee and M59-REACH-02. Increment 4a (`ca52ec42`) implements
 the sentence/phrase mechanism. Its owner-provided Opus blocking review found an
 explicit-false reachability bypass; fix `2257fbbe` now passes the exact owning
 deployment matrix, full workspace clippy, focused parity, and a fresh 32/32
@@ -1529,7 +1528,17 @@ outside the D-48 text/order contract. Five fresh source-bound rounds pass all
 individual red observations. Increment 4d at clean source `38e759f6` then
 closes Cangjie CJ-1: marked strict `12/12`, 3 passed / 0 ignored, and unmarked
 exact `12/12`, with a fresh 32/32 five-round guard. Lane A and Cangjie are
-complete; Lane B remains.
+complete. Increment 4e at clean source `5879405c` closes all seven captured
+Lane B inputs page-for-page and position-for-position, restores the exact
+deployed 37/59 page shape, and records native WEB-04 `8/8`. Its five fresh
+complete 17+1 rounds pass all `32/32` aggregate rows and all `160/160`
+individual observations under unchanged ceilings, completing M59-PARITY-02 and
+M59-REACH-04. Commit `5fa986d8` completes M59-REACH-03 with exact 60-asset
+manifest/tree coverage, 10 schema-asset dispositions, three configuration
+carriers, and nine executable validation rows. The final packet closes evidence,
+source-current WEB-04 Playwright, and release/package gates through a recorded
+nonduplicative native recovery, fail-closed Emscripten build, typecheck,
+tracked/public builds, and complete functional browser coverage.
 Separately, the macOS long-page follow-up is reviewed and measured only at
 source commit `89875ee2`; its exact 37/59 pages and compiled
 NaturalLog/stored-`f32` inclusive-5% fixture change no signed ceiling,
@@ -1554,7 +1563,7 @@ commit is claimed measured.
   Jyutping, canonical Cantonese, Cangjie, Luna, Luna Octagram, Double Pinyin,
   and Bopomofo, with Stroke as an identity/null-map control. The fixed-DLL
   five-round acceptance passes all 32 aggregate rows.
-- [ ] **M59-REACH-03**: The canonical shipped-schema manifest at
+- [x] **M59-REACH-03**: The canonical shipped-schema manifest at
   `apps/yune-web/public/schema-asset-manifest.json` is reconciled one-to-one with
   a checked-in acceptance-coverage table: every schema-bearing asset is named,
   every installable/selectable schema has a real-path arbitrary non-lexicon
@@ -1570,7 +1579,13 @@ commit is claimed measured.
   product Jyutping, canonical Cantonese, Cangjie, Luna, Luna Octagram, Double
   Pinyin, and Bopomofo. Double Pinyin and Bopomofo remain mandatory in this
   fixture matrix even though they are not currently shipped product schemas.
-- [ ] **M59-REACH-04 (performance)**: The checked-in multi-run aggregator
+  Completed at `5fa986d8`: both manifests are identical and cover the exact
+  60-asset tree; the checked-in registry dispositions all 10 schema assets and
+  three configuration carriers; and nine executable validation rows link the
+  fixed eight-row deployment matrix plus the direct selectable tracked
+  `jyut6ping3` real-deploy row. The updater discovers a new schema asset and
+  creates a blocking `status: open` row rather than silently accepting it.
+- [x] **M59-REACH-04 (performance)**: The checked-in multi-run aggregator
   evaluates the full 17-input Track A set, including the 37-character,
   59-character, and nine owner-signed 2026-07-09 rows, together with the
   existing Track B product row and every standing startup/session/memory guard.
@@ -1582,14 +1597,18 @@ commit is claimed measured.
   row green. Increment 4b's accepted production-source guard at `d508e05b`
   supplies five fresh rounds over the complete 17+1 input set: all 32 aggregate
   rows and all 160 individual observations pass, including `n`, `ni`, `hao`,
-  and the 37/59-character rows. It is increment evidence, not final
-  M59-REACH-04 acceptance after the remaining 4e behavior changes.
+  and the 37/59-character rows. At that historical 4b boundary it was increment
+  evidence rather than final M59-REACH-04 acceptance; the 4e paragraph below is
+  authoritative for final behavior acceptance.
   Increment 4c adds another five source-bound rounds at `e11557e2`: all 32
   aggregate median rows pass under unchanged ceilings, with two individual red
   observations preserved. Increment 4d adds five source-bound one-build/four-
   reuse rounds at `38e759f6`: all 32 aggregate rows and all 160 individual
-  observations pass under unchanged ceilings. Both remain increment evidence
-  rather than final acceptance after 4e.
+  observations pass under unchanged ceilings. Final acceptance is the five
+  fresh complete rounds at final behavior source `5879405c`: all `32/32`
+  aggregate rows and `160/160` individual observations pass unchanged ceilings,
+  including `n`, `ni`, `hao`, and both 37/59-character rows. The predeclared
+  short-key owner stop was not triggered.
 - [x] **M59-PARITY-01 (Lane A)**: Yune + pinned `rime/rime-cantonese` matches
   upstream `rime/librime 1.17.0` + `rime/rime-cantonese` page/prefix-exact for
   candidate text and order across the committed 13-input canonical capture:
@@ -1601,7 +1620,7 @@ commit is claimed measured.
   beyond-depth row is consumed; the historical 4a class-3 disposition is
   unused by the final capture. Candidate comments are outside this text/order
   requirement and retain 854 explicitly non-gating differences.
-- [ ] **M59-PARITY-02 (Lane B exact order)**: Yune `luna_pinyin` matches pinned
+- [x] **M59-PARITY-02 (Lane B exact order)**: Yune `luna_pinyin` matches pinned
   upstream librime for complete captured candidate text, order, and position
   ranges for `moboyi`, `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`, and `guo`.
   Comparison is page/prefix-exact through the captured range under mirrored
@@ -1609,8 +1628,12 @@ commit is claimed measured.
   accepted. The supplemental macOS follow-up repairs the expanded 37- and
   59-character page-zero `ScriptTranslation` oracle shape at measured source
   `89875ee2`. Those benchmark rows do not amend this seven-input acceptance
-  list or close the requirement, and that source-scoped diagnostic makes no
-  claim about the seven-row state at a later Windows or reconciled commit.
+  list, and that source-scoped diagnostic makes no claim about the seven-row
+  state at a later Windows or reconciled commit. Completed independently at
+  clean production source `5879405c`: all captured pages for the seven inputs
+  match text, page number/size, page-local and global position, and final-page
+  state over tracked byte-backed Luna assets. No new exception, promotion,
+  input allowlist, or baked oracle data is used.
 - [x] **M59-PARITY-03 (Cangjie exact order)**: The marked `cangjie5`
   oracle-validation lane has a pinned upstream capture and matches candidate
   text and order page/prefix-exact through the librime-comparable range,
@@ -1641,7 +1664,7 @@ oracle candidates, and circular oracle-derived fixtures are prohibited.
   within four PageDown operations, and stable `beingo`, `zijiguk`, Luna,
   physical-page, and API-page behavior. Completed at `e37ee011` without golden
   edits. Evidence: `reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/`.
-- [ ] **M59-EVIDENCE-01 (reproducibility and provenance)**: Deterministic,
+- [x] **M59-EVIDENCE-01 (reproducibility and provenance)**: Deterministic,
   checked-in capture/classification/comparison tooling covers Lane A, Lane B,
   and expanded Cangjie. Preserved raw oracle and Yune outputs record inputs,
   page settings/options, source repositories and commits, oracle and Yune binary
@@ -1656,8 +1679,13 @@ oracle candidates, and circular oracle-derived fixtures are prohibited.
   Increment 4d adds clean, hash-bound marked/unmarked Cangjie all-page
   captures, strict comparators, create-new staging provenance, a preserved
   public-API owned/byte-backed 504/504 audit, and a source-bound five-round
-  packet. The broader multi-lane requirement remains open only for Lane B and
-  final reconciliation.
+  packet. Increment 4e adds the complete seven-input Lane B raw/comparator
+  packet, exact deployed 37/59 proof, native WEB-04 `8/8`, and five source-bound
+  performance rounds. `final-closeout/` reconciles every accepted lane with
+  source-current native, WASM, app/package, manifest/model-hash, and browser
+  receipts without storing generated binaries. It preserves every failed
+  serial attempt and targeted recovery rather than rewriting them as one clean
+  run.
 - [x] **M59-DEPLOY-01 (workspace fidelity)**: Workspace deployment matches the
   pinned librime `WorkspaceUpdate` behavior: a missing top-level schema allows
   valid siblings to deploy but produces aggregate failure; a malformed present
@@ -1665,14 +1693,23 @@ oracle candidates, and circular oracle-derived fixtures are prohibited.
   present dependency fails. Missing dependencies are not recorded as
   successfully built, and broad missing-top-level tolerance is not introduced.
   Landed with real-path regression coverage in `2ee0805f`.
-- [ ] **M59-GATES-01 (final release gates)**: The final source commit passes
+- [x] **M59-GATES-01 (final release gates)**: The final source commit passes
   `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
-  `cargo test --workspace`, and `cargo build --release -p yune-rime-api`; builds
-  source-current Emscripten WASM with `YUNE_WEB_WASM_REQUIRE_EMSCRIPTEN=1`;
-  passes runtime tests/build, app typecheck/build, schema-manifest validation,
-  focused M58 paging Playwright, the full local browser suite, and public
-  packaging build. Mandatory gates are not silently skipped, and M59 does not
-  close while any is red.
+  the full workspace-test surface through the retained successful prefix plus
+  targeted recovery, and `cargo build --release -p yune-rime-api`; it builds
+  source-current Emscripten WASM with `YUNE_WEB_WASM_REQUIRE_EMSCRIPTEN=1` and
+  passes app typecheck/build, schema-manifest validation, focused M58 paging
+  Playwright, the functional local browser suite, and public packaging build.
+  The unchanged runtime package is rebuilt by public packaging rather than
+  receiving a duplicate standalone reassurance run. The first broad workspace-
+  test invocation stopped on a host-memory
+  allocation abort during `cantonese_parity` after its completed targets passed;
+  the interrupted and never-reached targets were resumed nonduplicatively and
+  are green, with declared ignores preserved. The fail-closed Emscripten build,
+  typecheck, tracked app, public package, WEB-04 `3/3`, M58 `1/1`, and all unique
+  functional Playwright rows pass. The unrelated 150-sample startup benchmark
+  is explicitly not an M59 correctness gate. WEB-05's historical same-WASM row
+  is excluded rather than rebaselined across a different binary.
 
 ## Out of Scope
 
@@ -1860,21 +1897,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M58-JYUTPING-06 | M58 | Complete - `beingo` / 畀, `zi` / 諮, and the post-closeout `zijiguk` / standalone `諮` composition gap are dispositioned in canonical and TypeDuck/profile lanes; yune-web reaches each target through page navigation without first-page promotion, and `zijiguk` selection commits `諮` while recomposing `jiguk`; the repeated M55 ratchet miss is tracked separately as a performance residual |
 | M58-JYUTPING-07 | M58 | Complete - schema predicates, `jyut6ping3_mobile`, Track B/M55 names, WEB-03/public-demo manifests, and userdb key blast radius audited before any id split |
 | M58-JYUTPING-08 | M58 | Complete - canonical captures succeeded and were not substituted with TypeDuck v1.1.2 candidate output |
-| M59-REACH-01 | M59 | Complete - the retained leading-single mechanism is structure-driven and covered by source-truthful anti-gaming controls; M59 remains in progress |
+| M59-REACH-01 | M59 | Complete - the retained leading-single mechanism is structure-driven and covered by source-truthful anti-gaming controls |
 | M59-REACH-02 | M59 | Complete - Increment 3b (`2cb7e411`) makes deployed-algebra reachability default-on and schema-general without schema-id/per-input gates; seven required default-on/explicit-false deploy rows plus Stroke control and the 32-row five-run aggregate gate are green |
-| M59-REACH-03 | M59 | In progress - the seven-schema 3b default-on/explicit-false deploy matrix is complete; canonical manifest-to-acceptance one-to-one reconciliation, remaining manifest-derived real-path coverage, and the documented dual-mechanism relationship remain required for M59 closeout |
-| M59-REACH-04 | M59 | In progress - Increment 4d's source-bound one-build/four-reuse five-round 17+1 guard at `38e759f6` passes all 32 aggregate median rows and all 160 individual observations under unchanged ceilings; final acceptance after 4e is still required |
+| M59-REACH-03 | M59 | Complete - `5fa986d8` reconciles the exact 60-asset tree across both manifests, dispositions all 10 schema assets and three configuration carriers, links nine executable validation rows, and makes newly discovered schemas fail closed with an open acceptance row |
+| M59-REACH-04 | M59 | Complete - five fresh complete 17+1 rounds at final behavior source `5879405c` pass all 32 aggregate rows and all 160 individual observations under unchanged signed ceilings, including `n`, `ni`, `hao`, and both 37/59-character rows |
 | M59-PARITY-01 | M59 | Complete - Increment 4c closes the complete 13-input all-page Lane A capture at strict `13/13` across 5,705 candidate text/order/position rows, preedit, and commit preview, with zero exception or beyond-depth use; the historical 4a class-3 disposition is unused by the final capture |
-| M59-PARITY-02 | M59 | In progress - Lane B complete captured text, order, and position parity remains required with no new exceptions or promotion/input/oracle hacks; supplemental source `89875ee2` repairs only the exact 37/59 page-zero sentence/phrase slice, while source-current WEB-04 is red on two untoned-Luna Octagram rows that 4e must restore |
+| M59-PARITY-02 | M59 | Complete - clean production source `5879405c` matches every captured page and position for all seven Lane B inputs over tracked byte-backed Luna assets, preserves exact deployed 37/59 page shape, and restores native WEB-04 behavior to 8/8 without new exceptions or promotion/input/oracle hacks |
 | M59-PARITY-03 | M59 | Complete - clean source `38e759f6` closes CJ-1: marked upstream-Cangjie is strict all-page 12/12, the owning suite is 3 passed / 0 ignored, and unmarked control remains exact 12/12, with no new exception or promotion/input/oracle hack |
 | M59-NAV-01 | M59 | Complete - `e37ee011` centralizes profile-driven forward navigation in Engine, explicitly activates the TypeDuck product marker in both direct harnesses, passes Cantonese 41/41 and TypeDuck-Windows 4/4, keeps physical/API and Luna controls stable, and proves source-current browser WASM reaches `zi -> 諮` in four PageDown operations |
-| M59-EVIDENCE-01 | M59 | In progress - Increment 4d adds clean marked/unmarked Cangjie all-page captures and comparators, create-new staging provenance, a 504/504 public-API audit, and a source-bound one-build/four-reuse five-round packet; Lane B and final reconciliation still require deterministic raw provenance |
+| M59-EVIDENCE-01 | M59 | Complete - `final-closeout/` reconciles the accepted Lane A, Lane B, Cangjie, 37/59, REACH-03, performance, native recovery, fail-closed WASM, package, and browser receipts with hashes and no generated binaries |
 | M59-DEPLOY-01 | M59 | Complete - `2ee0805f` matches pinned librime missing/malformed top-level schema and dependency semantics with real-path regression coverage |
-| M59-GATES-01 | M59 | In progress - exact native release, source-current WASM, runtime/app, manifest, Playwright, browser, and packaging gates remain required for M59 closeout |
+| M59-GATES-01 | M59 | Complete - retained native prefix plus nonduplicative serial recovery, release build, fail-closed Emscripten, typecheck, tracked/public builds, WEB-04 3/3, M58 1/1, and all unique functional Playwright rows pass; startup benchmark and cross-binary WEB-05 baseline are explicitly excluded |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
-| WEB04-OCTAGRAM-04 | WEB-04 / M59 4e | Reopened - historical WEB-04 evidence proved all four rows, but source-current M59 is red on two Octagram rows that reproduce before 4b; untoned-Luna 4e must restore 4/4 and rerun Playwright without weakening the plain or missing-model controls |
+| WEB04-OCTAGRAM-04 | WEB-04 / M59 4e | Complete - native plain/null plus Octagram is 8/8, and source-current Playwright passes the three WEB-04 browser cases covering all four ranking rows plus plain and missing-model controls |
 | WEB04-OCTAGRAM-05 | WEB-04 | Complete - no `crates/`, `packages/yune-web-runtime`, default ABI, or support-contract widening is part of the browser harness slice |
 | WEB05-SURFACE-01 | WEB-05 | Complete - 108-row controls ledger fully dispositions existing web-harness controls/diagnostics with public-demo posture for all 13 retained surface rows and `no-surface` disposition for the unsupported key-binder shortcut reference |
 | WEB05-SURFACE-02 | WEB-05 | Complete - every retained surface row is operable in the dev harness through existing seams with localized labels, observable state, and shared `IS_PUBLIC_DEMO` gating for dev-power controls |
@@ -2170,16 +2207,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M52 Track A guardrails and blocker disposition requirements: 6 total, 6 complete, 0 active
 - M53 engine release-readiness audit requirements: 5 total, 5 complete, 0 active
 - M54 native octagram grammar support requirements: 7 total, 7 complete, 0 active
-- WEB-04 octagram debug harness requirements: 5 total, 4 complete, 1 reopened under M59 4e
+- WEB-04 octagram debug harness requirements: 5 total, 5 complete, 0 active
 - M55 native Track A match-or-beat requirements: 8 total, 8 complete, 0 active
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
 - M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
-- M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 5 complete, 6 in progress
+- M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 11 complete, 0 active
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
 - Mapped to phases: 433
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-12 - M59 full Path A remains locked and not closeable. Increment 4c closes Lane A strict `13/13`. Increment 4d at clean source `38e759f6` closes Cangjie CJ-1 with marked strict `12/12`, the owning suite at 3 passed / 0 ignored, and unmarked exact `12/12`; its five-round guard passes all 32 aggregate rows and all 160 observations under unchanged ceilings. The historical 4a class-3 disposition remains unchanged. Source-current WEB-04 remains a mandatory untoned-Luna 4e/final-closeout blocker. Lane B, REACH-03/04, evidence reconciliation, and final gates remain open; the M59 requirement count is 11 total, 6 complete, 5 in progress._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-13 - M59 is complete under full Path A at 11/11 requirements. Increment 4e at clean behavior source `5879405c` closes seven-input Lane B exact order, deployed 37/59 page shape, native WEB-04 `8/8`, and final performance acceptance at `32/32` aggregate plus `160/160` individual observations. Commit `5fa986d8` closes REACH-03 with exact 60-asset manifest/tree reconciliation. Final evidence records nonduplicative native recovery, fail-closed Emscripten, typecheck, tracked/public builds, and complete functional Playwright coverage; WEB-04 is 5/5. The historical 4a class-3 disposition remains unchanged and unused by final Lane A._

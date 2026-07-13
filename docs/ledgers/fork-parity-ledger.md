@@ -208,3 +208,17 @@ Two reachability mechanisms coexist deliberately; **document, do not unify** (ow
 - **`leading_syllable_reachability`** — upstream-librime-shaped single-character reachability (the owner "compose any non-lexicon phrase" requirement, oracle-captured against `librime 1.17.0`). **Default-ON for every schema** (M59 flip). Answers to **upstream librime**.
 
 Precedence in code: the injection sites are `if prefix_fallback { … } else if leading_syllable_reachability { … }` — on a schema with both (all jyutping under the flip), `prefix_fallback` is authoritative and `leading_syllable_reachability` never runs, so the byte-pinned TypeDuck-profile order is untouched. Unification stays available as a D-28 trigger-gated behavior-preserving refactor gated on the full jyutping pin suite, never a milestone blocker.
+
+M59-REACH-03 records this boundary in executable shipped-schema coverage at
+`5fa986d8`. The 60-asset manifest tree maps to 10 schema-asset dispositions,
+three configuration carriers, and nine executable validation rows. The direct
+tracked `jyut6ping3` row proves the real selectable profile path separately from
+the fixed eight-row default-on/explicit-false matrix. This registry does not
+merge the two mechanisms, redefine TypeDuck as the canonical candidate oracle,
+or authorize a schema-id split.
+
+M59 closes with this boundary unchanged. The final source-current browser and
+package gates preserve TypeDuck as a profile/regression lane, and the completed
+plan and evidence ledger remain the closeout record; M60 may formalize
+onboarding and explicit opt-out provenance but must not unify or reimplement the
+two mechanisms.

@@ -19,8 +19,9 @@ segmentation, fallback, and completion against upstream `rime/librime 1.17.0`
 plus pinned `rime/rime-cantonese`; and TypeDuck multilingual/comment/profile
 behavior against TypeDuck-HK/librime `v1.1.2` as a profile lane with
 grandfathered fixture-backed candidate guards. `jyut6ping3_typeduck` is the
-preferred future TypeDuck profile id, but the schema-id direction must not be
-implemented before M58's blast-radius audit and explicit user sign-off.
+preferred future TypeDuck profile id. M58's blast-radius audit is complete, but
+the schema-id direction still requires explicit user sign-off before
+implementation.
 Bit-for-bit librime feature parity is an explicit non-goal. A librime feature is
 implemented only when a named target needs it. See `decisions.md` D-24 (oracle
 precedence), D-25 (target-driven scope), and D-31 (canonical Jyutping versus
@@ -37,6 +38,14 @@ TypeDuck profile split).
   `docs/plans/active/p2-win01-plan-typeduck-windows-next.md`, for a Yune-first
   TypeDuck-Windows product/frontend. Phase 2 work must not widen Yune's default
   upstream ABI.
+- **M59 canonical reachability and exact-order closure is complete.** The final
+  accepted state has Lane A strict `13/13` across 5,705 captured positions,
+  Lane B exact for all seven captured inputs, Cangjie marked `12/12` with its
+  owning suite `3 passed / 0 ignored`, deployed 37/59 Luna page-shape parity,
+  schema-general default-on reachability coverage across all shipped schema
+  assets, and a final performance ratchet of `32/32` aggregate rows and
+  `160/160` individual observations. Completed plan:
+  `docs/plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`.
 - **M47 (iOS-budget native memory reduction) is complete for its portable scope.**
   Phase 0 + RED-01…RED-08 byte-backed the native footprint (table, prism, *and*
   rich comment/lookup payloads served from mmap'd compiled storage like
@@ -62,7 +71,7 @@ TypeDuck profile split).
   reference for architecture, stack, repo structure, coding/testing
   conventions, C ABI rules, integrations, and current risks.
 - [docs/roadmap.md](./docs/roadmap.md) - current dashboard, active sequence,
-  scope boundaries, and M37 readiness gates.
+  scope boundaries, and milestone readiness/closeout state.
 - [docs/ledgers/milestone-history.md](./docs/ledgers/milestone-history.md) - completed milestone
   ledger and historical plan/evidence pointers.
 - [docs/decisions.md](./docs/decisions.md) - the decision log (standing
@@ -83,9 +92,9 @@ TypeDuck profile split).
   `74cb52b78fb2411137a7643f6c8bc6517acfde69` is profile-only for TypeDuck
   multilingual/comment/profile behavior and historical fixture-backed profile
   candidate guards. The preferred future TypeDuck profile id is
-  `jyut6ping3_typeduck`, pending M58's schema/profile blast-radius audit and
-  explicit user sign-off. These are referenced upstream/fork repositories, not
-  local checkout paths.
+  `jyut6ping3_typeduck`; M58's schema/profile blast-radius audit is complete,
+  while explicit user sign-off remains pending. These are referenced
+  upstream/fork repositories, not local checkout paths.
 - **Idiomatic Rust over a C++ clone:** preserve librime-observable behavior at
   the ABI boundary; keep internals clean, typed Rust.
 - **Own each slice:** new behavior gets an owning module and owning tests; keep
@@ -140,6 +149,15 @@ TypeDuck profile split).
   high enough that skipping it would make the handoff unreliable. For docs-only
   or narrow mechanical edits, prefer targeted inspection/link checks over broad
   test suites.
+- Minimize duplicate verification. Reuse a source-current successful gate for
+  later evidence or docs-only commits, and do not rerun an entire broad suite
+  merely because its log needs to be packaged. If a broad gate stops for an
+  environmental reason after earlier phases passed, preserve that result and
+  rerun only the failed or still-unproved slice unless the release contract
+  explicitly requires a fresh end-to-end rerun.
+- Before starting any expensive gate, state why it is load-bearing for the
+  current change or milestone. Do not run speculative, overlapping, or
+  reassurance-only suites while an owning gate already covers the same claim.
 - Do not claim Sol Ultra was used unless the active runtime or agent thread
   reports it; checked-in configuration proves intent, not execution.
 

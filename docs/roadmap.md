@@ -28,8 +28,8 @@ rebuilds on real paths, cold/warm conformance covers `luna_pinyin` and TypeDuck
 `jyut6ping3`, user-data lifecycle gaps are dispositioned, and all discovered C
 ABI exports are guarded by an abuse-suite-ratcheted panic boundary without ABI
 widening. The corrected M56 closeout keeps optional poet storage out of the
-default product schema payload. M59's in-progress sentence/phrase ordering
-work extends the current artifact to `YUNE-POET/3`; stale `/2` artifacts are
+default product schema payload. M59's sentence/phrase ordering work extends the
+current artifact to `YUNE-POET/3`; stale `/2` artifacts are
 rejected and rebuilt rather than interpreted under the expanded layout.
 Independent macOS native verification then
 exposed a Yune-side Track A sentence-model construction anomaly in the long and
@@ -56,9 +56,14 @@ with no exception or beyond-depth use. The historical class-3 disposition is
 unused by this final capture. Canonical comments retain 854 explicitly
 non-gating differences outside D-48's text/order contract. Five fresh
 source-bound runs pass all 32 aggregate median rows under unchanged ceilings,
-with two individual red observations preserved. Source-current WEB-04 remains
-red on two Octagram rows assigned to the existing untoned-Luna 4e boundary;
-Lane A and Cangjie are complete, while Lane B, REACH-03/04, and M59 remain open.
+with two individual red observations preserved. Increment 4d closes Cangjie;
+Increment 4e at `5879405c` closes seven-input Lane B exact order, the deployed
+37/59 page shape, native WEB-04 `8/8`, and final `32/32` aggregate plus `160/160`
+individual performance acceptance. Commit `5fa986d8` closes REACH-03 with the
+exact 60-asset schema tree and acceptance registry. M59 is complete: the final
+packet records nonduplicative native recovery, fail-closed Emscripten,
+typecheck, tracked/public builds, and complete functional Playwright coverage;
+WEB-04 is restored to complete `5/5` and the plan is archived.
 A separate macOS follow-up, measured only at source `89875ee2`, repairs the
 expanded upstream Luna 37/59 page-shape defect, preserves compiled natural-log
 weight semantics and the inclusive 5% pronunciation boundary across stored
@@ -66,8 +71,9 @@ weight semantics and the inclusive 5% pronunciation boundary across stored
 source-scoped diagnostic, not a combined-source measurement or a new Mac
 performance gate, threshold, milestone, or change to the independently recorded
 Windows disposition. It did not cause or supersede that disposition.
-The current-main post-fix root-cause diagnostic at `afb7079b` now supersedes
-that packet's performance interpretation while retaining its repair evidence.
+The historical source-bound post-fix root-cause diagnostic at `afb7079b`
+supersedes that packet's performance interpretation for its source while
+retaining its repair evidence; it is not current-main evidence.
 Across all 17 Track A rows, Yune wins six aggregate rows and loses eleven. The
 apparent 37/59 wins (`0.399x` / `0.205x`) are concentrated in intermediate
 prefixes whose candidate text differs from librime; on candidate-text-matched
@@ -144,9 +150,9 @@ milestone changes.
 
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
-| Engine performance | M55 remains closed under the 2026-07-04 corrective Windows re-baseline and the signed M59 ceilings remain authoritative. M57 repaired the macOS compact-table sentence-model construction defect. The current-main macOS post-fix packet at `afb7079b` supersedes the earlier `89875ee2` performance read: aggregate 37/59 ratios are `0.399x` / `0.205x`, but the wins are dominated by behavior-different prefixes; the text-matched sensitivity ratios are `1.420x` / `1.204x`. Current main wins 6/17 aggregate Track A rows, while `n`/`zh` use `8.682x`/`4.092x` librime's instructions. Track B behavior/checksums remain M57-exact while its work shape moved. | Keep the signed Windows ratchet unchanged. Before optimizing, lock incremental Luna prefix/page behavior to the named oracle. Then attribute the translator residual and test behavior-preserving lazy page fill; follow with short MARISA/abbreviation work, byte-backed POET behavior/memory, and an exact-current matched Windows/macOS lane. No milestone is created by the diagnostic. |
+| Engine performance | M55 remains closed under the 2026-07-04 corrective Windows re-baseline and the signed M59 ceilings remain authoritative. M57 repaired the macOS compact-table sentence-model construction defect. The historical source-bound macOS post-fix packet at `afb7079b` supersedes the earlier `89875ee2` performance read for that source: aggregate 37/59 ratios are `0.399x` / `0.205x`, but the wins are dominated by behavior-different prefixes; the text-matched sensitivity ratios are `1.420x` / `1.204x`. That source wins 6/17 aggregate Track A rows, while `n`/`zh` use `8.682x`/`4.092x` librime's instructions. M59's authoritative current Windows acceptance is the unchanged-ceiling five-round packet at `5879405c`. | Keep the signed Windows ratchet unchanged. Any new cross-platform optimization needs an exact-current matched Windows/macOS lane; do not project `afb7079b` onto current main. No milestone is created by the historical diagnostic. |
 | TypeDuck/Jyutping product memory | M47's portable scope is complete. The comments-intact `jyut6ping3_mobile` keyboard profile reached about `67 MB` working set / `22 MB` private on Windows proxy evidence, with table, prism, and rich lookup/comment payloads byte-backed from compiled storage. | Apple `phys_footprint` proof remains unnumbered far-future platform validation. Optional RED-09/10/11-style polish needs a fresh owner-ranked plan. |
-| Web harness startup and memory | WEB-03 fixed the launch compiled-asset contract and the stale Jyutping source-fallback owner. WEB-04 added a default-off `luna_pinyin_octagram` debug profile with pinned-model delivery, diagnostics, four ranking rows, and fail-closed evidence. Source-current M59 has reopened the ranking row: two Octagram cases are red and reproduce before 4b, while model delivery remains intact. Current dashboard fair `luna_pinyin` browser comparison is `64.0 MiB` peak versus My RIME `16.0 MiB`; old Jyutping `893.1 MiB` remains only as a synthetic no-launch-assets negative control. | M59 Increment 4e must restore WEB-04 4/4 and rerun source-current browser evidence. Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another freshly measured owner, not another payload-only or stale-asset branch. |
+| Web harness startup and memory | WEB-03 fixed the launch compiled-asset contract and the stale Jyutping source-fallback owner. WEB-04's default-off `luna_pinyin_octagram` debug profile now has source-current native `8/8` plus three browser cases covering all four ranking rows, plain-Luna default-off, and missing-model fail-closed behavior. The M59 public package is source-current and hash-verified. Current dashboard fair `luna_pinyin` browser comparison remains `64.0 MiB` peak versus My RIME `16.0 MiB`; old Jyutping `893.1 MiB` remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another freshly measured owner. The historical WEB-05 same-WASM baseline remains source-bound and must not be rebaselined across a different binary. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
 | Future platform work | Platform-specific native frontends remain outside this repo roadmap. | Start a separate repository or separate plan before changing platform/application contracts. |
 
@@ -240,13 +246,14 @@ Current decision:
    (startup, session, eight key rows, peak memory, win rows `<1.00x`, Track B
    absolutes; green twice on 2026-07-04).
 2. **The `/2` byte-backed result is historical.** `113.2 MB` is a valid M55
-   opt-in record, but `/3` cannot inherit it. The current deployed `/3` control
-   emits zero candidates on all 99 prefixes and is rejected for behavior.
-3. **Behavior precedes the next memory decision.** Recover identical `/3`
-   prefix/page output first, then design incremental/lazy indexing and measure
-   memory and CPU separately under the standing gate. Do not assume a direct
-   scratch port is sufficient: the behavior-valid fixture multiplies logical
-   table/graph/DP work.
+   opt-in record, but `/3` cannot inherit it. M59 restores the named `/3`
+   prefix/page behavior: Lane B is exact for all seven captured inputs and the
+   37/59 deployed page shape is exact.
+3. **Any next memory decision needs its own measurement.** M59's behavior and
+   unchanged-ceiling performance acceptance do not establish a byte-backed `/3`
+   memory win. Design incremental/lazy indexing and measure memory and CPU
+   separately under the standing gate; do not assume a direct scratch port is
+   sufficient.
 
 ## Authoritative Sequence
 
@@ -267,13 +274,13 @@ Current decision:
    [`reports/evidence/m54-native-octagram-grammar-support/`](./reports/evidence/m54-native-octagram-grammar-support/).
    Plan:
    [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md).
-3. **WEB-04 octagram debug harness was historically complete and is reopened
-   under M59 4e.** The tracked `apps/yune-web`
+3. **WEB-04 octagram debug harness is complete and source-current under M59.** The tracked `apps/yune-web`
    harness exposes `luna_pinyin_octagram` as a default-off profile, delivers the
    pinned lotem `.gram` through `extraSharedAssets`, and records diagnostics.
    Historical evidence proved all four ranking rows plus the plain and missing-
-   model controls; source-current M59 is now red on two ranking rows, which 4e
-   must restore without weakening the delivery/fail-closed contract.
+   model controls. M59 4e restores the source-built native gate to `8/8`
+   without weakening the delivery/fail-closed contract; final Playwright passes
+   all three WEB-04 cases covering every ranking row and both controls.
    Evidence:
    [`reports/evidence/web04-octagram-debug-harness/`](./reports/evidence/web04-octagram-debug-harness/).
    Plan:
@@ -385,7 +392,7 @@ and current decision rules.
 | M0-M36 | Complete | Historical compatibility, frontend-validation, browser, product, and early performance build-out; see the milestone history ledger. |
 | M37-M45 | Complete / measured blockers | Native and browser performance history leading to the M45/WEB-01/M46 handoff; see the history ledger and completed plans. |
 | WEB-01/02/03 | Complete | Browser memory attribution, stale-asset owner classification, and launch compiled-asset contract. |
-| WEB-04 | Historically complete; ranking regression open under M59 4e | Default-off `luna_pinyin_octagram` browser debug harness with non-vendored pinned lotem `.gram`, delivery diagnostics, and fail-closed evidence. Source-current M59 is red on two of four Octagram ranking rows that reproduce before 4b; 4e owns restoration and source-current Playwright reproof. Historical plan: [`plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md`](./plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md). |
+| WEB-04 | Complete; source-current reproof under M59 | Default-off `luna_pinyin_octagram` browser debug harness with non-vendored pinned lotem `.gram`, delivery diagnostics, native `8/8`, and source-current Playwright covering all four ranking rows plus plain and missing-model controls. Historical plan: [`plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md`](./plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md). |
 | M47 | Complete for portable scope | TypeDuck/Jyutping comments-intact keyboard memory is under the Windows private/dirty proxy target; Apple `phys_footprint` proof remains parked. |
 | M48-M52 | Complete | Engine correctness, support-contract, and historical Track A guardrail closeouts; M52 is superseded by the corrective M55 per-key gate (the metric changed: context is read per keypress). |
 | M53 | Complete | Engine release-readiness audit (docs/evidence only): five-dimension consistency/ABI/guardrail/claim/link audit with adversarial verification; substantive invariants clean, no drift; corrected stale `README.md`/archived public-claim wording to the contract-accurate M52 lane-specific record. Plan: [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md). |
@@ -395,7 +402,7 @@ and current decision rules.
 | M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
 | WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, 13 retained Phase 1 surface rows implemented through existing `apps/yune-web` seams, unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior unchanged, public demo debug/admin controls plus WEB-05 raw/cache/asset data pulls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Named follow-ups: persisted-config deploy-cache freshness and current Extended charset browser-effect N/A. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
 | M58 | Complete for reachability; perf residual recorded | Canonical Jyutping candidate behavior was recaptured from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; TypeDuck-HK/librime v1.1.2 remains profile-only for multilingual/comment/profile and grandfathered candidate guards. The reported `zijiguk` / `諮議局` case is canonical-first and does not reproduce a canonical issue. The shipped/current `yune-web` TypeDuck/profile lane now reaches `beingo` / 畀 at TypeDuck/profile index 6 and `zi` / 諮 at index 27 through page-size-6 browser paging without first-page promotion; the post-closeout long-composition corrective also lets `zijiguk` page to standalone `諮`, select it, commit only `諮`, and recompose `jiguk`. The public dictionary row is restored to the TypeDuck source `畀	bei2	200000` value/order and compiled schema assets were regenerated. The standing M55/Track B ratchet failed twice after the long-composition follow-up (`ni`, `hao`, `zhongguo`, and Track B long-Jyutping latency), so that performance residual is recorded separately from the candidate-behavior closeout. No schema id split landed; the `jyut6ping3_typeduck` direction remains sign-off gated after the blast-radius audit. Evidence: [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/). Plan: [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
-| M59 | In progress — full Path A locked, NOT closeable | General single-character reachability is default-on and schema-general; the reverted gamed execution remains excluded. Workspace fidelity (`2ee0805f`), unified TypeDuck/profile navigation (`e37ee011`), compiled `sort: original` (`d55b203e`), and transformed-algebra reachability (`2cb7e411`) are complete. Increment 4a's historical `2/5` result and renewed 6,086-inversion class-3 disposition remain recorded; Increment 4b landed through `d508e05b` and received the designated Opus approval. Increment 4c at clean source `e11557e2` closes Lane A strict `13/13` across all 5,705 captured candidate text/order/position rows with zero exceptions or beyond-depth use. Increment 4d at clean source `38e759f6` closes CJ-1 and M59-PARITY-03: the explicitly marked upstream-Cangjie lane is strict `12/12`, the owning suite is `3 passed / 0 ignored`, and the unmarked control remains exact `12/12`. Its one-build/four-reuse five-round guard passes all 32 aggregate rows and all 160 observations under unchanged ceilings. M59-REACH-02 and M59-PARITY-01/03 are complete. Remaining close blockers are REACH-03; 4e Lane B exact order/WEB-04 repair; final executable-evidence reconciliation; final-commit REACH-04; and the exact native/WASM/runtime/app/manifest/Playwright/browser/packaging gates. Evidence: [`reports/evidence/m59-canonical-jyutping-reachability-parity/`](./reports/evidence/m59-canonical-jyutping-reachability-parity/). Plan: [`plans/active/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/active/m59-plan-canonical-jyutping-reachability-parity.md). |
+| M59 | Complete — full Path A D-47/D-48 closeout | General single-character reachability is default-on and schema-general; the reverted gamed execution remains excluded. Workspace fidelity (`2ee0805f`), unified TypeDuck/profile navigation (`e37ee011`), compiled `sort: original` (`d55b203e`), transformed-algebra reachability (`2cb7e411`), Lane A strict `13/13` over 5,705 rows (`e11557e2`), Cangjie strict `12/12` with `3 passed / 0 ignored` (`38e759f6`), seven-input Lane B exact order, exact 37/59 page shape, and unchanged-ceiling `32/32` aggregate plus `160/160` individual performance acceptance (`5879405c`) are complete. `5fa986d8` reconciles the 60-asset schema tree to 10 schema assets, three carriers, and nine validation rows. Final evidence records retained-prefix/serial native recovery, fail-closed Emscripten, typecheck, tracked/public builds, and all unique functional Playwright rows; WEB-04 is 5/5. The startup benchmark is outside M59 correctness, and WEB-05's historical same-WASM baseline is not rebaselined. The renewed historical class-3 exception remains unused by final Lane A. Evidence: [`reports/evidence/m59-canonical-jyutping-reachability-parity/`](./reports/evidence/m59-canonical-jyutping-reachability-parity/). Plan: [`plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/completed/m59-plan-canonical-jyutping-reachability-parity.md). |
 
 **M59 supplemental macOS diagnostic and resolution note (2026-07-10/11; no
 milestone or active-scope change):** At exact signed Increment-0 source
@@ -421,7 +428,7 @@ only when an engine target needs them; nothing here commits to a timeline.
 
 | In scope - target-driven, measured | Deferred - implement when an engine target needs it | Non-goal |
 | --- | --- | --- |
-| `luna_pinyin` core versus upstream `1.17.0`, including M17's null-grammar sentence/lattice slice; the source-scoped M59 supplemental repair at `89875ee2` for the one-best-sentence-then-phrase first page on the 37/59 rows and compiled-log weight handling; M18 punctuation processor slices; completed M42 abbreviation sentence parity for `cszysmsrsd`/`zybfshmsru`; completed M48 `jianli`/`biancheng` over-segmentation parity; and completed M54 native octagram-compatible grammar support for the named upstream target. The broader M59 seven-row complete-list lane remains open; the supplemental measurement does not assert its state on later Windows or reconciled commits. | Broader learned `.gram`/octagram behavior, contextual translation, and plugin-backed gears beyond the named M54 target | Bit-for-bit parity with librime internals |
+| `luna_pinyin` core versus upstream `1.17.0`, including M17's null-grammar sentence/lattice slice; M59's exact seven-input complete-list Lane B at `5879405c`; the deployed one-best-sentence-then-phrase 37/59 page shape; M18 punctuation processor slices; completed M42 abbreviation sentence parity for `cszysmsrsd`/`zybfshmsru`; completed M48 `jianli`/`biancheng` over-segmentation parity; and completed M54 native octagram-compatible grammar support for the named upstream target. The earlier source-scoped `89875ee2` packet remains historical provenance for the compiled-log/inclusive-5% repair, not the current Lane B acceptance source. | Broader learned `.gram`/octagram behavior, contextual translation, and plugin-backed gears beyond the named M54 target | Bit-for-bit parity with librime internals |
 | Common RIME schemas added through explicit breadth milestones | Further schema breadth only with fresh oracle fixtures and owning tests | Unbounded schema checklist work |
 | Canonical Cantonese/Jyutping candidate behavior: upstream `rime/librime 1.17.0` + pinned `rime/rime-cantonese`; exact Yune-facing id direction gated by M58 Phase 3 sign-off | TypeDuck multilingual comments/profile/display behavior and grandfathered profile candidate guards under current shipped ids until a signed-off split; preferred future id `jyut6ping3_typeduck` | Using bare `schema_id: jyut6ping3` as provenance when schema sources differ; renaming product ids without blast-radius/userdb evidence |
 | **Compose an arbitrary non-lexicon phrase one character at a time — DEFAULT-ON for EVERY schema** (M59 owner amendment 2026-07-07, binding): `luna_pinyin`, `jyut6ping3`/rime-cantonese, **cangjie/shape schemas**, and **any FUTURE schema (e.g. `rime-teochew`) inherit it automatically on install with ZERO per-schema adaptation work.** Engine/translator-level default (opt-out only, recorded reason). Delivered IN M59. | The M60 draft's capability-contract formalism / opt-out registry may follow later, but the default-on guarantee itself is **not** deferrable out of M59 | Per-input hardcoding or baked oracle data; **any per-schema adaptation work** required to enable the feature; a schema silently failing onboarding as "unsupported" |

@@ -1,0 +1,49 @@
+   Compiling yune-core v0.1.0 (C:\Users\laubonghaudoi\Documents\GitHub\yune\crates\yune-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.84s
+     Running tests\cantonese_parity.rs (C:\m59-final-native-target\debug\deps\cantonese_parity-322a54b2442b94bc.exe)
+
+running 41 tests
+test completion_prediction_and_enable_completion_parity ... ok
+test correction_minimal_distance_and_m_abbreviation_parity ... ok
+test letter_to_tone_preedit_uses_typeduck_oracle_rows_without_rewriting_input ... ok
+test m21_closeout_rows_match_typeduck_v112_real_dictionary_goldens ... ok
+test m21_nri_prefix_fallback_matches_typeduck_v112_real_dictionary_goldens ... ok
+test m21_prediction_count_matches_typeduck_v112_real_dictionary_goldens ... ok
+test m21_prediction_limit_preserves_m14_short_completion_boundary ... ok
+test m21_sentence_composition_matches_typeduck_v112_real_dictionary_goldens ... ok
+test m24_jigaajiusihaa_order_matches_typeduck_v112_dogfood_fixture ... ok
+test m28_followup_default_confirm_partial_candidate_recomposes ... ok
+test m28_followup_default_confirm_whole_sentence_keeps_full_primary_code_learning ... ok
+test m28_followup_upstream_style_phrase_prefix_ranking ... ok
+test m28_partial_selection_commits_consumed_span_and_recomposes_remaining_input ... ok
+test m28_whole_sentence_selection_keeps_full_primary_code_learning ... ok
+test m58_current_yune_web_profile_reaches_beingo_bei_at_typeduck_rank ... ok
+test m58_current_yune_web_profile_reaches_zi_advice_at_typeduck_rank ... ok
+test m58_profile_reachability_fixture_records_typeduck_v112_positions ... ok
+test m58_yune_web_public_dictionary_keeps_typeduck_profile_bei_row ... ok
+test options_combine_candidates_show_full_code_enable_sentence_parity ... ok
+test per_entry_userdb_pronunciation_parity ... ok
+test schema_menu_hiding_uses_typeduck_schema_list_surface ... ok
+test typeduck_v112_fork_parity_01_real_dictionary_fuzzy_fixture_is_locked ... ok
+test typeduck_v112_fork_parity_02_prefer_user_phrase_fixture_is_locked ... ok
+test typeduck_v112_fork_parity_06_letter_to_tone_fixture_is_locked ... ok
+test typeduck_v112_fork_parity_07_state_labels_fixture_is_locked ... ok
+test typeduck_v112_jyutping_oracle_fixture_is_locked ... ok
+test typeduck_v112_m14_completion_and_correction_fixtures_are_locked ... ok
+test typeduck_v112_m14_option_toggle_fixtures_are_locked ... ok
+test typeduck_v112_m14_schema_menu_surface_fixture_is_locked ... ok
+test typeduck_v112_m14_smoke_fixture_is_locked ... ok
+test typeduck_v112_m14_userdb_export_fixture_is_locked ... ok
+test typeduck_v112_m21_closeout_fixture_is_locked ... ok
+test typeduck_v112_m21_prediction_ranking_fixture_is_locked ... ok
+test typeduck_v112_m21_sentence_composition_fixture_is_locked ... ok
+test typeduck_v112_m24_dogfooding_fixture_is_locked ... ok
+test typeduck_v112_reverse_lookup_prompt_fixture_is_locked ... ok
+test typeduck_v112_windows_boundary_ngohaig_fixture_is_locked ... ok
+test yune_dictionary_lookup_filter_emits_oracle_bytes_from_source_rows ... ok
+test yune_jyut6ping3_ngohaig_comments_match_windows_boundary_oracle ... ok
+test yune_reverse_lookup_translator_joins_comments_like_v112_oracle ... ok
+test yune_userdb_same_code_low_weight_phrase_does_not_preempt_table_candidate ... ok
+
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 808.00s
+

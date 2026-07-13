@@ -1,0 +1,5 @@
+
+Running 1 test using 1 worker
+
+[1/1] yune-web.spec.ts:2800:3 › yune-web Browser E2E › M28 PARTIAL selecting a prefix candidate keeps the tail composing
+  1 passed (8.3s)

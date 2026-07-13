@@ -1,0 +1,26 @@
+
+> yune-web@0.0.0 build
+> npm run prepare:runtime && npm run worker -- --minify && vite build
+
+
+> yune-web@0.0.0 prepare:runtime
+> node scripts/prepare-runtime.mjs
+
+Prepared yune-web runtime from target\wasm32-unknown-emscripten\release\yune-web.js and target\wasm32-unknown-emscripten\release\yune-web.wasm
+
+> yune-web@0.0.0 worker
+> esbuild src/worker.ts --bundle --format=iife --outdir=public --minify
+
+
+  public\worker.js  46.9kb
+
+Done in 6ms
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 54 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  1.36 kB[22m[1m[22m[2m │ gzip:  0.50 kB[22m
+[2mdist/[22m[35massets/index-BN1Lc3t4.css  [39m[1m[2m 35.59 kB[22m[1m[22m[2m │ gzip:  7.89 kB[22m
+[2mdist/[22m[36massets/index-Bn4EV9nz.js   [39m[1m[2m238.86 kB[22m[1m[22m[2m │ gzip: 75.17 kB[22m
+[32m✓ built in 597ms[39m

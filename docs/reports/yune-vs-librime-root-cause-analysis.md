@@ -1,10 +1,21 @@
-# Current Yune Root-Cause Dashboard
+# Yune Root-Cause Dashboard
 
-Date: 2026-07-11 (current-main post-fix macOS diagnosis at `afb7079b`;
-standing gate remains the signed Windows corrective/M59 ratchet)
+Date: 2026-07-13 (M59 final acceptance plus historical diagnostics)
 
-This report keeps only the current root-cause read. Older milestone narratives,
-WEB-01/WEB-02/WEB-03 closeout detail, and superseded measurements remain in
+> **M59 supersession:** final Windows behavior source `5879405c` restores the
+> named `/3` behavior, closes Lane A/Lane B/Cangjie and the deployed 37/59
+> surfaces, and passes the unchanged signed ratchet at `32/32` aggregate rows
+> and `160/160` individual observations. `5fa986d8` adds the final 60-asset
+> REACH-03 registry without changing production behavior. Every `afb7079b`
+> macOS table, `6/17` read, `n`/`zh` instruction diagnosis, `/3` zero-candidate
+> statement, and priority map below is a historical, source-bound diagnostic—not
+> current-main acceptance or a current optimization backlog. No exact-current
+> cross-platform rerun has replaced it. Final evidence:
+> [`evidence/m59-canonical-jyutping-reachability-parity/final-closeout/`](./evidence/m59-canonical-jyutping-reachability-parity/final-closeout/).
+
+This report preserves the standing gate and historical root-cause context.
+Older milestone narratives, WEB-01/WEB-02/WEB-03 closeout detail, and
+superseded measurements remain in
 [`history/2026-06-28-yune-vs-librime-root-cause-analysis-pre-current-dashboard.md`](./history/2026-06-28-yune-vs-librime-root-cause-analysis-pre-current-dashboard.md).
 
 The native lane was re-baselined by the 2026-07-04 M55 **corrective series**:
@@ -39,7 +50,7 @@ on that scoped path, without first-page promotion. No schema id split, profile
 predicate change, userdb migration, or ABI widening landed; `jyut6ping3_typeduck`
 remains the preferred future TypeDuck profile id pending explicit sign-off.
 
-The current-main M59 macOS post-fix packet changes the performance diagnosis
+The historical M59 macOS post-fix packet changed the source-bound diagnosis
 without changing the signed Windows gate. It supersedes the earlier `89875ee2`
 performance read: the reconciled 37/59 aggregate ratios are `0.399x` and
 `0.205x`, but almost all Yune-faster long prefixes emit different candidate
@@ -53,7 +64,7 @@ thermal/noise-only explanations fit the full evidence. Full packet:
 
 ## Technical Summary
 
-- **Current M59 macOS root-cause read**: the long aggregate win is not
+- **Historical M59 macOS root-cause read (`afb7079b`)**: the long aggregate win is not
   behavior-normalized; the short deficit is real executed work; allocator and
   platform effects are partial; and librime's lazy demand-driven page pipeline
   is the leading design hypothesis, not yet a measured fix.
@@ -70,7 +81,7 @@ thermal/noise-only explanations fit the full evidence. Full packet:
   and are guard proofs, not performance rebaselines. M52's artifact and the
   pre-corrective M55 artifact are batch-shaped history (the metric changed).
 - **Current native latency disposition**: the signed Windows corrective/M59
-  packet remains the gate. The current-main Mac packet is diagnostic: Yune
+  packet remains the gate. The historical source-bound Mac packet is diagnostic: Yune
   wins 6/17 aggregate rows and loses 11. Its 37/59 aggregate wins
   (`0.399x`/`0.205x`) are not behavior-normalized; the text-matched prefix
   sensitivity is `1.420x`/`1.204x`. Short rows remain clear deficits, now
@@ -103,7 +114,7 @@ thermal/noise-only explanations fit the full evidence. Full packet:
 | Area | Current root cause | Evidence | Current status |
 | --- | --- | --- | --- |
 | Native Track A standing guardrail | Corrective per-key ratchet green twice, M56 closeout ratchet green, and M58 final-pass ratchet green | `corrective-2026-07-04/gate-run-d/`, `gate-run-e/`, `m56-productization-hardening/final/ratchet-run/`, and `m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/` | standing gate |
-| Current-main macOS post-fix diagnostic | Aggregate long wins are concentrated in behavior-different prefixes; short rows execute 4-9x the instructions | `m59-post-fix-root-cause-20260711/` | mixed behavior/engine/platform gap; no new gate |
+| Historical macOS post-fix diagnostic (`afb7079b`) | Aggregate long wins are concentrated in behavior-different prefixes; short rows execute 4-9x the instructions | `m59-post-fix-root-cause-20260711/` | source-bound diagnostic only; no new gate |
 | macOS Track A verification bundle | M57 accepts the macOS upstream Luna MARISA checksum pair and restores compact sentence-model construction | `m57-macos-track-a-sentence-model-parity/full-pass-1/` and `full-pass-2/` | repaired comparability defect |
 | Incremental Luna behavior divergence | Final 37/59 text/order is repaired, but no complete long-prefix snapshot is exact and `n`/`zh` pages still differ | 96-prefix behavior-strata trace and current candidate matrix | lock oracle behavior before speed claims |
 | Native long-row latency | Current aggregate ratios (`0.399x`/`0.205x`) measure behavior-different work; text-matched sensitivity is `1.420x`/`1.204x` | current five-round prefix-stratified packet | aggregate win is not an implementation-speed claim |
@@ -162,9 +173,9 @@ slower (bounded, guarded) on short keys and sentence rows. No unqualified
 
 ![Native Track A latency across all input dimensions, Yune vs librime 1.17.0](./evidence/dashboard-visuals-2026-07-04/native-track-a-latency-ratios.svg)
 
-## Native Track A Cause — Windows vs macOS
+## Native Track A Cause — historical Windows vs macOS comparison
 
-The current diagnostic compares Mac `afb7079b` with the near-code Windows
+The historical diagnostic compares Mac `afb7079b` with the near-code Windows
 Increment-4a packet at `ca52ec42`. It is still a **machine/source/compiler
 comparison**, not an OS-only experiment: CPU, compiler, linker, allocator, OS,
 payload metadata, background load, and the commits differ.
@@ -220,10 +231,11 @@ The following values remain the signed historical Windows `/2` gate context:
 | librime peer peak (same run) | `13.5 MB` | peer scale |
 | `poet.vocabulary` / `poet.entries_by_code` (opt-in) | `25.5 MB` / `3.0 MB` | `mmap_file_backed` in `YUNE-POET/2` |
 
-The direct scratch port was the historical `/2` guidance. Current `/3` work
-must first restore identical prefix/page behavior, then design incremental/lazy
-indexing and measure memory and CPU separately before re-running the default
-decision under the standing gate. This does not invalidate M47: the
+The direct scratch port was the historical `/2` guidance. At that historical
+source, `/3` work first required identical prefix/page behavior; M59 later
+restored the named behavior. Any future incremental/lazy indexing work must
+measure memory and CPU separately before re-running the default decision under
+the standing gate. This does not invalidate M47: the
 comments-intact `jyut6ping3_mobile` keyboard profile remains the separate
 iOS-target lane at about `22 MB` private in the lean probe.
 
@@ -293,7 +305,7 @@ browser-side blockers. Jyutping remains a launch guard lane, not a peer lane.
 - [`m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/threshold-check.csv`](./evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/threshold-check.csv)
   - latest closeout proof against the standing M55 threshold artifact
 - [`m59-post-fix-root-cause-20260711/`](./evidence/m59-post-fix-root-cause-20260711/)
-  - current-main five-round Mac packet, behavior-stratified long rows,
+  - historical source-bound five-round Mac packet, behavior-stratified long rows,
     instruction/allocator/API controls, Track B/M57 audit, and future-work order
 - [`thresholds/m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
 - Pre-corrective closeout state: git history at `531dbcf2` (preserved, not

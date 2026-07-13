@@ -1,0 +1,62 @@
+{
+  "diagnostic": {
+    "requestedSchemaId": "luna_pinyin",
+    "effectiveSchemaId": "luna_pinyin",
+    "delivered": false,
+    "modelId": null,
+    "expectedSha256": null,
+    "fallback": false,
+    "reason": "schema has no grammar/language",
+    "memoryBeforeBytes": 268435456,
+    "memoryAfterBytes": 268435456,
+    "memoryDeltaBytes": 0
+  },
+  "state": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "有會用",
+        "note": null,
+        "source": null,
+        "rowText": "1.有會用"
+      },
+      {
+        "index": 1,
+        "text": "優惠",
+        "note": null,
+        "source": null,
+        "rowText": "2.優惠"
+      },
+      {
+        "index": 2,
+        "text": "又會",
+        "note": null,
+        "source": null,
+        "rowText": "3.又會"
+      },
+      {
+        "index": 3,
+        "text": "幽會",
+        "note": null,
+        "source": null,
+        "rowText": "4.幽會"
+      },
+      {
+        "index": 4,
+        "text": "游回",
+        "note": null,
+        "source": null,
+        "rowText": "5.游回"
+      },
+      {
+        "index": 5,
+        "text": "油灰",
+        "note": null,
+        "source": null,
+        "rowText": "6.油灰"
+      }
+    ]
+  }
+}

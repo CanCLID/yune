@@ -1,0 +1,131 @@
+
+Running 81 tests using 1 worker
+
+[1/81] web05-control-surface.spec.ts:198:1 › WEB-05 same-WASM default behavior baseline/post comparison
+  1) web05-control-surface.spec.ts:198:1 › WEB-05 same-WASM default behavior baseline/post comparison 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "cb05289d6a72562ed349d82e94eec0e5681f40fe681aa823107670be3c68dc22"
+    Received: "041051fb1f836fc3035d233c282767e91916522ece3382f9d33e086648030cef"
+
+      206 |   const baseline = await readJson<typeof current>(baselinePath);
+      207 |   await writeJson(postPath, current);
+    > 208 |   expect(current.wasmSha256).toBe(baseline.wasmSha256);
+          |                              ^
+      209 |   expect(current.appVersion).toBe(baseline.appVersion);
+      210 |   expect(current.snapshots).toEqual(baseline.snapshots);
+      211 | });
+        at C:\Users\laubonghaudoi\Documents\GitHub\yune\apps\yune-web\e2e\web05-control-surface.spec.ts:208:30
+
+    Error Context: test-results\web05-control-surface-WEB--2cace-or-baseline-post-comparison\error-context.md
+
+
+[2/81] web05-control-surface.spec.ts:213:1 › WEB-05 deploy and diagnostics controls expose observable state
+[3/81] web05-control-surface.spec.ts:284:1 › WEB-05 option controls synchronize through optionChanged
+[4/81] web05-control-surface.spec.ts:311:1 › WEB-05 inspector renders parsed debug fields
+[5/81] web05-control-surface.spec.ts:323:1 › WEB-05 dev-power controls are visible only in the harness
+[6/81] web05-control-surface.spec.ts:343:1 › WEB-05 public demo hides debug and admin controls
+[7/81] yune-web.spec.ts:1586:3 › yune-web Browser E2E › WASM heap metrics populate after startup and typing
+[8/81] yune-web.spec.ts:1630:3 › yune-web Browser E2E › Default Jyutping composes clean multi-syllable shipped phrase
+[9/81] yune-web.spec.ts:1742:3 › yune-web Browser E2E › UI language switcher localizes labels and persists @bilingual
+[10/81] yune-web.spec.ts:1799:3 › yune-web Browser E2E › M31 PUBLIC yune-web exposes only supported public controls @smoke @public-smoke
+[11/81] yune-web.spec.ts:1848:3 › yune-web Browser E2E › M31 PUBLIC startup uses pruned public assets and warm cache @smoke @public-smoke
+[12/81] yune-web.spec.ts:1923:3 › yune-web Browser E2E › M31 PUBLIC output standards are browser-visible and AI stays default-off @smoke @public-smoke
+[13/81] yune-web.spec.ts:1976:3 › yune-web Browser E2E › M31 UX yune-web redesign renders live public harness @smoke @public-smoke
+[14/81] yune-web.spec.ts:2139:3 › yune-web Browser E2E › M24 startup timing trace records loading phases
+[15/81] yune-web.spec.ts:2178:3 › yune-web Browser E2E › M25 DOGFOOD-01 startup uses release wasm and records deploy cache reuse
+[16/81] yune-web.spec.ts:2255:3 › yune-web Browser E2E › M25 DOGFOOD-03 typing stays out of global loading and records key latency
+[17/81] yune-web.spec.ts:2328:3 › yune-web Browser E2E › M26 PERF startup attribution records nested initialization owners
+[18/81] yune-web.spec.ts:2416:3 › yune-web Browser E2E › M27 PERF startup marker records evidence version
+[19/81] yune-web.spec.ts:2460:3 › yune-web Browser E2E › M29 PERF startup and typing attribution records owner spans
+[20/81] yune-web.spec.ts:2620:3 › yune-web Browser E2E › M27 PERF controls classify loading boundaries
+[21/81] yune-web.spec.ts:2781:3 › yune-web Browser E2E › M28 PARTIAL selecting a prefix candidate keeps the tail composing
+  2) yune-web.spec.ts:2781:3 › yune-web Browser E2E › M28 PARTIAL selecting a prefix candidate keeps the tail composing 
+
+    Error: candidate 下場 should be visible
+
+    expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 0
+    Received:    -1
+
+      834 |     selectedIndex,
+      835 |     `candidate ${text} should be visible`,
+    > 836 |   ).toBeGreaterThanOrEqual(0);
+          |     ^
+      837 |   expect(
+      838 |     selectedIndex,
+      839 |     `candidate ${text} should be selectable by number key`,
+        at selectVisibleCandidateByText (C:\Users\laubonghaudoi\Documents\GitHub\yune\apps\yune-web\e2e\yune-web.spec.ts:836:5)
+        at C:\Users\laubonghaudoi\Documents\GitHub\yune\apps\yune-web\e2e\yune-web.spec.ts:2837:20
+
+    Error Context: test-results\yune-web-yune-web-Browser--6aba8-te-keeps-the-tail-composing\error-context.md
+
+
+[22/81] yune-web.spec.ts:2887:3 › yune-web Browser E2E › M28 FOLLOW-UP Space default confirm recomposes partial candidate tail
+[23/81] yune-web.spec.ts:2971:3 › yune-web Browser E2E › M28 FOLLOW-UP auto-composition follows upstream Jyutping ranking fixture
+[24/81] yune-web.spec.ts:3037:3 › yune-web Browser E2E › M26 PERF keydown-to-paint diagnostics cover typing, paging, and reverse lookup
+[25/81] yune-web.spec.ts:3152:3 › yune-web Browser E2E › M25 DOGFOOD-02 page-size slider caps rows and preserves candidate paging
+[26/81] yune-web.spec.ts:3240:3 › yune-web Browser E2E › M25 DOGFOOD-08 Jyutping bare grave routes to Luna reverse lookup
+[27/81] yune-web.spec.ts:3291:3 › yune-web Browser E2E › Reverse lookup summary follows active schema
+[28/81] yune-web.spec.ts:3312:3 › yune-web Browser E2E › M25 DOGFOOD-04 schema switcher shares the top control row
+[29/81] yune-web.spec.ts:3367:3 › yune-web Browser E2E › M25 DOGFOOD-05 Cangjie lookup control lives in the top control band
+[30/81] yune-web.spec.ts:3408:3 › yune-web Browser E2E › M25 DOGFOOD-06 display controls precede live session controls
+[31/81] yune-web.spec.ts:3460:3 › yune-web Browser E2E › M25 DOGFOOD-10 IME settings align with the playground content edges
+[32/81] yune-web.spec.ts:3512:3 › yune-web Browser E2E › M25 DOGFOOD-07 binary controls use checkbox affordance
+[33/81] yune-web.spec.ts:3573:3 › yune-web Browser E2E › M25 DOGFOOD-09 candidate menu layout uses radio choices
+[34/81] yune-web.spec.ts:3644:3 › yune-web Browser E2E › M24 phrase comments render without raw control markers
+[35/81] yune-web.spec.ts:3659:3 › yune-web Browser E2E › M24 compound candidate rows stay compact with details in the dictionary panel
+[36/81] yune-web.spec.ts:3681:3 › yune-web Browser E2E › M25 DOGFOOD-11 visible lookup candidates expose dictionary details
+[37/81] yune-web.spec.ts:3746:3 › yune-web Browser E2E › M24 jigaajiusihaa order is recorded against the current pinned expectation
+[38/81] yune-web.spec.ts:3781:3 › yune-web Browser E2E › M24/M25 settings labels are Cantonese-first and grouped by engine, display, and session
+[39/81] yune-web.spec.ts:3799:3 › yune-web Browser E2E › M24 display languages use a checklist with deterministic primary language
+[40/81] yune-web.spec.ts:3823:3 › yune-web Browser E2E › M24 candidate page-size slider limits the visible candidate page
+[41/81] yune-web.spec.ts:3855:3 › yune-web Browser E2E › M24 candidate menu layout is a frontend-only horizontal or vertical setting
+[42/81] yune-web.spec.ts:3892:3 › yune-web Browser E2E › M24 engine status strip explains labeled state
+[43/81] yune-web.spec.ts:3916:3 › yune-web Browser E2E › M24 schema switcher uses bundled real schema names
+[44/81] yune-web.spec.ts:3935:3 › yune-web Browser E2E › M24/M25 Jyutping reverse lookup accepts current Mandarin pinyin affix input
+[45/81] yune-web.spec.ts:3961:3 › yune-web Browser E2E › M24 Chinese typeface picker applies full family names to visible Chinese surfaces
+[46/81] yune-web.spec.ts:4031:3 › yune-web Browser E2E › M24 dogfood UI uses only local Tailwind components
+[47/81] yune-web.spec.ts:4096:3 › yune-web Browser E2E › Composition after typing schema-valid keys @smoke
+[48/81] yune-web.spec.ts:4112:3 › yune-web Browser E2E › Candidate list visible @smoke
+[49/81] yune-web.spec.ts:4143:3 › yune-web Browser E2E › M41 default startup preserves deploy-time engine defaults
+[50/81] yune-web.spec.ts:4197:3 › yune-web Browser E2E › M13 AI-off identity and AI-on second-pass source labels @smoke
+[51/81] yune-web.spec.ts:4248:3 › yune-web Browser E2E › M22 Bucket 2 inspector preserves classic candidate output @smoke
+[52/81] yune-web.spec.ts:4316:3 › yune-web Browser E2E › M22 Bucket 1 controls are browser-visible or honestly documented N/A @smoke
+[53/81] yune-web.spec.ts:4395:3 › yune-web Browser E2E › M22 Bucket 3 schema switcher loads Jyutping, Cangjie, and Luna
+[54/81] yune-web.spec.ts:4440:3 › yune-web Browser E2E › M22 Bucket 3 reverse lookup works for Cangjie and Luna
+[55/81] yune-web.spec.ts:4473:3 › yune-web Browser E2E › M13 AI commit safety
+[56/81] yune-web.spec.ts:4523:3 › yune-web Browser E2E › M20 showcase control surface exposes honest controls
+[57/81] yune-web.spec.ts:4583:3 › yune-web Browser E2E › M20 User Dictionary persists schema customization
+[58/81] yune-web.spec.ts:4690:3 › yune-web Browser E2E › M42 User Dictionary learns classic Space commits and survives reload
+[59/81] yune-web.spec.ts:4758:3 › yune-web Browser E2E › M20 Prediction never first persists schema customization @smoke
+[60/81] yune-web.spec.ts:4817:3 › yune-web Browser E2E › M20 guided scenarios use real yune-web assets
+[61/81] yune-web.spec.ts:4861:3 › yune-web Browser E2E › M20 combine_candidates changes real candidate output
+[62/81] yune-web.spec.ts:4891:3 › yune-web Browser E2E › M20 prediction threshold changes real candidate output
+[63/81] yune-web.spec.ts:4930:3 › yune-web Browser E2E › Shift toggles ASCII mode from focused input
+[64/81] yune-web.spec.ts:4972:3 › yune-web Browser E2E › M20 live session controls use setOption-visible output
+[65/81] yune-web.spec.ts:5005:3 › yune-web Browser E2E › M20 display controls change rendering and record mobile-only side-lookup limits
+[66/81] yune-web.spec.ts:5078:3 › yune-web Browser E2E › M16 combine candidates browser default matches M14
+[67/81] yune-web.spec.ts:5095:3 › yune-web Browser E2E › M16 sentence composition browser path matches M14 @smoke
+[68/81] yune-web.spec.ts:5144:3 › yune-web Browser E2E › M16 completion browser path matches M14
+[69/81] yune-web.spec.ts:5161:3 › yune-web Browser E2E › M16 correction browser path matches M14 visible before/after
+[70/81] yune-web.spec.ts:5252:3 › yune-web Browser E2E › M16 simplification toggle converts browser candidates through OpenCC
+[71/81] yune-web.spec.ts:5272:3 › yune-web Browser E2E › M16 schema menu and userdb pronunciation limits are explicit
+[72/81] yune-web.spec.ts:5316:3 › yune-web Browser E2E › Candidate paging
+[73/81] yune-web.spec.ts:5336:3 › yune-web Browser E2E › Keyboard paging shortcuts do not error
+[74/81] yune-web.spec.ts:5372:3 › yune-web Browser E2E › Candidate selection → commit output
+[75/81] yune-web.spec.ts:5395:3 › yune-web Browser E2E › Number keys commit visible candidates
+[76/81] yune-web.spec.ts:5410:3 › yune-web Browser E2E › Deletion removes candidate or triggers delete path
+[77/81] yune-web.spec.ts:5434:3 › yune-web Browser E2E › Backspace mutates composition
+[78/81] yune-web.spec.ts:5458:3 › yune-web Browser E2E › Deploy returns visible success/error evidence
+[79/81] yune-web.spec.ts:5500:3 › yune-web Browser E2E › Customize returns visible success/error evidence
+[80/81] yune-web.spec.ts:5560:3 › yune-web Browser E2E › Persistence sync after deploy/customize mutations
+[81/81] yune-web.spec.ts:5591:3 › yune-web Browser E2E › Reload/reinitialize preserves persisted state
+  2 failed
+    web05-control-surface.spec.ts:198:1 › WEB-05 same-WASM default behavior baseline/post comparison 
+    yune-web.spec.ts:2781:3 › yune-web Browser E2E › M28 PARTIAL selecting a prefix candidate keeps the tail composing 
+  4 skipped
+  65 did not run
+  10 passed (33.6s)

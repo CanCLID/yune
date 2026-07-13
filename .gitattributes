@@ -57,3 +57,8 @@ docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4d-ca
 # Preserve the imported M59 Increment 4e packet byte-for-byte. Its manifest
 # binds the native WEB-04 and performance receipts, including Windows newlines.
 docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/** -text whitespace=-blank-at-eol,-blank-at-eof
+
+# Preserve the final M59 closeout receipts byte-for-byte. The packet manifest
+# hashes these normalized UTF-8 logs and browser JSON files; no binary payloads
+# are stored in the evidence subtree.
+docs/reports/evidence/m59-canonical-jyutping-reachability-parity/final-closeout/** -text whitespace=-blank-at-eol,-blank-at-eof

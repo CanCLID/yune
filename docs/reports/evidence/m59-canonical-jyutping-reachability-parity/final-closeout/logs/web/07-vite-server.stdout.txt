@@ -1,0 +1,18 @@
+
+> yune-web@0.0.0 start
+> npm run prepare:runtime && npm run worker -- --sourcemap && vite --host --host 127.0.0.1 --port 5173 --strictPort
+
+
+> yune-web@0.0.0 prepare:runtime
+> node scripts/prepare-runtime.mjs
+
+Prepared yune-web runtime from target\wasm32-unknown-emscripten\release\yune-web.js and target\wasm32-unknown-emscripten\release\yune-web.wasm
+
+> yune-web@0.0.0 worker
+> esbuild src/worker.ts --bundle --format=iife --outdir=public --sourcemap
+
+Re-optimizing dependencies because lockfile has changed
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m443[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m

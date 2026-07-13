@@ -1,0 +1,15 @@
+{
+  "diagnostic": {
+    "requestedSchemaId": "luna_pinyin_octagram",
+    "effectiveSchemaId": "luna_pinyin",
+    "delivered": false,
+    "modelId": "zh-hant-t-essay-bgw",
+    "expectedSha256": "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+    "sourcePath": "dev/octagram/zh-hant-t-essay-bgw.gram",
+    "fallback": true,
+    "reason": "TypeError: Failed to fetch",
+    "memoryBeforeBytes": 268435456,
+    "memoryAfterBytes": 268435456,
+    "memoryDeltaBytes": 0
+  }
+}

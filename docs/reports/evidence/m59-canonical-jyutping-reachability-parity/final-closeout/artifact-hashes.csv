@@ -1,0 +1,4 @@
+path,bytes,sha256
+target/wasm32-unknown-emscripten/release/yune-web.js,72675,789a53a9cee928d925cc5418b794990f3a3211d088ec3525a3ef31beb21a32d0
+target/wasm32-unknown-emscripten/release/yune-web.wasm,3337954,041051fb1f836fc3035d233c282767e91916522ece3382f9d33e086648030cef
+apps/yune-web/public/schema/dev/octagram/zh-hant-t-essay-bgw.gram,10513408,574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3

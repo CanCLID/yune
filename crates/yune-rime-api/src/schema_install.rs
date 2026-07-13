@@ -374,6 +374,14 @@ fn install_schema_dictionary_translator_from_config(
     let show_full_code = find_config_value(schema_config, &format!("{name_space}/show_full_code"))
         .and_then(config_scalar_bool)
         .unwrap_or(!has_affix);
+    let spelling_hints = find_config_value(schema_config, &format!("{name_space}/spelling_hints"))
+        .and_then(config_scalar_int)
+        .and_then(|value| usize::try_from(value).ok())
+        .unwrap_or(0);
+    let always_show_comments =
+        find_config_value(schema_config, &format!("{name_space}/always_show_comments"))
+            .and_then(config_scalar_bool)
+            .unwrap_or(false);
     let prediction_weight_threshold = find_config_value(
         schema_config,
         &format!("{name_space}/prediction_weight_threshold"),
@@ -560,6 +568,8 @@ fn install_schema_dictionary_translator_from_config(
     .with_combine_candidates(combine_candidates)
     .with_affix(prefix, suffix)
     .with_show_full_code(show_full_code)
+    .with_spelling_hints(spelling_hints)
+    .with_always_show_comments(always_show_comments)
     .with_prediction_never_first(prediction_never_first)
     .with_prefix_fallback(prefix_fallback)
     .with_leading_syllable_reachability(leading_syllable_reachability);
@@ -651,11 +661,11 @@ fn source_dictionary_translator(
     spelling_algebra: &[String],
     sentence_policy: SentencePolicy,
 ) -> StaticTableTranslator {
-    let toned = dictionary
-        .entries()
-        .iter()
-        .any(|entry| entry.code.bytes().any(|byte| byte.is_ascii_digit()));
-    if sentence_policy == SentencePolicy::UpstreamScript && toned {
+    if sentence_policy == SentencePolicy::UpstreamScript {
+        // ScriptTranslation always consumes a deployed prism/SyllableGraph,
+        // including untoned Standard schemas such as luna_pinyin. Source-mode
+        // fallback must therefore build the same bounded prism surface instead
+        // of silently falling back to ordinary exact/prefix translation.
         source_script_translator(dictionary, spelling_algebra)
     } else {
         StaticTableTranslator::from_dictionary(dictionary)
@@ -3270,7 +3280,7 @@ fn config_scalar_f32(value: &Value) -> Option<f32> {
 mod sentence_policy_tests {
     use super::{
         schema_has_active_upstream_table_policy, sentence_policy_from_schema,
-        source_script_translator, SentencePolicy,
+        source_dictionary_translator, source_script_translator, SentencePolicy,
     };
     use serde_yaml::Value;
     use yune_core::{
@@ -3434,6 +3444,33 @@ mod sentence_policy_tests {
         let candidates = translator.translate("being");
         assert_eq!(candidates[0].text, "AM");
         assert_eq!(candidates[0].source, CandidateSource::Table);
+    }
+
+    #[test]
+    fn untoned_source_fallback_builds_the_standard_script_surface_graph() {
+        let dictionary = TableDictionary::new([
+            TableEntry::new("mo", "M", 100.0),
+            TableEntry::new("bo", "B", 80.0),
+            TableEntry::new("mobo", "EXPLICIT", 70.0),
+        ]);
+        let translator =
+            source_dictionary_translator(dictionary, &[], SentencePolicy::UpstreamScript)
+                .with_sentence(true)
+                .with_sentence_policy(SentencePolicy::UpstreamScript)
+                .with_preset_vocabulary([PresetVocabularyEntry::new("MB", 1_000.0)])
+                .with_upstream_sentence_model(10);
+
+        let candidates = translator.translate("mobo");
+        assert!(candidates
+            .iter()
+            .any(|candidate| candidate.text == "EXPLICIT"));
+        assert!(candidates.iter().any(|candidate| candidate.text == "MB"));
+        assert!(
+            candidates
+                .iter()
+                .all(|candidate| candidate.source != CandidateSource::Sentence),
+            "the reliable untoned phrase suppresses Poet without bypassing the collector stream"
+        );
     }
 }
 

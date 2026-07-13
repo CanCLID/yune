@@ -56,6 +56,7 @@ const TYPEDUCK_EXP_E_SQUARED: f32 = 1618.178;
 
 struct ProducedCandidate {
     candidate: Candidate,
+    merge_quality: f32,
     upstream_script_translation: bool,
     producer_index: usize,
     merge_policy: TranslationMergePolicy,
@@ -64,12 +65,14 @@ struct ProducedCandidate {
 impl ProducedCandidate {
     fn new(
         candidate: Candidate,
+        merge_quality: f32,
         upstream_script_translation: bool,
         producer_index: usize,
         merge_policy: TranslationMergePolicy,
     ) -> Self {
         Self {
             candidate,
+            merge_quality,
             upstream_script_translation,
             producer_index,
             merge_policy,
@@ -94,18 +97,28 @@ impl CandidateBatch {
     fn extend(
         &mut self,
         candidates: Vec<Candidate>,
+        merge_qualities: Option<Vec<f32>>,
         upstream_script_translation: bool,
         producer_index: usize,
         merge_policy: TranslationMergePolicy,
     ) {
-        let produced = candidates.into_iter().map(|candidate| {
-            ProducedCandidate::new(
-                candidate,
-                upstream_script_translation,
-                producer_index,
-                merge_policy,
-            )
-        });
+        let produced = candidates
+            .into_iter()
+            .enumerate()
+            .map(|(index, candidate)| {
+                let merge_quality = merge_qualities
+                    .as_ref()
+                    .and_then(|qualities| qualities.get(index))
+                    .copied()
+                    .unwrap_or(candidate.quality);
+                ProducedCandidate::new(
+                    candidate,
+                    merge_quality,
+                    upstream_script_translation,
+                    producer_index,
+                    merge_policy,
+                )
+            });
         match self {
             Self::Plain(batch) | Self::ProducerAware(batch) => batch.extend(produced),
         }
@@ -1486,15 +1499,40 @@ impl Engine {
         } else {
             self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping
         };
+        let userdb_allows_bounded = self.userdb.entries().is_empty()
+            || (self.active_upstream_script_translation_index().is_some()
+                && self
+                    .userdb
+                    .lookup(
+                        &UserDbLookupRequest::new(self.context.composition.input.as_str())
+                            .with_predictive(true),
+                    )
+                    .is_empty());
         schema_allows_bounded
             && self.rankers.is_empty()
-            && self.userdb.entries().is_empty()
+            && userdb_allows_bounded
             && self.filters.iter().all(|filter| {
                 matches!(
                     filter.name(),
                     "charset_filter" | "dictionary_lookup_filter" | "simplifier" | "uniquifier"
                 )
             })
+    }
+
+    fn active_upstream_script_translation_index(&self) -> Option<usize> {
+        let mut active = self
+            .translators
+            .iter()
+            .enumerate()
+            .filter_map(|(index, translator)| {
+                translator
+                    .active_upstream_script_translation(&self.context)
+                    .then_some(index)
+            });
+        match (active.next(), active.next()) {
+            (Some(index), None) => Some(index),
+            _ => None,
+        }
     }
 
     fn sync_translator_scratch_state(&mut self) {
@@ -1517,19 +1555,7 @@ impl Engine {
         let input = self.context.composition.input.clone();
         let producer_aware = !self.userdb.entries().is_empty();
         let active_upstream_script_translation = if producer_aware {
-            let mut active =
-                self.translators
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(index, translator)| {
-                        translator
-                            .active_upstream_script_translation(&self.context)
-                            .then_some(index)
-                    });
-            match (active.next(), active.next()) {
-                (Some(index), None) => Some(index),
-                _ => None,
-            }
+            self.active_upstream_script_translation_index()
         } else {
             None
         };
@@ -1577,6 +1603,7 @@ impl Engine {
                     candidate_list_complete &= result.is_complete;
                     candidates.extend(
                         result.candidates,
+                        result.merge_qualities,
                         upstream_script_translation,
                         index,
                         result.merge_policy,
@@ -1598,6 +1625,7 @@ impl Engine {
                     candidate_list_complete &= result.is_complete;
                     candidates.extend(
                         result.candidates,
+                        result.merge_qualities,
                         upstream_script_translation,
                         index,
                         result.merge_policy,
@@ -1638,6 +1666,7 @@ impl Engine {
                 crate::m37_record_translator(translator_start.elapsed());
                 candidates.extend(
                     result.candidates,
+                    result.merge_qualities,
                     upstream_script_translation,
                     index,
                     result.merge_policy,
@@ -1725,6 +1754,7 @@ fn merge_userdb_candidates(
         let user_code_len = result.comparable_code_len();
         let exact_user_phrase = comparable_userdb_codes_equal(&result.code, input);
         let user_candidate = result.candidate();
+        let user_merge_quality = user_candidate.quality;
         let script_stream_anchor = candidates
             .iter()
             .position(|produced| produced.upstream_script_translation)
@@ -1737,8 +1767,10 @@ fn merge_userdb_candidates(
                     candidates
                         .iter()
                         .position(|produced| {
-                            let ordering =
-                                candidate_quality_order(&user_candidate, &produced.candidate);
+                            let ordering = produced
+                                .merge_quality
+                                .partial_cmp(&user_merge_quality)
+                                .unwrap_or(Ordering::Equal);
                             ordering == Ordering::Less
                                 || (ordering == Ordering::Equal
                                     && active_upstream_script_translation
@@ -1803,6 +1835,7 @@ fn merge_userdb_candidates(
             insertion_index,
             ProducedCandidate::new(
                 user_candidate,
+                user_merge_quality,
                 script_stream_user,
                 if script_stream_user {
                     active_upstream_script_translation
@@ -1854,7 +1887,7 @@ fn remerge_upstream_script_translation_stream(candidates: &mut Vec<ProducedCandi
     while script_rows.peek().is_some() && other_rows.peek().is_some() {
         let script = script_rows.peek().expect("script head should exist");
         let other = other_rows.peek().expect("other head should exist");
-        let ordering = candidate_quality_order(&script.candidate, &other.candidate);
+        let ordering = produced_merge_quality_order(script, other);
         let take_script = ordering == Ordering::Less
             || (ordering == Ordering::Equal && script.producer_index < other.producer_index);
         let produced = if take_script {
@@ -1931,9 +1964,9 @@ fn remerge_translation_stream_heads(candidates: &mut Vec<ProducedCandidate>) {
 
 fn translation_head_order(left: &ProducedCandidate, right: &ProducedCandidate) -> Ordering {
     match left.merge_policy {
-        TranslationMergePolicy::Default | TranslationMergePolicy::UpstreamTable => {
-            candidate_quality_order(&left.candidate, &right.candidate)
-        }
+        TranslationMergePolicy::Default
+        | TranslationMergePolicy::UpstreamScript
+        | TranslationMergePolicy::UpstreamTable => produced_merge_quality_order(left, right),
         TranslationMergePolicy::ReverseLookup {
             normal_prefix_quality,
         } => {
@@ -1950,6 +1983,13 @@ fn translation_head_order(left: &ProducedCandidate, right: &ProducedCandidate) -
             }
         }
     }
+}
+
+fn produced_merge_quality_order(left: &ProducedCandidate, right: &ProducedCandidate) -> Ordering {
+    right
+        .merge_quality
+        .partial_cmp(&left.merge_quality)
+        .unwrap_or(Ordering::Equal)
 }
 
 fn equal_code_user_phrase_insert_index(user_quality: f32, candidates_len: usize) -> usize {

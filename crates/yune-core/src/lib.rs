@@ -279,6 +279,7 @@ impl CandidateRequest {
 pub enum TranslationMergePolicy {
     #[default]
     Default,
+    UpstreamScript,
     UpstreamTable,
     ReverseLookup {
         normal_prefix_quality: bool,
@@ -291,6 +292,10 @@ pub struct TranslationResult {
     pub is_complete: bool,
     pub full_count: Option<usize>,
     pub merge_policy: TranslationMergePolicy,
+    /// Optional librime-comparable qualities aligned with `candidates` for
+    /// producer-head election. Candidate `quality` remains free to encode a
+    /// translator-local stable order.
+    pub merge_qualities: Option<Vec<f32>>,
 }
 
 impl TranslationResult {
@@ -301,6 +306,7 @@ impl TranslationResult {
             is_complete: true,
             full_count: None,
             merge_policy: TranslationMergePolicy::Default,
+            merge_qualities: None,
         }
     }
 
@@ -315,12 +321,25 @@ impl TranslationResult {
             candidates,
             full_count: include_full_count.then_some(full_count),
             merge_policy: TranslationMergePolicy::Default,
+            merge_qualities: None,
         }
     }
 
     #[must_use]
     pub const fn with_merge_policy(mut self, merge_policy: TranslationMergePolicy) -> Self {
         self.merge_policy = merge_policy;
+        self
+    }
+
+    #[must_use]
+    pub fn with_merge_qualities(mut self, merge_qualities: Option<Vec<f32>>) -> Self {
+        assert!(
+            merge_qualities
+                .as_ref()
+                .map_or(true, |qualities| qualities.len() == self.candidates.len()),
+            "translation merge qualities must align with candidates"
+        );
+        self.merge_qualities = merge_qualities;
         self
     }
 }

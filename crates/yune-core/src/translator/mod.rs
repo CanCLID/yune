@@ -14,8 +14,9 @@ use crate::dictionary::{
 };
 use crate::filter::contains_extended_cjk;
 use crate::poet::{
-    upstream_script_raw_candidate_quality, GrammarProvider, PoetByteSource,
-    RankedScriptPhraseCandidate, SentenceCodeSpan, UpstreamSentenceModel, WeightedSentenceCodeSpan,
+    upstream_script_candidate_merge_quality, upstream_script_raw_candidate_quality,
+    GrammarProvider, PoetByteSource, RankedScriptPhraseCandidate, SentenceCodeSpan,
+    UpstreamSentenceModel, UpstreamSentenceScratch, WeightedSentenceCodeSpan,
 };
 use crate::spelling_algebra::{DeployedSpellingType, ExpandedSpellingEntry, SpellingAlgebra};
 use crate::{
@@ -58,6 +59,7 @@ const PREFIX_FALLBACK_CACHE_MAX_PREFIXES: usize = 64;
 const PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES: usize = 32 * 1024;
 const PREFIX_FALLBACK_CACHE_MAX_ROW_BYTES: usize = 16 * 1024;
 const PREFIX_FALLBACK_CACHE_MAX_ENTRY_BYTES: usize = 512 * 1024;
+
 /// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture
 /// and the M28 follow-up upstream-Jyutping composition fixture; install only for the
 /// jyut6ping3 TypeDuck profile.
@@ -228,7 +230,7 @@ struct ConcatenatedSurfaceCode {
 struct UpstreamScriptDirectChunk<'a> {
     code: &'a ConcatenatedSurfaceCode,
     rows: Box<dyn Iterator<Item = LookupCandidate<'a>> + 'a>,
-    head: Option<(Candidate, f64)>,
+    head: Option<(Candidate, f64, f32)>,
 }
 
 #[derive(Clone, Debug)]
@@ -248,6 +250,20 @@ impl UpstreamScriptSurfaceGraph {
 
     fn is_one_syllable_prefix_end(&self, end: usize) -> bool {
         self.one_syllable_prefix_ends.binary_search(&end).is_ok()
+    }
+
+    fn is_identity_normal_model_graph(&self, input: &str) -> bool {
+        self.interpreted_end == input.len()
+            && self.direct_edges_by_start.iter().flatten().any(|_| true)
+            && self.direct_edges_by_start.iter().flatten().all(|syllable| {
+                !syllable.choices.is_empty()
+                    && syllable.choices.iter().all(|choice| {
+                        choice.normal
+                            && !choice.abbreviation
+                            && choice.credibility == 0.0
+                            && choice.code == input[syllable.start..syllable.end]
+                    })
+            })
     }
 
     fn preedit(&self, input: &str, delimiter: char) -> Option<String> {
@@ -811,6 +827,7 @@ struct PrefixFallbackWindowCacheEntry {
 #[derive(Clone, Debug)]
 struct PrefixFallbackBatch {
     candidates: Vec<Candidate>,
+    merge_qualities: Option<Vec<f32>>,
     truncated: bool,
     owns_reachability: bool,
     span_promotions: HashMap<String, CandidateSource>,
@@ -946,6 +963,15 @@ impl BoundedUpstreamScriptCache {
                                 )
                         },
                     ))
+                    .saturating_add(
+                        entry
+                            .result
+                            .merge_qualities
+                            .as_ref()
+                            .map_or(0, |qualities| {
+                                qualities.capacity().saturating_mul(mem::size_of::<f32>())
+                            }),
+                    )
             }))
     }
 }
@@ -966,6 +992,9 @@ fn bounded_upstream_script_cache_entry_bytes(input: &str, result: &TranslationRe
                 .map(estimate_candidate_bytes)
                 .sum::<usize>(),
         )
+        .saturating_add(result.merge_qualities.as_ref().map_or(0, |qualities| {
+            qualities.capacity().saturating_mul(mem::size_of::<f32>())
+        }))
 }
 
 fn order_current_head_chunks<T>(
@@ -1727,6 +1756,8 @@ pub struct StaticTableTranslator {
     prefix: String,
     suffix: String,
     show_full_code: bool,
+    spelling_hints: usize,
+    always_show_comments: bool,
     single_letter_sentence_guard_enabled: bool,
     prediction_weight_threshold: Option<f32>,
     prediction_never_first: bool,
@@ -1846,6 +1877,8 @@ impl StaticTableTranslator {
             prefix: String::new(),
             suffix: String::new(),
             show_full_code: true,
+            spelling_hints: 0,
+            always_show_comments: false,
             single_letter_sentence_guard_enabled: false,
             prediction_weight_threshold: None,
             prediction_never_first: false,
@@ -1928,6 +1961,8 @@ impl StaticTableTranslator {
             prefix: String::new(),
             suffix: String::new(),
             show_full_code: true,
+            spelling_hints: 0,
+            always_show_comments: false,
             single_letter_sentence_guard_enabled: false,
             prediction_weight_threshold: None,
             prediction_never_first: false,
@@ -2001,6 +2036,8 @@ impl StaticTableTranslator {
             prefix: String::new(),
             suffix: String::new(),
             show_full_code: true,
+            spelling_hints: 0,
+            always_show_comments: false,
             single_letter_sentence_guard_enabled: false,
             prediction_weight_threshold: None,
             prediction_never_first: false,
@@ -2087,6 +2124,8 @@ impl StaticTableTranslator {
             prefix: String::new(),
             suffix: String::new(),
             show_full_code: true,
+            spelling_hints: 0,
+            always_show_comments: false,
             single_letter_sentence_guard_enabled: false,
             prediction_weight_threshold: None,
             prediction_never_first: false,
@@ -2244,6 +2283,20 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn with_show_full_code(mut self, show_full_code: bool) -> Self {
         self.show_full_code = show_full_code;
+        self.reset_bounded_translation_caches();
+        self
+    }
+
+    #[must_use]
+    pub fn with_spelling_hints(mut self, spelling_hints: usize) -> Self {
+        self.spelling_hints = spelling_hints;
+        self.reset_bounded_translation_caches();
+        self
+    }
+
+    #[must_use]
+    pub fn with_always_show_comments(mut self, always_show_comments: bool) -> Self {
+        self.always_show_comments = always_show_comments;
         self.reset_bounded_translation_caches();
         self
     }
@@ -2985,12 +3038,10 @@ impl StaticTableTranslator {
         {
             return None;
         }
-        // A direct table code is already served by the ordinary exact path. In
-        // particular, do not make identity-spelling schemas rescan every UTF-8
-        // substring merely because their script policy is enabled.
-        if self.storage.has_code(input) || self.untoned_dictionary() {
-            return None;
-        }
+        let untoned_dictionary = self.untoned_dictionary();
+        let untoned_character_code_model = untoned_dictionary
+            .then(|| self.upstream_sentence_model())
+            .flatten();
         let (Some(prism), Some(syllabary_codes)) =
             (self.prism_payload.as_ref(), self.storage.syllabary_codes())
         else {
@@ -3011,34 +3062,40 @@ impl StaticTableTranslator {
         let mut edges_by_start = vec![Vec::<SurfaceSyllable>::new(); boundaries.len()];
         let mut derived_syllable_choices = HashMap::<String, SurfaceCodeChoices>::new();
         vertex_abbreviation[0] = Some(false);
-
         for start_index in 0..boundaries.len().saturating_sub(1) {
             let Some(path_abbreviation) = vertex_abbreviation[start_index] else {
                 continue;
             };
             let start = boundaries[start_index];
+            let prism_start = crate::m37_metrics_enabled().then(Instant::now);
+            // Syllabifier uses a Darts common-prefix walk at each live vertex.
+            // Do the same here instead of issuing an exact prism lookup for
+            // every substring. This keeps long 37/59-byte identity input work
+            // linear in live graph vertices and never scans `storage.all_codes`
+            // per substring.
+            let direct_lookups =
+                prism.common_prefix_canonical_codes(&input[start..], syllabary_codes, usize::MAX);
+            if let Some(start) = prism_start {
+                crate::m37_record_prism_lookup(start.elapsed(), direct_lookups.len());
+            }
             for end_index in start_index + 1..boundaries.len() {
                 let end = boundaries[end_index];
                 if end - start > MAX_SENTENCE_ALIAS_LOOKUP_BYTES {
                     break;
                 }
                 let spelling = &input[start..end];
-                let prism_start = crate::m37_metrics_enabled().then(Instant::now);
-                // Script translation consumes the complete deployed spelling
-                // family.  In particular a one-letter abbreviation such as
-                // `n` can fan out to substantially more than the ordinary
-                // sentence-alias cap; truncating that descriptor family makes
-                // its order depend on prism storage position instead of raw
-                // dictionary weight.
-                let lookups = prism.lookup_canonical_codes(spelling, syllabary_codes);
-                if let Some(start) = prism_start {
-                    crate::m37_record_prism_lookup(start.elapsed(), lookups.len());
-                }
                 let mut choices = derived_syllable_choices
                     .get(spelling)
                     .cloned()
                     .unwrap_or_default();
-                for lookup in lookups {
+                // Script translation consumes the complete deployed spelling
+                // family. In particular a one-letter abbreviation such as `n`
+                // can fan out to substantially more than the ordinary sentence
+                // alias cap; common-prefix `limit` therefore remains unlimited.
+                for (_, lookup) in direct_lookups
+                    .iter()
+                    .filter(|(consumed, _)| *consumed == end - start)
+                {
                     if lookup.correction {
                         continue;
                     }
@@ -3076,27 +3133,39 @@ impl StaticTableTranslator {
                             }
                         }
                     }
-                    let (choice_code, choice_syllable_id) =
-                        if source_code_syllable_count(lookup.code) == Some(1) {
-                            (lookup.code, lookup.syllable_id)
-                        } else if lookup.abbreviation {
-                            // Yune's compact prism is built from flattened table
-                            // codes, whereas librime's prism descriptors point at
-                            // syllable IDs and Table::Query walks the remaining
-                            // syllables through the dictionary trie. Recover that
-                            // first live syllable from a multi-syllable abbreviation
-                            // descriptor so phrase-only readings remain traversable
-                            // without admitting the whole phrase as a one-span row.
-                            let Some(prefix) = first_toned_syllable_prefix(lookup.code) else {
-                                continue;
-                            };
-                            if self.storage.prefix_candidates(prefix).next().is_none() {
-                                continue;
-                            }
-                            (prefix, usize::MAX)
-                        } else {
+                    let structurally_one_syllable = source_code_syllable_count(lookup.code)
+                        == Some(1)
+                        || (untoned_dictionary
+                            && untoned_character_code_model.map_or(true, |model| {
+                                model.has_normal_character_code(lookup.code)
+                            }));
+                    let (choice_code, choice_syllable_id) = if structurally_one_syllable {
+                        // An untoned deployed prism descriptor is already a
+                        // canonical syllable only when a single-character
+                        // dictionary reading owns that code. Yune's compact
+                        // prism can also contain flattened phrase codes;
+                        // admitting those as one edge produces thousands of
+                        // non-librime syllable ids and bypasses Table::Query's
+                        // packed-tail traversal.
+                        (lookup.code, lookup.syllable_id)
+                    } else if lookup.abbreviation {
+                        // Yune's compact prism is built from flattened table
+                        // codes, whereas librime's prism descriptors point at
+                        // syllable IDs and Table::Query walks the remaining
+                        // syllables through the dictionary trie. Recover that
+                        // first live syllable from a multi-syllable abbreviation
+                        // descriptor so phrase-only readings remain traversable
+                        // without admitting the whole phrase as a one-span row.
+                        let Some(prefix) = first_toned_syllable_prefix(lookup.code) else {
                             continue;
                         };
+                        if self.storage.prefix_candidates(prefix).next().is_none() {
+                            continue;
+                        }
+                        (prefix, usize::MAX)
+                    } else {
+                        continue;
+                    };
                     choices.merge(SurfaceCodeChoice {
                         code: choice_code.to_owned(),
                         syllable_id: choice_syllable_id,
@@ -3317,6 +3386,26 @@ impl StaticTableTranslator {
                 None,
                 chunk.code.credibility,
             );
+            let merge_quality = upstream_script_candidate_merge_quality(
+                raw_quality,
+                chunk.code.credibility,
+                weight_domain,
+            );
+            let code_syllables = source_code_syllable_count(&chunk.code.code)
+                .unwrap_or_else(|| candidate.text.chars().count());
+            let formatted_preedit = self.preedit_format.apply(surface);
+            if self.spelling_hints == 0
+                || code_syllables > self.spelling_hints
+                || (!self.always_show_comments && candidate.comment == formatted_preedit)
+            {
+                // ScriptTranslation::GetComment exposes Spell(code) only when
+                // `spelling_hints` is nonzero and the code fits that syllable
+                // bound. Unless `always_show_comments` is active, the rendered
+                // spelling must also differ from the preedit. `show_full_code`
+                // belongs to TableTranslation and must not leak raw codes into
+                // the canonical script lane.
+                candidate.comment.clear();
+            }
             candidate.quality = upstream_script_raw_candidate_quality(
                 end,
                 raw_quality,
@@ -3335,7 +3424,7 @@ impl StaticTableTranslator {
                 TableEntryWeightDomain::Raw => f64::from(raw_quality).max(f64::EPSILON).ln(),
                 TableEntryWeightDomain::NaturalLog => f64::from(raw_quality),
             } + f64::from(chunk.code.credibility);
-            chunk.head = Some((candidate, comparison_weight));
+            chunk.head = Some((candidate, comparison_weight, merge_quality));
             return;
         }
     }
@@ -3394,7 +3483,7 @@ impl StaticTableTranslator {
                     chunks.swap(active, index);
                 }
             }
-            let (candidate, _) = chunks[active]
+            let (candidate, _, merge_quality) = chunks[active]
                 .head
                 .take()
                 .expect("active script chunk should be nonempty");
@@ -3409,6 +3498,7 @@ impl StaticTableTranslator {
                 family.push(RankedScriptPhraseCandidate {
                     candidate,
                     code_order: format!("\0{emitted:020}"),
+                    merge_quality,
                 });
                 emitted += 1;
             }
@@ -3576,7 +3666,18 @@ impl StaticTableTranslator {
         filter_by_charset: bool,
         limit: Option<usize>,
     ) -> Option<PrefixFallbackBatch> {
+        self.upstream_script_translation_with_scratch(input, filter_by_charset, limit, None)
+    }
+
+    fn upstream_script_translation_with_scratch(
+        &self,
+        input: &str,
+        filter_by_charset: bool,
+        limit: Option<usize>,
+        mut sentence_scratch: Option<&mut UpstreamSentenceScratch>,
+    ) -> Option<PrefixFallbackBatch> {
         let graph = self.upstream_script_surface_segmentation(input)?;
+        let identity_model_graph = graph.is_identity_normal_model_graph(input);
         let visible_limit = limit.map(|limit| limit.saturating_add(1));
         // Each direct family counts distinct eligible rows before applying its
         // K+1 cap. The first K+1 unique rows of the concatenated family union
@@ -3584,7 +3685,7 @@ impl StaticTableTranslator {
         let (direct, _) =
             self.upstream_script_direct_families(input, &graph, filter_by_charset, visible_limit)?;
         let spans = Self::upstream_script_model_spans(&graph);
-        let model_candidates = if let Some(visible) = visible_limit {
+        let mut model_candidates = if let Some(visible) = visible_limit {
             let eligible = |text: &str, end: usize| {
                 self.upstream_script_text_at_end_allowed(
                     text,
@@ -3609,6 +3710,16 @@ impl StaticTableTranslator {
                 })
                 .unwrap_or_default()
         };
+        // Direct Table::Query rows are the deployed DictEntryCollector stream.
+        // The model reconstructs compiler-generated preset-vocabulary rows that
+        // may be absent from Yune's compact source table. Put those reconstructed
+        // rows in the later collector phase for equal weights; any model row
+        // that also exists in the direct stream is rebound to the direct
+        // current-head position below. This mirrors EntryCollector's explicit
+        // pass before ScriptEncoder without a text/input allowlist.
+        for ranked in &mut model_candidates {
+            ranked.code_order.insert(0, '\u{1}');
+        }
         let mut candidate_indices = HashMap::<String, usize>::new();
         let mut candidates = Vec::<RankedScriptPhraseCandidate>::new();
         for ranked in model_candidates {
@@ -3628,6 +3739,11 @@ impl StaticTableTranslator {
         // DictEntryIterator's collector order, so it owns ordering. Enrich a
         // reconstructed row with direct-table metadata when available, and add
         // only direct rows that the reconstruction genuinely lacks.
+        let direct_positions = direct
+            .iter()
+            .enumerate()
+            .map(|(index, ranked)| (ranked.candidate.text.clone(), index))
+            .collect::<HashMap<_, _>>();
         for mut direct in direct {
             if !self.upstream_script_partial_candidate_allowed(&direct.candidate, &graph) {
                 continue;
@@ -3636,6 +3752,8 @@ impl StaticTableTranslator {
                 let ranked = &mut candidates[index];
                 direct.candidate.quality = ranked.candidate.quality;
                 ranked.candidate = direct.candidate;
+                ranked.code_order = direct.code_order;
+                ranked.merge_quality = direct.merge_quality;
                 continue;
             }
             candidate_indices.insert(direct.candidate.text.clone(), candidates.len());
@@ -3649,40 +3767,64 @@ impl StaticTableTranslator {
                 };
             }
         }
-        candidates.sort_by(|left, right| {
-            right
-                .candidate
-                .quality
-                .partial_cmp(&left.candidate.quality)
-                .unwrap_or(Ordering::Equal)
-                .then_with(|| left.code_order.cmp(&right.code_order))
-        });
+        if !self.sort_by_weight
+            && candidates
+                .iter()
+                .all(|ranked| direct_positions.contains_key(&ranked.candidate.text))
+        {
+            // `sort: original` keeps source order inside a Table::Query chunk;
+            // a later high-weight tail cannot jump its accepted current head.
+            // When every reconstructed row exists in the deployed table, its
+            // current-head tournament is therefore authoritative end to end.
+            candidates.sort_by_key(|ranked| direct_positions[&ranked.candidate.text]);
+        } else {
+            candidates.sort_by(|left, right| {
+                right
+                    .candidate
+                    .quality
+                    .partial_cmp(&left.candidate.quality)
+                    .unwrap_or(Ordering::Equal)
+                    .then_with(|| left.code_order.cmp(&right.code_order))
+            });
+        }
         let has_full_phrase = candidates.iter().any(|ranked| {
             !matches!(
                 ranked.candidate.source,
                 CandidateSource::PartialTable { .. }
             )
         });
-        if !has_full_phrase {
+        if !has_full_phrase && self.enable_sentence {
             // No score-safe prefix certificate exists for an unseen table-trie
             // path. Record the exact cold fallback explicitly instead of
             // presenting it as bounded work; the retained Candidate window is
             // still capped below and warm requests use the page cache.
             crate::m37_record_full_list_fallback();
             let model_limit = limit.map(|limit| limit.saturating_add(1)).unwrap_or(100);
-            let sentence = self.upstream_sentence_model().and_then(|model| {
+            let sentence_candidates = self.upstream_sentence_model().map(|model| {
                 // Do not cap the table-trie walk by discovery count. A late
                 // path can own a higher-weight sentence than every earlier BFS
                 // state, so such a budget cannot preserve the complete prefix.
                 // This full fallback is reached only when no direct full phrase
                 // exists; ordinary bounded typing stays on the direct K+1 path.
-                let candidates = model
-                    .candidates_for_weighted_surface_code_spans_with_limit_excluding(
-                        input,
-                        &spans,
-                        model_limit,
-                        &self.dictionary_exclude,
-                    );
+                if identity_model_graph {
+                    if let Some(scratch) = sentence_scratch.as_mut() {
+                        return model.candidates_for_input_with_limit_and_scratch(
+                            input,
+                            model_limit,
+                            scratch,
+                        );
+                    }
+                } else if let Some(scratch) = sentence_scratch.as_mut() {
+                    scratch.clear();
+                }
+                model.candidates_for_weighted_surface_code_spans_with_limit_excluding(
+                    input,
+                    &spans,
+                    model_limit,
+                    &self.dictionary_exclude,
+                )
+            });
+            let sentence = sentence_candidates.and_then(|candidates| {
                 candidates.into_iter().find(|candidate| {
                     candidate.source == CandidateSource::Sentence
                         && self.is_dictionary_text_allowed(&candidate.text)
@@ -3690,24 +3832,31 @@ impl StaticTableTranslator {
                 })
             });
             if let Some(sentence) = sentence {
+                let merge_quality = sentence.quality;
                 candidates.insert(
                     0,
                     RankedScriptPhraseCandidate {
                         candidate: sentence,
                         code_order: String::new(),
+                        merge_quality,
                     },
                 );
             }
         }
-        let mut candidates = candidates
-            .into_iter()
-            .map(|ranked| ranked.candidate)
-            .collect::<Vec<_>>();
         let mut seen = HashSet::new();
-        candidates.retain(|candidate| seen.insert(candidate.text.clone()));
+        candidates.retain(|ranked| seen.insert(ranked.candidate.text.clone()));
         if candidates.is_empty() {
             return None;
         }
+        let (mut candidates, mut merge_qualities): (Vec<_>, Vec<_>) = candidates
+            .into_iter()
+            .map(|ranked| {
+                (
+                    ranked.candidate,
+                    self.initial_quality + ranked.merge_quality,
+                )
+            })
+            .unzip();
         if let Some(preedit) = graph.preedit(input, self.delimiters.chars().next().unwrap_or(' ')) {
             let preedit = self.preedit_format.apply(&preedit);
             for candidate in &mut candidates {
@@ -3723,11 +3872,13 @@ impl StaticTableTranslator {
         if let Some(limit) = limit {
             if candidates.len() > limit {
                 candidates.truncate(limit);
+                merge_qualities.truncate(limit);
                 truncated = true;
             }
         }
         let batch = PrefixFallbackBatch {
             candidates,
+            merge_qualities: Some(merge_qualities),
             truncated,
             owns_reachability: true,
             span_promotions: HashMap::new(),
@@ -6693,6 +6844,7 @@ impl StaticTableTranslator {
         (
             PrefixFallbackBatch {
                 candidates,
+                merge_qualities: None,
                 truncated,
                 owns_reachability: saw_prefix,
                 span_promotions: HashMap::new(),
@@ -6773,6 +6925,7 @@ impl StaticTableTranslator {
         (
             PrefixFallbackBatch {
                 candidates,
+                merge_qualities: None,
                 truncated,
                 owns_reachability: saw_prefix,
                 span_promotions: HashMap::new(),
@@ -6846,6 +6999,7 @@ impl StaticTableTranslator {
         }
         PrefixFallbackBatch {
             candidates,
+            merge_qualities: None,
             truncated,
             owns_reachability: true,
             span_promotions: HashMap::new(),
@@ -7139,6 +7293,7 @@ impl StaticTableTranslator {
                 }
                 return PrefixFallbackBatch {
                     candidates: Vec::new(),
+                    merge_qualities: None,
                     truncated: false,
                     owns_reachability: false,
                     span_promotions,
@@ -7183,6 +7338,7 @@ impl StaticTableTranslator {
                 }
                 return PrefixFallbackBatch {
                     candidates: Vec::new(),
+                    merge_qualities: None,
                     truncated: false,
                     owns_reachability: false,
                     span_promotions,
@@ -7205,6 +7361,7 @@ impl StaticTableTranslator {
             }
             return PrefixFallbackBatch {
                 candidates: Vec::new(),
+                merge_qualities: None,
                 truncated: false,
                 owns_reachability: false,
                 span_promotions,
@@ -7371,6 +7528,7 @@ impl StaticTableTranslator {
         }
         PrefixFallbackBatch {
             candidates,
+            merge_qualities: None,
             truncated,
             owns_reachability: true,
             span_promotions,
@@ -7952,9 +8110,12 @@ impl StaticTableTranslator {
         // identical qualities for their shared prefix so downstream producer
         // merges cannot distinguish the typing window from the on-demand full
         // list. A reciprocal positional rank stays inside the translator's
-        // open unit band without depending on how many tail rows were fetched.
+        // unit band without depending on how many tail rows were fetched. The
+        // head occupies the unit boundary so an equal-weight ordinary table
+        // head ties it and the stable producer merge preserves translator
+        // prescription order, matching librime.
         for (index, candidate) in candidates.iter_mut().enumerate() {
-            candidate.quality = self.initial_quality + 1.0 / (index as f32 + 2.0);
+            candidate.quality = self.initial_quality + 1.0 / (index as f32 + 1.0);
         }
     }
 
@@ -7990,6 +8151,7 @@ impl StaticTableTranslator {
         if !accepts_segment {
             return PrefixFallbackBatch {
                 candidates: Vec::new(),
+                merge_qualities: None,
                 truncated: false,
                 owns_reachability: false,
                 span_promotions: HashMap::new(),
@@ -7999,6 +8161,7 @@ impl StaticTableTranslator {
         let Some(lookup_code) = self.lookup_code(input) else {
             return PrefixFallbackBatch {
                 candidates: Vec::new(),
+                merge_qualities: None,
                 truncated: false,
                 owns_reachability: false,
                 span_promotions: HashMap::new(),
@@ -8121,6 +8284,7 @@ impl StaticTableTranslator {
                 );
                 PrefixFallbackBatch {
                     candidates: Vec::new(),
+                    merge_qualities: None,
                     truncated: matches!(
                         probe,
                         PrefixFallbackProbe::Found | PrefixFallbackProbe::Truncated
@@ -8239,6 +8403,7 @@ impl StaticTableTranslator {
 
         PrefixFallbackBatch {
             candidates,
+            merge_qualities: None,
             truncated: prefix_fallback_truncated,
             owns_reachability: prefix_fallback_owned,
             span_promotions: HashMap::new(),
@@ -8254,11 +8419,14 @@ impl StaticTableTranslator {
     ) -> TranslationResult {
         let Some(limit) = request.limit.filter(|limit| *limit > 0) else {
             crate::m37_record_full_list_fallback();
-            return TranslationResult::complete(self.translated_candidates_for_segment(
+            let batch = self.translated_candidates_for_segment_with_prefix_fallback_limit(
                 input,
                 filter_by_charset,
                 segment_tags,
-            ));
+                None,
+            );
+            return TranslationResult::complete(batch.candidates)
+                .with_merge_qualities(batch.merge_qualities);
         };
         let accepts_segment = segment_tags
             .map(|tags| self.accepts_segment_tags(tags))
@@ -8284,7 +8452,8 @@ impl StaticTableTranslator {
                 batch.candidates,
                 full_count,
                 request.include_debug_full_count,
-            );
+            )
+            .with_merge_qualities(batch.merge_qualities);
             self.cache_bounded_upstream_script_result(
                 input,
                 filter_by_charset,
@@ -8374,11 +8543,14 @@ impl StaticTableTranslator {
         let Some(limit) = request.limit.filter(|limit| *limit > 0) else {
             scratch.clear();
             crate::m37_record_full_list_fallback();
-            return TranslationResult::complete(self.translated_candidates_for_segment(
+            let batch = self.translated_candidates_for_segment_with_prefix_fallback_limit(
                 input,
                 filter_by_charset,
                 segment_tags,
-            ));
+                None,
+            );
+            return TranslationResult::complete(batch.candidates)
+                .with_merge_qualities(batch.merge_qualities);
         };
         let accepts_segment = segment_tags
             .map(|tags| self.accepts_segment_tags(tags))
@@ -8394,20 +8566,26 @@ impl StaticTableTranslator {
             limit,
             request.include_debug_full_count,
         ) {
-            scratch.clear();
+            if !scratch.upstream_sentence.is_for_input(input) {
+                scratch.clear();
+            }
             return result;
         }
 
-        if let Some(batch) = self.upstream_script_translation(input, filter_by_charset, Some(limit))
-        {
-            scratch.clear();
+        if let Some(batch) = self.upstream_script_translation_with_scratch(
+            input,
+            filter_by_charset,
+            Some(limit),
+            Some(&mut scratch.upstream_sentence),
+        ) {
             let full_count = batch.candidates.len().saturating_add(1);
             crate::m37_record_bounded_iterator(limit, batch.candidates.len(), full_count);
             let result = TranslationResult::bounded(
                 batch.candidates,
                 full_count,
                 request.include_debug_full_count,
-            );
+            )
+            .with_merge_qualities(batch.merge_qualities);
             self.cache_bounded_upstream_script_result(
                 input,
                 filter_by_charset,
@@ -9496,10 +9674,10 @@ impl Translator for StaticTableTranslator {
             Some(&context.segment_tags),
             request,
         )
-        .with_merge_policy(if self.sentence_policy == SentencePolicy::UpstreamTable {
-            TranslationMergePolicy::UpstreamTable
-        } else {
-            TranslationMergePolicy::Default
+        .with_merge_policy(match self.sentence_policy {
+            SentencePolicy::UpstreamScript => TranslationMergePolicy::UpstreamScript,
+            SentencePolicy::UpstreamTable => TranslationMergePolicy::UpstreamTable,
+            SentencePolicy::LegacyFallback => TranslationMergePolicy::Default,
         })
     }
 
@@ -9522,10 +9700,10 @@ impl Translator for StaticTableTranslator {
             request,
             scratch,
         )
-        .with_merge_policy(if self.sentence_policy == SentencePolicy::UpstreamTable {
-            TranslationMergePolicy::UpstreamTable
-        } else {
-            TranslationMergePolicy::Default
+        .with_merge_policy(match self.sentence_policy {
+            SentencePolicy::UpstreamScript => TranslationMergePolicy::UpstreamScript,
+            SentencePolicy::UpstreamTable => TranslationMergePolicy::UpstreamTable,
+            SentencePolicy::LegacyFallback => TranslationMergePolicy::Default,
         })
     }
 

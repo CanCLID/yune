@@ -77,6 +77,8 @@ speller:
 translator:
   dictionary: luna_pinyin
   contextual_suggestions: false
+  max_homophones: 7
+  max_homographs: 7
   preedit_format:
     - xform/([nl])v/$1ü/
     - xform/([nl])ue/$1üe/

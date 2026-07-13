@@ -4515,6 +4515,71 @@ fn upstream_script_sentence_traverses_explicit_multi_span_table_phrases() {
 }
 
 #[test]
+fn upstream_script_table_tail_matches_exactly_after_three_syllables_across_storage_paths() {
+    let entries = vec![
+        TableEntry::new("a1b1c1d1e1", "LOW-WEIGHT-FAR-TAIL", 10.0),
+        TableEntry::new("a1b1c1f1g1", "HIGH-WEIGHT-TAIL", 20.0),
+        TableEntry::new("a1b1c1d1z1", "UNMATCHED-TAIL", 1_000.0),
+    ];
+    let owned = UpstreamSentenceModel::from_table_entries(entries.clone(), &[], 100);
+    let checksum = 0x5904_e031;
+    let source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        entries,
+        &[],
+        &[],
+        checksum,
+    )));
+    let byte = UpstreamSentenceModel::from_poet_bin_source(source, checksum, 100)
+        .expect("byte-backed packed-tail model");
+    let spans = [
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(0, 1, "a1"), 0.1),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(1, 2, "b1"), 0.2),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(2, 3, "c1"), 0.3),
+        // `match_extra_code` does not add tail credibility. If Yune keeps
+        // accumulating it after librime's three-syllable table-index boundary,
+        // this lower-weight family incorrectly jumps the next family.
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(3, 4, "d1"), 100.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(4, 5, "e1"), 100.0),
+        // The same packed tail has a farther exact surface match. Librime keeps
+        // the farthest successful end rather than emitting both matches.
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(3, 5, "d1"), 100.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(5, 6, "e1"), 100.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(3, 5, "f1"), 0.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(5, 6, "g1"), 0.0),
+    ];
+
+    for (storage, model) in [("owned", owned), ("byte", byte)] {
+        let complete =
+            model.ranked_script_phrase_candidates_for_weighted_code_spans("abcdef", &spans);
+        assert_eq!(
+            complete
+                .iter()
+                .map(|ranked| ranked.candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["HIGH-WEIGHT-TAIL", "LOW-WEIGHT-FAR-TAIL"],
+            "{storage}: the packed tail must be exact and tail credibility must not change table order"
+        );
+        assert_eq!(
+            complete[1].candidate.source,
+            CandidateSource::Table,
+            "{storage}: the farthest exact packed-tail match must consume the complete input"
+        );
+
+        let bounded = model
+            .ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered(
+                "abcdef",
+                &spans,
+                2,
+                &|_, _| true,
+            );
+        assert_eq!(
+            bounded, complete,
+            "{storage}: K+1 bounded tail matching must equal complete order"
+        );
+    }
+}
+
+#[test]
 fn upstream_script_policy_honors_leading_single_opt_out_across_storage_paths() {
     let dictionary = TableDictionary::new([
         TableEntry::new("bei2", "B", 100.0),
@@ -5157,6 +5222,7 @@ fn bounded_page_cache_rejects_results_with_more_than_64_rows() {
         is_complete: false,
         full_count: Some(66),
         merge_policy: crate::TranslationMergePolicy::Default,
+        merge_qualities: None,
     });
     let owner = translator
         .memory_owner_rows()
@@ -5691,7 +5757,7 @@ fn compiled_abbreviation_merge_preserves_librime_log_f32_tie_order() {
 }
 
 #[test]
-fn upstream_script_policy_keeps_identity_inputs_on_the_legacy_fast_path() {
+fn upstream_script_policy_bounds_long_identity_graphs_to_one_prism_walk_per_vertex() {
     let _guard = super::m37_metrics_test_guard();
     let dictionary = TableDictionary::new(
         ('a'..='z')
@@ -5705,8 +5771,18 @@ fn upstream_script_policy_keeps_identity_inputs_on_the_legacy_fast_path() {
         .with_sentence_policy(SentencePolicy::UpstreamScript)
         .with_upstream_sentence_model(10);
 
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let short_sentence = translator.translate("ab");
+    let short_metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+    assert_eq!(short_sentence[0].source, CandidateSource::Sentence);
+    assert!(
+        short_metrics.prism_lookup_calls > 1,
+        "short untoned Standard input must enter the deployed SyllableGraph owner"
+    );
+
     for input in [
-        "ab",
         "ceshiyixiachangjushuruxingnengzenyang",
         "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
     ] {
@@ -5717,8 +5793,348 @@ fn upstream_script_policy_keeps_identity_inputs_on_the_legacy_fast_path() {
         crate::m37_metrics_enable(false);
         assert_eq!(identity_sentence[0].source, CandidateSource::Sentence);
         assert_eq!(
-            metrics.prism_lookup_calls, 1,
-            "identity input {input:?} keeps only the ordinary full-input prism lookup; 4a must not build a substring prism DAG"
+            metrics.prism_lookup_calls,
+            input.len() as u64,
+            "37/59-byte identity input {input:?} must use one common-prefix prism walk per live vertex, not one exact lookup per substring"
+        );
+    }
+}
+
+#[test]
+fn upstream_script_identity_graph_reuses_octagram_scratch_with_cold_weighted_order() {
+    let _guard = super::m37_metrics_test_guard();
+    let dictionary = TableDictionary::new([
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+    ]);
+    let syllabary = ["a", "b", "c"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &[], 1, 2))
+        .expect("identity Octagram prism should parse");
+    let grammar_trie = DartsDoubleArray::build_bytes(&[
+        (encode_octagram_key("AB"), 420_000),
+        (encode_octagram_key("C$"), 990_000),
+    ])
+    .expect("identity Octagram grammar trie should build");
+    let mut grammar_bytes = vec![0; 44];
+    grammar_bytes[.."Rime::Grammar/1.0".len()].copy_from_slice(b"Rime::Grammar/1.0");
+    grammar_bytes[36..40].copy_from_slice(&(grammar_trie.units().len() as u32).to_le_bytes());
+    grammar_bytes[40..44].copy_from_slice(&4_i32.to_le_bytes());
+    for unit in grammar_trie.units() {
+        grammar_bytes.extend_from_slice(&unit.to_le_bytes());
+    }
+    let grammar = OctagramGrammar::from_bytes(&grammar_bytes, OctagramGrammarConfig::default())
+        .expect("identity Octagram grammar should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_upstream_sentence_grammar(grammar)
+        .with_upstream_sentence_model(10);
+
+    let cold = translator.translate("abc");
+    assert_eq!(cold[0].text, "ABC");
+    assert_eq!(cold[0].source, CandidateSource::Sentence);
+
+    let mut scratch = TranslatorScratch::default();
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let _ = translator.translate_with_context_and_request_with_scratch(
+        "ab",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(4).with_debug_full_count(true),
+        &mut scratch,
+    );
+    let warm = translator.translate_with_context_and_request_with_scratch(
+        "abc",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(4).with_debug_full_count(true),
+        &mut scratch,
+    );
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(warm.candidates, cold[..warm.candidates.len()]);
+    assert_eq!(metrics.upstream_sentence_model_incremental_reuse_hits, 1);
+}
+
+#[test]
+fn upstream_script_untoned_graph_owns_exact_prefix_and_sentence_surfaces_across_storage_paths() {
+    let dictionary = TableDictionary::new([
+        // Keep the real prism syllables first so the owned and byte-backed
+        // descriptor IDs share the same canonical syllabary positions.
+        TableEntry::new("mo", "M", 100.0),
+        TableEntry::new("bo", "B", 100.0),
+        TableEntry::new("yi", "Y", 100.0),
+        TableEntry::new("o", "O", 80.0),
+        TableEntry::new("mao", "A", 70.0),
+        TableEntry::new("mobo", "EXPLICIT", 500.0),
+        TableEntry::new("moboyi", "FULL", 400.0),
+        TableEntry::new("maoyi", "ABBREVIATION-OWNED", 300.0),
+        TableEntry::new("maooyi", "ABBREVIATION-LEAK", 1_000.0),
+        TableEntry::new("yiz", "Y-COMPLETION", 10_000.0),
+    ]);
+    let vocabulary = vec![PresetVocabularyEntry::new("MB", 450.0)];
+    let formulas = ["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let syllabary = ["mo", "bo", "yi", "o", "mao"].map(str::to_owned);
+    let checksum = 0x5904_e001;
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, checksum, 0x5904_e002);
+    let grammar = || {
+        let entries = [(encode_octagram_key("MY"), 42)];
+        let double_array =
+            DartsDoubleArray::build_bytes(&entries).expect("synthetic untoned grammar");
+        let mut bytes = vec![0; 44];
+        bytes[.."Rime::Grammar/1.0".len()].copy_from_slice(b"Rime::Grammar/1.0");
+        bytes[36..40].copy_from_slice(&(double_array.units().len() as u32).to_le_bytes());
+        bytes[40..44].copy_from_slice(&4_i32.to_le_bytes());
+        for unit in double_array.units() {
+            bytes.extend_from_slice(&unit.to_le_bytes());
+        }
+        OctagramGrammar::from_bytes(&bytes, OctagramGrammarConfig::default())
+            .expect("synthetic untoned grammar should parse")
+    };
+
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone())
+                .expect("owned untoned prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_leading_syllable_reachability(true)
+    .with_preset_vocabulary(vocabulary.clone())
+    .with_upstream_sentence_grammar(grammar())
+    .with_upstream_sentence_model(100);
+
+    let table_bytes = build_table_bin(&dictionary, checksum);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed untoned table metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed untoned table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed untoned prism should parse");
+    let poet_source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        dictionary.entries().iter().cloned(),
+        &vocabulary,
+        &vocabulary,
+        checksum,
+    )));
+    let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_leading_syllable_reachability(true)
+    .with_preset_vocabulary(vocabulary)
+    .with_upstream_sentence_poet_source(poet_source, checksum)
+    .with_upstream_sentence_grammar(grammar())
+    .with_upstream_sentence_model(100);
+
+    let mut head_merge_qualities = Vec::new();
+    for (storage, translator) in [("owned", owned), ("byte-backed", byte_backed)] {
+        let exact = translator.translate("yi");
+        assert_eq!(exact[0].text, "Y", "{storage}");
+        assert!(
+            exact.iter().all(|candidate| candidate.text != "Y-COMPLETION"),
+            "{storage}: a fully parsed exact syllable must not admit ordinary raw prefix completions"
+        );
+        let merge_result = translator.translate_with_context_and_request(
+            "yi",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::unbounded(),
+        );
+        let merge_qualities = merge_result
+            .merge_qualities
+            .as_ref()
+            .expect("UpstreamScript must retain its outer merge qualities");
+        assert_eq!(
+            merge_qualities.len(),
+            merge_result.candidates.len(),
+            "{storage}"
+        );
+        let head_merge_quality = merge_qualities[0];
+        let expected = 100.0_f32 / 100_000_000.0;
+        assert!(
+            (head_merge_quality - expected).abs() <= expected * 0.000_01,
+            "{storage}: normalized ScriptTranslation merge quality was {head_merge_quality}"
+        );
+        head_merge_qualities.push(head_merge_quality);
+
+        let reliable = translator.translate("mobo");
+        assert!(reliable
+            .iter()
+            .any(|candidate| candidate.text == "EXPLICIT"));
+        assert!(reliable.iter().any(|candidate| candidate.text == "MB"));
+        assert!(
+            reliable
+                .iter()
+                .all(|candidate| candidate.source != CandidateSource::Sentence),
+            "{storage}: a reliable full phrase suppresses Poet but not the collector phrase stream"
+        );
+
+        let proper_prefix = translator.translate("moboyix");
+        assert!(proper_prefix.iter().any(|candidate| {
+            candidate.text == "FULL"
+                && candidate.source
+                    == CandidateSource::PartialTable {
+                        consumed: 6,
+                        recompose_on_default: true,
+                    }
+        }));
+
+        let normal = translator.translate("moyi");
+        assert_eq!(
+            normal[0].text, "MY",
+            "{storage}: Octagram-backed Poet sentence"
+        );
+        assert_eq!(normal[0].source, CandidateSource::Sentence, "{storage}");
+        assert!(
+            normal
+                .iter()
+                .all(|candidate| candidate.text != "ABBREVIATION-LEAK"),
+            "{storage}: a normal full path must prune the competing abbreviation path"
+        );
+        assert!(
+            translator
+                .translate("myi")
+                .iter()
+                .any(|candidate| candidate.text == "ABBREVIATION-OWNED"),
+            "{storage}: an abbreviation-only graph remains admitted"
+        );
+
+        for input in ["yi", "mobo", "moboyix", "moyi", "myi"] {
+            let complete = translator.translate(input);
+            let bounded = translator.translate_with_context_and_request(
+                input,
+                &Status::default(),
+                &HashMap::new(),
+                &Context::default(),
+                CandidateRequest::bounded(2).with_debug_full_count(true),
+            );
+            assert_eq!(
+                bounded.candidates,
+                complete[..bounded.candidates.len()],
+                "{storage} {input}: bounded graph work must be a field-identical complete prefix"
+            );
+        }
+    }
+    assert!(
+        (head_merge_qualities[0] - head_merge_qualities[1]).abs()
+            <= head_merge_qualities[0] * 0.000_01,
+        "owned and byte-backed ScriptTranslation merge qualities must share the normalized weight namespace: {head_merge_qualities:?}"
+    );
+
+    let direct_only = StaticTableTranslator::from_compact_dictionary(
+        dictionary,
+        Some(
+            parse_rime_prism_bin_payload(build_prism_bin(
+                &syllabary,
+                &formulas,
+                checksum,
+                0x5904_e002,
+            ))
+            .expect("direct-only untoned prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(false)
+    .with_sentence_policy(SentencePolicy::UpstreamScript);
+    assert!(
+        direct_only
+            .translate("mobo")
+            .iter()
+            .any(|candidate| candidate.text == "EXPLICIT"),
+        "enable_sentence=false must retain graph-owned direct order"
+    );
+    assert!(
+        direct_only
+            .translate("moyi")
+            .iter()
+            .all(|candidate| candidate.source != CandidateSource::Sentence),
+        "enable_sentence=false gates only Poet sentence generation"
+    );
+}
+
+#[test]
+fn upstream_script_untoned_graph_rejects_flattened_phrase_codes_as_syllable_edges() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("alpha", "甲", 100.0),
+        TableEntry::new("beta", "乙", 90.0),
+        TableEntry::new("alphabeta", "甲乙", 500.0),
+    ]);
+    let formulas = ["abbrev/^([a-z]).+$/$1/".to_owned()];
+    // Deliberately include the flattened phrase in the compact prism. Pinned
+    // librime's syllabary contains only the single-character readings; the
+    // phrase must instead be reached by Table::Query traversal.
+    let syllabary = ["alpha", "beta", "alphabeta"].map(str::to_owned);
+    let checksum = 0x5904_e041;
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, checksum, 0x5904_e042);
+
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone())
+                .expect("owned structural prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_model(100);
+
+    let table_bytes = build_table_bin(&dictionary, checksum);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed structural metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed structural table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed structural prism should parse");
+    let poet_source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        dictionary.entries().iter().cloned(),
+        &[],
+        &[],
+        checksum,
+    )));
+    let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_poet_source(poet_source, checksum)
+    .with_upstream_sentence_model(100);
+
+    for (storage, translator) in [("owned", owned), ("byte", byte_backed)] {
+        let abbreviated = translator.translate("a");
+        assert!(
+            abbreviated.iter().any(|candidate| candidate.text == "甲"),
+            "{storage}: a real single-character reading remains a syllable edge"
+        );
+        assert!(
+            abbreviated.iter().all(|candidate| candidate.text != "甲乙"),
+            "{storage}: a flattened phrase code must not masquerade as one abbreviated syllable"
+        );
+        assert!(
+            translator
+                .translate("ab")
+                .iter()
+                .any(|candidate| candidate.text == "甲乙"),
+            "{storage}: the phrase remains reachable by concatenating its two real syllables"
         );
     }
 }

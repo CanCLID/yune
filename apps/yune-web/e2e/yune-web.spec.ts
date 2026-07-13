@@ -1429,7 +1429,7 @@ test.describe("yune-web Browser E2E", () => {
     const rows = [
       {
         input: "youhuiyong",
-        plainTop: "\u904a\u6232\u7528",
+        plainTop: "\u6709\u6703\u7528",
         octagramTop: "\u512a\u60e0\u7528",
       },
       {
@@ -1439,7 +1439,7 @@ test.describe("yune-web Browser E2E", () => {
       },
       {
         input: "jintianwanshangyouhui",
-        plainTop: "\u4eca\u5929\u665a\u4e0a\u904a\u6232",
+        plainTop: "\u4eca\u5929\u665a\u4e0a\u512a\u60e0",
         octagramTop: "\u4eca\u5929\u665a\u4e0a\u53c8\u6703",
       },
       {

@@ -655,7 +655,7 @@ engine:
     - script_translator
 translator:
   dictionary: luna_pinyin
-  max_homophones: 8
+  max_homophones: 7
 {grammar}",
         ),
     )

@@ -40,6 +40,43 @@ struct OrderedMergeTranslator {
     policy: TranslationMergePolicy,
 }
 
+struct ExplicitMergeQualityTranslator {
+    rows: Vec<Candidate>,
+    merge_qualities: Vec<f32>,
+    active_script: bool,
+}
+
+impl Translator for ExplicitMergeQualityTranslator {
+    fn name(&self) -> &'static str {
+        "explicit_merge_quality_translator"
+    }
+
+    fn translate(&self, _input: &str) -> Vec<Candidate> {
+        self.rows.clone()
+    }
+
+    fn translate_with_context_and_request(
+        &self,
+        input: &str,
+        _status: &crate::Status,
+        _options: &std::collections::HashMap<String, bool>,
+        _context: &Context,
+        _request: CandidateRequest,
+    ) -> TranslationResult {
+        TranslationResult::complete(self.translate(input))
+            .with_merge_qualities(Some(self.merge_qualities.clone()))
+            .with_merge_policy(if self.active_script {
+                TranslationMergePolicy::UpstreamScript
+            } else {
+                TranslationMergePolicy::Default
+            })
+    }
+
+    fn active_upstream_script_translation(&self, _context: &Context) -> bool {
+        self.active_script
+    }
+}
+
 impl Translator for OrderedMergeTranslator {
     fn name(&self) -> &'static str {
         "ordered_merge_translator"
@@ -411,12 +448,59 @@ fn exact_user_phrase_backfills_plural_poet_window_and_keeps_list_complete() {
                 .candidates
                 .iter()
                 .any(|candidate| candidate.text == phrase),
-            "{phrase} must backfill the window after exact-user sentence suppression"
+            "{phrase} must backfill the window after exact-user sentence suppression: {:?}",
+            engine.context().candidates
         );
     }
     assert!(
         engine.snapshot().candidate_list_complete,
-        "a non-empty userdb disables bounded refresh, so suppression must not underfill a hidden window"
+        "the complete small fixture must remain complete after bounded exact-user suppression"
+    );
+}
+
+#[test]
+fn single_active_script_userdb_keeps_the_next_standard_composition_page_bounded() {
+    let _guard = super::m37_metrics_test_guard();
+    let dictionary = bounded_refresh_dictionary_with_prefix_and_rows("z", 80);
+    let mut engine = Engine::new();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(&dictionary)
+            .expect("dictionary should parse")
+            .with_completion(true)
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_upstream_sentence_model(10),
+    );
+
+    // This is the persisted result of the preceding select/recompose cycle.
+    // The active ScriptTranslation owner must still merge its reliable exact
+    // user row before a later independent composition is opened.
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER", 3, 3.0, 3);
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+    assert!(engine.context().candidates.iter().any(|candidate| {
+        candidate.text == "USER" && candidate.source == CandidateSource::UserTable
+    }));
+
+    engine
+        .process_key_sequence("{Escape}")
+        .expect("Escape should clear the recomposed remainder");
+    assert!(engine.context().composition.input.is_empty());
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    engine.set_input("z");
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(metrics.candidate_request_bounded_calls, 1);
+    assert_eq!(metrics.candidate_request_unbounded_calls, 0);
+    assert!(!engine.candidate_list_complete());
+    assert!(
+        engine.context().candidates.len() <= 21,
+        "the learned prior composition must not force the next 80-row family into an eager full list"
     );
 }
 
@@ -671,6 +755,40 @@ fn user_only_script_stream_breaks_quality_ties_by_translator_registration_order(
         non_script_first.iter().position(|text| text == "EQUAL")
             < non_script_first.iter().position(|text| text == "USER"),
         "the earlier non-Script stream should win an exact quality tie: {non_script_first:?}"
+    );
+}
+
+#[test]
+fn user_only_script_remerge_uses_outer_merge_quality_not_local_display_rank() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER", 0, 0.0, 0);
+
+    let mut engine = Engine::new();
+    engine.add_translator(ExplicitMergeQualityTranslator {
+        rows: Vec::new(),
+        merge_qualities: Vec::new(),
+        active_script: true,
+    });
+    engine.add_translator(ExplicitMergeQualityTranslator {
+        rows: vec![ordered_merge_candidate("OTHER", 0.1)],
+        merge_qualities: vec![0.75],
+        active_script: false,
+    });
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+
+    let candidates = &engine.context().candidates;
+    let other = candidates
+        .iter()
+        .position(|candidate| candidate.text == "OTHER")
+        .expect("competing producer row should remain");
+    let user = candidates
+        .iter()
+        .position(|candidate| candidate.text == "USER")
+        .expect("active ScriptTranslation user row should be inserted");
+    assert!(
+        other < user,
+        "the higher outer merge quality must win even though its local display quality is lower: {candidates:?}"
     );
 }
 

@@ -21,6 +21,155 @@ const BOPOMOFO_WHOLE_INPUT: &str =
 const CORRECTION_SPELLING_ORACLE: &str =
     include_str!("../../../yune-core/tests/fixtures/upstream-1.17.0/m59-correction-spelling.json");
 
+#[test]
+fn m59_lane_b_product_matches_complete_pinned_librime_order() {
+    let _guard = test_guard();
+    let fixture: Value =
+        serde_json::from_str(LUNA_COMPOSITION).expect("pinned Lane B fixture should be valid JSON");
+    let cases = fixture["cases"]
+        .as_array()
+        .expect("pinned Lane B fixture should contain cases");
+    let observed_page_sizes = fixture["capture"]["page_sizes_observed"]
+        .as_array()
+        .expect("pinned Lane B fixture should declare observed page sizes");
+    let fixture_page_size = match observed_page_sizes.as_slice() {
+        [page_size] => page_size.as_u64(),
+        _ => None,
+    }
+    .expect("pinned Lane B fixture should declare one observed page size");
+    assert_eq!(
+        fixture_page_size, 5,
+        "the captured Lane B contract is the five-candidate librime page surface"
+    );
+    let runtime = YuneWebRuntime::create_with_schema("m59-lane-b-exact-order", "luna_pinyin");
+    fs::write(
+        runtime.user.join("default.custom.yaml"),
+        format!("patch:\n  menu:\n    page_size: {fixture_page_size}\n"),
+    )
+    .expect("Lane B user-root page-size override should be written before deployment");
+    stage_and_deploy_tracked_luna(&runtime);
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null(), "tracked luna_pinyin should initialize");
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+
+    let mut mismatches = Vec::new();
+    for case in cases {
+        let input = case["input"]
+            .as_str()
+            .expect("Lane B input should be a string");
+        let expected = case["pages"]
+            .as_array()
+            .expect("Lane B pages should be an array")
+            .iter()
+            .map(|page| {
+                json!({
+                    "page_no": page["page_no"],
+                    "page_size": page["page_size"],
+                    "is_last_page": page["is_last_page"],
+                    "candidates": page["candidates"]
+                        .as_array()
+                        .expect("oracle page candidates should be an array")
+                        .iter()
+                        .map(|candidate| json!({
+                            "index": candidate["index"],
+                            "global_index": candidate["global_index"],
+                            "text": candidate["text"],
+                        }))
+                        .collect::<Vec<_>>(),
+                })
+            })
+            .collect::<Vec<_>>();
+        let first_page = process_input(state, input);
+        assert_schema_storage_byte_backed(
+            "luna_pinyin",
+            &first_page["context"]["debug"]["storage"],
+        );
+        let actual = lane_b_candidate_pages(state, first_page);
+        if actual != expected {
+            let first = actual
+                .iter()
+                .zip(&expected)
+                .position(|(left, right)| left != right)
+                .unwrap_or_else(|| actual.len().min(expected.len()));
+            mismatches.push(format!(
+                "{input}: first_page={first}, actual_page_count={}, expected_page_count={}, actual={:?}, expected={:?}",
+                actual.len(),
+                expected.len(),
+                actual.get(first),
+                expected.get(first),
+            ));
+        }
+        let _ = response_json(unsafe { yune_web_process_key(state, 0xff1b, 0) });
+    }
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+    assert!(
+        mismatches.is_empty(),
+        "tracked byte-backed luna_pinyin must match every captured candidate position:\n{}",
+        mismatches.join("\n")
+    );
+}
+
+fn lane_b_candidate_pages(
+    state: *mut yune_rime_api::YuneWebState,
+    mut response: Value,
+) -> Vec<Value> {
+    let mut pages = Vec::new();
+    for turn in 0..10_000 {
+        let context = &response["context"];
+        let page_no = context["page_no"]
+            .as_u64()
+            .expect("Lane B page_no should be an unsigned integer");
+        let page_size = context["page_size"]
+            .as_u64()
+            .expect("Lane B page_size should be an unsigned integer");
+        let is_last_page = context["is_last_page"]
+            .as_bool()
+            .expect("Lane B is_last_page should be a boolean");
+        let candidates = context["candidates"]
+            .as_array()
+            .expect("Lane B candidate page should be an array")
+            .iter()
+            .enumerate()
+            .map(|(index, candidate)| {
+                let index = u64::try_from(index).expect("candidate page index should fit u64");
+                json!({
+                    "index": index,
+                    "global_index": page_no.saturating_mul(page_size).saturating_add(index),
+                    "text": candidate["text"],
+                })
+            })
+            .collect::<Vec<_>>();
+        pages.push(json!({
+            "page_no": page_no,
+            "page_size": page_size,
+            "is_last_page": is_last_page,
+            "candidates": candidates,
+        }));
+        if is_last_page {
+            return pages;
+        }
+        response = response_json(unsafe { yune_web_flip_page(state, FALSE) });
+        assert_eq!(
+            response["handled"],
+            Value::Bool(true),
+            "Lane B enumeration stopped before the declared last page at turn {turn}"
+        );
+    }
+    panic!("Lane B enumeration exceeded 10,000 pages without reaching the declared last page")
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Assets {
     Tracked,

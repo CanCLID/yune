@@ -640,6 +640,30 @@ fn upstream_script_translation_limits_sentence_homophones_independently_from_phr
 }
 
 #[test]
+fn octagram_can_promote_a_lower_dictionary_homophone_when_configuration_admits_it() {
+    let entries = [
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("b", "R", 100.0),
+        TableEntry::new("b", "E", 90.0),
+    ];
+    let grammar = OctagramGrammar::from_bytes(
+        &synthetic_octagram_gram(&[("AE", 200_000)]),
+        OctagramGrammarConfig::default(),
+    )
+    .expect("synthetic homophone grammar should parse");
+
+    let one_homophone = UpstreamSentenceModel::from_table_entries(entries.clone(), &[], 10)
+        .with_grammar(grammar.clone())
+        .with_script_translation_limits(1, 1);
+    let seven_homophones = UpstreamSentenceModel::from_table_entries(entries, &[], 10)
+        .with_grammar(grammar)
+        .with_script_translation_limits(1, 7);
+
+    assert_eq!(one_homophone.candidates_for_input("ab")[0].text, "AR");
+    assert_eq!(seven_homophones.candidates_for_input("ab")[0].text, "AE");
+}
+
+#[test]
 fn make_sentences_keeps_weight_ordered_beam() {
     let mut graph = WordGraph::new();
     graph.entry(0).or_default().entry(2).or_default().extend([
@@ -889,7 +913,7 @@ fn upstream_sentence_model_memory_profile_accounts_octagram_grammar_separately()
 }
 
 #[test]
-fn upstream_sentence_scratch_is_not_used_for_octagram_grammar_model() {
+fn upstream_sentence_scratch_reuses_octagram_states_without_stale_rear_scoring() {
     let _guard = super::m37_metrics_test_guard();
     let entries = [
         TableEntry::new("a", "A", 100.0),
@@ -897,12 +921,13 @@ fn upstream_sentence_scratch_is_not_used_for_octagram_grammar_model() {
         TableEntry::new("c", "C", 100.0),
     ];
     let grammar = OctagramGrammar::from_bytes(
-        &synthetic_octagram_gram(&[("AB", 42), ("ABC$", 99)]),
+        &synthetic_octagram_gram(&[("AB", 42), ("B$", 500_000), ("C$", 99)]),
         OctagramGrammarConfig::default(),
     )
     .expect("synthetic octagram grammar should parse");
     let model = UpstreamSentenceModel::from_table_entries(entries, &[], 10).with_grammar(grammar);
     let mut scratch = UpstreamSentenceScratch::default();
+    let cold = model.candidates_for_input_with_limit("abc", 5);
 
     crate::m37_metrics_enable(true);
     crate::m37_metrics_reset();
@@ -912,9 +937,10 @@ fn upstream_sentence_scratch_is_not_used_for_octagram_grammar_model() {
     crate::m37_metrics_enable(false);
 
     assert_eq!(first[0].text, "AB");
+    assert_eq!(second, cold);
     assert_eq!(second[0].text, "ABC");
-    assert_eq!(metrics.upstream_sentence_model_incremental_reuse_hits, 0);
-    assert_eq!(metrics.upstream_sentence_model_graph_rebuild_calls, 2);
+    assert_eq!(metrics.upstream_sentence_model_incremental_reuse_hits, 1);
+    assert_eq!(metrics.upstream_sentence_model_graph_rebuild_calls, 1);
 }
 
 #[test]

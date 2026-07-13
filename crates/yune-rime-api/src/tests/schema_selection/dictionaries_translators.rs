@@ -421,26 +421,35 @@ sort: by_weight
     fs::remove_dir_all(root).expect("temp dirs should be removed");
 }
 
-#[test]
-fn select_schema_preserves_librime_translator_prescription_order() {
+fn assert_schema_preserves_librime_translator_prescription_order(
+    label: &str,
+    first_weight: f32,
+    second_weight: f32,
+    second_initial_quality: Option<f32>,
+    expected: &[&str],
+) {
     let _guard = test_guard();
     RimeCleanupAllSessions();
-    let root = unique_temp_dir("schema-translator-order");
+    let root = unique_temp_dir(&format!("schema-translator-order-{label}"));
     let shared = root.join("shared");
     let user = root.join("user");
     let staging = user.join("build");
     fs::create_dir_all(&shared).expect("shared dir should be created");
     fs::create_dir_all(&staging).expect("staging dir should be created");
+    let second_initial_quality = second_initial_quality.map_or_else(String::new, |quality| {
+        format!("  initial_quality: {quality}\n")
+    });
     fs::write(
         staging.join("luna.schema.yaml"),
-        "\
+        format!(
+            "\
 schema:
   schema_id: luna
   name: Luna
 engine:
   translators:
     - script_translator@first_table
-    - table_translator@second_table
+    - script_translator@second_table
     - echo_translator
 first_table:
   dictionary: first
@@ -448,33 +457,40 @@ first_table:
 second_table:
   dictionary: second
   enable_completion: false
-",
+{second_initial_quality}"
+        ),
     )
     .expect("schema config should be written");
     fs::write(
         shared.join("first.dict.yaml"),
-        "\
+        format!(
+            "\
 ---
 name: first
 version: '0.1'
 sort: original
 ...
 
-先\txu\t0
-",
+先\txu\t{first_weight}
+前\txu\t{first_weight}
+"
+        ),
     )
     .expect("first dictionary should be written");
     fs::write(
         shared.join("second.dict.yaml"),
-        "\
+        format!(
+            "\
 ---
 name: second
 version: '0.1'
 sort: original
 ...
 
-后\txu\t0
-",
+后\txu\t{second_weight}
+末\txu\t{second_weight}
+"
+        ),
     )
     .expect("second dictionary should be written");
 
@@ -520,13 +536,41 @@ sort: original
     // SAFETY: nested pointers were allocated by `RimeGetContext` above.
     assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
 
-    assert_eq!(texts, ["先", "后", "xu"]);
+    assert_eq!(
+        texts,
+        expected
+            .iter()
+            .map(|text| (*text).to_owned())
+            .collect::<Vec<_>>()
+    );
 
     assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.
     unsafe { RimeSetup(&reset_traits) };
     fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn select_schema_preserves_equal_weight_script_translator_prescription_order() {
+    assert_schema_preserves_librime_translator_prescription_order(
+        "equal-weight",
+        0.0,
+        0.0,
+        None,
+        &["先", "前", "后", "末", "xu"],
+    );
+}
+
+#[test]
+fn select_schema_compares_script_heads_in_compiled_weight_namespace() {
+    assert_schema_preserves_librime_translator_prescription_order(
+        "compiled-weight",
+        0.0,
+        1.0,
+        Some(-1.0),
+        &["先", "前", "xu", "后", "末"],
+    );
 }
 
 #[test]

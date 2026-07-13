@@ -621,6 +621,24 @@ impl ByteBackedPoetStore {
         self.len_strings(&sections.text_pool, start, end)
     }
 
+    pub(super) fn all_character_codes(&self, abbreviation: bool) -> Vec<&str> {
+        let sections = if abbreviation {
+            &self.sections.abbreviation_character_codes
+        } else {
+            &self.sections.character_codes
+        };
+        let mut codes = Vec::new();
+        for row_index in 0..sections.rows.count as usize {
+            let row = row_offset(&sections.rows, row_index);
+            let start = read_u32(self.bytes(), row + 4)
+                .expect("poet character code ranges are validated during parse");
+            let end = read_u32(self.bytes(), row + 8)
+                .expect("poet character code ranges are validated during parse");
+            codes.extend(self.len_strings(&sections.text_pool, start, end));
+        }
+        codes
+    }
+
     pub(super) fn memory_owner_rows(&self) -> Vec<crate::MemoryOwnerRow> {
         vec![
             crate::MemoryOwnerRow::new(

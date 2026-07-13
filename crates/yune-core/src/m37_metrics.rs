@@ -1415,13 +1415,15 @@ pub fn m37_record_upstream_sentence_model_lookup_index(record: M40SentenceLookup
             &metrics.upstream_sentence_model_partition_point_fallback_calls,
             record.partition_point_fallback_calls as u64,
         );
-        metrics
-            .upstream_sentence_model_graph_rebuild_calls
-            .fetch_add(1, Ordering::Relaxed);
-        add_duration(
-            &metrics.upstream_sentence_model_graph_rebuild_ns,
-            record.graph_rebuild_duration,
-        );
+        if record.incremental_reuse_hits == 0 {
+            metrics
+                .upstream_sentence_model_graph_rebuild_calls
+                .fetch_add(1, Ordering::Relaxed);
+            add_duration(
+                &metrics.upstream_sentence_model_graph_rebuild_ns,
+                record.graph_rebuild_duration,
+            );
+        }
         add(
             &metrics.upstream_sentence_model_incremental_reuse_hits,
             record.incremental_reuse_hits as u64,

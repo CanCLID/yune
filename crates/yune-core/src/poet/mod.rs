@@ -40,6 +40,10 @@ const CODE_LENGTH_QUALITY_BAND: f32 = 1_000.0;
 const MAX_WORD_GRAPH_ENTRIES_PER_SPAN: usize = 7;
 const MAX_DERIVED_ABBREVIATION_CODES_PER_VOCABULARY_ENTRY: usize = 16;
 const MAX_DERIVED_SCRIPT_CODES_PER_VOCABULARY_ENTRY: usize = 32;
+// Rime::Table/4.0 stores three syllables in its searchable trunk. Longer
+// phrases share that trunk node and carry their remaining syllable ids in the
+// node's packed tail array.
+const TABLE_QUERY_INDEX_CODE_MAX_SYLLABLES: usize = 3;
 const DEFAULT_SENTENCE_CUTOFF_THRESHOLD: f64 = 0.1;
 const SINGULAR_GRAMMAR_BEAM_WIDTH: usize = 7;
 type CharacterCodeCache = HashMap<char, Arc<[String]>>;
@@ -198,6 +202,10 @@ pub(crate) struct WeightedSentenceCodeSpan {
 pub(crate) struct RankedScriptPhraseCandidate {
     pub candidate: Candidate,
     pub code_order: String,
+    /// Candidate quality used only when librime's outer MergedTranslation
+    /// compares this ScriptTranslation head with another producer. Local
+    /// script order remains owned by `candidate` plus `code_order`.
+    pub merge_quality: f32,
 }
 
 #[derive(Clone, Copy)]
@@ -302,6 +310,20 @@ pub(crate) fn upstream_script_raw_candidate_quality(
     consumed as f32 * CODE_LENGTH_QUALITY_BAND
         + null_grammar_score(dictionary_weight) as f32
         + spelling_credibility
+}
+
+pub(crate) fn upstream_script_candidate_merge_quality(
+    stored_weight: f32,
+    spelling_credibility: f32,
+    weight_domain: TableEntryWeightDomain,
+) -> f32 {
+    let dictionary_weight = match weight_domain {
+        TableEntryWeightDomain::Raw => upstream_dictionary_weight(f64::from(stored_weight)),
+        TableEntryWeightDomain::NaturalLog => {
+            f64::from(stored_weight) - UPSTREAM_DICT_ENTRY_WEIGHT_SCALE
+        }
+    };
+    (dictionary_weight + f64::from(spelling_credibility)).exp() as f32
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -713,6 +735,26 @@ fn collect_sentence_state_vec(
     grammar: Option<&dyn Grammar>,
     skip_direct_full_word: bool,
 ) -> Vec<Vec<PathState>> {
+    collect_sentence_state_vec_with_rear(
+        graph,
+        max_sentences,
+        max_homophones,
+        total_length,
+        grammar,
+        skip_direct_full_word,
+        true,
+    )
+}
+
+fn collect_sentence_state_vec_with_rear(
+    graph: &WordGraph,
+    max_sentences: usize,
+    max_homophones: usize,
+    total_length: usize,
+    grammar: Option<&dyn Grammar>,
+    skip_direct_full_word: bool,
+    score_rear_at_total: bool,
+) -> Vec<Vec<PathState>> {
     let record_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
     let mut dp_states_created = 0usize;
     let mut dp_beam_evictions = 0usize;
@@ -744,7 +786,7 @@ fn collect_sentence_state_vec(
                             + grammar.query(
                                 &source.grammar_context(),
                                 &entry.text,
-                                *end == total_length,
+                                score_rear_at_total && *end == total_length,
                             )
                     } else {
                         source.weight + null_grammar_score(entry.weight)
@@ -1266,6 +1308,7 @@ fn partition_spread(lengths: &[usize]) -> usize {
 pub struct UpstreamSentenceModel {
     storage: PoetModelStorage,
     lookup_index: SentenceLookupIndex,
+    normal_character_codes: Box<[String]>,
     max_candidates: usize,
     // ScriptTranslator configuration. These are intentionally independent of
     // the visible candidate window: upstream defaults to one sentence and one
@@ -1282,6 +1325,7 @@ impl Default for UpstreamSentenceModel {
         Self {
             storage: PoetModelStorage::default(),
             lookup_index: SentenceLookupIndex::default(),
+            normal_character_codes: Box::default(),
             max_candidates: 1,
             max_sentences: 1,
             max_homophones: 1,
@@ -1297,6 +1341,10 @@ pub struct UpstreamSentenceScratch {
     input: String,
     max_candidates: usize,
     states_by_end: Vec<Vec<PathState>>,
+    // Grammar's rear-boundary score belongs only to the current terminal.
+    // Keep a non-rear continuation frontier so the former terminal can become
+    // an exact prefix on the next key without carrying a stale rear bonus.
+    continuation_states_by_end: Vec<Vec<PathState>>,
     sentence_paths_by_end: Vec<Vec<SentencePath>>,
     phrase_candidates: Vec<Candidate>,
     prefix_states_by_start: Vec<Option<SentencePrefixState>>,
@@ -1308,10 +1356,15 @@ impl UpstreamSentenceScratch {
         self.input.clear();
         self.max_candidates = 0;
         self.states_by_end.clear();
+        self.continuation_states_by_end.clear();
         self.sentence_paths_by_end.clear();
         self.phrase_candidates.clear();
         self.prefix_states_by_start.clear();
         self.exact_spans_by_start.clear();
+    }
+
+    pub(crate) fn is_for_input(&self, input: &str) -> bool {
+        self.input == input
     }
 
     #[cfg(test)]
@@ -1319,6 +1372,7 @@ impl UpstreamSentenceScratch {
         self.input.is_empty()
             && self.max_candidates == 0
             && self.states_by_end.is_empty()
+            && self.continuation_states_by_end.is_empty()
             && self.sentence_paths_by_end.is_empty()
             && self.phrase_candidates.is_empty()
             && self.prefix_states_by_start.is_empty()
@@ -1335,6 +1389,8 @@ impl UpstreamSentenceScratch {
             && self.max_candidates == max_candidates
             && input.starts_with(&self.input)
             && self.states_by_end.len() == self.input.len().saturating_add(1)
+            && (self.continuation_states_by_end.is_empty()
+                || self.continuation_states_by_end.len() == self.states_by_end.len())
             && self.sentence_paths_by_end.len() == self.states_by_end.len()
             && self.prefix_states_by_start.len() == self.states_by_end.len()
             && self.exact_spans_by_start.len() == self.states_by_end.len()
@@ -1449,6 +1505,37 @@ impl PoetModelStorage {
         }
     }
 
+    fn entry_ranges_for_code_prefix(&self, prefix: &str) -> Vec<(String, Range<usize>)> {
+        let entry_count = self.entry_count();
+        let mut low = 0usize;
+        let mut high = entry_count;
+        while low < high {
+            let mid = low + (high - low) / 2;
+            if self.entry_code(mid) < prefix {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+
+        let mut ranges = Vec::new();
+        let mut start = low;
+        while start < entry_count {
+            let code = self.entry_code(start);
+            if !code.starts_with(prefix) {
+                break;
+            }
+            let code_id = self.entry_code_id(start);
+            let mut end = start + 1;
+            while end < entry_count && self.entry_code_id(end) == code_id {
+                end += 1;
+            }
+            ranges.push((code.to_owned(), start..end));
+            start = end;
+        }
+        ranges
+    }
+
     fn vocabulary_indices_for_first_code(&self, abbreviation: bool, code: &str) -> Vec<usize> {
         match self {
             Self::Empty => Vec::new(),
@@ -1502,6 +1589,26 @@ impl PoetModelStorage {
                 .unwrap_or_default(),
             Self::ByteBacked(storage) => storage.character_codes(abbreviation, ch),
         }
+    }
+
+    fn normal_character_codes(&self) -> Box<[String]> {
+        let mut codes = match self {
+            Self::Empty => Vec::new(),
+            Self::Owned(storage) => storage
+                .character_codes(false)
+                .values()
+                .flatten()
+                .cloned()
+                .collect(),
+            Self::ByteBacked(storage) => storage
+                .all_character_codes(false)
+                .into_iter()
+                .map(ToOwned::to_owned)
+                .collect(),
+        };
+        codes.sort();
+        codes.dedup();
+        codes.into_boxed_slice()
     }
 
     fn memory_owner_rows(&self, lookup_index: &SentenceLookupIndex) -> Vec<MemoryOwnerRow> {
@@ -1704,9 +1811,11 @@ impl UpstreamSentenceModel {
             source,
             expected_dictionary_checksum,
         )?));
+        let normal_character_codes = storage.normal_character_codes();
         Ok(Self {
             storage,
             lookup_index: SentenceLookupIndex::default(),
+            normal_character_codes,
             max_candidates: max_candidates.max(1),
             max_sentences: 1,
             max_homophones: 1,
@@ -1776,9 +1885,11 @@ impl UpstreamSentenceModel {
         if let Some(index_start) = index_start {
             crate::m37_record_upstream_sentence_model_index_build(index_start.elapsed());
         }
+        let normal_character_codes = storage.normal_character_codes();
         Self {
             storage,
             lookup_index,
+            normal_character_codes,
             max_candidates: max_candidates.max(1),
             max_sentences: 1,
             max_homophones: 1,
@@ -1828,6 +1939,25 @@ impl UpstreamSentenceModel {
     #[must_use]
     pub fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
         let mut rows = self.storage.memory_owner_rows(&self.lookup_index);
+        rows.push(MemoryOwnerRow::new(
+            "poet.normal_character_code_index",
+            MemoryOwnerClass::HeapOwnedGuarded,
+            mem::size_of::<Box<[String]>>()
+                .saturating_add(
+                    self.normal_character_codes
+                        .len()
+                        .saturating_mul(mem::size_of::<String>()),
+                )
+                .saturating_add(
+                    self.normal_character_codes
+                        .iter()
+                        .map(String::capacity)
+                        .sum::<usize>(),
+                ),
+            self.normal_character_codes.len(),
+            "sorted Box<[String]>",
+            "single-character dictionary readings that reconstruct librime syllable ids",
+        ));
         rows.extend(self.grammar.memory_owner_rows());
         rows
     }
@@ -1859,11 +1989,6 @@ impl UpstreamSentenceModel {
         }
 
         let max_candidates = max_candidates.max(1).min(self.max_candidates);
-        if self.grammar.scoring_grammar().is_some() {
-            scratch.clear();
-            return self.candidates_for_input_with_limit(input, max_candidates);
-        }
-
         let PoetModelStorage::Owned(storage) = &self.storage else {
             scratch.clear();
             return self.candidates_for_input_with_limit(input, max_candidates);
@@ -2109,7 +2234,20 @@ impl UpstreamSentenceModel {
         // of the union must therefore occur inside that prefix of at least one
         // chunk; later equal rows cannot precede an earlier equal head in the
         // same stable chunk.
-        let graph = self.word_graph_for_code_spans(input, spans, graph_options);
+        // This API exposes only collector rows that begin at input zero. The
+        // full sentence scorer has a separate graph path; rebuilding every
+        // later start here scans the same model-only vocabulary families while
+        // their edges are discarded by `graph.get(&0)` below. Root-only still
+        // walks later spans when matching a root phrase or its packed table
+        // tail, so it is an ownership bound rather than a reachability cut.
+        let graph = self.word_graph_for_code_spans(
+            input,
+            spans,
+            CodeSpanGraphOptions {
+                root_only: true,
+                ..graph_options
+            },
+        );
         let Some(edges) = graph.get(&0) else {
             return Vec::new();
         };
@@ -2218,6 +2356,7 @@ impl UpstreamSentenceModel {
                 let ranked = RankedScriptPhraseCandidate {
                     candidate,
                     code_order: format!("\0{emitted:020}"),
+                    merge_quality: entry.weight.exp() as f32,
                 };
                 emitted += 1;
                 if let Some(index) = candidate_indices.get(&ranked.candidate.text).copied() {
@@ -2253,6 +2392,12 @@ impl UpstreamSentenceModel {
     #[must_use]
     pub fn has_code(&self, code: &str) -> bool {
         self.entries_for_code_range(code).is_some()
+    }
+
+    pub(crate) fn has_normal_character_code(&self, code: &str) -> bool {
+        self.normal_character_codes
+            .binary_search_by(|candidate| candidate.as_str().cmp(code))
+            .is_ok()
     }
 
     fn candidates_for_graph_with_limit(
@@ -2421,14 +2566,26 @@ impl UpstreamSentenceModel {
     ) -> Vec<Candidate> {
         scratch.clear();
         let graph = self.word_graph_for_input(input);
+        let grammar = self.grammar.scoring_grammar();
         scratch.states_by_end = collect_sentence_state_vec(
             &graph,
             self.max_sentences,
             self.max_homophones,
             input.len(),
-            self.grammar.scoring_grammar(),
+            grammar,
             false,
         );
+        if grammar.is_some() {
+            scratch.continuation_states_by_end = collect_sentence_state_vec_with_rear(
+                &graph,
+                self.max_sentences,
+                self.max_homophones,
+                input.len(),
+                grammar,
+                false,
+                false,
+            );
+        }
         scratch.phrase_candidates = Self::phrase_candidates_for_graph(
             input,
             &graph,
@@ -3159,15 +3316,25 @@ impl UpstreamSentenceModel {
         scratch
             .states_by_end
             .resize_with(input.len().saturating_add(1), Vec::new);
+        let grammar = self.grammar.scoring_grammar();
+        if grammar.is_some() {
+            scratch
+                .continuation_states_by_end
+                .resize_with(input.len().saturating_add(1), Vec::new);
+        }
 
         let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
         let extend_start = rebuild_start;
         let mut graph = BorrowedWordGraph::new();
         let mut reachable = vec![false; boundaries.len()];
+        let reachability_states = if grammar.is_some() {
+            &scratch.continuation_states_by_end
+        } else {
+            &scratch.states_by_end
+        };
         for (index, boundary) in boundaries.iter().copied().enumerate() {
             if boundary <= previous_len
-                && scratch
-                    .states_by_end
+                && reachability_states
                     .get(boundary)
                     .is_some_and(|states| !states.is_empty())
             {
@@ -3371,38 +3538,107 @@ impl UpstreamSentenceModel {
         let record_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
         let mut dp_states_created = 0usize;
         let mut dp_beam_evictions = 0usize;
-        let search = SentenceSearchMode::for_options(self.max_sentences, false);
-        for (start, edges) in &graph {
-            if *start > input.len() {
-                continue;
-            }
-            if scratch
-                .states_by_end
-                .get(*start)
-                .map_or(true, Vec::is_empty)
-            {
-                continue;
-            }
-            for (end, entries) in edges {
-                if *end <= previous_len || *end > input.len() {
+        let search = SentenceSearchMode::for_options(self.max_sentences, grammar.is_some());
+        if let Some(grammar) = grammar {
+            let mut rear_states = Vec::new();
+            for (start, edges) in &graph {
+                if *start > input.len()
+                    || scratch
+                        .continuation_states_by_end
+                        .get(*start)
+                        .map_or(true, Vec::is_empty)
+                {
                     continue;
                 }
-                let (source_slice, destination_slice) = scratch.states_by_end.split_at_mut(*end);
-                let source_states = &source_slice[*start];
-                if source_states.is_empty() {
-                    continue;
-                }
-                let destination = &mut destination_slice[0];
-                for source in source_states {
-                    for entry in entries.iter().take(self.max_homophones) {
-                        let candidate_weight = source.weight + null_grammar_score(entry.weight);
-                        let next = source.extended(entry.text, candidate_weight, end - start, None);
-                        if record_metrics {
-                            dp_states_created += 1;
+                for (end, entries) in edges {
+                    if *end <= previous_len || *end > input.len() {
+                        continue;
+                    }
+                    let (source_slice, destination_slice) =
+                        scratch.continuation_states_by_end.split_at_mut(*end);
+                    let source_states = &source_slice[*start];
+                    if source_states.is_empty() {
+                        continue;
+                    }
+                    let destination = &mut destination_slice[0];
+                    for source in source_states {
+                        let context = source.grammar_context();
+                        for entry in entries.iter().take(self.max_homophones) {
+                            let continuation_weight = source.weight
+                                + entry.weight
+                                + grammar.query(&context, entry.text, false);
+                            let continuation = source.extended(
+                                entry.text,
+                                continuation_weight,
+                                end - start,
+                                Some(grammar),
+                            );
+                            if record_metrics {
+                                dp_states_created += 1;
+                            }
+                            let evicted = insert_sentence_state(destination, continuation, search);
+                            if record_metrics && evicted {
+                                dp_beam_evictions += 1;
+                            }
+                            if *end == input.len() {
+                                let rear_weight = source.weight
+                                    + entry.weight
+                                    + grammar.query(&context, entry.text, true);
+                                let rear = source.extended(
+                                    entry.text,
+                                    rear_weight,
+                                    end - start,
+                                    Some(grammar),
+                                );
+                                if record_metrics {
+                                    dp_states_created += 1;
+                                }
+                                let evicted = insert_sentence_state(&mut rear_states, rear, search);
+                                if record_metrics && evicted {
+                                    dp_beam_evictions += 1;
+                                }
+                            }
                         }
-                        let evicted = insert_sentence_state(destination, next, search);
-                        if record_metrics && evicted {
-                            dp_beam_evictions += 1;
+                    }
+                }
+            }
+            for end in previous_len..input.len() {
+                scratch.states_by_end[end] = scratch.continuation_states_by_end[end].clone();
+            }
+            scratch.states_by_end[input.len()] = rear_states;
+        } else {
+            for (start, edges) in &graph {
+                if *start > input.len()
+                    || scratch
+                        .states_by_end
+                        .get(*start)
+                        .map_or(true, Vec::is_empty)
+                {
+                    continue;
+                }
+                for (end, entries) in edges {
+                    if *end <= previous_len || *end > input.len() {
+                        continue;
+                    }
+                    let (source_slice, destination_slice) =
+                        scratch.states_by_end.split_at_mut(*end);
+                    let source_states = &source_slice[*start];
+                    if source_states.is_empty() {
+                        continue;
+                    }
+                    let destination = &mut destination_slice[0];
+                    for source in source_states {
+                        for entry in entries.iter().take(self.max_homophones) {
+                            let candidate_weight = source.weight + null_grammar_score(entry.weight);
+                            let next =
+                                source.extended(entry.text, candidate_weight, end - start, None);
+                            if record_metrics {
+                                dp_states_created += 1;
+                            }
+                            let evicted = insert_sentence_state(destination, next, search);
+                            if record_metrics && evicted {
+                                dp_beam_evictions += 1;
+                            }
                         }
                     }
                 }
@@ -3564,6 +3800,23 @@ impl UpstreamSentenceModel {
             });
             spans.dedup_by(|left, right| left.end == right.end && left.code == right.code);
         }
+        // ScriptEncoder phrase reconstruction repeatedly asks which graph
+        // spans at one vertex carry one of a character's canonical codes. A
+        // linear scan of the full surface family for every vocabulary row is
+        // pathological on broad prism families, so index exact code matches
+        // once. Stored positions retain the established end/code traversal
+        // order; callers merge and sort those small position lists before
+        // applying the existing per-vocabulary derivation bound.
+        let spans_by_start_code = spans_by_start
+            .iter()
+            .map(|spans| {
+                let mut by_code = HashMap::<&str, Vec<usize>>::new();
+                for (position, span) in spans.iter().enumerate() {
+                    by_code.entry(span.code).or_default().push(position);
+                }
+                by_code
+            })
+            .collect::<Vec<_>>();
 
         let mut reachable = vec![false; boundaries.len()];
         if let Some(first) = reachable.first_mut() {
@@ -3685,6 +3938,7 @@ impl UpstreamSentenceModel {
                         .derive_matching_phrase_codes_from_spans(
                             &vocabulary_chars,
                             &spans_by_start,
+                            &spans_by_start_code,
                             *span,
                             abbreviation,
                         )
@@ -3725,15 +3979,12 @@ impl UpstreamSentenceModel {
                 }
             }
 
-            // librime's Table::Query walks the dictionary trie across every
-            // consecutive syllable-graph edge from this start. An exact query
-            // of each individual syllable is insufficient: an explicit phrase
-            // such as `hai6gam2` must remain available as an internal sentence
-            // edge even when the deployed surface spells its final syllable as
-            // an abbreviation. Keep the established single-span and preset-
-            // vocabulary paths above, then add only depth-two-or-greater table
-            // matches here. Prefix pruning and `(end, code)` deduplication model
-            // the upstream trie walk without enumerating dead alias products.
+            // librime's Table::Query walks consecutive syllable-graph edges
+            // only through its three-syllable trunk index. Longer dictionary
+            // codes share the reached trunk node; Dictionary::match_extra_code
+            // then matches each packed tail exactly and keeps its farthest end.
+            // Mirroring that boundary avoids an unbounded product of surface
+            // aliases while retaining every reachable long phrase.
             // A one-span prism alias and a multi-span syllable path can reach
             // the same flattened table code at the same input boundary. Keep
             // their first traversal states distinct: depth one is handled by
@@ -3816,6 +4067,86 @@ impl UpstreamSentenceModel {
                     } else {
                         lookup_metrics.exact_range_index_misses += 1;
                     }
+                }
+
+                if depth == TABLE_QUERY_INDEX_CODE_MAX_SYLLABLES {
+                    // TableQuery::Access(-1) exposes the complete tail page at
+                    // this trunk node. Tail spelling credibility is deliberately
+                    // not accumulated: pinned librime carries only the indexed
+                    // three-syllable prefix credibility into the resulting
+                    // DictEntry chunk.
+                    if path_end < input.len() {
+                        for (tail_code, entries) in self.storage.entry_ranges_for_code_prefix(&code)
+                        {
+                            let Some(tail) = tail_code.strip_prefix(&code) else {
+                                continue;
+                            };
+                            if tail.is_empty() {
+                                continue;
+                            }
+                            let Some((tail_end, tail_end_index, tail_depth)) =
+                                farthest_exact_packed_tail_match(
+                                    tail,
+                                    &boundaries,
+                                    &spans_by_start,
+                                    path_end_index,
+                                )
+                            else {
+                                continue;
+                            };
+                            lookup_metrics.phrase_index_nodes_visited += 1;
+                            lookup_metrics.exact_range_index_hits += 1;
+                            lookup_metrics.phrase_index_entry_ranges_emitted += 1;
+                            let (bounded_entries, scanned) = collect_distinct_word_graph_entries(
+                                entries
+                                    .filter(|entry_index| {
+                                        let text = self.storage.entry_text(*entry_index);
+                                        !self.excluded_texts.contains(text)
+                                            && excluded_texts
+                                                .map_or(true, |excluded| !excluded.contains(text))
+                                            && eligible_candidate
+                                                .map_or(true, |eligible| eligible(text, tail_end))
+                                    })
+                                    .map(|entry_index| {
+                                        let stored_weight = self.storage.entry_weight(entry_index);
+                                        let weight = match (&self.storage, abbreviation) {
+                                            (PoetModelStorage::Owned(storage), true) => {
+                                                storage.raw_weight(stored_weight)
+                                            }
+                                            (PoetModelStorage::Owned(storage), false) => {
+                                                storage.dictionary_weight(stored_weight)
+                                            }
+                                            (_, true) => f64::from(stored_weight),
+                                            (_, false) => {
+                                                upstream_dictionary_weight(f64::from(stored_weight))
+                                            }
+                                        };
+                                        (self.storage.entry_text(entry_index), weight)
+                                    }),
+                                entry_limit,
+                            );
+                            table_entries_considered += scanned;
+                            let inserted_edge = !bounded_entries.is_empty();
+                            for mut entry in bounded_entries {
+                                entry.weight += spelling_credibility;
+                                graph
+                                    .entry(start)
+                                    .or_default()
+                                    .entry(tail_end)
+                                    .or_default()
+                                    .push(
+                                        entry
+                                            .with_code_order(tail_code.clone())
+                                            .with_traversal_depth(depth + tail_depth),
+                                    );
+                                graph_edges += 1;
+                            }
+                            if inserted_edge {
+                                reachable[tail_end_index] = true;
+                            }
+                        }
+                    }
+                    continue;
                 }
 
                 if let Some(next_spans) = spans_by_start.get(path_end_index) {
@@ -4221,6 +4552,7 @@ impl UpstreamSentenceModel {
         &self,
         chars: &[char],
         spans_by_start: &[Vec<InputCodeSpan<'_>>],
+        spans_by_start_code: &[HashMap<&str, Vec<usize>>],
         first_span: InputCodeSpan<'_>,
         abbreviation: bool,
     ) -> Vec<(String, usize, usize, f64)> {
@@ -4228,6 +4560,7 @@ impl UpstreamSentenceModel {
         self.derive_matching_phrase_span_codes_from(
             chars,
             spans_by_start,
+            spans_by_start_code,
             PhraseSpanCodeState {
                 index: 1,
                 start_index: first_span.end_index,
@@ -4252,6 +4585,7 @@ impl UpstreamSentenceModel {
         &self,
         chars: &[char],
         spans_by_start: &[Vec<InputCodeSpan<'_>>],
+        spans_by_start_code: &[HashMap<&str, Vec<usize>>],
         state: PhraseSpanCodeState,
         abbreviation: bool,
         codes: &mut Vec<(String, usize, usize, f64)>,
@@ -4279,13 +4613,23 @@ impl UpstreamSentenceModel {
         let Some(spans) = spans_by_start.get(state.start_index) else {
             return;
         };
-        for span in spans {
-            if !next_codes.contains(&span.code) {
-                continue;
+        let Some(spans_by_code) = spans_by_start_code.get(state.start_index) else {
+            return;
+        };
+        let mut matching_positions = Vec::new();
+        for next_code in next_codes {
+            if let Some(positions) = spans_by_code.get(next_code) {
+                matching_positions.extend_from_slice(positions);
             }
+        }
+        matching_positions.sort_unstable();
+        matching_positions.dedup();
+        for position in matching_positions {
+            let span = &spans[position];
             self.derive_matching_phrase_span_codes_from(
                 chars,
                 spans_by_start,
+                spans_by_start_code,
                 PhraseSpanCodeState {
                     index: state.index + 1,
                     start_index: span.end_index,
@@ -4306,6 +4650,70 @@ struct InputCodeSpan<'a> {
     end_index: usize,
     code: &'a str,
     spelling_credibility: f64,
+}
+
+type PackedTailMatch = (usize, usize, usize);
+type PackedTailMemo = HashMap<(usize, usize), Option<PackedTailMatch>>;
+
+fn farthest_exact_packed_tail_match(
+    tail: &str,
+    boundaries: &[usize],
+    spans_by_start: &[Vec<InputCodeSpan<'_>>],
+    start_index: usize,
+) -> Option<PackedTailMatch> {
+    fn visit(
+        tail: &str,
+        tail_offset: usize,
+        boundaries: &[usize],
+        spans_by_start: &[Vec<InputCodeSpan<'_>>],
+        start_index: usize,
+        memo: &mut PackedTailMemo,
+    ) -> Option<PackedTailMatch> {
+        if tail_offset == tail.len() {
+            return boundaries
+                .get(start_index)
+                .copied()
+                .map(|end| (end, start_index, 0));
+        }
+        if let Some(cached) = memo.get(&(start_index, tail_offset)) {
+            return *cached;
+        }
+
+        let remaining = &tail[tail_offset..];
+        let mut best = None;
+        if let Some(spans) = spans_by_start.get(start_index) {
+            for span in spans {
+                if !remaining.starts_with(span.code) {
+                    continue;
+                }
+                let Some((end, end_index, depth)) = visit(
+                    tail,
+                    tail_offset + span.code.len(),
+                    boundaries,
+                    spans_by_start,
+                    span.end_index,
+                    memo,
+                ) else {
+                    continue;
+                };
+                let candidate = (end, end_index, depth + 1);
+                if best.map_or(true, |current: PackedTailMatch| candidate.0 > current.0) {
+                    best = Some(candidate);
+                }
+            }
+        }
+        memo.insert((start_index, tail_offset), best);
+        best
+    }
+
+    visit(
+        tail,
+        0,
+        boundaries,
+        spans_by_start,
+        start_index,
+        &mut HashMap::new(),
+    )
 }
 
 #[derive(Clone, Debug)]

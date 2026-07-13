@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile, stat, writeFile } from "node:fs/promises";
+import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,6 +12,7 @@ const outputManifestPaths = [
 	path.join(appRoot, "public", "schema-asset-manifest.json"),
 	path.join(appRoot, "public-demo", "schema-asset-manifest.json"),
 ];
+const coveragePath = path.join(appRoot, "schema-acceptance-coverage.json");
 
 const requiredExtraAssets = [
 	{ after: "luna_pinyin_yune_reverse.dict.yaml", path: "luna_pinyin_yune_reverse.table.bin" },
@@ -44,6 +45,32 @@ function insertAfter(assets, afterPath, entry) {
 	assets.splice(afterIndex + 1, 0, entry);
 }
 
+async function schemaIdForAsset(assetPath) {
+	const source = await readFile(schemaPath(assetPath), "utf8");
+	const match = /^\s*schema_id:\s*([A-Za-z0-9_]+)\s*$/m.exec(source);
+	if (match === null) {
+		throw new Error(`Manifest schema asset does not declare schema_id: ${assetPath}`);
+	}
+	return match[1];
+}
+
+async function trackedSchemaAssets() {
+	const pending = [publicSchemaRoot];
+	const schemaAssets = [];
+	while (pending.length > 0) {
+		const directory = pending.pop();
+		for (const entry of await readdir(directory, { withFileTypes: true })) {
+			const fullPath = path.join(directory, entry.name);
+			if (entry.isDirectory()) {
+				pending.push(fullPath);
+			} else if (entry.isFile() && entry.name.endsWith(".schema.yaml")) {
+				schemaAssets.push(path.relative(publicSchemaRoot, fullPath).replaceAll(path.sep, "/"));
+			}
+		}
+	}
+	return schemaAssets.sort((left, right) => left.localeCompare(right));
+}
+
 const template = JSON.parse(await readFile(outputManifestPaths[1], "utf8"));
 if (template.generatedFor !== "yune-web") {
 	throw new Error(`Unexpected manifest generatedFor: ${template.generatedFor}`);
@@ -63,6 +90,25 @@ for (const extra of requiredExtraAssets) {
 	});
 }
 
+const manifestedPaths = new Set(assets.map(asset => asset.path));
+for (const assetPath of await trackedSchemaAssets()) {
+	if (manifestedPaths.has(assetPath)) {
+		continue;
+	}
+	let insertionIndex = -1;
+	for (let index = 0; index < assets.length; index += 1) {
+		if (assets[index].path.endsWith(".schema.yaml")) {
+			insertionIndex = index;
+		}
+	}
+	assets.splice(insertionIndex + 1, 0, {
+		path: assetPath,
+		tier: "shared",
+		required: true,
+	});
+	manifestedPaths.add(assetPath);
+}
+
 const resolvedAssets = [];
 for (const asset of assets) {
 	const source = schemaPath(asset.path);
@@ -79,6 +125,32 @@ for (const asset of assets) {
 	});
 }
 
+const coverage = JSON.parse(await readFile(coveragePath, "utf8"));
+if (coverage.version !== "m59-reach03-v1" || !Array.isArray(coverage.schemaAssets)) {
+	throw new Error("Unexpected or malformed schema acceptance coverage registry");
+}
+const existingCoverage = new Map(coverage.schemaAssets.map(row => [row.asset, row]));
+const manifestedSchemaAssets = resolvedAssets
+	.map(asset => asset.path)
+	.filter(assetPath => assetPath.endsWith(".schema.yaml"));
+coverage.schemaAssets = [];
+for (const assetPath of manifestedSchemaAssets) {
+	const existing = existingCoverage.get(assetPath);
+	if (existing !== undefined) {
+		coverage.schemaAssets.push(existing);
+		continue;
+	}
+	const schemaId = await schemaIdForAsset(assetPath);
+	coverage.schemaAssets.push({
+		asset: assetPath,
+		schemaId,
+		status: "open",
+		disposition: "unclassified",
+		acceptanceId: `open-${schemaId}`,
+		reason: "Automatically opened by update-schema-asset-manifest.mjs; classify and add real-path acceptance before the manifest gate can pass.",
+	});
+}
+
 const manifest = {
 	version: manifestVersion,
 	generatedFor: "yune-web",
@@ -91,3 +163,5 @@ for (const outputPath of outputManifestPaths) {
 	await writeFile(outputPath, serialized);
 	console.log(`Updated ${path.relative(repoRoot, outputPath).replaceAll(path.sep, "/")}`);
 }
+await writeFile(coveragePath, `${JSON.stringify(coverage, null, 2)}\n`);
+console.log(`Updated ${path.relative(repoRoot, coveragePath).replaceAll(path.sep, "/")}`);

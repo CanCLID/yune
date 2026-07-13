@@ -123,6 +123,13 @@
       "required": true
     },
     {
+      "path": "luna_pinyin_octagram.schema.yaml",
+      "sha256": "775415ae0998c41d54cf7a31a1623c5b3bbda2e90cdbbf4a94796268510b4411",
+      "bytes": 2933,
+      "tier": "shared",
+      "required": true
+    },
+    {
       "path": "luna_pinyin.dict.yaml",
       "sha256": "69c7142fcd67cf070677c6435333a8a35e2fc1232d4f0851ef8bac31324bf7ee",
       "bytes": 891377,

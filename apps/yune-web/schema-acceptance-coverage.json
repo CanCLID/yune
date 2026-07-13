@@ -1,0 +1,302 @@
+{
+  "version": "m59-reach03-v1",
+  "manifest": "apps/yune-web/public/schema-asset-manifest.json",
+  "mechanismContract": {
+    "schemaGeneralDefault": "translator/leading_syllable_reachability defaults on for every schema and may be explicitly disabled only by a recorded schema setting",
+    "profilePrecedence": "TypeDuck-profile schemas retain their separately owned translator/prefix_fallback path when schema-general reachability is explicitly false"
+  },
+  "validationTestFile": "crates/yune-rime-api/tests/yune_web/m59_reachability.rs",
+  "configurationCarriers": [
+    {
+      "asset": "default.yaml",
+      "declaredSchemaIds": [
+        "jyut6ping3"
+      ]
+    },
+    {
+      "asset": "default.custom.yaml",
+      "declaredSchemaIds": [
+        "jyut6ping3",
+        "cangjie5",
+        "luna_pinyin"
+      ]
+    },
+    {
+      "asset": "build/default.yaml",
+      "declaredSchemaIds": [
+        "cangjie5",
+        "luna_pinyin"
+      ]
+    }
+  ],
+  "schemaAssets": [
+    {
+      "asset": "jyut6ping3.schema.yaml",
+      "schemaId": "jyut6ping3",
+      "status": "accepted",
+      "disposition": "top_level_selectable",
+      "acceptanceId": "plain-typeduck-jyutping",
+      "acceptance": {
+        "testFile": "crates/yune-rime-api/tests/yune_web/m59_reachability.rs",
+        "testName": "m59_manifest_plain_jyut6ping3_real_deploy_default_on_and_explicit_false",
+        "caseLabel": "product-jyutping-plain",
+        "oracleFixture": "crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-windows-boundary-ngohaig.json",
+        "input": "ngohaig",
+        "expectedFinal": "我係個",
+        "defaultOn": "exact-arbitrary-composition",
+        "explicitFalse": "exact-prefix-fallback-composition"
+      }
+    },
+    {
+      "asset": "jyut6ping3_mobile.schema.yaml",
+      "schemaId": "jyut6ping3_mobile",
+      "status": "accepted",
+      "disposition": "runtime_alias",
+      "acceptanceId": "product-jyutping",
+      "acceptance": {
+        "testFile": "crates/yune-rime-api/tests/yune_web/m59_reachability.rs",
+        "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+        "caseLabel": "product-jyutping",
+        "oracleFixture": "crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json",
+        "input": "caksijathaacoenggeoizi",
+        "expectedFinal": "測是日下場句子",
+        "defaultOn": "exact-arbitrary-composition",
+        "explicitFalse": "exact-prefix-fallback-composition"
+      }
+    },
+    {
+      "asset": "jyut6ping3_scolar.schema.yaml",
+      "schemaId": "jyut6ping3_scolar",
+      "status": "accepted",
+      "disposition": "dependency_only",
+      "acceptanceId": "dependency-jyut6ping3-scolar",
+      "dependencyOwners": [
+        "jyut6ping3.schema.yaml",
+        "cangjie5.schema.yaml",
+        "build/jyut6ping3_mobile.schema.yaml"
+      ],
+      "reason": "Dictionary-panel lookup helper; not installed or selected as a top-level product schema."
+    },
+    {
+      "asset": "luna_pinyin.schema.yaml",
+      "schemaId": "luna_pinyin",
+      "status": "accepted",
+      "disposition": "top_level_selectable",
+      "acceptanceId": "product-luna-pinyin",
+      "acceptance": {
+        "testFile": "crates/yune-rime-api/tests/yune_web/m59_reachability.rs",
+        "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+        "caseLabel": "luna-pinyin",
+        "oracleFixture": "crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json",
+        "input": "moboyi",
+        "expectedFinal": "莫伯洢",
+        "defaultOn": "exact-arbitrary-composition",
+        "explicitFalse": "exact-stream-with-leading-single-family-removed"
+      }
+    },
+    {
+      "asset": "luna_pinyin_octagram.schema.yaml",
+      "schemaId": "luna_pinyin_octagram",
+      "status": "accepted",
+      "disposition": "dev_selectable",
+      "acceptanceId": "product-luna-pinyin-octagram",
+      "acceptance": {
+        "testFile": "crates/yune-rime-api/tests/yune_web/m59_reachability.rs",
+        "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+        "caseLabel": "luna-pinyin-octagram",
+        "oracleFixture": "crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json",
+        "input": "moboyi",
+        "expectedFinal": "莫伯洢",
+        "defaultOn": "exact-arbitrary-composition",
+        "explicitFalse": "exact-stream-with-leading-single-family-removed"
+      }
+    },
+    {
+      "asset": "stroke.schema.yaml",
+      "schemaId": "stroke",
+      "status": "accepted",
+      "disposition": "dependency_only",
+      "acceptanceId": "dependency-stroke-control",
+      "dependencyOwners": [
+        "luna_pinyin.schema.yaml",
+        "luna_pinyin_octagram.schema.yaml"
+      ],
+      "reason": "Reverse-lookup dependency rather than a public top-level schema; the eight-row deployment matrix retains it as the identity/null-map control."
+    },
+    {
+      "asset": "loengfan.schema.yaml",
+      "schemaId": "loengfan",
+      "status": "accepted",
+      "disposition": "dependency_only",
+      "acceptanceId": "dependency-loengfan",
+      "dependencyOwners": [
+        "jyut6ping3.schema.yaml"
+      ],
+      "reason": "Affix translator dependency of full Jyutping; not installed or selected as a top-level product schema."
+    },
+    {
+      "asset": "cangjie3.schema.yaml",
+      "schemaId": "cangjie3",
+      "status": "accepted",
+      "disposition": "dependency_only",
+      "acceptanceId": "dependency-cangjie3",
+      "dependencyOwners": [
+        "jyut6ping3.schema.yaml"
+      ],
+      "reason": "Full-Jyutping reverse-lookup helper inheriting Cangjie 5; not installed or selected as a top-level product schema."
+    },
+    {
+      "asset": "cangjie5.schema.yaml",
+      "schemaId": "cangjie5",
+      "status": "accepted",
+      "disposition": "top_level_selectable",
+      "acceptanceId": "product-cangjie5",
+      "acceptance": {
+        "testFile": "crates/yune-rime-api/tests/yune_web/m59_reachability.rs",
+        "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+        "caseLabel": "cangjie5",
+        "oracleFixture": "crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-composition.json",
+        "input": "hwmvsqtt",
+        "expectedFinal": "粵拼",
+        "defaultOn": "exact-arbitrary-composition",
+        "explicitFalse": "supplemental-leading-target-absent"
+      }
+    },
+    {
+      "asset": "build/jyut6ping3_mobile.schema.yaml",
+      "schemaId": "jyut6ping3_mobile",
+      "status": "accepted",
+      "disposition": "deployed_runtime_mirror",
+      "acceptanceId": "product-jyutping",
+      "acceptance": {
+        "testFile": "crates/yune-rime-api/tests/yune_web/m59_reachability.rs",
+        "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+        "caseLabel": "product-jyutping",
+        "oracleFixture": "crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json",
+        "input": "caksijathaacoenggeoizi",
+        "expectedFinal": "測是日下場句子",
+        "defaultOn": "exact-arbitrary-composition",
+        "explicitFalse": "exact-prefix-fallback-composition"
+      }
+    }
+  ],
+  "validationRows": [
+    {
+      "caseLabel": "product-jyutping",
+      "schemaId": "jyut6ping3_mobile",
+      "acceptanceId": "product-jyutping",
+      "status": "accepted",
+      "scope": "shipped-runtime",
+      "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+      "evidenceFile": "crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json",
+      "input": "caksijathaacoenggeoizi",
+      "expectedFinal": "測是日下場句子",
+      "defaultOn": "exact-arbitrary-composition",
+      "explicitFalse": "exact-prefix-fallback-composition"
+    },
+    {
+      "caseLabel": "canonical-jyutping",
+      "schemaId": "jyut6ping3",
+      "acceptanceId": "canonical-rime-cantonese-validation",
+      "status": "accepted",
+      "scope": "canonical-rime-cantonese-validation",
+      "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+      "evidenceFile": "crates/yune-core/tests/fixtures/upstream-jyutping/canonical-rime-cantonese/jyutping-m59-being-whole-input.json",
+      "input": "being",
+      "expectedFinal": "畀嗯",
+      "defaultOn": "exact-arbitrary-composition",
+      "explicitFalse": "supplemental-leading-target-absent"
+    },
+    {
+      "caseLabel": "cangjie5",
+      "schemaId": "cangjie5",
+      "acceptanceId": "product-cangjie5",
+      "status": "accepted",
+      "scope": "shipped-runtime",
+      "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+      "evidenceFile": "crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-composition.json",
+      "input": "hwmvsqtt",
+      "expectedFinal": "粵拼",
+      "defaultOn": "exact-arbitrary-composition",
+      "explicitFalse": "supplemental-leading-target-absent"
+    },
+    {
+      "caseLabel": "luna-pinyin",
+      "schemaId": "luna_pinyin",
+      "acceptanceId": "product-luna-pinyin",
+      "status": "accepted",
+      "scope": "shipped-runtime",
+      "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+      "evidenceFile": "crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json",
+      "input": "moboyi",
+      "expectedFinal": "莫伯洢",
+      "defaultOn": "exact-arbitrary-composition",
+      "explicitFalse": "exact-stream-with-leading-single-family-removed"
+    },
+    {
+      "caseLabel": "luna-pinyin-octagram",
+      "schemaId": "luna_pinyin_octagram",
+      "acceptanceId": "product-luna-pinyin-octagram",
+      "status": "accepted",
+      "scope": "dev-selectable-runtime",
+      "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+      "evidenceFile": "crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json",
+      "input": "moboyi",
+      "expectedFinal": "莫伯洢",
+      "defaultOn": "exact-arbitrary-composition",
+      "explicitFalse": "exact-stream-with-leading-single-family-removed"
+    },
+    {
+      "caseLabel": "double-pinyin",
+      "schemaId": "double_pinyin",
+      "acceptanceId": "mandatory-double-pinyin-validation",
+      "status": "accepted",
+      "scope": "mandatory-nonshipped-validation",
+      "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+      "evidenceFile": "crates/yune-core/tests/fixtures/upstream-1.17.0/double-pinyin-m59-whole-input.json",
+      "input": "hknivs",
+      "expectedFinal": "好逆鐘",
+      "defaultOn": "exact-arbitrary-composition",
+      "explicitFalse": "supplemental-leading-target-absent"
+    },
+    {
+      "caseLabel": "bopomofo",
+      "schemaId": "bopomofo",
+      "acceptanceId": "mandatory-bopomofo-validation",
+      "status": "accepted",
+      "scope": "mandatory-nonshipped-validation",
+      "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+      "evidenceFile": "crates/yune-core/tests/fixtures/upstream-1.17.0/bopomofo-m59-whole-input.json",
+      "input": "cl3su3j06",
+      "expectedFinal": "好你玩",
+      "defaultOn": "exact-arbitrary-composition",
+      "explicitFalse": "supplemental-leading-target-absent"
+    },
+    {
+      "caseLabel": "stroke-null-map",
+      "schemaId": "stroke",
+      "acceptanceId": "dependency-stroke-control",
+      "status": "accepted",
+      "scope": "dependency-identity-control",
+      "testName": "m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false",
+      "evidenceFile": "apps/yune-web/public/schema/stroke.dict.yaml",
+      "input": "zphzzhh",
+      "expectedFinal": "好一",
+      "defaultOn": "exact-arbitrary-composition",
+      "explicitFalse": "supplemental-leading-target-absent"
+    },
+    {
+      "caseLabel": "product-jyutping-plain",
+      "schemaId": "jyut6ping3",
+      "acceptanceId": "plain-typeduck-jyutping",
+      "status": "accepted",
+      "scope": "shipped-selectable-direct-schema",
+      "testName": "m59_manifest_plain_jyut6ping3_real_deploy_default_on_and_explicit_false",
+      "evidenceFile": "crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-windows-boundary-ngohaig.json",
+      "input": "ngohaig",
+      "expectedFinal": "我係個",
+      "defaultOn": "exact-arbitrary-composition",
+      "explicitFalse": "exact-prefix-fallback-composition"
+    }
+  ]
+}

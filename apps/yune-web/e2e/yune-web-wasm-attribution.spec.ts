@@ -804,7 +804,23 @@ function syntheticSize(file: string): number {
   try {
     return Number(statSync(file).size);
   } catch {
-    return 0;
+    // Oversized schema assets are split into `<name>.partN` chunks at build time
+    // (apps/yune-web/public-demo/build.mjs) to stay under the Cloudflare Pages
+    // 25 MiB per-file cap, so the raw file may be absent from a deployed dist.
+    // Fall back to the summed size of its sibling parts.
+    let total = 0;
+    let found = false;
+    for (let index = 0; ; index += 1) {
+      let partSize: number;
+      try {
+        partSize = Number(statSync(`${file}.part${index}`).size);
+      } catch {
+        break;
+      }
+      total += partSize;
+      found = true;
+    }
+    return found ? total : 0;
   }
 }
 

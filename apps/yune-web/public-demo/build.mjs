@@ -13,6 +13,14 @@ const manifestPath = path.join(publicRoot, "schema-asset-manifest.json");
 const outputDir = path.resolve(process.argv[2] ?? path.join(publicRoot, "dist"));
 const viteOutputDir = await mkdtemp(path.join(tmpdir(), "yune-web-public-build-"));
 
+// Cloudflare Pages rejects any single deployed asset larger than 25 MiB. Schema
+// payloads that exceed the cap (e.g. the jyut6ping3_mobile prism) are emitted as
+// ordered `<name>.partN` chunks that the browser worker fetches and reassembles
+// before writing them into the WASM filesystem. Keep these bounds in sync with
+// PAGES_MAX_ASSET_BYTES / SPLIT_CHUNK_BYTES in apps/yune-web/src/worker.ts.
+const PAGES_MAX_ASSET_BYTES = 25 * 1024 * 1024;
+const SPLIT_CHUNK_BYTES = 20 * 1024 * 1024;
+
 function commandPath(name) {
 	return path.join(appRoot, "node_modules", ".bin", `${name}${process.platform === "win32" ? ".cmd" : ""}`);
 }
@@ -54,6 +62,23 @@ async function fileExists(file) {
 async function copyFileWithParents(source, target) {
 	await mkdir(path.dirname(target), { recursive: true });
 	await cp(source, target, { force: true });
+}
+
+async function splitOversizedAsset(target, relative, expectedBytes) {
+	const data = await readFile(target);
+	if (data.byteLength !== expectedBytes) {
+		throw new Error(`Split source ${relative} is ${data.byteLength} bytes, expected ${expectedBytes}`);
+	}
+	const partCount = Math.ceil(data.byteLength / SPLIT_CHUNK_BYTES);
+	for (let index = 0; index < partCount; index += 1) {
+		const chunk = data.subarray(index * SPLIT_CHUNK_BYTES, (index + 1) * SPLIT_CHUNK_BYTES);
+		if (chunk.byteLength > PAGES_MAX_ASSET_BYTES) {
+			throw new Error(`Split part ${relative}.part${index} is ${chunk.byteLength} bytes, over the Cloudflare Pages 25 MiB limit`);
+		}
+		await writeFile(`${target}.part${index}`, chunk);
+	}
+	await rm(target, { force: true });
+	console.log(`Split ${relative} into ${partCount} parts (${data.byteLength} bytes) to satisfy the Cloudflare Pages 25 MiB asset limit`);
 }
 
 async function sha256(file) {
@@ -114,6 +139,9 @@ for (const asset of manifest.assets) {
 	const actualHash = await sha256(target);
 	if (actualHash !== asset.sha256) {
 		throw new Error(`SHA-256 mismatch for ${relative}. Expected ${asset.sha256}, got ${actualHash}`);
+	}
+	if (asset.bytes > PAGES_MAX_ASSET_BYTES) {
+		await splitOversizedAsset(target, relative, asset.bytes);
 	}
 }
 

@@ -94,6 +94,7 @@ interface StartupWasmMemorySnapshot {
 interface PublicAssetManifestEntry {
   path: string;
   sha256: string;
+  bytes: number;
   tier: "shared" | "explicit";
   required?: boolean;
 }
@@ -394,6 +395,12 @@ const YUNE_WEB_WASM_BUILD_PROFILE = "release";
 const YUNE_WEB_M27_EVIDENCE_VERSION = "m27-startup-v1";
 const YUNE_WEB_M31_EVIDENCE_VERSION = "web03-three-schema-launch-v1";
 const YUNE_PUBLIC_DEMO = typeof YUNE_PUBLIC_DEMO_BUILD !== "undefined" && YUNE_PUBLIC_DEMO_BUILD === true;
+// Cloudflare Pages caps a single deployed asset at 25 MiB, so the public build
+// (public-demo/build.mjs) splits oversized schema payloads into ordered
+// `<path>.partN` chunks. These bounds must match that build script so the byte
+// ranges the worker reassembles line up exactly with what was written.
+const PAGES_MAX_ASSET_BYTES = 25 * 1024 * 1024;
+const SPLIT_CHUNK_BYTES = 20 * 1024 * 1024;
 type WasmAttributionAssetFamily =
   | "luna-core"
   | "jyutping-core"
@@ -803,20 +810,32 @@ async function loadPublicSharedAssetPaths(paths: readonly string[]) {
 
 async function loadPublicSchemaAsset(path: string): Promise<string | Uint8Array> {
   const entry = await publicAssetManifestEntry(path);
-  const sourceUrl = `schema/${path}`;
+  if (entry.bytes > PAGES_MAX_ASSET_BYTES) {
+    return loadSplitPublicSchemaAsset(path, entry);
+  }
+  const response = await fetchPublicAsset(`schema/${path}`, entry.sha256);
+  return responseAssetContent(response, path);
+}
+
+async function fetchPublicAsset(sourceUrl: string, sha256: string): Promise<Response> {
   if (typeof caches === "undefined") {
     publicAssetCacheStats.unavailable = true;
-    return loadAssetContent({ type: "url", url: `${sourceUrl}?sha256=${entry.sha256}` });
+    const uncachedUrl = `${sourceUrl}?sha256=${sha256}`;
+    const response = await fetch(uncachedUrl, { cache: "force-cache" });
+    if (!response.ok) {
+      throw new Error(`Asset URL loading failed: ${uncachedUrl} (${response.status})`);
+    }
+    return response;
   }
 
   const cache = await caches.open(`yune-web-assets-${YUNE_WEB_M31_EVIDENCE_VERSION}`);
   const cacheUrl = new URL(sourceUrl, location.href);
-  cacheUrl.searchParams.set("sha256", entry.sha256);
+  cacheUrl.searchParams.set("sha256", sha256);
   const cacheRequest = new Request(cacheUrl.toString());
   const cached = await cache.match(cacheRequest);
   if (cached !== undefined) {
     publicAssetCacheStats.hits += 1;
-    return responseAssetContent(cached, path);
+    return cached;
   }
 
   const versionedSourceUrl = cacheUrl.toString();
@@ -826,7 +845,48 @@ async function loadPublicSchemaAsset(path: string): Promise<string | Uint8Array>
   }
   await cache.put(cacheRequest, response.clone());
   publicAssetCacheStats.misses += 1;
-  return responseAssetContent(response, path);
+  return response;
+}
+
+// Oversized schema payloads are split into `<path>.partN` chunks by the public
+// build to stay under Cloudflare Pages' 25 MiB per-asset cap. Fetch every part,
+// concatenate them in order, and verify the reconstructed bytes against the
+// manifest before handing them to the WASM filesystem.
+async function loadSplitPublicSchemaAsset(
+  path: string,
+  entry: PublicAssetManifestEntry,
+): Promise<Uint8Array> {
+  const partCount = Math.ceil(entry.bytes / SPLIT_CHUNK_BYTES);
+  const partPromises: Promise<Uint8Array>[] = [];
+  for (let index = 0; index < partCount; index += 1) {
+    partPromises.push(
+      fetchPublicAsset(`schema/${path}.part${index}`, entry.sha256).then(
+        async (response) => new Uint8Array(await response.arrayBuffer()),
+      ),
+    );
+  }
+  const parts = await Promise.all(partPromises);
+
+  const combined = new Uint8Array(entry.bytes);
+  let offset = 0;
+  for (const part of parts) {
+    if (offset + part.byteLength > entry.bytes) {
+      throw new Error(`Split asset ${path} overflowed ${entry.bytes} expected bytes while reassembling`);
+    }
+    combined.set(part, offset);
+    offset += part.byteLength;
+  }
+  if (offset !== entry.bytes) {
+    throw new Error(`Split asset ${path} reassembled ${offset} bytes, expected ${entry.bytes}`);
+  }
+
+  if (globalThis.crypto?.subtle) {
+    const actualSha256 = await sha256Hex(combined);
+    if (actualSha256 !== entry.sha256) {
+      throw new Error(`Split asset ${path} sha256 mismatch: expected ${entry.sha256}, got ${actualSha256}`);
+    }
+  }
+  return combined;
 }
 
 async function responseAssetContent(response: Response, path: string): Promise<string | Uint8Array> {

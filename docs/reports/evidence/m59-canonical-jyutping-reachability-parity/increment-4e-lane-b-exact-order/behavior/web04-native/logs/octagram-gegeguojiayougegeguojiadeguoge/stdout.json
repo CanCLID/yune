@@ -1,0 +1,1953 @@
+{
+  "schema_id": "luna_pinyin_octagram",
+  "sequence": "gegeguojiayougegeguojiadeguoge",
+  "events": [
+    {
+      "index": 0,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "g",
+        "caret": 1,
+        "preedit": "g",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "給",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "過",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "跟",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "更",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 1,
+      "key": "e",
+      "keycode": 101,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "ge",
+        "caret": 2,
+        "preedit": "ge",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "格",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "歌",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 2,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "geg",
+        "caret": 4,
+        "preedit": "ge g",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各國",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個股",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 3,
+      "key": "e",
+      "keycode": 101,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gege",
+        "caret": 5,
+        "preedit": "ge ge",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "格格",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "咯咯",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 4,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeg",
+        "caret": 7,
+        "preedit": "ge ge g",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "個哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "格格",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 5,
+      "key": "u",
+      "keycode": 117,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegegu",
+        "caret": 8,
+        "preedit": "ge ge gu",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個股",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "格格",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 6,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguo",
+        "caret": 9,
+        "preedit": "ge ge guo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個過",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "格格",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 7,
+      "key": "j",
+      "keycode": 106,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguoj",
+        "caret": 11,
+        "preedit": "ge ge guo j",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "格格",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 8,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguoji",
+        "caret": 12,
+        "preedit": "ge ge guo ji",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國際",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "格格",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 9,
+      "key": "a",
+      "keycode": 97,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojia",
+        "caret": 13,
+        "preedit": "ge ge guo jia",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "格格",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 10,
+      "key": "y",
+      "keycode": 121,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiay",
+        "caret": 15,
+        "preedit": "ge ge guo jia y",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 11,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayo",
+        "caret": 16,
+        "preedit": "ge ge guo jia yo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家喲",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 12,
+      "key": "u",
+      "keycode": 117,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayou",
+        "caret": 17,
+        "preedit": "ge ge guo jia you",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 13,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayoug",
+        "caret": 19,
+        "preedit": "ge ge guo jia you g",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 14,
+      "key": "e",
+      "keycode": 101,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayouge",
+        "caret": 20,
+        "preedit": "ge ge guo jia you ge",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 15,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougeg",
+        "caret": 22,
+        "preedit": "ge ge guo jia you ge g",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有個梗",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 16,
+      "key": "e",
+      "keycode": 101,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougege",
+        "caret": 23,
+        "preedit": "ge ge guo jia you ge ge",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 17,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeg",
+        "caret": 25,
+        "preedit": "ge ge guo jia you ge ge g",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有個哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 18,
+      "key": "u",
+      "keycode": 117,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegegu",
+        "caret": 26,
+        "preedit": "ge ge guo jia you ge ge gu",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有個個股",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 19,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguo",
+        "caret": 27,
+        "preedit": "ge ge guo jia you ge ge guo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有個各國",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 20,
+      "key": "j",
+      "keycode": 106,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguoj",
+        "caret": 29,
+        "preedit": "ge ge guo jia you ge ge guo j",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 21,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguoji",
+        "caret": 30,
+        "preedit": "ge ge guo jia you ge ge guo ji",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有各個國際",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 22,
+      "key": "a",
+      "keycode": 97,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguojia",
+        "caret": 31,
+        "preedit": "ge ge guo jia you ge ge guo jia",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 23,
+      "key": "d",
+      "keycode": 100,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguojiad",
+        "caret": 33,
+        "preedit": "ge ge guo jia you ge ge guo jia d",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有各個國家的",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 24,
+      "key": "e",
+      "keycode": 101,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguojiade",
+        "caret": 34,
+        "preedit": "ge ge guo jia you ge ge guo jia de",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有各個國家的",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 25,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguojiadeg",
+        "caret": 36,
+        "preedit": "ge ge guo jia you ge ge guo jia de g",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有各個國家的歌",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 26,
+      "key": "u",
+      "keycode": 117,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguojiadegu",
+        "caret": 37,
+        "preedit": "ge ge guo jia you ge ge guo jia de gu",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有各個國家的股",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 27,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguojiadeguo",
+        "caret": 38,
+        "preedit": "ge ge guo jia you ge ge guo jia de guo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有各個國家的過",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 28,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguojiadeguog",
+        "caret": 40,
+        "preedit": "ge ge guo jia you ge ge guo jia de guo g",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有各個國家的過高",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 29,
+      "key": "e",
+      "keycode": 101,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "gegeguojiayougegeguojiadeguoge",
+        "caret": 41,
+        "preedit": "ge ge guo jia you ge ge guo jia de guo ge",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "各個國家有各個國家的國歌",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個國家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "各個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哥哥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "個個",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    }
+  ],
+  "commits": [],
+  "context": {
+    "input": "gegeguojiayougegeguojiadeguoge",
+    "caret": 41,
+    "preedit": "ge ge guo jia you ge ge guo jia de guo ge",
+    "highlighted": 0,
+    "last_commit": null,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "select_keys": null,
+    "select_labels": [],
+    "candidates": [
+      {
+        "text": "各個國家有各個國家的國歌",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "各個國家",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "各個",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "哥哥",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "個個",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      }
+    ]
+  },
+  "status": {
+    "schema_id": "luna_pinyin_octagram",
+    "schema_name": "朙月拼音 + Octagram",
+    "is_disabled": false,
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false
+  }
+}
+

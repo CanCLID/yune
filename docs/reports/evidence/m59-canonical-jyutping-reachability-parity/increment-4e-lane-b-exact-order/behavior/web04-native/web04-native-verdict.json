@@ -1,0 +1,117 @@
+{
+    "gate":  "M59 Increment 4e native WEB-04 plain/null and Octagram top-candidate parity",
+    "verdict":  "pass",
+    "source_commit":  "5879405c7b0f76af4dca7382f00b3e0605386f2c",
+    "source_clean":  true,
+    "source_dirty":  false,
+    "source_status":  [
+
+                      ],
+    "yune_cli":  {
+                     "path":  "C:\\m59-4e-release-target\\release\\yune-cli.exe",
+                     "sha256":  "d738aae187addcaeb53857082d9f3cabc9afacafe5cb180a62bd4775eec8f7d8",
+                     "expected_sha256":  null,
+                     "provenance_mode":  "source-built-release",
+                     "cargo_profile":  "release"
+                 },
+    "oracle_fixture":  {
+                           "path":  "crates/yune-core/tests/fixtures/upstream-octagram/lotem-luna-pinyin-octagram.json",
+                           "sha256":  "885ca3e611aa819e52733dfcd03f9eba5e233c78cd02e37e26cb2fdd77e09882",
+                           "engine_commit":  "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+                           "octagram_plugin_commit":  "dfcc15115788c828d9dd7b4bff68067d3ce2ffb8"
+                       },
+    "grammar_model":  {
+                          "source_url":  "https://raw.githubusercontent.com/lotem/rime-octagram-data/bb8e1313552f0f27f2f968031dfaf4563e55d982/zh-hant-t-essay-bgw.gram",
+                          "source_commit":  "bb8e1313552f0f27f2f968031dfaf4563e55d982",
+                          "file":  "zh-hant-t-essay-bgw.gram",
+                          "bytes":  10513408,
+                          "sha256":  "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+                          "vendored":  false
+                      },
+    "tracked_schema_root":  "apps/yune-web/public/schema",
+    "user_root_policy":  "one fresh root per lane, reused across four non-selecting input sequences",
+    "user_override":  {
+                          "logical_path":  "default.custom.yaml",
+                          "content":  "patch:\n  schema_list:\n    - schema: luna_pinyin\n    - schema: luna_pinyin_octagram\n  menu:\n    page_size: 6",
+                          "schema_ids":  [
+                                             "luna_pinyin",
+                                             "luna_pinyin_octagram"
+                                         ]
+                      },
+    "work_root":  "C:\\m59-4e-web04-clean-work\\run-c85a4b5a0a59420192076fed0e57e767",
+    "results":  [
+                    {
+                        "lane":  "plain-null",
+                        "schema_id":  "luna_pinyin",
+                        "input":  "youhuiyong",
+                        "expected_top":  "有會用",
+                        "actual_top":  "有會用",
+                        "verdict":  "pass",
+                        "candidate_count":  5
+                    },
+                    {
+                        "lane":  "octagram",
+                        "schema_id":  "luna_pinyin_octagram",
+                        "input":  "youhuiyong",
+                        "expected_top":  "優惠用",
+                        "actual_top":  "優惠用",
+                        "verdict":  "pass",
+                        "candidate_count":  5
+                    },
+                    {
+                        "lane":  "plain-null",
+                        "schema_id":  "luna_pinyin",
+                        "input":  "jintianhuiyi",
+                        "expected_top":  "今天回憶",
+                        "actual_top":  "今天回憶",
+                        "verdict":  "pass",
+                        "candidate_count":  5
+                    },
+                    {
+                        "lane":  "octagram",
+                        "schema_id":  "luna_pinyin_octagram",
+                        "input":  "jintianhuiyi",
+                        "expected_top":  "今天會議",
+                        "actual_top":  "今天會議",
+                        "verdict":  "pass",
+                        "candidate_count":  5
+                    },
+                    {
+                        "lane":  "plain-null",
+                        "schema_id":  "luna_pinyin",
+                        "input":  "jintianwanshangyouhui",
+                        "expected_top":  "今天晚上優惠",
+                        "actual_top":  "今天晚上優惠",
+                        "verdict":  "pass",
+                        "candidate_count":  5
+                    },
+                    {
+                        "lane":  "octagram",
+                        "schema_id":  "luna_pinyin_octagram",
+                        "input":  "jintianwanshangyouhui",
+                        "expected_top":  "今天晚上又會",
+                        "actual_top":  "今天晚上又會",
+                        "verdict":  "pass",
+                        "candidate_count":  5
+                    },
+                    {
+                        "lane":  "plain-null",
+                        "schema_id":  "luna_pinyin",
+                        "input":  "gegeguojiayougegeguojiadeguoge",
+                        "expected_top":  "各個國家有各個國家德國個",
+                        "actual_top":  "各個國家有各個國家德國個",
+                        "verdict":  "pass",
+                        "candidate_count":  5
+                    },
+                    {
+                        "lane":  "octagram",
+                        "schema_id":  "luna_pinyin_octagram",
+                        "input":  "gegeguojiayougegeguojiadeguoge",
+                        "expected_top":  "各個國家有各個國家的國歌",
+                        "actual_top":  "各個國家有各個國家的國歌",
+                        "verdict":  "pass",
+                        "candidate_count":  5
+                    }
+                ],
+    "failure_count":  0
+}

@@ -1,0 +1,14 @@
+engine=yune
+track=track-a-comparison
+schema=luna_pinyin
+dll=C:\m59-4e-perf-work-5879405c\run3\track-a-yune\rime.dll
+shared=C:\m59-4e-perf-work-5879405c\run3\track-a-yune\shared
+user=C:\m59-4e-perf-work-5879405c\run3\track-a-yune\user
+build=C:\m59-4e-perf-work-5879405c\run3\track-a-yune\user\build
+inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu
+iterations=9
+session_iterations=60
+key_iterations=80
+deploy_before_benchmark=false
+deploy_only=false
+managed_runtime=false

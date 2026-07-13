@@ -1,0 +1,15 @@
+format_version=1
+source_commit=5879405c7b0f76af4dca7382f00b3e0605386f2c
+source_tree=bbba5a0c1edf46385077f3ebd91afeb2ebcedf7e
+source_clean=True
+source_content_binding_sha256=cca5350697d62c0713f8c26b4f0a8a11bf36750de8e522c368f578952bf0833c
+benchmark_script_sha256=a5177ffca4dab7fc2726be919c21c4c820247a3ae7b730af11da36ebf757b1df
+benchmark_rust_source_sha256=7c85f081d03667a5e7ec26c1e06c95549092eb517981a025242846dc1e973433
+cargo_lock_sha256=14071395bcc15abaa9db710109c47a7ac65228f36b048d9a7037c74fd2d261f5
+rustc_identity_sha256=2efe229f7908c2c19f459ca734101a5b35cb482476b8bee1357f94a18c766078
+cargo_identity_sha256=b6ef6807dd96d18b833474ad68e7a23a29e562a29c67afa71a59fb9a73df0068
+cargo_command=cargo bench -p yune-rime-api --bench native_inprocess_benchmark --no-run --message-format=json-render-diagnostics
+native_benchmark_executable_path=C:\m59-4e-perf-work-5879405c\run1\cargo-target\release\deps\native_inprocess_benchmark-5c1184aa464f2e15.exe
+native_benchmark_executable_sha256=c85fe3fe63d10c4e6bcd467a961c9e60d2740701b895327ae65b5a6493add541
+native_benchmark_build_command=$env:CARGO_TARGET_DIR='C:\m59-4e-perf-work-5879405c\run1\cargo-target'; cargo bench -p yune-rime-api --bench native_inprocess_benchmark --no-run --message-format=json-render-diagnostics
+cargo_target_root=C:\m59-4e-perf-work-5879405c\run1\cargo-target

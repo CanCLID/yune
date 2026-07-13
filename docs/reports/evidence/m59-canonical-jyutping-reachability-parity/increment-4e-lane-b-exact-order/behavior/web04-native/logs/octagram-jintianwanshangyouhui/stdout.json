@@ -1,0 +1,1386 @@
+{
+  "schema_id": "luna_pinyin_octagram",
+  "sequence": "jintianwanshangyouhui",
+  "events": [
+    {
+      "index": 0,
+      "key": "j",
+      "keycode": 106,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "j",
+        "caret": 1,
+        "preedit": "j",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "就",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "將",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "及",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "叫",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "家",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 1,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "ji",
+        "caret": 2,
+        "preedit": "ji",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "及",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "機",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "級",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "即",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "既",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 2,
+      "key": "n",
+      "keycode": 110,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jin",
+        "caret": 3,
+        "preedit": "jin",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "進",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "近",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "僅",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "緊",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 3,
+      "key": "t",
+      "keycode": 116,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jint",
+        "caret": 5,
+        "preedit": "jin t",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "盡頭",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "津貼",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "緊貼",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "勁頭",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 4,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jinti",
+        "caret": 6,
+        "preedit": "jin ti",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "近體",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "禁體",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "進",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 5,
+      "key": "a",
+      "keycode": 97,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintia",
+        "caret": 8,
+        "preedit": "jin ti a",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "浸提啊",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "近體",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "禁體",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "進",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 6,
+      "key": "n",
+      "keycode": 110,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintian",
+        "caret": 8,
+        "preedit": "jin tian",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "近體",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 7,
+      "key": "w",
+      "keycode": 119,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianw",
+        "caret": 10,
+        "preedit": "jin tian w",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天我",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 8,
+      "key": "a",
+      "keycode": 97,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwa",
+        "caret": 11,
+        "preedit": "jin tian wa",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天哇",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 9,
+      "key": "n",
+      "keycode": 110,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwan",
+        "caret": 12,
+        "preedit": "jin tian wan",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天玩",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 10,
+      "key": "s",
+      "keycode": 115,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwans",
+        "caret": 14,
+        "preedit": "jin tian wan s",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天晚上",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 11,
+      "key": "h",
+      "keycode": 104,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwansh",
+        "caret": 15,
+        "preedit": "jin tian wan sh",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天晚上",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 12,
+      "key": "a",
+      "keycode": 97,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwansha",
+        "caret": 16,
+        "preedit": "jin tian wan sha",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天玩啥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 13,
+      "key": "n",
+      "keycode": 110,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwanshan",
+        "caret": 17,
+        "preedit": "jin tian wan shan",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天完善",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 14,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwanshang",
+        "caret": 18,
+        "preedit": "jin tian wan shang",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天晚上",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浸提",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 15,
+      "key": "y",
+      "keycode": 121,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwanshangy",
+        "caret": 20,
+        "preedit": "jin tian wan shang y",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天晚上有",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天晚上",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 16,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwanshangyo",
+        "caret": 21,
+        "preedit": "jin tian wan shang yo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天晚上喲",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天晚上",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 17,
+      "key": "u",
+      "keycode": 117,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwanshangyou",
+        "caret": 22,
+        "preedit": "jin tian wan shang you",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天晚上有",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天晚上",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 18,
+      "key": "h",
+      "keycode": 104,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwanshangyouh",
+        "caret": 24,
+        "preedit": "jin tian wan shang you h",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天晚上又會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天晚上",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 19,
+      "key": "u",
+      "keycode": 117,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwanshangyouhu",
+        "caret": 25,
+        "preedit": "jin tian wan shang you hu",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天晚上有戶",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天晚上",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 20,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "jintianwanshangyouhui",
+        "caret": 26,
+        "preedit": "jin tian wan shang you hui",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "今天晚上又會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天晚上",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "今天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金田",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "金天",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    }
+  ],
+  "commits": [],
+  "context": {
+    "input": "jintianwanshangyouhui",
+    "caret": 26,
+    "preedit": "jin tian wan shang you hui",
+    "highlighted": 0,
+    "last_commit": null,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "select_keys": null,
+    "select_labels": [],
+    "candidates": [
+      {
+        "text": "今天晚上又會",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "今天晚上",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "今天",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "金田",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "金天",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      }
+    ]
+  },
+  "status": {
+    "schema_id": "luna_pinyin_octagram",
+    "schema_name": "朙月拼音 + Octagram",
+    "is_disabled": false,
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false
+  }
+}
+

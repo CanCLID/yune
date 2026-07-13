@@ -1,0 +1,7 @@
+﻿command=powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\Users\laubonghaudoi\Documents\GitHub\yune\scripts\benchmark-native-rime-inprocess.ps1' -OutputRoot 'C:\m59-4e-perf-5879405c\run1' -WorkRoot 'C:\m59-4e-perf-work-5879405c\run1' -UpstreamOracleRoot 'C:\m59-4d-oracle-38e759f6' -ProductSchemaRoot 'C:\Users\laubonghaudoi\Documents\GitHub\yune\apps\yune-web\public\schema' -YuneDll 'C:\m59-4e-release-target\release\yune_rime_api.dll' -Iterations 9 -SessionIterations 60 -KeyIterations 80 -TrackAInputs 'n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu' -TrackBInputs 'neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung' -DeployProductBeforeBenchmark -TrackAThresholds 'C:\Users\laubonghaudoi\Documents\GitHub\yune\docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv'
+build_performed=False
+yune_dll_supplied=True
+native_benchmark_executable_prebuilt=False
+native_benchmark_build_performed=True
+native_benchmark_receipt=C:\m59-4e-perf-5879405c\run1\native-benchmark-build-receipt.txt
+native_benchmark_receipt_sha256=e98edd924fd5af396adc056c95ee6b9846c460b366ec7da5b7c91544136cb3d0

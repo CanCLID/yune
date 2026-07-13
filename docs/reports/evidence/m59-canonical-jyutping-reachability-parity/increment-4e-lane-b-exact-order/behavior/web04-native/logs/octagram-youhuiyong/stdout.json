@@ -1,0 +1,687 @@
+{
+  "schema_id": "luna_pinyin_octagram",
+  "sequence": "youhuiyong",
+  "events": [
+    {
+      "index": 0,
+      "key": "y",
+      "keycode": 121,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "y",
+        "caret": 1,
+        "preedit": "y",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "有",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "也",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "要",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "與",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "用",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 1,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yo",
+        "caret": 2,
+        "preedit": "yo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "喲",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "唷",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "嚛",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "哟",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 2,
+      "key": "u",
+      "keycode": 117,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "you",
+        "caret": 3,
+        "preedit": "you",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "有",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "又",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "由",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "油",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "友",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 3,
+      "key": "h",
+      "keycode": 104,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "youh",
+        "caret": 5,
+        "preedit": "you h",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "優化",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "優惠",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "又會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "友好",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "誘惑",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 4,
+      "key": "u",
+      "keycode": 117,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "youhu",
+        "caret": 6,
+        "preedit": "you hu",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "遊湖",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "油壺",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "佑護",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "悠忽",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "牖戶",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 5,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "youhui",
+        "caret": 7,
+        "preedit": "you hui",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "優惠",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "又會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "幽會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "游回",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "油灰",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 6,
+      "key": "y",
+      "keycode": 121,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "youhuiy",
+        "caret": 9,
+        "preedit": "you hui y",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "又會有",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "優惠",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "又會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "幽會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "游回",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 7,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "youhuiyo",
+        "caret": 10,
+        "preedit": "you hui yo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "優惠喲",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "優惠",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "又會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "幽會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "游回",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 8,
+      "key": "n",
+      "keycode": 110,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "youhuiyon",
+        "caret": 12,
+        "preedit": "you hui yo n",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "優惠要你",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "又會有",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "優惠",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "又會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "幽會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 9,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "youhuiyong",
+        "caret": 12,
+        "preedit": "you hui yong",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "優惠用",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "優惠",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "又會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "幽會",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "游回",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin_octagram",
+        "schema_name": "朙月拼音 + Octagram",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    }
+  ],
+  "commits": [],
+  "context": {
+    "input": "youhuiyong",
+    "caret": 12,
+    "preedit": "you hui yong",
+    "highlighted": 0,
+    "last_commit": null,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "select_keys": null,
+    "select_labels": [],
+    "candidates": [
+      {
+        "text": "優惠用",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "優惠",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "又會",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "幽會",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "游回",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      }
+    ]
+  },
+  "status": {
+    "schema_id": "luna_pinyin_octagram",
+    "schema_name": "朙月拼音 + Octagram",
+    "is_disabled": false,
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false
+  }
+}
+

@@ -132,6 +132,7 @@ pub(crate) fn apply_schema_to_session(session: &mut SessionState, schema_id: &st
     let reload_signature = schema_reload_signature(&schema_config);
     let schema_profile = schema_behavior_profile_from_config(&schema_config);
     session.engine.set_schema(schema_id.to_owned(), schema_name);
+    session.engine.set_menu_page_size(menu_settings.page_size);
     session.engine.set_schema_behavior_profile(schema_profile);
     session.menu_settings = menu_settings;
     session.schema_reload_signature = Some(reload_signature);

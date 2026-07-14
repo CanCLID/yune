@@ -2,7 +2,7 @@ use crate::{
     AiConfidence, AiContext, AiOffReason, AiResult, Candidate, CandidateRanker, CandidateRequest,
     CandidateSource, Context, Engine, MockAiRanker, RerankResult, SchemaBehaviorProfile,
     SentencePolicy, StaticTableTranslator, TranslationMergePolicy, TranslationResult, Translator,
-    UserDb,
+    UniquifierFilter, UserDb,
 };
 
 struct CommentTranslator;
@@ -929,6 +929,156 @@ fn bounded_refresh_expands_to_full_list_when_paging_past_window() {
 }
 
 #[test]
+fn long_luna_and_typeduck_refresh_only_one_page_and_match_forced_complete_order() {
+    for (schema_id, profile) in [
+        ("luna_pinyin", SchemaBehaviorProfile::Standard),
+        (
+            "arbitrary_marked_schema",
+            SchemaBehaviorProfile::TypeduckJyutping,
+        ),
+    ] {
+        let mut engine = bounded_forward_navigation_engine(schema_id, profile, "shijian");
+        assert_eq!(
+            engine.context().candidates.len(),
+            5,
+            "a long {profile:?} refresh should retain exactly one visible page"
+        );
+        assert!(!engine.candidate_list_complete());
+        let bounded_first_page = engine
+            .context()
+            .candidates
+            .iter()
+            .take(5)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        assert!(engine.highlight_candidate(5));
+
+        assert!(engine.candidate_list_complete());
+        assert!(engine.context().candidates.len() > 5);
+        assert_eq!(engine.context().candidates[5].text, "candidate-05");
+        assert_eq!(
+            engine
+                .context()
+                .candidates
+                .iter()
+                .take(5)
+                .cloned()
+                .collect::<Vec<_>>(),
+            bounded_first_page,
+            "the long {profile:?} first page must be field-identical after completion"
+        );
+
+        let mut selection = bounded_forward_navigation_engine(schema_id, profile, "shijian");
+        assert_eq!(
+            selection.select_candidate(5).as_deref(),
+            Some("candidate-05"),
+            "direct selection just beyond the retained page must complete before committing"
+        );
+    }
+}
+
+#[test]
+fn long_refresh_respects_configured_menu_page_size_above_five() {
+    for (schema_id, profile) in [
+        ("luna_pinyin", SchemaBehaviorProfile::Standard),
+        (
+            "arbitrary_marked_schema",
+            SchemaBehaviorProfile::TypeduckJyutping,
+        ),
+    ] {
+        let mut engine = bounded_forward_navigation_engine(schema_id, profile, "hai");
+        engine.set_menu_page_size(9);
+        assert_eq!(
+            engine.context().candidates.len(),
+            9,
+            "a nine-row menu should retain exactly nine visible rows for {profile:?}"
+        );
+        let bounded_first_page = engine
+            .context()
+            .candidates
+            .iter()
+            .take(9)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        assert!(engine.highlight_candidate(9));
+        assert_eq!(engine.context().candidates[9].text, "candidate-09");
+
+        assert_eq!(
+            engine
+                .context()
+                .candidates
+                .iter()
+                .take(9)
+                .cloned()
+                .collect::<Vec<_>>(),
+            bounded_first_page,
+            "the configured nine-row {profile:?} page must stay field-identical"
+        );
+    }
+}
+
+#[test]
+fn multi_char_page_refresh_retries_unbounded_when_uniquifier_needs_backfill() {
+    let _guard = super::m37_metrics_test_guard();
+    let dictionary = bounded_refresh_filter_collapse_dictionary("shijian");
+
+    for (schema_id, profile) in [
+        ("luna_pinyin", SchemaBehaviorProfile::Standard),
+        (
+            "arbitrary_marked_schema",
+            SchemaBehaviorProfile::TypeduckJyutping,
+        ),
+    ] {
+        let mut engine = filtered_bounded_refresh_engine(schema_id, profile, &dictionary);
+
+        crate::m37_metrics_enable(true);
+        crate::m37_metrics_reset();
+        engine.set_input("shijian");
+        let metrics = crate::m37_metrics_snapshot();
+        crate::m37_metrics_enable(false);
+
+        assert_eq!(metrics.candidate_request_bounded_calls, 1);
+        assert_eq!(metrics.candidate_request_surplus_total, 0);
+        assert_eq!(metrics.candidate_request_unbounded_calls, 1);
+        assert_eq!(metrics.full_list_translation_calls, 1);
+        assert!(engine.candidate_list_complete());
+
+        let mut control = filtered_bounded_refresh_engine(
+            "unbounded_control",
+            SchemaBehaviorProfile::Standard,
+            &dictionary,
+        );
+        control.set_input("shijian");
+        let actual_first_page = engine
+            .context()
+            .candidates
+            .iter()
+            .take(5)
+            .cloned()
+            .collect::<Vec<_>>();
+        assert_eq!(
+            actual_first_page,
+            control
+                .context()
+                .candidates
+                .iter()
+                .take(5)
+                .cloned()
+                .collect::<Vec<_>>(),
+            "the {profile:?} retry must preserve the complete filtered first page"
+        );
+        assert!(
+            actual_first_page
+                .iter()
+                .all(|candidate| candidate.text != "shijian"),
+            "the next unique translator row must backfill the page ahead of raw echo"
+        );
+    }
+}
+
+#[test]
 fn page_snapshot_clones_only_visible_candidates_for_page_reads() {
     let dictionary = bounded_refresh_dictionary();
     let mut engine = Engine::new();
@@ -989,6 +1139,35 @@ fn typeduck_product_refresh_keeps_profile_page_bounded_until_full_access() {
         "out-of-window product access should force a complete refresh"
     );
     assert!(engine.snapshot().candidate_list_complete);
+}
+
+#[test]
+fn long_typeduck_exact_user_outside_page_window_uses_complete_refresh() {
+    let _guard = super::m37_metrics_test_guard();
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("ngo", "LOW-QUALITY-EXACT-USER", 3, 0.5, 3);
+    let mut engine = typeduck_legacy_refresh_engine("ngo", Some(userdb));
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    engine.set_input("ngo");
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(metrics.candidate_request_bounded_calls, 0);
+    assert_eq!(metrics.candidate_request_unbounded_calls, 1);
+    assert_eq!(metrics.full_list_translation_calls, 1);
+    assert!(engine.candidate_list_complete());
+    let exact_index = engine
+        .context()
+        .candidates
+        .iter()
+        .position(|candidate| candidate.text == "LOW-QUALITY-EXACT-USER")
+        .expect("the complete refresh should retain the exact user row");
+    assert!(
+        exact_index >= 5,
+        "the fixture must place the exact user row outside the five-row window, got {exact_index}"
+    );
 }
 
 #[test]
@@ -1065,15 +1244,16 @@ fn typeduck_profile_userdb_first_page_matches_forced_complete_refresh() {
                 "candidate-04",
             ]
         };
+        let probe_len = if input.chars().count() <= 2 { 6 } else { 5 };
         assert_eq!(
             engine
                 .context()
                 .candidates
                 .iter()
-                .take(6)
+                .take(probe_len)
                 .map(|candidate| candidate.text.as_str())
                 .collect::<Vec<_>>(),
-            expected_first_six,
+            expected_first_six[..probe_len],
             "the existing exact/predictive user ordering must remain visible"
         );
         assert_eq!(
@@ -1356,6 +1536,60 @@ sort: by_weight
         ));
     }
     dictionary
+}
+
+fn bounded_refresh_filter_collapse_dictionary(prefix: &str) -> String {
+    let mut dictionary = String::from(
+        r#"
+---
+name: sample
+version: "0.1"
+sort: by_weight
+...
+
+"#,
+    );
+    for (index, text) in [
+        "candidate-00",
+        "duplicate",
+        "duplicate",
+        "candidate-02",
+        "candidate-03",
+        "candidate-04",
+        "candidate-05",
+        "candidate-06",
+        "candidate-07",
+        "candidate-08",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let first = char::from(b'a' + (index / 26) as u8);
+        let second = char::from(b'a' + (index % 26) as u8);
+        dictionary.push_str(&format!(
+            "{text}\t{prefix}{first}{second}\t{}\n",
+            100.0 - index as f32
+        ));
+    }
+    dictionary
+}
+
+fn filtered_bounded_refresh_engine(
+    schema_id: &str,
+    profile: SchemaBehaviorProfile,
+    dictionary: &str,
+) -> Engine {
+    let mut engine = Engine::new();
+    engine.set_schema(schema_id, "Filtered Bounded Refresh Test");
+    engine.set_schema_behavior_profile(profile);
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(dictionary)
+            .expect("dictionary should parse")
+            .with_completion(true)
+            .with_sentence(false),
+    );
+    engine.add_filter(UniquifierFilter);
+    engine
 }
 
 #[test]

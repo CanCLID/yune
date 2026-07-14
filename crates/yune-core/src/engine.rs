@@ -28,6 +28,7 @@ pub struct Engine {
     context: Context,
     status: Status,
     schema_profile: SchemaBehaviorProfile,
+    menu_page_size: usize,
     options: HashMap<String, bool>,
     properties: HashMap<String, String>,
     translators: Vec<Arc<dyn Translator>>,
@@ -297,6 +298,7 @@ impl Default for Engine {
             context: Context::default(),
             status: Status::default(),
             schema_profile: SchemaBehaviorProfile::default(),
+            menu_page_size: DEFAULT_PAGE_SIZE,
             options: HashMap::new(),
             properties: HashMap::new(),
             translators: vec![Arc::new(EchoTranslator)],
@@ -438,6 +440,14 @@ impl Engine {
     pub fn set_schema_behavior_profile(&mut self, profile: SchemaBehaviorProfile) {
         self.schema_profile = profile;
         self.refresh_candidates();
+    }
+
+    pub fn set_menu_page_size(&mut self, page_size: usize) {
+        let page_size = page_size.max(1);
+        if self.menu_page_size != page_size {
+            self.menu_page_size = page_size;
+            self.refresh_candidates();
+        }
     }
 
     #[must_use]
@@ -1469,28 +1479,53 @@ impl Engine {
                 .get("extended_charset")
                 .copied()
                 .unwrap_or(false);
-        let input = self.context.composition.input.as_str();
         let has_filter_surplus_risk = self.filters.iter().any(|filter| {
             matches!(
                 filter.name(),
                 "charset_filter" | "simplifier" | "uniquifier"
             )
         });
-        let surplus = if self.status.schema_id == "luna_pinyin"
+        CandidateRequest::bounded(self.bounded_refresh_limit(has_filter_surplus_risk))
+            .with_filter_extended_cjk(filter_extended_cjk)
+    }
+
+    fn bounded_refresh_limit(&self, has_filter_surplus_risk: bool) -> usize {
+        let input = self.context.composition.input.as_str();
+        let page_size = self.refresh_page_size();
+        if self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping {
+            return if input.chars().count() > 2 {
+                page_size
+            } else {
+                page_size.saturating_add(TYPEDUCK_PROFILE_REACHABILITY_SURPLUS)
+            };
+        }
+        if self.status.schema_id == "luna_pinyin"
             && crate::translator::is_m44_track_a_short_key_prefix(input)
         {
-            if has_filter_surplus_risk {
+            return page_size.saturating_add(if has_filter_surplus_risk {
                 M44_SHORT_KEY_REFRESH_SURPLUS
             } else {
                 0
-            }
-        } else if self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping {
-            TYPEDUCK_PROFILE_REACHABILITY_SURPLUS
+            });
+        }
+        if self.uses_page_sized_multi_char_refresh() {
+            page_size
         } else {
-            BOUNDED_REFRESH_SURPLUS
-        };
-        CandidateRequest::bounded(DEFAULT_PAGE_SIZE + surplus)
-            .with_filter_extended_cjk(filter_extended_cjk)
+            page_size.saturating_add(BOUNDED_REFRESH_SURPLUS)
+        }
+    }
+
+    fn refresh_page_size(&self) -> usize {
+        self.menu_page_size.max(DEFAULT_PAGE_SIZE)
+    }
+
+    fn uses_page_sized_multi_char_refresh(&self) -> bool {
+        let input = self.context.composition.input.as_str();
+        input.chars().count() > 2
+            && (self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping
+                || (self.schema_profile == SchemaBehaviorProfile::Standard
+                    && self.status.schema_id == "luna_pinyin"
+                    && !crate::translator::is_m44_track_a_short_key_prefix(input)))
     }
 
     fn can_use_bounded_refresh(&self) -> bool {
@@ -1503,6 +1538,7 @@ impl Engine {
             if self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping {
                 let input = self.context.composition.input.as_str();
                 let input_code_len = comparable_userdb_code_len(input);
+                let retained_limit = self.bounded_refresh_limit(false);
                 self.userdb
                     .lookup(&UserDbLookupRequest::new(input).with_predictive(true))
                     .iter()
@@ -1517,7 +1553,7 @@ impl Engine {
                             || (user_code_len == input_code_len
                                 && !result.is_multi_segment_code()
                                 && equal_code_user_phrase_insert_index(result.quality, usize::MAX)
-                                    < DEFAULT_PAGE_SIZE + TYPEDUCK_PROFILE_REACHABILITY_SURPLUS)
+                                    < retained_limit)
                     })
             } else {
                 false
@@ -1584,17 +1620,15 @@ impl Engine {
             None
         };
         if request.limit.is_some() {
+            let page_size = self.refresh_page_size();
             crate::m37_record_candidate_request_bounded(
-                DEFAULT_PAGE_SIZE,
-                request
-                    .limit
-                    .unwrap_or(DEFAULT_PAGE_SIZE)
-                    .saturating_sub(DEFAULT_PAGE_SIZE),
+                page_size,
+                request.limit.unwrap_or(page_size).saturating_sub(page_size),
             );
         } else {
             crate::m37_record_candidate_request_unbounded();
         }
-        let (mut candidates, candidate_list_complete) = if request.limit.is_some() {
+        let (mut candidates, mut candidate_list_complete) = if request.limit.is_some() {
             let mut candidates = CandidateBatch::new(producer_aware);
             let mut candidate_list_complete = true;
             if self.any_translator_uses_scratch {
@@ -1731,13 +1765,30 @@ impl Engine {
             });
         }
         crate::m37_record_filter_pipeline(filter_start.elapsed());
+        let filter_reduced_candidates = filter_audit
+            .iter()
+            .any(|record| record.after_count < record.before_count);
         self.last_filter_audit = filter_audit;
+        if request.limit == Some(self.refresh_page_size())
+            && self.uses_page_sized_multi_char_refresh()
+            && !candidate_list_complete
+            && filter_reduced_candidates
+        {
+            // A page-sized request lets each translator stop after its K+1
+            // certificate, but an order-preserving filter reduction invalidates
+            // that prefix certificate: even when Echo or another producer keeps
+            // the raw count page-sized, a later translator row may need to
+            // backfill the visible page. Retry only that rare case on the
+            // complete path so filtered first-page fields and order stay exact.
+            self.refresh_candidates_with_request(CandidateRequest::unbounded());
+            return;
+        }
         if request.limit.is_some()
             && self.status.schema_id == "luna_pinyin"
             && crate::translator::is_m44_track_a_short_key_prefix(&input)
             && !candidate_list_complete
             && !self.filters.is_empty()
-            && candidates.len() < DEFAULT_PAGE_SIZE
+            && candidates.len() < self.refresh_page_size()
         {
             self.refresh_candidates_with_request(CandidateRequest::unbounded());
             return;
@@ -1752,6 +1803,15 @@ impl Engine {
         let ai_start = Instant::now();
         self.context.candidates =
             merge_classic_and_staged_ai(&input, candidates, self.staged_ai_result.as_ref());
+        if request.limit == Some(self.refresh_page_size())
+            && self.uses_page_sized_multi_char_refresh()
+        {
+            let retained_limit = self.refresh_page_size();
+            if self.context.candidates.len() > retained_limit {
+                candidate_list_complete = false;
+                self.context.candidates.truncate(retained_limit);
+            }
+        }
         crate::m37_record_ai_merge(ai_start.elapsed());
         crate::m37_record_candidates_stored(self.context.candidates.len());
         self.context.highlighted = 0;

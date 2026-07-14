@@ -5447,6 +5447,114 @@ fn upstream_script_keeps_explicit_source_before_equal_generated_phrase() {
 }
 
 #[test]
+fn upstream_script_transformed_ties_keep_model_traversal_while_identity_keeps_direct_phase() {
+    // The canonical M59 `ngohaig` capture exposed this distinction: on a
+    // transformed abbreviation graph, equal-weight generated phrases from
+    // earlier canonical code families precede a later phrase that also has a
+    // direct source row. An identity graph still follows the deployed direct
+    // collector phase before generated rows. Keep both storage paths and the
+    // bounded page prefix on the same structural policy.
+    let dictionary = TableDictionary::new([
+        TableEntry::new("al", "A", 1.0),
+        TableEntry::new("ba", "B", 1.0),
+        TableEntry::new("am", "X", 1.0),
+        TableEntry::new("bb", "Y", 1.0),
+        TableEntry::new("an", "M", 1.0),
+        TableEntry::new("bc", "N", 1.0),
+        TableEntry::new("an", "O", 1.0),
+        TableEntry::new("bc", "P", 1.0),
+        TableEntry::new("an", "Q", 1.0),
+        TableEntry::new("bc", "R", 1.0),
+        TableEntry::new("anbc", "MN", 100.0),
+    ]);
+    let vocabulary = vec![
+        PresetVocabularyEntry::new("AB", 100.0),
+        PresetVocabularyEntry::new("XY", 100.0),
+        PresetVocabularyEntry::new("OP", 100.0),
+        PresetVocabularyEntry::new("QR", 100.0),
+    ];
+    let formulas = ["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let syllabary = ["al", "ba", "am", "bb", "an", "bc"].map(str::to_owned);
+    let checksum = 0x5904_b409;
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, checksum, 0x5904_b40a);
+
+    let owned = StaticTableTranslator::from_compact_dictionary(
+        dictionary.clone(),
+        Some(
+            parse_rime_prism_bin_payload(prism_bytes.clone())
+                .expect("owned transformed-tie prism should parse"),
+        ),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_preset_vocabulary(vocabulary.clone())
+    .with_abbreviation_preset_vocabulary(vocabulary.clone())
+    .with_upstream_sentence_model(100);
+
+    let table_bytes = build_table_bin(&dictionary, checksum);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed transformed-tie metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed transformed-tie table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed transformed-tie prism should parse");
+    let poet_source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        dictionary.entries().iter().cloned(),
+        &vocabulary,
+        &vocabulary,
+        checksum,
+    )));
+    let byte_poet = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_poet_source(poet_source, checksum)
+    .with_upstream_sentence_model(100);
+
+    for (storage, translator) in [("owned", owned), ("byte-poet", byte_poet)] {
+        let transformed = translator.translate("ab");
+        assert_eq!(
+            transformed
+                .iter()
+                .filter(|candidate| matches!(candidate.text.as_str(), "AB" | "XY" | "MN"))
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["AB", "XY", "MN"],
+            "{storage}: transformed equal-weight ties must retain reconstructed model traversal: {transformed:?}"
+        );
+        let bounded = translator.translate_with_context_and_request(
+            "ab",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(5).with_debug_full_count(true),
+        );
+        assert_eq!(
+            bounded.candidates,
+            transformed[..bounded.candidates.len()],
+            "{storage}: transformed bounded output must be a field-identical complete prefix"
+        );
+
+        let identity = translator.translate("anbc");
+        assert_eq!(
+            identity
+                .iter()
+                .filter(|candidate| matches!(candidate.text.as_str(), "MN" | "OP" | "QR"))
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            ["MN", "OP", "QR"],
+            "{storage}: identity-normal ties must retain the direct collector phase"
+        );
+    }
+}
+
+#[test]
 fn upstream_script_generated_vocabulary_uses_compiled_f32_chunk_weights() {
     let lower = 10.0_f32;
     let higher = f32::from_bits(lower.to_bits() + 1);

@@ -3711,14 +3711,18 @@ impl StaticTableTranslator {
                 .unwrap_or_default()
         };
         // Direct Table::Query rows are the deployed DictEntryCollector stream.
-        // The model reconstructs compiler-generated preset-vocabulary rows that
-        // may be absent from Yune's compact source table. Put those reconstructed
-        // rows in the later collector phase for equal weights; any model row
-        // that also exists in the direct stream is rebound to the direct
-        // current-head position below. This mirrors EntryCollector's explicit
-        // pass before ScriptEncoder without a text/input allowlist.
-        for ranked in &mut model_candidates {
-            ranked.code_order.insert(0, '\u{1}');
+        // On an identity-normal graph, put reconstructed preset-vocabulary rows
+        // in the later collector phase and rebind duplicates to their direct
+        // current-head position below. A transformed graph can span several
+        // canonical code families, so its reconstructed model traversal remains
+        // authoritative for equal weights; promoting every direct overlap there
+        // changes librime's compiler-trie tie order (the canonical `ngohaig`
+        // class). The graph predicate keeps this structural rather than keyed to
+        // a schema or input.
+        if identity_model_graph {
+            for ranked in &mut model_candidates {
+                ranked.code_order.insert(0, '\u{1}');
+            }
         }
         let mut candidate_indices = HashMap::<String, usize>::new();
         let mut candidates = Vec::<RankedScriptPhraseCandidate>::new();
@@ -3752,7 +3756,9 @@ impl StaticTableTranslator {
                 let ranked = &mut candidates[index];
                 direct.candidate.quality = ranked.candidate.quality;
                 ranked.candidate = direct.candidate;
-                ranked.code_order = direct.code_order;
+                if identity_model_graph {
+                    ranked.code_order = direct.code_order;
+                }
                 ranked.merge_quality = direct.merge_quality;
                 continue;
             }

@@ -86,21 +86,38 @@ function resolveRepoFile(relativePath, label) {
   return resolved;
 }
 
-async function treeSchemaAssetPaths() {
-  const pending = [publicSchemaRoot];
+export async function treeAssetPaths(root = publicSchemaRoot) {
+  const pending = [root];
   const assets = [];
   while (pending.length > 0) {
     const directory = pending.pop();
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const fullPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
+      const relativePath = path.relative(root, fullPath).replaceAll(path.sep, "/");
+      const entryKind = schemaTreeEntryKind(entry, relativePath);
+      if (entryKind === "directory") {
         pending.push(fullPath);
-      } else if (entry.isFile() && entry.name.endsWith(".schema.yaml")) {
-        assets.push(path.relative(publicSchemaRoot, fullPath).replaceAll(path.sep, "/"));
+      } else {
+        assets.push(relativePath);
       }
     }
   }
   return sortedStrings(assets);
+}
+
+export function schemaTreeEntryKind(entry, relativePath) {
+  if (entry.isDirectory()) return "directory";
+  if (entry.isFile()) return "file";
+  const entryType = entry.isSymbolicLink() ? "symbolic link" : "unsupported entry";
+  throw new Error(`${entryType} is not allowed in the public schema tree: ${relativePath}`);
+}
+
+export async function assertManifestMatchesTree(assetPaths, root = publicSchemaRoot) {
+  assertSameStrings(
+    assetPaths,
+    await treeAssetPaths(root),
+    "manifest assets must match every public schema tree asset",
+  );
 }
 
 function configuredSchemaOptionIds(source) {
@@ -460,11 +477,7 @@ assert(
 );
 
 const manifestAssetPaths = new Set(publicAssets.map(asset => asset.path));
-assertSameStrings(
-  publicAssets.map(asset => asset.path).filter(assetPath => assetPath.endsWith(".schema.yaml")),
-  await treeSchemaAssetPaths(),
-  "manifest schema assets must match every tracked public schema asset",
-);
+await assertManifestMatchesTree(publicAssets.map(asset => asset.path));
 const workerSource = await readFile(workerPath, "utf8");
 for (const assetPath of workerLiteralSchemaAssets(workerSource)) {
   assert(

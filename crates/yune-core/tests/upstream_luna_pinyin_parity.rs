@@ -370,6 +370,35 @@ expanded_sentence_row!(upstream_sentence_benchmark_37, "sentence_benchmark_37");
 expanded_sentence_row!(upstream_sentence_benchmark_59, "sentence_benchmark_59");
 
 #[test]
+fn byte_backed_incremental_luna_37_59_pages_match_pinned_snapshots() {
+    const CHECKSUM: u32 = 0x5737_0059;
+    let fixture = fixture(SENTENCE_EXPANDED_FIXTURE);
+    let dictionary = m17_luna_dictionary_from_rows(&fixture);
+    let vocabulary = dictionary.preset_vocabulary_entries().to_vec();
+    let source = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        dictionary.entries().to_vec(),
+        &vocabulary,
+        &vocabulary,
+        CHECKSUM,
+    ))) as Arc<dyn PoetByteSource>;
+
+    for scenario in ["sentence_benchmark_37", "sentence_benchmark_59"] {
+        let input = scenario_input(&fixture, scenario);
+        let mut engine = phase3r_byte_backed_luna_sentence_engine(
+            dictionary.clone(),
+            Arc::clone(&source),
+            CHECKSUM,
+        );
+        engine
+            .process_key_sequence(&input)
+            .expect("incremental key sequence should parse");
+        let expected = snapshot(&fixture, scenario, "page_1");
+        assert_engine_snapshot_matches(&engine, expected, None);
+        assert_highlighted_commit_preview_matches(&engine, expected);
+    }
+}
+
+#[test]
 #[ignore = "evidence capture: writes M55 Phase 3R access-volume CSV when YUNE_M55_PHASE3R_VOLUME_CSV is set"]
 fn capture_phase3r_access_volume_csv() {
     let output = std::env::var("YUNE_M55_PHASE3R_VOLUME_CSV")

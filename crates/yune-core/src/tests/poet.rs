@@ -1339,6 +1339,105 @@ fn upstream_sentence_scratch_reuses_prefix_walk_state_for_single_key_extensions(
     );
 }
 
+fn growing_prefix_sentence_models() -> (UpstreamSentenceModel, UpstreamSentenceModel) {
+    const CHECKSUM: u32 = 0x5737_0059;
+    let inputs = [
+        "ceshiyixiachangjushuruxingnengzenyang",
+        "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+    ];
+    let mut entries = (b'a'..=b'z')
+        .map(|code| {
+            TableEntry::new(
+                char::from(code).to_string(),
+                char::from(code).to_ascii_uppercase().to_string(),
+                100.0,
+            )
+        })
+        .collect::<Vec<_>>();
+    entries.extend([
+        TableEntry::new("shi", "S", 95.0),
+        TableEntry::new("chang", "C", 94.0),
+        TableEntry::new("ying", "Y", 93.0),
+    ]);
+    let vocabulary = inputs
+        .iter()
+        .map(|input| PresetVocabularyEntry::new(input.to_ascii_uppercase(), 1_000_000.0))
+        .collect::<Vec<_>>();
+    let owned = UpstreamSentenceModel::from_table_entries(entries.clone(), &vocabulary, 10);
+    let byte_backed = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(build_poet_bin(
+            entries,
+            &vocabulary,
+            &vocabulary,
+            CHECKSUM,
+        ))) as Arc<dyn PoetByteSource>,
+        CHECKSUM,
+        10,
+    )
+    .expect("byte-backed growing-prefix fixture should parse");
+    (owned, byte_backed)
+}
+
+#[test]
+fn byte_backed_sentence_scratch_matches_cold_and_owned_for_37_59_growing_prefixes() {
+    let (owned, byte_backed) = growing_prefix_sentence_models();
+    for input in [
+        "ceshiyixiachangjushuruxingnengzenyang",
+        "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+    ] {
+        let mut owned_scratch = UpstreamSentenceScratch::default();
+        let mut byte_scratch = UpstreamSentenceScratch::default();
+        for end in 1..=input.len() {
+            let prefix = &input[..end];
+            let warm_owned =
+                owned.candidates_for_input_with_limit_and_scratch(prefix, 5, &mut owned_scratch);
+            let cold_owned = owned.candidates_for_input_with_limit(prefix, 5);
+            let warm_byte = byte_backed.candidates_for_input_with_limit_and_scratch(
+                prefix,
+                5,
+                &mut byte_scratch,
+            );
+            let cold_byte = byte_backed.candidates_for_input_with_limit(prefix, 5);
+            assert_eq!(
+                warm_owned, cold_owned,
+                "owned warm/cold mismatch at {prefix}"
+            );
+            assert_eq!(warm_byte, cold_byte, "byte warm/cold mismatch at {prefix}");
+            assert_eq!(warm_byte, warm_owned, "owned/byte mismatch at {prefix}");
+        }
+    }
+}
+
+#[test]
+fn byte_backed_sentence_scratch_reuses_all_37_59_single_key_extensions() {
+    let _guard = super::m37_metrics_test_guard();
+    let (_, byte_backed) = growing_prefix_sentence_models();
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    for input in [
+        "ceshiyixiachangjushuruxingnengzenyang",
+        "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+    ] {
+        let mut scratch = UpstreamSentenceScratch::default();
+        for end in 1..=input.len() {
+            let _ = byte_backed.candidates_for_input_with_limit_and_scratch(
+                &input[..end],
+                5,
+                &mut scratch,
+            );
+        }
+    }
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(metrics.upstream_sentence_model_graph_rebuild_calls, 2);
+    assert_eq!(metrics.upstream_sentence_model_incremental_reuse_hits, 94);
+    assert_eq!(
+        metrics.upstream_sentence_model_incremental_discarded_rebuild_chars, 2,
+        "only each sequence's initial one-character cold build may be discarded"
+    );
+}
+
 #[test]
 fn upstream_sentence_scratch_matches_cold_sentence_then_phrase_stream_order() {
     let entries = [

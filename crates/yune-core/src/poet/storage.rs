@@ -50,6 +50,8 @@ const VOCABULARY_STRIDE: u32 = 20;
 const FIRST_CODE_STRIDE: u32 = 12;
 const CHAR_CODE_STRIDE: u32 = 12;
 const U32_STRIDE: u32 = 4;
+const FNV_OFFSET: u64 = 0xcbf29ce484222325;
+const FNV_PRIME: u64 = 0x100000001b3;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PoetBinSectionSummary {
@@ -412,6 +414,11 @@ pub(super) struct ByteBackedCodeSpan {
     pub(super) entries: Range<usize>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct ByteBackedPrefixState {
+    hash: u64,
+}
+
 #[derive(Clone, Debug, Default)]
 pub(super) struct ByteBackedPrefixWalk {
     pub(super) spans: Vec<ByteBackedCodeSpan>,
@@ -503,6 +510,24 @@ impl ByteBackedPoetStore {
         self.prefix_index_row(prefix.as_bytes()).is_some()
     }
 
+    pub(super) fn root_prefix_state(&self) -> ByteBackedPrefixState {
+        ByteBackedPrefixState { hash: FNV_OFFSET }
+    }
+
+    pub(super) fn advance_prefix_state(
+        &self,
+        state: ByteBackedPrefixState,
+        appended: &[u8],
+        full_prefix: &[u8],
+    ) -> Option<(ByteBackedPrefixState, Range<usize>)> {
+        let hash = extend_prefix_hash(state.hash, appended);
+        let row = self.prefix_index_row_with_hash(full_prefix, hash)?;
+        Some((
+            ByteBackedPrefixState { hash },
+            row.entry_start as usize..row.entry_end as usize,
+        ))
+    }
+
     pub(super) fn walk_from_prefix_index(
         &self,
         input: &str,
@@ -511,21 +536,27 @@ impl ByteBackedPoetStore {
     ) -> ByteBackedPrefixWalk {
         let mut walk = ByteBackedPrefixWalk::default();
         let start = boundaries[start_index];
+        let mut previous_end = start;
+        let mut state = self.root_prefix_state();
         for (end_index, end) in boundaries.iter().copied().enumerate().skip(start_index + 1) {
             let prefix = &input.as_bytes()[start..end];
-            let Some(row) = self.prefix_index_row(prefix) else {
+            let appended = &input.as_bytes()[previous_end..end];
+            let Some((next_state, entries)) = self.advance_prefix_state(state, appended, prefix)
+            else {
                 walk.prefix_misses += 1;
                 walk.prefix_early_breaks += 1;
                 break;
             };
+            state = next_state;
+            previous_end = end;
             walk.prefix_hits += 1;
             walk.nodes_visited += 1;
-            if row.entry_start < row.entry_end {
+            if !entries.is_empty() {
                 walk.entry_ranges_emitted += 1;
                 walk.spans.push(ByteBackedCodeSpan {
                     end,
                     end_index,
-                    entries: row.entry_start as usize..row.entry_end as usize,
+                    entries,
                 });
             } else {
                 walk.exact_range_misses += 1;
@@ -814,6 +845,10 @@ impl ByteBackedPoetStore {
 
     fn prefix_index_row(&self, prefix: &[u8]) -> Option<PrefixIndexRow> {
         let hash = hash_prefix_key(prefix);
+        self.prefix_index_row_with_hash(prefix, hash)
+    }
+
+    fn prefix_index_row_with_hash(&self, prefix: &[u8], hash: u64) -> Option<PrefixIndexRow> {
         let mut low = 0usize;
         let mut high = self.sections.prefix_index.count as usize;
         while low < high {
@@ -1707,9 +1742,10 @@ fn put_u64_extend(bytes: &mut Vec<u8>, value: u64) {
 }
 
 fn hash_prefix_key(bytes: &[u8]) -> u64 {
-    const FNV_OFFSET: u64 = 0xcbf29ce484222325;
-    const FNV_PRIME: u64 = 0x100000001b3;
-    let mut hash = FNV_OFFSET;
+    extend_prefix_hash(FNV_OFFSET, bytes)
+}
+
+fn extend_prefix_hash(mut hash: u64, bytes: &[u8]) -> u64 {
     for byte in bytes {
         hash ^= u64::from(*byte);
         hash = hash.wrapping_mul(FNV_PRIME);
@@ -1755,6 +1791,22 @@ mod tests {
             Some(32)
         );
         assert_eq!(summary.sections.len(), 20);
+    }
+
+    #[test]
+    fn byte_backed_prefix_advance_verifies_full_key_bytes_after_hashing() {
+        let storage = ByteBackedPoetStore::from_source(
+            Arc::new(OwnedPoetBytes::new(sample_poet_bin())) as Arc<dyn PoetByteSource>,
+            0xAABBCCDD,
+        )
+        .expect("poet bin should parse");
+        let root = storage.root_prefix_state();
+
+        assert!(storage.advance_prefix_state(root, b"ni", b"ni").is_some());
+        assert!(
+            storage.advance_prefix_state(root, b"ni", b"hao").is_none(),
+            "a caller-supplied rolling hash match must not bypass full-key comparison"
+        );
     }
 
     #[test]

@@ -22,6 +22,9 @@ interface ActionDiagnosticSnapshot {
 	queueWaitMs?: number;
 	workerRoundtripMs?: number;
 	workerMs?: number;
+	workerBaseElapsedMs?: number;
+	workerAmplificationMs?: number;
+	workerActionMultiplier?: number;
 	totalMs?: number;
 }
 
@@ -37,6 +40,9 @@ interface PendingPerfDiagnostic {
 	workerQueueWaitMs?: number;
 	workerProcessMs?: number;
 	workerRoundtripMs?: number;
+	workerBaseElapsedMs?: number;
+	workerAmplificationMs?: number;
+	workerActionMultiplier?: number;
 	responseMappingMs: number;
 	totalWorkerActionMs?: number;
 	wasmHeapBytes?: number;
@@ -186,6 +192,9 @@ export default function CandidatePanel({
 						workerQueueWaitMs: actionDiagnostic?.queueWaitMs,
 						workerProcessMs: actionDiagnostic?.workerMs,
 						workerRoundtripMs: actionDiagnostic?.workerRoundtripMs,
+						workerBaseElapsedMs: actionDiagnostic?.workerBaseElapsedMs,
+						workerAmplificationMs: actionDiagnostic?.workerAmplificationMs,
+						workerActionMultiplier: actionDiagnostic?.workerActionMultiplier,
 						responseMappingMs: Math.round(responseMappingFinishedAt - responseMappingStartedAt),
 						totalWorkerActionMs: actionDiagnostic?.totalMs,
 						wasmHeapBytes: result.memory?.wasmHeapBytes,
@@ -389,17 +398,22 @@ export default function CandidatePanel({
 		const totalCandidateCount = inputState?.candidates.length ?? 0;
 		for (const diagnostic of pending) {
 			requestAnimationFrame(() => {
-				const paintObservedAt = nowMs();
-				appendPerfDiagnostic({
-					...diagnostic,
-					stateAppliedAt,
-					paintObservedAt,
-					candidateCount: renderedCandidates.length,
-					totalCandidateCount,
-					firstCandidateText: renderedCandidates[0]?.text,
-					reactUpdateMs: Math.round(stateAppliedAt - diagnostic.responseMappingFinishedAt),
-					paintProxyMs: Math.round(paintObservedAt - stateAppliedAt),
-					totalKeydownToPaintMs: Math.round(paintObservedAt - diagnostic.keydownAt),
+				// The first callback runs before its frame is painted. Observe from
+				// the next frame so layout/paint of the applied candidate state is
+				// included in the latency hard stop.
+				requestAnimationFrame(() => {
+					const paintObservedAt = nowMs();
+					appendPerfDiagnostic({
+						...diagnostic,
+						stateAppliedAt,
+						paintObservedAt,
+						candidateCount: renderedCandidates.length,
+						totalCandidateCount,
+						firstCandidateText: renderedCandidates[0]?.text,
+						reactUpdateMs: Math.round(stateAppliedAt - diagnostic.responseMappingFinishedAt),
+						paintProxyMs: Math.round(paintObservedAt - stateAppliedAt),
+						totalKeydownToPaintMs: Math.round(paintObservedAt - diagnostic.keydownAt),
+					});
 				});
 			});
 		}

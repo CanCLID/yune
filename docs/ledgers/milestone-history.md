@@ -97,6 +97,23 @@ fallback expansion after the phrase-composition repair. Rebuilt local
 public-demo evidence records the affected long Jyutping rows at `130 ms` and
 `74 ms`, with ready/peak WASM memory still `160.0 MiB`.
 
+WEB-03 maintenance addendum (2026-07-13): `77e353a5` introduced the
+Cloudflare-compatible split/reassembly path for public assets above 25 MiB
+after the earlier browser/package receipt boundary, so it is accounted for as
+a later production change rather than projected onto that evidence. Native
+WEB-03 guards now stage the tracked public schema source and reproduce from a
+clean checkout. The Cloudflare build blocks publication on a dedicated serial
+Playwright hard stop over the exact source/hash-identified public artifact. It
+proves the real split-prism startup path, all three launch schemas, Luna 37/59,
+both historical long Jyutping rows, and reloaded persisted TypeDuck state under
+4x main-thread Chromium throttling plus loopback-only, self-verified synthetic
+4x proportional ASCII-letter `processKey` service-time amplification. The
+paired engine corrective keeps userdb exact/predictive
+page order while preventing a persisted row from forcing eager full-dictionary
+translation on every key.
+WEB03-11 remains active until the first clean source-current Cloudflare build
+passes that binding profile.
+
 ## Planned Or Parked Tracks
 
 | Milestone or track | Status | Meaning |

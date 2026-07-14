@@ -951,7 +951,10 @@ post-closeout follow-up restores byte-backed Jyutping phrase composition
 (`ngogokdak -> 我覺得`) and visible prefix lookup rows in the regenerated compact
 path. A later correctness follow-up fixes a `DartsDoubleArray` prism
 construction bug that had corrupted the byte-backed toneless-to-canonical
-mapping for common multi-syllable words (see WEB03-10).
+mapping for common multi-syllable words (see WEB03-10). The 2026-07-13
+maintenance corrective records the post-closeout `77e353a5` public asset split,
+restores clean-checkout native gate reproducibility, and adds the learned-state
+browser latency hard stop in WEB03-11.
 
 - [x] **WEB03-01**: Clean launch-schema regeneration emits current compiled
   assets for `jyut6ping3_mobile`, imported `jyut6ping3_scolar`,
@@ -1003,6 +1006,26 @@ mapping for common multi-syllable words (see WEB03-10).
   `honangwui -> 可能會`. Fixed in `a76fcd59`; guard added in `d1c0171a`. Gates:
   yune-core `259/0`, `cantonese_parity` `37/0`, `upstream_luna_pinyin_parity`
   `12/0`, `yune_web` `35/0`, clippy `-D warnings` + fmt clean.
+- [ ] **WEB03-11**: Browser input latency has a focused serial hard stop that
+  covers all three public schemas, the historical long Jyutping rows, Luna
+  37/59, and a real TypeDuck row learned through the UI. Binding defaults use
+  4x main-thread Chromium CPU throttling plus loopback-only, synthetic 4x
+  proportional ASCII-letter `processKey` service-time amplification and a
+  sustained 250 ms key interval. This is queue-stress, not empirical 4x-device
+  proof. Every timed key self-verifies the worker multiplier and measured added
+  delay and must
+  produce a keydown-to-paint diagnostic; aggregate p95 stays `<= 750 ms`, no
+  key may exceed `1000 ms`, and no schema/split-part/manifest request may occur
+  during timed typing. The TypeDuck profile keeps learned exact/predictive
+  first-page order field-identical while bounding translator materialization,
+  deep navigation still completes the list, response source annotation clones
+  only the visible page, and the native WEB-03 guards stage the tracked
+  `public/schema` source rather than gitignored `public-demo/dist` state. The
+  Cloudflare build fully reconciles a deterministic public-artifact inventory
+  and verifies served worker/app/WASM/schema-manifest bytes before running the
+  gate against the exact source/hash-identified package; startup must use both expected Jyutping
+  prism parts and never the unsplit over-limit asset, and the learned row must
+  be restored after a browser reload before timing.
 
 ## WEB-04 Octagram Debug Harness Requirements
 
@@ -2225,6 +2248,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M52 Track A guardrails and blocker disposition requirements: 6 total, 6 complete, 0 active
 - M53 engine release-readiness audit requirements: 5 total, 5 complete, 0 active
 - M54 native octagram grammar support requirements: 7 total, 7 complete, 0 active
+- WEB-03 public launch and browser latency requirements: 11 total, 10 complete, 1 active pending the first clean source-current binding gate
 - WEB-04 octagram debug harness requirements: 5 total, 5 complete, 0 active
 - M55 native Track A match-or-beat requirements: 8 total, 8 complete, 0 active
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
@@ -2232,9 +2256,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
 - M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 11 complete, 0 active
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
-- Mapped to phases: 433
+- Mapped to phases: 434
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-13 - M59 is complete under full Path A at 11/11 requirements. Increment 4e at clean behavior source `5879405c` closes seven-input Lane B exact order, deployed 37/59 page shape, and native WEB-04 `8/8`; final follow-up source `443cc636` revalidates Lane A at 13/13, Lane B exact order, and performance at `32/32` aggregate plus `160/160` individual observations. Commit `5fa986d8` records the accepted 60-asset tree and `07845e02` enforces bidirectional full-tree reconciliation. Browser/WASM evidence remains source-bound to the `5fa986d8` closeout; all five WEB-04 requirements are complete. The historical 4a class-3 disposition remains unchanged and unused by final Lane A._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-13 - M59 remains complete under full Path A at 11/11 requirements. WEB03-11 is a separate active post-M59 browser-latency guard and clean-checkout native-gate corrective pending its first clean source-current binding run; its scope covers all public schemas, Luna 37/59, historical long Jyutping, and learned TypeDuck state without projecting new browser evidence onto the `5fa986d8` M59 receipt boundary. The historical 4a class-3 disposition remains unchanged and unused by final Lane A._

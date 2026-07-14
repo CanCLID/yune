@@ -292,6 +292,7 @@ pub(crate) fn with_session(
     bool_from(action(session))
 }
 
+#[cfg(test)]
 pub(crate) fn session_candidates_snapshot(
     session_id: RimeSessionId,
 ) -> Option<Vec<yune_core::Candidate>> {
@@ -300,6 +301,28 @@ pub(crate) fn session_candidates_snapshot(
         .expect("session registry should not be poisoned");
     let session = registry.get_session_mut(session_id)?;
     Some(session.engine.context().candidates.clone())
+}
+
+pub(crate) fn session_candidate_range_snapshot(
+    session_id: RimeSessionId,
+    start: usize,
+    len: usize,
+) -> Option<Vec<yune_core::Candidate>> {
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    let session = registry.get_session_mut(session_id)?;
+    Some(
+        session
+            .engine
+            .context()
+            .candidates
+            .iter()
+            .skip(start)
+            .take(len)
+            .cloned()
+            .collect(),
+    )
 }
 
 pub(crate) fn session_complete_candidates_snapshot(

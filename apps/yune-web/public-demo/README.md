@@ -21,6 +21,35 @@ public-demo flag, runs the Vite public build, copies only the pinned public
 schema assets listed in `schema-asset-manifest.json`, validates every SHA-256,
 and writes `apps/yune-web/public-demo/dist/`.
 
+Before deploying a worker, engine, schema, or schema-delivery change, build the
+source-current artifact and run the focused WEB-03 browser latency hard stop.
+The runner starts its own exact `public-demo/dist` preview and rejects a dev
+server or artifact without source/hash-bearing `build-info.json`. It also proves
+the split Jyutping prism startup path. Release runs reject a dirty Git tree,
+fully reconcile `public-demo/dist` to its deterministic artifact inventory, and
+refetch/hash the served worker, app bundle, WASM, and schema manifest. The serial
+Chromium matrix uses 4x main-thread CPU throttling plus loopback-only, synthetic
+4x proportional ASCII-letter `processKey` service-time amplification,
+self-verified on every timed key. This is a queue-stress profile rather than
+empirical 4x-device proof. It covers the historical long Jyutping inputs, Luna
+37/59 inputs, every public schema, and a TypeDuck row restored from browser
+persistence after reload. The binding defaults are p95 `<= 750 ms`,
+max `<= 1000 ms`, a sustained 250 ms key interval, and zero schema/split-part/
+manifest requests during each timed typing window after its selected schema
+reaches ready:
+
+```powershell
+npm.cmd --prefix apps/yune-web run build:public
+npm.cmd --prefix apps/yune-web/e2e run test:e2e:input-latency:public
+```
+
+Set `YUNE_WEB_LATENCY_EVIDENCE_DIR` to preserve its JSON packet outside the
+tracked tree. Rust/WASM changes must first rebuild and copy the source-current
+Emscripten artifacts as the Cloudflare build below does. The Cloudflare build
+runs this gate after packaging and fails before publish on any red row. A direct
+post-deploy canary may set `YUNE_WEB_APP_URL=https://yune-web.pages.dev/` and run
+`test:e2e:input-latency`; it does not replace the build gate.
+
 ## Launch Assets
 
 The public demo launch schema set is `jyut6ping3_mobile`, `cangjie5`, and

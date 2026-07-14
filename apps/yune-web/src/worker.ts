@@ -395,6 +395,48 @@ const YUNE_WEB_WASM_BUILD_PROFILE = "release";
 const YUNE_WEB_M27_EVIDENCE_VERSION = "m27-startup-v1";
 const YUNE_WEB_M31_EVIDENCE_VERSION = "web03-three-schema-launch-v1";
 const YUNE_PUBLIC_DEMO = typeof YUNE_PUBLIC_DEMO_BUILD !== "undefined" && YUNE_PUBLIC_DEMO_BUILD === true;
+const LATENCY_WORKER_ACTION_MULTIPLIER = latencyWorkerActionMultiplier();
+
+function latencyWorkerActionMultiplier() {
+  const raw = new URLSearchParams(location.search).get("latencyWorkerActionMultiplier");
+  if (raw === null) {
+    return 1;
+  }
+  const value = Number(raw);
+  const loopback = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(location.hostname);
+  if (!YUNE_PUBLIC_DEMO || !loopback || value !== 4) {
+    throw new Error(`Invalid public latency worker-action multiplier: ${raw}`);
+  }
+  return value;
+}
+
+function latencyMultiplierForAction(name: keyof Actions, args: Message["args"]) {
+  const input = name === "processKey" ? args[0] : undefined;
+  return typeof input === "string" && /^\{[A-Za-z]\}$/.test(input)
+    ? LATENCY_WORKER_ACTION_MULTIPLIER
+    : 1;
+}
+
+function amplifyWorkerAction(workerStartedAt: number, multiplier: number) {
+  const baseFinishedAt = nowMs();
+  const workerBaseElapsedMs = Math.max(0, baseFinishedAt - workerStartedAt);
+  const targetAmplificationMs = workerBaseElapsedMs * (multiplier - 1);
+  const amplificationStartedAt = performance.now();
+  let value = 0x811c9dc5;
+  while (performance.now() - amplificationStartedAt < targetAmplificationMs) {
+    for (let index = 0; index < 1_000; index += 1) {
+      value = (Math.imul(value ^ index, 16777619) + 1013904223) | 0;
+    }
+  }
+  if (!Number.isFinite(value)) {
+    throw new Error("Latency worker-action amplification failed");
+  }
+  return {
+    workerBaseElapsedMs,
+    workerAmplificationMs: performance.now() - amplificationStartedAt,
+    workerActionMultiplier: multiplier,
+  };
+}
 // Cloudflare Pages caps a single deployed asset at 25 MiB, so the public build
 // (public-demo/build.mjs) splits oversized schema payloads into ordered
 // `<path>.partN` chunks. These bounds must match that build script so the byte
@@ -1138,12 +1180,20 @@ addEventListener("message", async ({ data: { name, args } }: MessageEvent<Messag
   try {
     // @ts-expect-error Unactionable
     const result = await actions[name](...args);
+    const amplification = amplifyWorkerAction(
+      workerStartedAt,
+      latencyMultiplierForAction(name, args),
+    );
     const workerFinishedAt = nowMs();
-    postMessage({ type: "success", result, elapsedMs: Math.round(workerFinishedAt - workerStartedAt), workerStartedAt, workerFinishedAt });
+    postMessage({ type: "success", result, elapsedMs: Math.round(workerFinishedAt - workerStartedAt), workerStartedAt, workerFinishedAt, ...amplification });
   }
   catch (error) {
+    const amplification = amplifyWorkerAction(
+      workerStartedAt,
+      latencyMultiplierForAction(name, args),
+    );
     const workerFinishedAt = nowMs();
-    postMessage({ type: "error", error, elapsedMs: Math.round(workerFinishedAt - workerStartedAt), workerStartedAt, workerFinishedAt });
+    postMessage({ type: "error", error, elapsedMs: Math.round(workerFinishedAt - workerStartedAt), workerStartedAt, workerFinishedAt, ...amplification });
   }
 });
 

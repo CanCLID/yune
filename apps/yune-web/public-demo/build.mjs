@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,6 +20,7 @@ const viteOutputDir = await mkdtemp(path.join(tmpdir(), "yune-web-public-build-"
 // PAGES_MAX_ASSET_BYTES / SPLIT_CHUNK_BYTES in apps/yune-web/src/worker.ts.
 const PAGES_MAX_ASSET_BYTES = 25 * 1024 * 1024;
 const SPLIT_CHUNK_BYTES = 20 * 1024 * 1024;
+const PUBLIC_ARTIFACT_MANIFEST = "public-artifact-manifest.json";
 
 function commandPath(name) {
 	return path.join(appRoot, "node_modules", ".bin", `${name}${process.platform === "win32" ? ".cmd" : ""}`);
@@ -48,6 +49,52 @@ async function run(command, args, options = {}) {
 			else reject(new Error(`${command} ${args.join(" ")} exited with ${code}`));
 		});
 	});
+}
+
+async function commandOutput(command, args, options = {}) {
+	return new Promise((resolve, reject) => {
+		const child = spawn(command, args, {
+			cwd: options.cwd,
+			env: { ...process.env, ...options.env },
+			stdio: ["ignore", "pipe", "pipe"],
+			shell: process.platform === "win32",
+		});
+		let stdout = "";
+		let stderr = "";
+		child.stdout.setEncoding("utf8");
+		child.stderr.setEncoding("utf8");
+		child.stdout.on("data", chunk => { stdout += chunk; });
+		child.stderr.on("data", chunk => { stderr += chunk; });
+		child.on("error", reject);
+		child.on("exit", code => {
+			if (code === 0) resolve(stdout);
+			else reject(new Error(`${command} ${args.join(" ")} exited with ${code}: ${stderr.trim()}`));
+		});
+	});
+}
+
+async function sourceIdentity() {
+	const gitCommit = (await commandOutput("git", ["rev-parse", "HEAD"], { cwd: repoRoot }))
+		.trim()
+		.toLowerCase();
+	if (!/^[0-9a-f]{40}$/.test(gitCommit)) {
+		throw new Error(`Public build Git HEAD is not a full SHA: ${gitCommit}`);
+	}
+	const environmentCommit = (process.env.CF_PAGES_COMMIT_SHA ?? process.env.GITHUB_SHA)
+		?.trim()
+		.toLowerCase();
+	if (environmentCommit !== undefined && environmentCommit !== gitCommit) {
+		throw new Error(`Public build environment commit ${environmentCommit} does not match Git HEAD ${gitCommit}`);
+	}
+	const status = await commandOutput(
+		"git",
+		["status", "--porcelain", "--untracked-files=all"],
+		{ cwd: repoRoot },
+	);
+	return {
+		sourceCommit: gitCommit,
+		sourceTreeState: status.trim() === "" ? "clean" : "dirty",
+	};
 }
 
 async function fileExists(file) {
@@ -84,6 +131,30 @@ async function splitOversizedAsset(target, relative, expectedBytes) {
 async function sha256(file) {
 	const data = await readFile(file);
 	return createHash("sha256").update(data).digest("hex");
+}
+
+async function publicArtifactFiles(root, relativeRoot = "") {
+	const entries = await readdir(path.join(root, relativeRoot), { withFileTypes: true });
+	const files = [];
+	for (const entry of entries.sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0)) {
+		const relative = path.posix.join(relativeRoot.replaceAll("\\", "/"), entry.name);
+		if (relative === "build-info.json" || relative === PUBLIC_ARTIFACT_MANIFEST) {
+			continue;
+		}
+		if (entry.isDirectory()) {
+			files.push(...await publicArtifactFiles(root, relative));
+		} else if (entry.isFile()) {
+			const absolute = path.join(root, ...relative.split("/"));
+			files.push({
+				path: relative,
+				bytes: (await stat(absolute)).size,
+				sha256: await sha256(absolute),
+			});
+		} else {
+			throw new Error(`Unsupported public artifact entry: ${relative}`);
+		}
+	}
+	return files;
 }
 
 await ensurePathInside(outputDir, publicRoot);
@@ -150,10 +221,25 @@ for (const file of ["README.md", "PROVENANCE.md", "asset-manifest.md", "cache-po
 }
 
 const totalSchemaBytes = manifest.assets.reduce((sum, asset) => sum + asset.bytes, 0);
+const wasmOutput = path.join(outputDir, "yune-web.wasm");
+if (!await fileExists(wasmOutput)) {
+	throw new Error(`Public build is missing ${wasmOutput}`);
+}
+const identity = await sourceIdentity();
+const artifactManifestPath = path.join(outputDir, PUBLIC_ARTIFACT_MANIFEST);
+await writeFile(artifactManifestPath, JSON.stringify({
+	generatedFor: "yune-web",
+	version: "web03-public-artifact-v1",
+	files: await publicArtifactFiles(outputDir),
+}, null, 2) + "\n");
 await writeFile(path.join(outputDir, "build-info.json"), JSON.stringify({
 	generatedFor: "yune-web",
 	schemaBytes: totalSchemaBytes,
 	builtAt: new Date().toISOString(),
+	...identity,
+	schemaManifestSha256: await sha256(manifestPath),
+	wasmSha256: await sha256(wasmOutput),
+	publicArtifactManifestSha256: await sha256(artifactManifestPath),
 }, null, 2) + "\n");
 console.log(`Built yune-web public demo at ${outputDir}`);
 console.log(`Pinned schema payload bytes: ${totalSchemaBytes}`);

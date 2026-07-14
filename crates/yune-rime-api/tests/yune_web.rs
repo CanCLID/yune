@@ -298,6 +298,11 @@ fn yune_web_adapter_supports_page_candidate_actions_and_commits() {
         )
     };
     assert!(!state.is_null());
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
 
     drop(response_json(unsafe {
         yune_web_process_key(state, 'b' as i32, 0)
@@ -308,6 +313,14 @@ fn yune_web_adapter_supports_page_candidate_actions_and_commits() {
         Value::String("八".to_owned())
     );
 
+    assert_eq!(
+        composing["context"]["candidates"][0]["source"],
+        Value::String("table".to_owned())
+    );
+    let first_page_quality = composing["context"]["candidates"][0]["quality"]
+        .as_f64()
+        .expect("inspector should expose first-page quality");
+
     let next_page = response_json(unsafe { yune_web_flip_page(state, FALSE) });
     assert_eq!(next_page["handled"], Value::Bool(true));
     assert_eq!(next_page["context"]["page_no"], Value::from(1));
@@ -316,9 +329,27 @@ fn yune_web_adapter_supports_page_candidate_actions_and_commits() {
         Value::String("爸".to_owned())
     );
 
+    assert_eq!(
+        next_page["context"]["candidates"][0]["source"],
+        Value::String("table".to_owned()),
+        "page-two source annotation must use the page-two engine range"
+    );
+    assert!(
+        next_page["context"]["candidates"][0]["quality"]
+            .as_f64()
+            .expect("inspector should expose page-two quality")
+            < first_page_quality,
+        "page-two quality must align with its lower-weight candidate"
+    );
+
     let previous_page = response_json(unsafe { yune_web_flip_page(state, TRUE) });
     assert_eq!(previous_page["handled"], Value::Bool(true));
     assert_eq!(previous_page["context"]["page_no"], Value::from(0));
+    assert_eq!(
+        previous_page["context"]["candidates"][0]["quality"].as_f64(),
+        Some(first_page_quality),
+        "returning to page one must restore the page-one annotation"
+    );
 
     let deleted = response_json(unsafe { yune_web_delete_candidate(state, 0) });
     assert_eq!(deleted["handled"], Value::Bool(true));
@@ -1454,8 +1485,11 @@ schema:\n  schema_id: yune_web_luna\n  name: Yune Web Luna\nmenu:\n  page_size: 
         }
     }
 
-    fn write_public_demo_assets(&self) {
-        let schema_root = public_demo_schema_root();
+    fn write_tracked_public_assets(&self) {
+        // The tracked public/schema tree is the source of truth consumed by the
+        // public packager. Keep native WEB-03 guards reproducible in a clean
+        // checkout instead of depending on the gitignored dist/schema output.
+        let schema_root = browser_app_schema_root();
         copy_dir_contents(&schema_root, &self.shared);
         let staging = self.user.join("build");
         for file_name in ["default.yaml", "jyut6ping3_mobile.schema.yaml"] {
@@ -1463,7 +1497,7 @@ schema:\n  schema_id: yune_web_luna\n  name: Yune Web Luna\nmenu:\n  page_size: 
                 schema_root.join("build").join(file_name),
                 staging.join(file_name),
             )
-            .expect("public-demo preloaded build asset should be copied");
+            .expect("tracked public preloaded build asset should be copied");
         }
     }
 
@@ -1552,7 +1586,7 @@ fn web02_public_demo_storage_diagnostics_exports_owner_rows() {
 
     let runtime =
         YuneWebRuntime::create_with_schema("web02-public-demo-diagnostics", "jyut6ping3_mobile");
-    runtime.write_public_demo_assets();
+    runtime.write_tracked_public_assets();
 
     let state = unsafe {
         yune_web_init(
@@ -1593,7 +1627,7 @@ fn web02_public_demo_storage_diagnostics_exports_owner_rows() {
     let evidence = json!({
         "schema_id": "jyut6ping3_mobile",
         "input": "nei",
-        "asset_root": public_demo_schema_root().display().to_string(),
+        "asset_root": browser_app_schema_root().display().to_string(),
         "source_fallback": storage["source_fallback"],
         "storage": storage,
         "summary": {
@@ -1766,7 +1800,7 @@ fn web03_public_demo_launch_schemas_byte_back_compiled_assets() {
             &format!("web03-byte-backed-{schema_id}"),
             schema_id,
         );
-        runtime.write_public_demo_assets();
+        runtime.write_tracked_public_assets();
         deploy_public_demo_schema(&runtime, schema_id);
 
         let state = unsafe {
@@ -1879,7 +1913,7 @@ fn web03_public_demo_launch_schemas_byte_back_compiled_assets() {
         fs::write(
             evidence_dir.join("compiled-asset-inventory.csv"),
             compiled_asset_inventory_for_root_csv(
-                &public_demo_schema_root(),
+                &browser_app_schema_root(),
                 WEB03_COMPILED_SCHEMA_ASSETS,
             ),
         )
@@ -1892,7 +1926,7 @@ fn web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion() 
     let _guard = test_guard();
     let runtime =
         YuneWebRuntime::create_with_schema("web03-jyutping-long-input-perf", "jyut6ping3_mobile");
-    runtime.write_public_demo_assets();
+    runtime.write_tracked_public_assets();
     deploy_public_demo_schema(&runtime, "jyut6ping3_mobile");
 
     let state = unsafe {
@@ -3995,10 +4029,6 @@ fn typeduck_oracle_root() -> PathBuf {
 
 fn browser_app_schema_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public/schema")
-}
-
-fn public_demo_schema_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public-demo/dist/schema")
 }
 
 fn web03_evidence_root_from_env() -> Option<PathBuf> {

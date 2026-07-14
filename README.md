@@ -161,8 +161,9 @@ Yune's compatibility is target-driven, not checklist-driven.
 - Default core oracle: upstream `rime/librime 1.17.0`
   (`33e78140250125871856cdc5b42ddc6a5fcd3cd4`).
 - Canonical Cantonese/Jyutping candidate oracle: upstream
-  `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; M58 records the
-  completed Yune-facing id/provenance split for this lane.
+  `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; M58 completed the
+  provenance audit and reachability disposition, while the Yune-facing id
+  split remains pending explicit user sign-off.
 - TypeDuck profile oracle: TypeDuck-HK/librime `v1.1.2`
   (`74cb52b78fb2411137a7643f6c8bc6517acfde69`) for profile/display/comment
   behavior, multilingual dictionary lookup payloads, fork-only ABI/profile

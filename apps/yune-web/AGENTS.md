@@ -14,4 +14,16 @@ The shell is derived from the historical `TypeDuck-HK/TypeDuck-Web` app with pro
 - Every visible engine control must change candidate output, committed output, status output, or persisted config; display controls must change visible rendering. Do not expose `ascii_punct` as a working toggle until M18 implements the processor behavior.
 - AI remains default-off, local-only, classic-first, and second-pass only. Do not move provider work into `processKey`.
 - Browser validation must use real assets and committed Playwright/manual evidence.
+- Changes to the worker, WASM/engine key path, launch schema assets, or public
+  packaging must run the dedicated serial input-latency hard stop against the
+  source-current built public artifact before production publish:
+  `npm --prefix apps/yune-web/e2e run test:e2e:input-latency:public`. Keep its
+  binding low-end defaults: 4x main-thread Chromium throttling plus synthetic
+  4x proportional ASCII-letter `processKey` service-time amplification,
+  self-verified on every timed key. The worker hook is loopback-only; this is a
+  queue-stress profile, not empirical 4x-device proof. Preserve optional JSON
+  evidence outside the tracked tree. Release evidence requires a clean Git tree
+  and a recomputed full public-artifact inventory; the served worker, app bundle,
+  WASM, and schema manifest must match it. The Cloudflare build runs this same gate and fails
+  closed before publishing; a post-deploy production canary does not replace it.
 - For local-only yune-web tweaks, do not run lint, typecheck, unit tests, Playwright, or browser smoke by default. Run them only when the user explicitly asks for verification or when pushing changes; if changes are not being pushed, skip tests and lint.

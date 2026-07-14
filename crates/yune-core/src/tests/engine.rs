@@ -992,6 +992,166 @@ fn typeduck_product_refresh_keeps_profile_page_bounded_until_full_access() {
 }
 
 #[test]
+fn typeduck_profile_with_unrelated_persisted_userdb_keeps_refresh_bounded() {
+    let _guard = super::m37_metrics_test_guard();
+    let mut control = typeduck_legacy_refresh_engine("ngo", None);
+    control.set_input("ngo");
+    let control_candidates = control.context().candidates.clone();
+    assert!(!control.candidate_list_complete());
+
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("zzzz", "UNRELATED", 3, 3.0, 3);
+    let mut engine = typeduck_legacy_refresh_engine("ngo", Some(userdb));
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    engine.set_input("ngo");
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(metrics.candidate_request_bounded_calls, 1);
+    assert_eq!(metrics.candidate_request_unbounded_calls, 0);
+    assert_eq!(metrics.full_list_translation_calls, 0);
+    assert!(!engine.candidate_list_complete());
+    assert_eq!(
+        engine.context().candidates,
+        control_candidates,
+        "an unrelated persisted row must not change the visible TypeDuck page"
+    );
+}
+
+#[test]
+fn typeduck_profile_userdb_first_page_matches_forced_complete_refresh() {
+    let _guard = super::m37_metrics_test_guard();
+
+    for (input, code, user_text, expected_user_index) in [
+        ("ngo", "ngo", "EXACT-USER", 0),
+        ("ngo", "ngohaig", "PREDICTIVE-USER", 1),
+        ("n", "n", "SHORT-EXACT-USER", 0),
+        ("n", "ni", "SHORT-PREDICTIVE-USER", 1),
+    ] {
+        let mut userdb = UserDb::default();
+        userdb.learn_entry(code, user_text, 3, 3.0, 3);
+        let mut engine = typeduck_legacy_refresh_engine(input, Some(userdb));
+
+        crate::m37_metrics_enable(true);
+        crate::m37_metrics_reset();
+        engine.set_input(input);
+        let bounded_metrics = crate::m37_metrics_snapshot();
+
+        assert_eq!(
+            bounded_metrics.candidate_request_bounded_calls, 1,
+            "the {code} user row should merge independently into a bounded translator window"
+        );
+        assert_eq!(bounded_metrics.candidate_request_unbounded_calls, 0);
+        assert_eq!(bounded_metrics.full_list_translation_calls, 0);
+        assert!(!engine.candidate_list_complete());
+        let expected_first_six = if expected_user_index == 0 {
+            vec![
+                user_text,
+                "candidate-00",
+                "candidate-01",
+                "candidate-02",
+                "candidate-03",
+                "candidate-04",
+            ]
+        } else {
+            vec![
+                "candidate-00",
+                user_text,
+                "candidate-01",
+                "candidate-02",
+                "candidate-03",
+                "candidate-04",
+            ]
+        };
+        assert_eq!(
+            engine
+                .context()
+                .candidates
+                .iter()
+                .take(6)
+                .map(|candidate| candidate.text.as_str())
+                .collect::<Vec<_>>(),
+            expected_first_six,
+            "the existing exact/predictive user ordering must remain visible"
+        );
+        assert_eq!(
+            engine.context().candidates[expected_user_index].source,
+            CandidateSource::UserTable
+        );
+        let bounded_first_page = engine
+            .context()
+            .candidates
+            .iter()
+            .take(5)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        engine.ensure_complete_candidate_list();
+        let complete_metrics = crate::m37_metrics_snapshot();
+        crate::m37_metrics_enable(false);
+
+        assert_eq!(complete_metrics.candidate_request_bounded_calls, 1);
+        assert_eq!(complete_metrics.candidate_request_unbounded_calls, 1);
+        assert_eq!(complete_metrics.full_list_translation_calls, 1);
+        assert!(engine.candidate_list_complete());
+        assert_eq!(
+            engine
+                .context()
+                .candidates
+                .iter()
+                .take(5)
+                .cloned()
+                .collect::<Vec<_>>(),
+            bounded_first_page,
+            "the bounded {input}/{code} page must be field-identical after a forced full refresh"
+        );
+    }
+}
+
+#[test]
+fn typeduck_profile_userdb_navigation_completes_long_and_short_lists() {
+    let mut long_userdb = UserDb::default();
+    long_userdb.learn_entry("ngo", "LONG-EXACT-USER", 3, 3.0, 3);
+    let mut long = typeduck_legacy_refresh_engine("ngo", Some(long_userdb));
+    long.set_input("ngo");
+    assert!(!long.candidate_list_complete());
+    assert!(long.change_page_by(5, false));
+    assert!(long.candidate_list_complete());
+    assert_eq!(long.context().highlighted, 5);
+    assert_eq!(long.context().candidates[5].text, "candidate-04");
+
+    let mut short_userdb = UserDb::default();
+    short_userdb.learn_entry("ni", "SHORT-PREDICTIVE-USER", 3, 3.0, 3);
+    let mut short = typeduck_legacy_refresh_engine("n", Some(short_userdb));
+    short.set_input("n");
+    assert!(!short.candidate_list_complete());
+    assert!(short.highlight_candidate(55));
+    assert!(short.candidate_list_complete());
+    assert_eq!(short.context().highlighted, 55);
+}
+
+#[test]
+fn typeduck_profile_multi_segment_exact_userdb_retains_complete_refresh() {
+    let _guard = super::m37_metrics_test_guard();
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("ngo hai go", "MULTI-SEGMENT-EXACT", 3, 3.0, 3);
+    let mut engine = typeduck_legacy_refresh_engine("ngohaigo", Some(userdb));
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    engine.set_input("ngohaigo");
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(metrics.candidate_request_bounded_calls, 0);
+    assert_eq!(metrics.candidate_request_unbounded_calls, 1);
+    assert_eq!(metrics.full_list_translation_calls, 1);
+    assert!(engine.candidate_list_complete());
+}
+
+#[test]
 fn canonical_jyutping_id_does_not_enable_typeduck_refresh_without_profile_marker() {
     let dictionary = bounded_refresh_dictionary_with_rows(80);
     let mut engine = Engine::new();
@@ -1131,6 +1291,28 @@ fn bounded_refresh_dictionary() -> String {
 
 fn bounded_refresh_dictionary_with_rows(row_count: usize) -> String {
     bounded_refresh_dictionary_with_prefix_and_rows("n", row_count)
+}
+
+fn typeduck_legacy_refresh_engine(input: &str, userdb: Option<UserDb>) -> Engine {
+    let dictionary = bounded_refresh_dictionary_with_prefix_and_rows(input, 80);
+    let mut engine = Engine::new();
+    engine.set_schema("arbitrary_profile_schema", "TypeDuck Profile Test");
+    engine.set_schema_behavior_profile(SchemaBehaviorProfile::TypeduckJyutping);
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(&dictionary)
+            .expect("dictionary should parse")
+            .with_completion(true)
+            .with_sentence(false)
+            .with_sentence_policy(SentencePolicy::LegacyFallback)
+            .with_prediction_candidate_limit(1)
+            .with_prediction_never_first(true)
+            .with_prefix_fallback(true),
+    );
+    engine.set_prediction_never_first(true);
+    if let Some(userdb) = userdb {
+        engine.set_userdb(userdb);
+    }
+    engine
 }
 
 fn bounded_forward_navigation_engine(

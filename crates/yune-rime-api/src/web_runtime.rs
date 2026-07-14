@@ -20,7 +20,7 @@ use crate::{
 };
 
 use crate::session::{
-    session_candidates_snapshot, session_inspector_snapshot, session_web_diagnostics_snapshot,
+    session_candidate_range_snapshot, session_inspector_snapshot, session_web_diagnostics_snapshot,
     with_session,
 };
 
@@ -651,9 +651,6 @@ fn attach_candidate_sources(
     context: &mut JsonValue,
     inspector_enabled: bool,
 ) {
-    let Some(engine_candidates) = session_candidates_snapshot(session_id) else {
-        return;
-    };
     let page_no = context
         .get("page_no")
         .and_then(serde_json::Value::as_u64)
@@ -671,9 +668,13 @@ fn attach_candidate_sources(
         return;
     };
     let page_start = page_no.saturating_mul(page_size);
+    let Some(engine_candidates) =
+        session_candidate_range_snapshot(session_id, page_start, page_candidates.len())
+    else {
+        return;
+    };
     for (page_index, candidate) in page_candidates.iter_mut().enumerate() {
-        let full_index = page_start.saturating_add(page_index);
-        let Some(engine_candidate) = engine_candidates.get(full_index) else {
+        let Some(engine_candidate) = engine_candidates.get(page_index) else {
             continue;
         };
         if let Some(source) = source_label(&engine_candidate.source, inspector_enabled) {

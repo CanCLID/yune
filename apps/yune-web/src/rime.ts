@@ -15,6 +15,9 @@ interface SuccessPayload {
 	elapsedMs?: number;
 	workerStartedAt?: number;
 	workerFinishedAt?: number;
+	workerBaseElapsedMs?: number;
+	workerAmplificationMs?: number;
+	workerActionMultiplier?: number;
 }
 
 interface ErrorPayload {
@@ -23,6 +26,9 @@ interface ErrorPayload {
 	elapsedMs?: number;
 	workerStartedAt?: number;
 	workerFinishedAt?: number;
+	workerBaseElapsedMs?: number;
+	workerAmplificationMs?: number;
+	workerActionMultiplier?: number;
 }
 
 interface DiagnosticPayload {
@@ -46,6 +52,9 @@ interface ActionDiagnostic {
 	queueWaitMs: number;
 	workerRoundtripMs: number;
 	workerMs?: number;
+	workerBaseElapsedMs?: number;
+	workerAmplificationMs?: number;
+	workerActionMultiplier?: number;
 	totalMs: number;
 }
 
@@ -148,6 +157,9 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 			receivedAt,
 			workerStartedAt: data.workerStartedAt,
 			workerFinishedAt: data.workerFinishedAt,
+			workerBaseElapsedMs: data.workerBaseElapsedMs,
+			workerAmplificationMs: data.workerAmplificationMs,
+			workerActionMultiplier: data.workerActionMultiplier,
 			queueWaitMs: Math.round(((currentMessage.sentAt ?? receivedAt) - (currentMessage.enqueuedAt ?? receivedAt))),
 			workerRoundtripMs: Math.round(receivedAt - (currentMessage.sentAt ?? receivedAt)),
 			workerMs: data.elapsedMs,
@@ -390,6 +402,14 @@ function workerUrl() {
 	const attributionFamily = wasmAttributionFamily();
 	if (attributionFamily) {
 		params.set("assetFamily", attributionFamily);
+	}
+	const latencyWorkerActionMultiplier = new URLSearchParams(location.search)
+		.get("yuneLatencyWorkerActionMultiplier");
+	if (
+		latencyWorkerActionMultiplier
+		&& ["127.0.0.1", "localhost", "::1", "[::1]"].includes(location.hostname)
+	) {
+		params.set("latencyWorkerActionMultiplier", latencyWorkerActionMultiplier);
 	}
 	return `./worker.js?${params.toString()}`;
 }

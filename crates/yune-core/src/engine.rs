@@ -1499,7 +1499,31 @@ impl Engine {
         } else {
             self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping
         };
+        let typeduck_userdb_allows_bounded =
+            if self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping {
+                let input = self.context.composition.input.as_str();
+                let input_code_len = comparable_userdb_code_len(input);
+                self.userdb
+                    .lookup(&UserDbLookupRequest::new(input).with_predictive(true))
+                    .iter()
+                    .all(|result| {
+                        let user_code_len = result.comparable_code_len();
+                        // Predictive rows insert at the user-table head; a
+                        // single-segment exact row uses a quality-only index that
+                        // fits inside the retained TypeDuck surplus. Multi-segment
+                        // exact placement scans translator code lengths, so it must
+                        // retain the complete path.
+                        user_code_len > input_code_len
+                            || (user_code_len == input_code_len
+                                && !result.is_multi_segment_code()
+                                && equal_code_user_phrase_insert_index(result.quality, usize::MAX)
+                                    < DEFAULT_PAGE_SIZE + TYPEDUCK_PROFILE_REACHABILITY_SURPLUS)
+                    })
+            } else {
+                false
+            };
         let userdb_allows_bounded = self.userdb.entries().is_empty()
+            || typeduck_userdb_allows_bounded
             || (self.active_upstream_script_translation_index().is_some()
                 && self
                     .userdb

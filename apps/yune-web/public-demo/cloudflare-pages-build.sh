@@ -7,6 +7,8 @@ REPO_ROOT=$(CDPATH= cd -- "$APP_ROOT/../.." && pwd)
 EMSDK_VERSION=${EMSDK_VERSION:-4.0.24}
 EMSDK_DIR=${YUNE_WEB_EMSDK_DIR:-"$REPO_ROOT/.cache/emsdk"}
 WASM_ARTIFACT_DIR="$REPO_ROOT/target/wasm32-unknown-emscripten/release"
+PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH:-"$REPO_ROOT/.cache/ms-playwright"}
+export PLAYWRIGHT_BROWSERS_PATH
 
 ensure_rustup() {
 	if command -v rustup >/dev/null 2>&1; then
@@ -61,6 +63,8 @@ ensure_emscripten
 
 npm --prefix packages/yune-web-runtime ci
 npm --prefix apps/yune-web ci
+npm --prefix apps/yune-web/e2e ci
+node apps/yune-web/e2e/node_modules/@playwright/test/cli.js install chromium
 
 export YUNE_WEB_WASM_REQUIRE_EMSCRIPTEN=1
 scripts/yune-web-wasm-build.sh
@@ -71,3 +75,11 @@ cp "$WASM_ARTIFACT_DIR/yune-web.js" "$APP_ROOT/public/yune-web.js"
 cp "$WASM_ARTIFACT_DIR/yune-web.wasm" "$APP_ROOT/public/yune-web.wasm"
 
 npm --prefix apps/yune-web run build:public
+
+# Cloudflare publishes only after this source-current public artifact passes.
+# This is intentionally the focused latency matrix, not the broad browser suite.
+export YUNE_WEB_LATENCY_CPU_THROTTLE=4
+export YUNE_WEB_LATENCY_KEY_INTERVAL_MS=250
+export YUNE_WEB_LATENCY_P95_MS=750
+export YUNE_WEB_LATENCY_MAX_MS=1000
+npm --prefix apps/yune-web/e2e run test:e2e:input-latency:public

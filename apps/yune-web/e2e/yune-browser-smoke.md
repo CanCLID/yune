@@ -39,6 +39,43 @@ prediction-never-first control, M16 sentence composition parity, and M13 AI-off
 identity/source-label safety. Passing smoke is useful during development, but it
 does not replace the full 28-test gate.
 
+Worker, engine, schema, and schema-delivery changes also own a focused browser
+latency hard stop. This command runs only the latency matrix, never the broad
+suite:
+
+```bash
+npm --prefix apps/yune-web/e2e run test:e2e:input-latency:public
+```
+
+The command starts an exact preview of the already-built
+`public-demo/dist`, requires its source/hash-bearing `build-info.json`, fully
+reconciles the local package to `public-artifact-manifest.json`, verifies the
+served worker/app/WASM/schema-manifest bytes, and proves the split Jyutping prism
+startup path. It uses true keydown-to-paint
+diagnostics under 4x main-thread Chromium CPU throttling plus loopback-only,
+synthetic 4x proportional ASCII-letter `processKey` service-time amplification
+and a sustained 250 ms key interval. Every timed key self-verifies the worker
+multiplier, lower and upper delay bounds, and effective service-time ratio. This
+is a queue-stress profile, not empirical 4x-device proof. The
+gate fails at p95 above 750 ms, any key above 1000 ms, or any
+schema/split-part/manifest request during a timed window after the selected
+schema reaches ready. Its learned TypeDuck row must survive a page reload before
+timing. `YUNE_WEB_LATENCY_P95_MS`,
+`YUNE_WEB_LATENCY_MAX_MS`, `YUNE_WEB_LATENCY_CPU_THROTTLE`, and
+`YUNE_WEB_LATENCY_KEY_INTERVAL_MS` are explicit diagnostic overrides; release
+evidence uses the binding defaults.
+
+For a deployed canary, set an explicit URL and use the direct command:
+
+```bash
+YUNE_WEB_APP_URL=https://yune-web.pages.dev/ npm --prefix apps/yune-web/e2e run test:e2e:input-latency
+```
+
+The deployed-origin canary intentionally cannot activate the synthetic worker
+hook; the source/hash-identical loopback preview is the binding pre-publish
+worker gate. Preserve the 80 ms calibration as a nonbinding burst/queue-stress
+diagnostic and rerun it only when the worker queue architecture changes.
+
 ### Step 1: Install Dependencies
 
 ```bash

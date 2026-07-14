@@ -1,9 +1,18 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 
 const e2eRoot = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(e2eRoot, "..");
@@ -74,6 +83,8 @@ const releaseCadenceGapCount =
 const releaseMechanism =
   "main-cdp-plus-synthetic-keydown-worker-service-amplification";
 const releaseWorkerStressScope = "loopback-preview";
+const releaseRustcVersion = "rustc 1.96.1 (31fca3adb 2026-06-26)";
+const releaseNodeVersion = "v22.16.0";
 
 async function commandOutput(command, args, cwd) {
   return new Promise((resolve, reject) => {
@@ -269,6 +280,48 @@ const temporaryOutput = process.env.YUNE_WEB_LATENCY_OUTPUT_DIR
   : await mkdtemp(path.join(tmpdir(), "yune-web-input-latency-"));
 const outputDir =
   process.env.YUNE_WEB_LATENCY_OUTPUT_DIR ?? temporaryOutput;
+await mkdir(outputDir, { recursive: true });
+const gateStartedAt = new Date().toISOString();
+await Promise.all([
+  writeFile(
+    path.join(outputDir, latencyEvidenceName),
+    `${JSON.stringify(
+      {
+        generatedAt: gateStartedAt,
+        url: appUrl,
+        measurementCompleted: false,
+        passed: false,
+        thresholdVerdict: "fail",
+        releaseGradeVerdict: "fail",
+        failurePhase: "preview-or-browser-setup-incomplete",
+        buildInfo,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  ),
+  writeFile(
+    path.join(outputDir, normalTypingEvidenceName),
+    `${JSON.stringify(
+      {
+        generatedAt: gateStartedAt,
+        url: appUrl,
+        measurementCompleted: false,
+        passed: false,
+        typingMode: "normal-interactive-exact-input",
+        schemaId: "jyut6ping3",
+        input: normalTypingInput,
+        inputLength: normalTypingInput.length,
+        failurePhase: "preview-or-browser-setup-incomplete",
+        buildInfo,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  ),
+]);
 const preview = spawn(
   process.execPath,
   [
@@ -402,6 +455,30 @@ function percentile(values, proportion) {
   return sorted[Math.min(index, sorted.length - 1)];
 }
 
+function emitFullReceipt(prefix, rawReceipt) {
+  const rawBytes = Buffer.from(rawReceipt, "utf8");
+  const encoded = gzipSync(rawBytes, { level: 9 }).toString("base64");
+  const chunkSize = 12 * 1024;
+  const chunks = Array.from(
+    { length: Math.ceil(encoded.length / chunkSize) },
+    (_, index) => encoded.slice(index * chunkSize, (index + 1) * chunkSize),
+  );
+  console.error(
+    `${prefix}_FULL_MANIFEST=${JSON.stringify({
+      encoding: "gzip+base64",
+      rawBytes: rawBytes.byteLength,
+      encodedBytes: encoded.length,
+      sha256: createHash("sha256").update(rawBytes).digest("hex"),
+      chunkCount: chunks.length,
+    })}`,
+  );
+  for (const [index, chunk] of chunks.entries()) {
+    console.error(
+      `${prefix}_FULL_CHUNK_${String(index + 1).padStart(4, "0")}_OF_${String(chunks.length).padStart(4, "0")}=${chunk}`,
+    );
+  }
+}
+
 function assertReleaseLatencyReceipt(evidence) {
   const violations = [];
   const requireValue = (condition, message) => {
@@ -447,6 +524,11 @@ function assertReleaseLatencyReceipt(evidence) {
   requireValue(
     evidence.cpuProfile?.workerStressScope === releaseWorkerStressScope,
     "release worker stress scope must be loopback-preview",
+  );
+  requireValue(
+    evidence.buildInfo?.toolchain?.rustcVersion === releaseRustcVersion &&
+      evidence.buildInfo?.toolchain?.nodeVersion === releaseNodeVersion,
+    `release toolchain must use ${releaseRustcVersion} and Node ${releaseNodeVersion}`,
   );
 
   const scenarios = Array.isArray(evidence.scenarios)
@@ -540,9 +622,30 @@ function assertReleaseLatencyReceipt(evidence) {
 
     const expectedGapCount = Math.max(0, diagnostics.length - 1);
     const cadence = scenario?.cadence;
+    const rawCadenceGaps = Array.isArray(scenario?.diagnostics)
+      ? scenario.diagnostics.slice(1).map((diagnostic, gapIndex) => ({
+          afterKeyIndex: gapIndex + 1,
+          gapMs:
+            diagnostic?.keydownAt -
+            scenario.diagnostics[gapIndex]?.keydownAt,
+        }))
+      : [];
+    const rawFiniteCadenceGaps = rawCadenceGaps.map((gap) => gap.gapMs);
+    const rawInvalidCadenceGaps = rawCadenceGaps.filter(
+      (gap) =>
+        !Number.isFinite(gap.gapMs) ||
+        gap.gapMs < 200 ||
+        gap.gapMs > 312.5,
+    );
     cadenceGapCount += Number.isSafeInteger(cadence?.count)
       ? cadence.count
       : 0;
+    requireValue(
+      rawCadenceGaps.length === expectedGapCount &&
+        rawFiniteCadenceGaps.every(Number.isFinite) &&
+        rawInvalidCadenceGaps.length === 0,
+      `${scenario?.name ?? `scenario-${index + 1}`} raw keydown timestamps must prove every cadence gap within 200..312.5 ms`,
+    );
     requireValue(
       cadence?.expectedIntervalMs === releaseKeyIntervalMs &&
         sameJson(cadence?.acceptedRangeMs, { min: 200, max: 312.5 }) &&
@@ -566,6 +669,16 @@ function assertReleaseLatencyReceipt(evidence) {
               Number.isFinite(value) && value >= 200 && value <= 312.5,
           ),
       `${scenario?.name ?? `scenario-${index + 1}`} cadence summary must be complete and within range`,
+    );
+    requireValue(
+      expectedGapCount === 0
+        ? cadenceStats.every((value) => value === null)
+        : cadence?.minMs === percentile(rawFiniteCadenceGaps, 0) &&
+          cadence?.medianMs === percentile(rawFiniteCadenceGaps, 0.5) &&
+          cadence?.p95Ms === percentile(rawFiniteCadenceGaps, 0.95) &&
+          cadence?.maxMs === percentile(rawFiniteCadenceGaps, 1) &&
+          sameJson(cadence?.invalidGaps, rawInvalidCadenceGaps),
+      `${scenario?.name ?? `scenario-${index + 1}`} cadence summary must be recomputed from raw keydown timestamps`,
     );
   }
 
@@ -761,10 +874,15 @@ function assertNormalTypingReceipt(evidence) {
   }
 }
 
-async function reportLatencyEvidence(prefix, requirePassingReceipt = false) {
+async function reportLatencyEvidence(
+  prefix,
+  requirePassingReceipt = false,
+  includeFullReceipt = false,
+) {
   const evidencePath = path.join(outputDir, latencyEvidenceName);
   try {
-    const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
+    const rawReceipt = await readFile(evidencePath, "utf8");
+    const evidence = JSON.parse(rawReceipt);
     if (requirePassingReceipt) {
       assertReleaseLatencyReceipt(evidence);
     }
@@ -796,6 +914,9 @@ async function reportLatencyEvidence(prefix, requirePassingReceipt = false) {
         : [],
     };
     console.error(`${prefix}=${JSON.stringify(summary)}`);
+    if (includeFullReceipt) {
+      emitFullReceipt(prefix, rawReceipt);
+    }
   } catch (error) {
     if (requirePassingReceipt) {
       throw new Error(
@@ -813,10 +934,12 @@ async function reportNormalTypingEvidence(
   prefix,
   attemptOutputDir,
   requirePassingReceipt = false,
+  includeFullReceipt = false,
 ) {
   const evidencePath = path.join(attemptOutputDir, normalTypingEvidenceName);
   try {
-    const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
+    const rawReceipt = await readFile(evidencePath, "utf8");
+    const evidence = JSON.parse(rawReceipt);
     if (requirePassingReceipt) {
       assertNormalTypingReceipt(evidence);
     }
@@ -837,6 +960,9 @@ async function reportNormalTypingEvidence(
       buildInfo: evidence.buildInfo,
     };
     console.error(`${prefix}=${JSON.stringify(summary)}`);
+    if (includeFullReceipt) {
+      emitFullReceipt(prefix, rawReceipt);
+    }
   } catch (error) {
     if (requirePassingReceipt) {
       throw new Error(
@@ -861,10 +987,16 @@ try {
   );
   gatePassed = true;
 } catch (error) {
-  await reportLatencyEvidence("WEB03_LATENCY_FAILURE_EVIDENCE");
+  await reportLatencyEvidence(
+    "WEB03_LATENCY_FAILURE_EVIDENCE",
+    false,
+    true,
+  );
   await reportNormalTypingEvidence(
     "WEB03_NORMAL_TYPING_FAILURE_EVIDENCE",
     outputDir,
+    false,
+    true,
   );
   console.error(`WEB03 latency failure artifacts preserved at ${outputDir}`);
   throw error;

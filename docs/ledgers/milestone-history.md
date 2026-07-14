@@ -102,15 +102,18 @@ Cloudflare-compatible split/reassembly path for public assets above 25 MiB
 after the earlier browser/package receipt boundary, so it is accounted for as
 a later production change rather than projected onto that evidence. Native
 WEB-03 guards now stage the tracked public schema source and reproduce from a
-clean checkout. The Cloudflare build blocks publication on a dedicated serial
-Playwright hard stop over the exact source/hash-identified public artifact. It
+clean checkout. The Cloudflare build blocks publication on a dedicated
+single-worker Playwright hard stop over the exact source/hash-identified public
+artifact. It
 proves the real split-prism startup path, all three launch schemas, Luna 37/59,
 both historical long Jyutping rows, and reloaded persisted TypeDuck state under
 4x main-thread Chromium throttling plus loopback-only, self-verified synthetic
 4x proportional ASCII-letter `processKey` service-time amplification. The
 paired engine corrective keeps userdb exact/predictive
 page order while preventing a persisted row from forcing eager full-dictionary
-translation on every key.
+translation on every key. The exact normal-typing canary runs first so a later
+release-profile red cannot suppress its receipt; either red blocks, with no retry.
+The public build pins Rust 1.96.1, Emscripten 4.0.23, and SDK Node 22.16.0.
 WEB03-11 remains active until the first clean source-current Cloudflare build
 passes that binding profile.
 

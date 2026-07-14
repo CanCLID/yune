@@ -4,6 +4,7 @@ import {
   type CDPSession,
   type Locator,
   type Page,
+  type TestInfo,
 } from "@playwright/test";
 
 const APP_READY_TIMEOUT_MS = 300_000;
@@ -45,6 +46,9 @@ const EXPECTED_EMSCRIPTEN_RELEASE_COMMIT =
   "aaa43392544d695232b70eda706d751f18980c2a";
 const EXPECTED_EMSDK_REPOSITORY_COMMIT =
   "db04e88298d9916fc51fcd3743045ca3eb695127";
+const EXPECTED_RUSTC_VERSION =
+  "rustc 1.96.1 (31fca3adb 2026-06-26)";
+const EXPECTED_NODE_VERSION = "v22.16.0";
 const REQUIRE_PINNED_TOOLCHAIN_RECEIPT =
   process.env.YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT === "1";
 const IS_LOOPBACK_PREVIEW = [
@@ -692,8 +696,8 @@ async function readPublicBuildInfo(page: Page): Promise<PublicBuildInfo> {
       EXPECTED_EMSDK_REPOSITORY_COMMIT,
     );
     expect(value.toolchain.emccVersion).toContain(EXPECTED_EMSDK_VERSION);
-    expect(value.toolchain.rustcVersion).toMatch(/^rustc \d+\.\d+\.\d+/);
-    expect(value.toolchain.nodeVersion).toMatch(/^v\d+\.\d+\.\d+/);
+    expect(value.toolchain.rustcVersion).toBe(EXPECTED_RUSTC_VERSION);
+    expect(value.toolchain.nodeVersion).toBe(EXPECTED_NODE_VERSION);
   }
 
   const { createHash } = await import("node:crypto");
@@ -1044,7 +1048,10 @@ async function writeOptionalEvidence(
   );
 }
 
-test.describe.configure({ mode: "serial" });
+// Keep one worker and declaration order, but do not use Playwright's serial
+// failure semantics: a measured release red must not suppress the independent
+// exact normal-typing receipt that runs before it.
+test.describe.configure({ mode: "default" });
 
 test("cadence scheduler rebases delayed host timers without a catch-up burst", () => {
   expect(nextCadenceDeadline(1_000, 1_040, 250)).toBe(1_250);
@@ -1052,6 +1059,11 @@ test("cadence scheduler rebases delayed host timers without a catch-up burst", (
   expect(nextCadenceDeadline(1_000, 1_100, 250)).toBe(1_350);
   expect(nextCadenceDeadline(1_000, 1_300, 250)).toBe(1_550);
 });
+
+test(
+  "normal Jyutping typing stays responsive for the reported exact input",
+  runNormalTypingCanary,
+);
 
 test("WEB-03 input latency hard stop covers all public schemas and learned TypeDuck state", async ({
   page,
@@ -1410,9 +1422,10 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
   }
 });
 
-test("normal Jyutping typing stays responsive for the reported exact input", async ({
-  page,
-}, testInfo) => {
+async function runNormalTypingCanary(
+  { page }: { page: Page },
+  testInfo: TestInfo,
+): Promise<void> {
   const postReadyAssetRequests: AssetRequest[] = [];
   await writeOptionalEvidence("normal-typing-exact-input.json", {
     generatedAt: new Date().toISOString(),
@@ -1608,4 +1621,4 @@ test("normal Jyutping typing stays responsive for the reported exact input", asy
   expect.soft(checks.noTimedAssetRequests, "timed typing must not fetch schema assets").toBe(
     true,
   );
-});
+}

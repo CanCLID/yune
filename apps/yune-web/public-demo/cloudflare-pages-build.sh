@@ -7,6 +7,9 @@ REPO_ROOT=$(CDPATH= cd -- "$APP_ROOT/../.." && pwd)
 EMSDK_VERSION=4.0.23
 EMSCRIPTEN_RELEASE_COMMIT=aaa43392544d695232b70eda706d751f18980c2a
 EMSDK_REPOSITORY_COMMIT=db04e88298d9916fc51fcd3743045ca3eb695127
+RUST_TOOLCHAIN_VERSION=1.96.1
+EXPECTED_RUSTC_VERSION="rustc 1.96.1 (31fca3adb 2026-06-26)"
+EXPECTED_NODE_VERSION=v22.16.0
 EMSDK_DIR=${YUNE_WEB_EMSDK_DIR:-"$REPO_ROOT/.cache/emsdk"}
 WASM_ARTIFACT_DIR="$REPO_ROOT/target/wasm32-unknown-emscripten/release"
 PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH:-"$REPO_ROOT/.cache/ms-playwright"}
@@ -71,9 +74,31 @@ ensure_artifact() {
 
 cd "$REPO_ROOT"
 
+if [ -n "${RUSTFLAGS:-}" ] || [ -n "${CARGO_ENCODED_RUSTFLAGS:-}" ]; then
+	echo "Public release builds reject ambient RUSTFLAGS/CARGO_ENCODED_RUSTFLAGS because they change WASM bytes outside the pinned receipt." >&2
+	exit 1
+fi
+
 ensure_rustup
+rustup toolchain install "$RUST_TOOLCHAIN_VERSION" --profile minimal
+export RUSTUP_TOOLCHAIN="$RUST_TOOLCHAIN_VERSION"
 rustup target add wasm32-unknown-emscripten
 ensure_emscripten
+
+if [ -z "${EMSDK_NODE:-}" ] || [ ! -x "$EMSDK_NODE" ]; then
+	echo "Pinned Emscripten SDK did not expose its Node runtime: ${EMSDK_NODE:-unset}" >&2
+	exit 1
+fi
+export PATH="$(dirname "$EMSDK_NODE"):$PATH"
+
+if [ "$(rustc --version)" != "$EXPECTED_RUSTC_VERSION" ]; then
+	echo "Active rustc does not match the public-build pin: $(rustc --version)" >&2
+	exit 1
+fi
+if [ "$(node --version)" != "$EXPECTED_NODE_VERSION" ]; then
+	echo "Active Node does not match the Emscripten public-build pin: $(node --version)" >&2
+	exit 1
+fi
 
 export YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT=1
 export YUNE_WEB_EMSDK_VERSION="$EMSDK_VERSION"

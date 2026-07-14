@@ -51,7 +51,10 @@ The command starts an exact preview of the already-built
 `public-demo/dist`, requires its source/hash-bearing `build-info.json`, fully
 reconciles the local package to `public-artifact-manifest.json`, verifies the
 served worker/app/WASM/schema-manifest bytes, and proves the split Jyutping prism
-startup path. It uses keydown-to-double-`requestAnimationFrame` paint-proxy
+startup path. Release packaging pins Rust `1.96.1`, Emscripten `4.0.23`, and
+the SDK-provided Node `22.16.0`; the receipt rejects an ambient toolchain or a
+binary built by different versions. It uses
+keydown-to-double-`requestAnimationFrame` paint-proxy
 diagnostics (the established `totalKeydownToPaintMs` metric, not compositor
 presentation timing) under 4x main-thread Chromium CPU throttling plus loopback-only,
 synthetic 4x proportional ASCII-letter `processKey` service-time amplification
@@ -92,6 +95,17 @@ nonempty first candidate, and the final page must expose six nonempty candidate
 texts. Because this exact input has no pinned external
 candidate-order fixture, the canary deliberately binds responsiveness and page
 shape only; it does not promote Yune's own output into an oracle.
+
+The Playwright file remains declaration-ordered with one worker and zero
+retries, but its two measurements have independent failure semantics. A red
+4x release row still blocks publication and is preserved, while the exact 1x
+normal-typing canary runs first so its own receipt cannot be replaced by a
+skip. On failure the runner emits the complete JSON receipts and their SHA-256
+hashes into the retained Cloudflare build log in addition to the compact
+summaries. The complete receipts are gzip/base64 encoded into bounded log chunks,
+and the recorded SHA-256 covers their exact JSON file bytes. The runner seeds
+explicit incomplete receipts before preview/browser setup so a setup failure is
+also distinguishable from a measurement that never started.
 
 The cadence driver preserves its absolute phase during normal operation. If a
 host timer arrives late, it rebases the next deadline instead of generating a

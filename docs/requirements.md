@@ -1006,7 +1006,7 @@ browser latency hard stop in WEB03-11.
   `honangwui -> 可能會`. Fixed in `a76fcd59`; guard added in `d1c0171a`. Gates:
   yune-core `259/0`, `cantonese_parity` `37/0`, `upstream_luna_pinyin_parity`
   `12/0`, `yune_web` `35/0`, clippy `-D warnings` + fmt clean.
-- [ ] **WEB03-11**: Browser input latency has a focused serial hard stop that
+- [ ] **WEB03-11**: Browser input latency has a focused single-worker hard stop that
   covers all three public schemas, the historical long Jyutping rows, Luna
   37/59, and a real TypeDuck row learned through the UI. Binding defaults use
   4x main-thread Chromium CPU throttling plus loopback-only, synthetic 4x
@@ -1023,9 +1023,15 @@ browser latency hard stop in WEB03-11.
   `public/schema` source rather than gitignored `public-demo/dist` state. The
   Cloudflare build fully reconciles a deterministic public-artifact inventory
   and verifies served worker/app/WASM/schema-manifest bytes before running the
-  gate against the exact source/hash-identified package; startup must use both expected Jyutping
+  gate against the exact source/hash-identified package built with pinned Rust
+  `1.96.1`, Emscripten `4.0.23`, and SDK Node `22.16.0`; startup must use both expected Jyutping
   prism parts and never the unsplit over-limit asset, and the learned row must
-  be restored after a browser reload before timing.
+  be restored after a browser reload before timing. A release-profile red and
+  the exact unamplified normal-typing canary have independent failure semantics:
+  the exact canary runs first, either red blocks publication, and the later 4x
+  measurement cannot suppress the exact receipt.
+  Latency-gate failures retain complete JSON receipts in bounded gzip/base64 log
+  chunks plus hashes of their exact bytes; there are no measured-red retries.
 
 ## WEB-04 Octagram Debug Harness Requirements
 

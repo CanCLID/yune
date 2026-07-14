@@ -27,8 +27,9 @@ The runner starts its own exact `public-demo/dist` preview and rejects a dev
 server or artifact without source/hash-bearing `build-info.json`. It also proves
 the split Jyutping prism startup path. Release runs reject a dirty Git tree,
 fully reconcile `public-demo/dist` to its deterministic artifact inventory, and
-refetch/hash the served worker, app bundle, WASM, and schema manifest. The serial
-Chromium matrix uses 4x main-thread CPU throttling plus loopback-only, synthetic
+refetch/hash the served worker, app bundle, WASM, and schema manifest. The
+single-worker Chromium matrix uses 4x main-thread CPU throttling plus
+loopback-only, synthetic
 4x proportional ASCII-letter `processKey` service-time amplification,
 self-verified on every timed key. This is a queue-stress profile rather than
 empirical 4x-device proof. It covers the historical long Jyutping inputs, Luna
@@ -36,12 +37,15 @@ empirical 4x-device proof. It covers the historical long Jyutping inputs, Luna
 persistence after reload. The binding defaults are p95 `<= 750 ms`,
 max `<= 1000 ms`, a sustained 250 ms key interval, and zero schema/split-part/
 manifest requests during each timed typing window after its selected schema
-reaches ready:
+reaches ready. The binding build-plus-gate entrypoint is:
 
-```powershell
-npm.cmd --prefix apps/yune-web run build:public
-npm.cmd --prefix apps/yune-web/e2e run test:e2e:input-latency:public
+```bash
+bash apps/yune-web/public-demo/cloudflare-pages-build.sh
 ```
+
+Calling `build:public` and the inner latency runner separately is diagnostic
+unless the caller supplies the same exact toolchain and receipt environment as
+that entrypoint; an ambient-toolchain artifact cannot produce a release pass.
 
 The pre-publish run also exercises the reported 47-key Jyutping input at an
 unamplified 100 ms cadence. It binds every exact prefix, six-row candidate-page
@@ -49,12 +53,18 @@ shape, p95 `<= 150 ms`, max `<= 250 ms`, and max worker queue wait `<= 100 ms`.
 It does not bind candidate text/order because no external oracle fixture exists
 for that exact input. A delayed host timer never causes a short catch-up burst;
 the original out-of-range gap stays red and blocks publication. The runner does
-not retry a measured red.
+not retry a measured red. The 4x and exact 1x measurements use independent
+failure semantics in the same single-worker run. The exact-input canary runs
+first, so a later 4x red cannot suppress its receipt; any red still makes the
+build fail. Latency-gate failure logs retain gzip/base64 chunks of the complete
+JSON receipts plus hashes of their exact bytes.
 
 Set `YUNE_WEB_LATENCY_OUTPUT_DIR` to preserve its JSON packet outside the
 tracked tree. Rust/WASM changes must first rebuild and copy the source-current
 Emscripten artifacts as the Cloudflare build below does. The Cloudflare build
-runs this gate after packaging, requires its exact pinned-toolchain receipt, and
+runs this gate after packaging, pins Rust `1.96.1`, Emscripten `4.0.23`, and
+the Emscripten SDK's Node `22.16.0`, rejects ambient Rust compiler flags,
+requires that exact toolchain receipt, and
 fails before publish on any red row. A direct post-deploy canary must set both
 `YUNE_WEB_APP_URL=https://yune-web.pages.dev/` and
 `YUNE_WEB_EXPECTED_SOURCE_COMMIT` to the full deployed commit before running

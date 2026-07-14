@@ -29,12 +29,35 @@ if (!APP_URL_VALUE) {
   throw new Error("YUNE_WEB_APP_URL must identify the artifact under test");
 }
 const APP_URL = new URL(APP_URL_VALUE);
+const EXPECTED_SOURCE_COMMIT = process.env.YUNE_WEB_EXPECTED_SOURCE_COMMIT
+  ?.trim()
+  .toLowerCase();
+if (
+  EXPECTED_SOURCE_COMMIT !== undefined &&
+  !/^[0-9a-f]{40}$/.test(EXPECTED_SOURCE_COMMIT)
+) {
+  throw new Error(
+    `YUNE_WEB_EXPECTED_SOURCE_COMMIT must be a full lowercase SHA; received ${EXPECTED_SOURCE_COMMIT}`,
+  );
+}
+const EXPECTED_EMSDK_VERSION = "4.0.23";
+const EXPECTED_EMSCRIPTEN_RELEASE_COMMIT =
+  "aaa43392544d695232b70eda706d751f18980c2a";
+const EXPECTED_EMSDK_REPOSITORY_COMMIT =
+  "db04e88298d9916fc51fcd3743045ca3eb695127";
+const REQUIRE_PINNED_TOOLCHAIN_RECEIPT =
+  process.env.YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT === "1";
 const IS_LOOPBACK_PREVIEW = [
   "127.0.0.1",
   "localhost",
   "::1",
   "[::1]",
 ].includes(APP_URL.hostname);
+if (!IS_LOOPBACK_PREVIEW && EXPECTED_SOURCE_COMMIT === undefined) {
+  throw new Error(
+    "YUNE_WEB_EXPECTED_SOURCE_COMMIT is required for a deployed-origin canary",
+  );
+}
 const WORKER_ACTION_MULTIPLIER = IS_LOOPBACK_PREVIEW ? 4 : 1;
 const EVIDENCE_DIR = process.env.YUNE_WEB_LATENCY_EVIDENCE_DIR;
 
@@ -119,6 +142,14 @@ interface PublicBuildInfo {
   schemaManifestSha256: string;
   wasmSha256: string;
   publicArtifactManifestSha256: string;
+  toolchain: {
+    emsdkVersion: string;
+    emscriptenReleaseCommit: string;
+    emsdkRepositoryCommit: string;
+    emccVersion: string;
+    rustcVersion: string;
+    nodeVersion: string;
+  } | null;
 }
 
 interface PublicArtifactManifest {
@@ -387,10 +418,32 @@ async function readPublicBuildInfo(page: Page): Promise<PublicBuildInfo> {
   expect(value.schemaBytes).toBeGreaterThan(0);
   expect(Number.isNaN(Date.parse(value.builtAt))).toBe(false);
   expect(value.sourceCommit).toMatch(/^[0-9a-f]{40}$/);
+  if (EXPECTED_SOURCE_COMMIT !== undefined) {
+    expect(value.sourceCommit).toBe(EXPECTED_SOURCE_COMMIT);
+  }
   expect(value.sourceTreeState).toBe("clean");
   expect(value.schemaManifestSha256).toMatch(/^[0-9a-f]{64}$/);
   expect(value.wasmSha256).toMatch(/^[0-9a-f]{64}$/);
   expect(value.publicArtifactManifestSha256).toMatch(/^[0-9a-f]{64}$/);
+  if (REQUIRE_PINNED_TOOLCHAIN_RECEIPT) {
+    expect(
+      value.toolchain,
+      "release artifact must record its pinned toolchain",
+    ).not.toBeNull();
+    if (value.toolchain === null) {
+      throw new Error("Release artifact is missing its pinned toolchain receipt");
+    }
+    expect(value.toolchain.emsdkVersion).toBe(EXPECTED_EMSDK_VERSION);
+    expect(value.toolchain.emscriptenReleaseCommit).toBe(
+      EXPECTED_EMSCRIPTEN_RELEASE_COMMIT,
+    );
+    expect(value.toolchain.emsdkRepositoryCommit).toBe(
+      EXPECTED_EMSDK_REPOSITORY_COMMIT,
+    );
+    expect(value.toolchain.emccVersion).toContain(EXPECTED_EMSDK_VERSION);
+    expect(value.toolchain.rustcVersion).toMatch(/^rustc \d+\.\d+\.\d+/);
+    expect(value.toolchain.nodeVersion).toMatch(/^v\d+\.\d+\.\d+/);
+  }
 
   const { createHash } = await import("node:crypto");
   const artifactManifestResponse = await page.request.get(

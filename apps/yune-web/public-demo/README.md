@@ -46,8 +46,10 @@ npm.cmd --prefix apps/yune-web/e2e run test:e2e:input-latency:public
 Set `YUNE_WEB_LATENCY_EVIDENCE_DIR` to preserve its JSON packet outside the
 tracked tree. Rust/WASM changes must first rebuild and copy the source-current
 Emscripten artifacts as the Cloudflare build below does. The Cloudflare build
-runs this gate after packaging and fails before publish on any red row. A direct
-post-deploy canary may set `YUNE_WEB_APP_URL=https://yune-web.pages.dev/` and run
+runs this gate after packaging, requires its exact pinned-toolchain receipt, and
+fails before publish on any red row. A direct post-deploy canary must set both
+`YUNE_WEB_APP_URL=https://yune-web.pages.dev/` and
+`YUNE_WEB_EXPECTED_SOURCE_COMMIT` to the full deployed commit before running
 `test:e2e:input-latency`; it does not replace the build gate.
 
 ## Launch Assets

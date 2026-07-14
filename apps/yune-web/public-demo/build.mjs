@@ -22,6 +22,28 @@ const PAGES_MAX_ASSET_BYTES = 25 * 1024 * 1024;
 const SPLIT_CHUNK_BYTES = 20 * 1024 * 1024;
 const PUBLIC_ARTIFACT_MANIFEST = "public-artifact-manifest.json";
 
+function publicBuildToolchain() {
+	const fields = {
+		emsdkVersion: process.env.YUNE_WEB_EMSDK_VERSION,
+		emscriptenReleaseCommit: process.env.YUNE_WEB_EMSCRIPTEN_RELEASE_COMMIT,
+		emsdkRepositoryCommit: process.env.YUNE_WEB_EMSDK_REPOSITORY_COMMIT,
+		emccVersion: process.env.YUNE_WEB_EMCC_VERSION,
+		rustcVersion: process.env.YUNE_WEB_RUSTC_VERSION,
+		nodeVersion: process.env.YUNE_WEB_NODE_VERSION,
+	};
+	const present = Object.values(fields).filter(value => value !== undefined && value.trim() !== "");
+	if (present.length === 0) {
+		if (process.env.YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT === "1") {
+			throw new Error("Public release build is missing its pinned toolchain receipt");
+		}
+		return null;
+	}
+	if (present.length !== Object.keys(fields).length) {
+		throw new Error("Public build toolchain receipt is incomplete");
+	}
+	return fields;
+}
+
 function commandPath(name) {
 	return path.join(appRoot, "node_modules", ".bin", `${name}${process.platform === "win32" ? ".cmd" : ""}`);
 }
@@ -226,6 +248,7 @@ if (!await fileExists(wasmOutput)) {
 	throw new Error(`Public build is missing ${wasmOutput}`);
 }
 const identity = await sourceIdentity();
+const toolchain = publicBuildToolchain();
 const artifactManifestPath = path.join(outputDir, PUBLIC_ARTIFACT_MANIFEST);
 await writeFile(artifactManifestPath, JSON.stringify({
 	generatedFor: "yune-web",
@@ -237,6 +260,7 @@ await writeFile(path.join(outputDir, "build-info.json"), JSON.stringify({
 	schemaBytes: totalSchemaBytes,
 	builtAt: new Date().toISOString(),
 	...identity,
+	toolchain,
 	schemaManifestSha256: await sha256(manifestPath),
 	wasmSha256: await sha256(wasmOutput),
 	publicArtifactManifestSha256: await sha256(artifactManifestPath),

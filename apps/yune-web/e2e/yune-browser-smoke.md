@@ -68,7 +68,9 @@ evidence uses the binding defaults.
 For a deployed canary, set an explicit URL and use the direct command:
 
 ```bash
-YUNE_WEB_APP_URL=https://yune-web.pages.dev/ npm --prefix apps/yune-web/e2e run test:e2e:input-latency
+YUNE_WEB_EXPECTED_SOURCE_COMMIT="$(git rev-parse HEAD)" \
+YUNE_WEB_APP_URL=https://yune-web.pages.dev/ \
+npm --prefix apps/yune-web/e2e run test:e2e:input-latency
 ```
 
 The deployed-origin canary intentionally cannot activate the synthetic worker

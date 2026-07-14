@@ -23,6 +23,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 const appUrl = `http://${host}:${port}/`;
 const artifactManifestName = "public-artifact-manifest.json";
+const latencyEvidenceName = "input-latency-hard-stop.json";
 
 async function commandOutput(command, args, cwd) {
   return new Promise((resolve, reject) => {
@@ -312,7 +313,9 @@ async function runLatencyGate() {
         env: {
           ...process.env,
           YUNE_WEB_APP_URL: appUrl,
+          YUNE_WEB_EXPECTED_SOURCE_COMMIT: currentHead,
           YUNE_WEB_LATENCY_OUTPUT_DIR: outputDir,
+          YUNE_WEB_LATENCY_EVIDENCE_DIR: outputDir,
         },
         stdio: "inherit",
       },
@@ -332,13 +335,69 @@ async function runLatencyGate() {
   });
 }
 
+async function reportLatencyEvidence(prefix, requirePassingReceipt = false) {
+  const evidencePath = path.join(outputDir, latencyEvidenceName);
+  try {
+    const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
+    if (
+      requirePassingReceipt &&
+      (evidence.measurementCompleted !== true ||
+        evidence.passed !== true ||
+        evidence.thresholdVerdict !== "pass" ||
+        evidence.recordedFailureCount !== 0 ||
+        evidence.buildInfo?.sourceCommit !== currentHead)
+    ) {
+      throw new Error(
+        "Latency evidence is not a passing receipt for the current source commit",
+      );
+    }
+    const summary = {
+      generatedAt: evidence.generatedAt,
+      measurementCompleted: evidence.measurementCompleted,
+      passed: evidence.passed,
+      thresholdVerdict: evidence.thresholdVerdict,
+      recordedFailureCount: evidence.recordedFailureCount,
+      cpuProfile: evidence.cpuProfile,
+      ceilingsMs: evidence.ceilingsMs,
+      keyIntervalMs: evidence.keyIntervalMs,
+      buildInfo: evidence.buildInfo,
+      scenarios: Array.isArray(evidence.scenarios)
+        ? evidence.scenarios.map((scenario) => ({
+            name: scenario.name,
+            inputLength: scenario.inputLength,
+            summary: scenario.summary,
+            slowestKey: scenario.slowestKey,
+          }))
+        : [],
+    };
+    console.error(`${prefix}=${JSON.stringify(summary)}`);
+  } catch (error) {
+    if (requirePassingReceipt) {
+      throw new Error(
+        `WEB03 latency gate did not produce a valid passing receipt at ${evidencePath}`,
+        { cause: error },
+      );
+    }
+    console.error(
+      `WEB03 latency evidence unavailable at ${evidencePath}: ${error}`,
+    );
+  }
+}
+
+let gatePassed = false;
 try {
   await runLatencyGate();
+  await reportLatencyEvidence("WEB03_LATENCY_PASS_EVIDENCE", true);
+  gatePassed = true;
+} catch (error) {
+  await reportLatencyEvidence("WEB03_LATENCY_FAILURE_EVIDENCE");
+  console.error(`WEB03 latency failure artifacts preserved at ${outputDir}`);
+  throw error;
 } finally {
   try {
     await stopPreview();
   } finally {
-    if (temporaryOutput !== null) {
+    if (temporaryOutput !== null && gatePassed) {
       await rm(temporaryOutput, { recursive: true, force: true });
     }
   }

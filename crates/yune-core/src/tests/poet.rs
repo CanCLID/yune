@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::Value;
 
-use crate::poet::UpstreamSentenceScratch;
+use crate::poet::{UpstreamSentenceScratch, UpstreamSentenceScratchCacheCounts};
 use crate::{
     build_poet_bin, build_table_bin, encode_octagram_key, make_sentences,
     make_sentences_with_grammar, null_grammar_score, parse_rime_table_bin_dictionary,
@@ -1378,6 +1378,60 @@ fn growing_prefix_sentence_models() -> (UpstreamSentenceModel, UpstreamSentenceM
     (owned, byte_backed)
 }
 
+fn phrase_derivation_fusion_models() -> (UpstreamSentenceModel, UpstreamSentenceModel) {
+    const CHECKSUM: u32 = 0xF053_DF50;
+    let entries = [
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+    ];
+    let vocabulary = [PresetVocabularyEntry::new("ABC", 1_000.0)];
+    let owned = UpstreamSentenceModel::from_table_entries(entries.clone(), &vocabulary, 10);
+    let byte_backed = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(build_poet_bin(
+            entries,
+            &vocabulary,
+            &vocabulary,
+            CHECKSUM,
+        ))) as Arc<dyn PoetByteSource>,
+        CHECKSUM,
+        10,
+    )
+    .expect("byte-backed phrase-derivation fusion fixture should parse");
+    (owned, byte_backed)
+}
+
+#[test]
+fn fused_phrase_derivation_matches_legacy_prefix_and_minimum_length_semantics() {
+    let (owned, byte_backed) = phrase_derivation_fusion_models();
+    for (label, model) in [("owned", &owned), ("byte-backed", &byte_backed)] {
+        for (input, minimum_code_len, expected) in [
+            ("abcd", 0, vec!["abc"]),
+            ("abx", 0, Vec::new()),
+            ("ab", 0, Vec::new()),
+            ("abc", 3, Vec::new()),
+            ("abc", 2, vec!["abc"]),
+        ] {
+            let (legacy_match, derived) = model.normal_vocabulary_match_and_codes_after_for_test(
+                0,
+                input,
+                "a",
+                minimum_code_len,
+            );
+            assert_eq!(
+                legacy_match,
+                !derived.is_empty(),
+                "{label} match and derivation must agree for input={input} minimum={minimum_code_len}"
+            );
+            assert_eq!(
+                derived,
+                expected.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+                "{label} derived codes must preserve prefix/minimum semantics"
+            );
+        }
+    }
+}
+
 #[test]
 fn byte_backed_sentence_scratch_matches_cold_and_owned_for_37_59_growing_prefixes() {
     let (owned, byte_backed) = growing_prefix_sentence_models();
@@ -1426,6 +1480,12 @@ fn byte_backed_sentence_scratch_reuses_all_37_59_single_key_extensions() {
                 &mut scratch,
             );
         }
+        let cache_counts = scratch.immutable_lookup_cache_entry_counts_for_test();
+        assert!(cache_counts.character_keys <= 26);
+        assert!(cache_counts.character_code_rows <= 32);
+        assert!(cache_counts.character_code_bytes <= 128);
+        assert!(cache_counts.first_code_keys <= input.len() * (input.len() + 1) / 2);
+        assert!(cache_counts.vocabulary_index_rows <= cache_counts.first_code_keys * 2);
     }
     let metrics = crate::m37_metrics_snapshot();
     crate::m37_metrics_enable(false);
@@ -1435,6 +1495,181 @@ fn byte_backed_sentence_scratch_reuses_all_37_59_single_key_extensions() {
     assert_eq!(
         metrics.upstream_sentence_model_incremental_discarded_rebuild_chars, 2,
         "only each sequence's initial one-character cold build may be discarded"
+    );
+}
+
+#[test]
+fn sentence_scratch_reuses_immutable_lookup_caches_and_clears_them_on_rebuild() {
+    let (owned, byte_backed) = growing_prefix_sentence_models();
+    let input = "ceshiyixiachangjushuruxingnengzenyang";
+
+    for (label, model, expect_character_codes) in [
+        ("owned", &owned, false),
+        ("byte-backed", &byte_backed, true),
+    ] {
+        let mut scratch = UpstreamSentenceScratch::default();
+        let seed_prefix = &input[..11];
+        let warm_prefix = &input[..12];
+        let extended_prefix = &input[..13];
+        let _ = model.candidates_for_input_with_limit_and_scratch(seed_prefix, 5, &mut scratch);
+        let warm = model.candidates_for_input_with_limit_and_scratch(warm_prefix, 5, &mut scratch);
+        let cold = model.candidates_for_input_with_limit(warm_prefix, 5);
+        assert_eq!(warm, cold, "{label} warm cache seed must preserve order");
+
+        let first_code_cache = scratch
+            .cached_normal_vocabulary_indices_for_test("c")
+            .expect("the growing prefix must cache its first-code vocabulary range");
+        let cache_counts_before_empty_lookup =
+            scratch.immutable_lookup_cache_entry_counts_for_test();
+        assert!(model
+            .cache_normal_vocabulary_indices_for_test("not-a-code", &mut scratch)
+            .is_empty());
+        assert_eq!(
+            scratch.immutable_lookup_cache_entry_counts_for_test(),
+            cache_counts_before_empty_lookup,
+            "empty vocabulary ranges must not consume composition cache entries"
+        );
+        assert!(
+            scratch
+                .cached_normal_vocabulary_indices_for_test("e")
+                .is_none(),
+            "unmatched first codes must remain absent"
+        );
+        let character_code_cache = scratch.cached_normal_character_codes_for_test('E');
+        assert_eq!(
+            character_code_cache.is_some(),
+            expect_character_codes,
+            "only byte-backed storage needs scratch-local character-code materialization"
+        );
+        let cache_counts = scratch.immutable_lookup_cache_entry_counts_for_test();
+        assert!(cache_counts.first_code_keys > 0);
+        assert!(
+            cache_counts.character_keys <= 26,
+            "the fixture can retain at most one character-code row per ASCII letter"
+        );
+        assert!(
+            cache_counts.first_code_keys <= warm_prefix.len() * (warm_prefix.len() + 1) / 2,
+            "first-code cache growth must remain bounded by input substrings"
+        );
+        assert!(cache_counts.character_code_rows <= 32);
+        assert!(cache_counts.character_code_bytes <= 128);
+        assert!(cache_counts.vocabulary_index_rows <= cache_counts.first_code_keys * 2);
+
+        let warm =
+            model.candidates_for_input_with_limit_and_scratch(extended_prefix, 5, &mut scratch);
+        let cold = model.candidates_for_input_with_limit(extended_prefix, 5);
+        assert_eq!(warm, cold, "{label} cached extension must preserve order");
+        assert!(Arc::ptr_eq(
+            &first_code_cache,
+            &scratch
+                .cached_normal_vocabulary_indices_for_test("c")
+                .expect("the first-code cache must survive a monotonic extension")
+        ));
+        if let Some(character_code_cache) = character_code_cache {
+            assert!(Arc::ptr_eq(
+                &character_code_cache,
+                &scratch
+                    .cached_normal_character_codes_for_test('E')
+                    .expect("the character-code cache must survive a monotonic extension")
+            ));
+        }
+        let cache_counts = scratch.immutable_lookup_cache_entry_counts_for_test();
+        assert!(cache_counts.character_keys <= 26);
+        assert!(
+            cache_counts.first_code_keys <= extended_prefix.len() * (extended_prefix.len() + 1) / 2
+        );
+        assert!(cache_counts.character_code_rows <= 32);
+        assert!(cache_counts.character_code_bytes <= 128);
+        assert!(cache_counts.vocabulary_index_rows <= cache_counts.first_code_keys * 2);
+
+        let rebuilt = model.candidates_for_input_with_limit_and_scratch("", 5, &mut scratch);
+        let cold = model.candidates_for_input_with_limit("", 5);
+        assert_eq!(
+            rebuilt, cold,
+            "{label} empty-composition rebuild must preserve order"
+        );
+        assert!(
+            scratch
+                .cached_normal_vocabulary_indices_for_test("c")
+                .is_none(),
+            "a non-prefix rebuild must discard cached vocabulary indices"
+        );
+        assert!(
+            scratch
+                .cached_normal_character_codes_for_test('E')
+                .is_none(),
+            "a non-prefix rebuild must discard cached character codes"
+        );
+        assert_eq!(
+            scratch.immutable_lookup_cache_entry_counts_for_test(),
+            UpstreamSentenceScratchCacheCounts::default()
+        );
+    }
+}
+
+#[test]
+fn sentence_scratch_invalidates_model_owned_state_before_cross_model_reuse() {
+    let first = UpstreamSentenceModel::from_table_entries(
+        [
+            TableEntry::new("a", "A", 100.0),
+            TableEntry::new("b", "B", 100.0),
+            TableEntry::new("c", "C", 100.0),
+        ],
+        &[PresetVocabularyEntry::new("ABC", 1_000.0)],
+        10,
+    );
+    let second = UpstreamSentenceModel::from_table_entries(
+        [
+            TableEntry::new("a", "X", 100.0),
+            TableEntry::new("b", "Y", 100.0),
+            TableEntry::new("c", "Z", 100.0),
+        ],
+        &[PresetVocabularyEntry::new("XYZ", 1_000.0)],
+        10,
+    );
+    let mut scratch = UpstreamSentenceScratch::default();
+
+    let _ = first.candidates_for_input_with_limit_and_scratch("a", 5, &mut scratch);
+    let _ = first.candidates_for_input_with_limit_and_scratch("ab", 5, &mut scratch);
+    assert_ne!(
+        scratch.immutable_lookup_cache_entry_counts_for_test(),
+        UpstreamSentenceScratchCacheCounts::default()
+    );
+
+    let reused = second.candidates_for_input_with_limit_and_scratch("abc", 5, &mut scratch);
+    let cold = second.candidates_for_input_with_limit("abc", 5);
+    assert_eq!(reused, cold, "cross-model scratch must rebuild before use");
+    assert_eq!(
+        scratch.immutable_lookup_cache_entry_counts_for_test(),
+        UpstreamSentenceScratchCacheCounts::default(),
+        "a cross-model rebuild must discard every prior model lookup row"
+    );
+}
+
+#[test]
+fn sentence_scratch_invalidates_when_a_consuming_builder_changes_model_behavior() {
+    let model = UpstreamSentenceModel::from_table_entries(
+        [
+            TableEntry::new("a", "A", 100.0),
+            TableEntry::new("b", "B", 100.0),
+            TableEntry::new("c", "C", 100.0),
+        ],
+        &[PresetVocabularyEntry::new("ABC", 1_000.0)],
+        10,
+    );
+    let mut scratch = UpstreamSentenceScratch::default();
+    let _ = model.candidates_for_input_with_limit_and_scratch("ab", 5, &mut scratch);
+    let before = model.candidates_for_input_with_limit_and_scratch("abc", 5, &mut scratch);
+    assert!(before.iter().any(|candidate| candidate.text == "ABC"));
+
+    let configured = model.with_excluded_texts(["ABC"]);
+    let reused = configured.candidates_for_input_with_limit_and_scratch("abc", 5, &mut scratch);
+    let cold = configured.candidates_for_input_with_limit("abc", 5);
+    assert_eq!(reused, cold);
+    assert_eq!(
+        scratch.immutable_lookup_cache_entry_counts_for_test(),
+        UpstreamSentenceScratchCacheCounts::default(),
+        "a behavior-changing builder must force a cold scratch rebuild"
     );
 }
 

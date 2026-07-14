@@ -47,6 +47,7 @@ const TABLE_QUERY_INDEX_CODE_MAX_SYLLABLES: usize = 3;
 const DEFAULT_SENTENCE_CUTOFF_THRESHOLD: f64 = 0.1;
 const SINGULAR_GRAMMAR_BEAM_WIDTH: usize = 7;
 type CharacterCodeCache = HashMap<char, Arc<[String]>>;
+type VocabularyIndexCache = HashMap<String, Arc<[usize]>>;
 const ABBREVIATION_VOCABULARY_RAW_SPAN_BONUS: f64 = 500_000.0;
 
 #[derive(Clone, Copy)]
@@ -1305,6 +1306,21 @@ fn partition_spread(lengths: &[usize]) -> usize {
     max - min
 }
 
+#[derive(Debug, Default)]
+struct SentenceModelScratchIdentity(Arc<u8>);
+
+impl Clone for SentenceModelScratchIdentity {
+    fn clone(&self) -> Self {
+        Self::default()
+    }
+}
+
+impl SentenceModelScratchIdentity {
+    fn token(&self) -> &Arc<u8> {
+        &self.0
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct UpstreamSentenceModel {
     storage: PoetModelStorage,
@@ -1319,6 +1335,7 @@ pub struct UpstreamSentenceModel {
     sentence_cutoff_threshold: f64,
     excluded_texts: HashSet<String>,
     grammar: GrammarProvider,
+    scratch_identity: SentenceModelScratchIdentity,
 }
 
 impl Default for UpstreamSentenceModel {
@@ -1333,6 +1350,7 @@ impl Default for UpstreamSentenceModel {
             sentence_cutoff_threshold: DEFAULT_SENTENCE_CUTOFF_THRESHOLD,
             excluded_texts: HashSet::new(),
             grammar: GrammarProvider::default(),
+            scratch_identity: SentenceModelScratchIdentity::default(),
         }
     }
 }
@@ -1350,6 +1368,22 @@ pub struct UpstreamSentenceScratch {
     phrase_candidates: Vec<Candidate>,
     prefix_states_by_start: Vec<Option<CachedSentencePrefixState>>,
     exact_spans_by_start: Vec<Vec<CachedSentenceCodeSpan>>,
+    // Both lookup families are immutable for the model that owns this scratch.
+    // Keep their materialized rows across monotonic prefixes and discard them
+    // with the rest of the model-specific scratch on every rebuild.
+    normal_character_codes: CharacterCodeCache,
+    normal_vocabulary_indices_by_first_code: VocabularyIndexCache,
+    model_identity: Option<Arc<u8>>,
+}
+
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(crate) struct UpstreamSentenceScratchCacheCounts {
+    pub(crate) character_keys: usize,
+    pub(crate) character_code_rows: usize,
+    pub(crate) character_code_bytes: usize,
+    pub(crate) first_code_keys: usize,
+    pub(crate) vocabulary_index_rows: usize,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1373,6 +1407,9 @@ impl UpstreamSentenceScratch {
         self.phrase_candidates.clear();
         self.prefix_states_by_start.clear();
         self.exact_spans_by_start.clear();
+        self.normal_character_codes.clear();
+        self.normal_vocabulary_indices_by_first_code.clear();
+        self.model_identity = None;
     }
 
     pub(crate) fn is_for_input(&self, input: &str) -> bool {
@@ -1389,6 +1426,9 @@ impl UpstreamSentenceScratch {
             && self.phrase_candidates.is_empty()
             && self.prefix_states_by_start.is_empty()
             && self.exact_spans_by_start.is_empty()
+            && self.normal_character_codes.is_empty()
+            && self.normal_vocabulary_indices_by_first_code.is_empty()
+            && self.model_identity.is_none()
     }
 
     #[cfg(test)]
@@ -1396,9 +1436,54 @@ impl UpstreamSentenceScratch {
         self.input = "seed".to_owned();
     }
 
-    fn is_ready_for(&self, input: &str, max_candidates: usize) -> bool {
+    #[cfg(test)]
+    pub(crate) fn cached_normal_character_codes_for_test(&self, ch: char) -> Option<Arc<[String]>> {
+        self.normal_character_codes.get(&ch).map(Arc::clone)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn cached_normal_vocabulary_indices_for_test(
+        &self,
+        code: &str,
+    ) -> Option<Arc<[usize]>> {
+        self.normal_vocabulary_indices_by_first_code
+            .get(code)
+            .map(Arc::clone)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn immutable_lookup_cache_entry_counts_for_test(
+        &self,
+    ) -> UpstreamSentenceScratchCacheCounts {
+        UpstreamSentenceScratchCacheCounts {
+            character_keys: self.normal_character_codes.len(),
+            character_code_rows: self
+                .normal_character_codes
+                .values()
+                .map(|codes| codes.len())
+                .sum(),
+            character_code_bytes: self
+                .normal_character_codes
+                .values()
+                .flat_map(|codes| codes.iter())
+                .map(String::len)
+                .sum(),
+            first_code_keys: self.normal_vocabulary_indices_by_first_code.len(),
+            vocabulary_index_rows: self
+                .normal_vocabulary_indices_by_first_code
+                .values()
+                .map(|indices| indices.len())
+                .sum(),
+        }
+    }
+
+    fn is_ready_for(&self, input: &str, max_candidates: usize, model_identity: &Arc<u8>) -> bool {
         !self.input.is_empty()
             && self.max_candidates == max_candidates
+            && self
+                .model_identity
+                .as_ref()
+                .is_some_and(|owner| Arc::ptr_eq(owner, model_identity))
             && input.starts_with(&self.input)
             && self.states_by_end.len() == self.input.len().saturating_add(1)
             && (self.continuation_states_by_end.is_empty()
@@ -1834,6 +1919,7 @@ impl UpstreamSentenceModel {
             sentence_cutoff_threshold: DEFAULT_SENTENCE_CUTOFF_THRESHOLD,
             excluded_texts: HashSet::new(),
             grammar: GrammarProvider::default(),
+            scratch_identity: SentenceModelScratchIdentity::default(),
         })
     }
 
@@ -1908,12 +1994,14 @@ impl UpstreamSentenceModel {
             sentence_cutoff_threshold: DEFAULT_SENTENCE_CUTOFF_THRESHOLD,
             excluded_texts: HashSet::new(),
             grammar: GrammarProvider::default(),
+            scratch_identity: SentenceModelScratchIdentity::default(),
         }
     }
 
     #[must_use]
     pub fn with_grammar(mut self, grammar: impl Into<GrammarProvider>) -> Self {
         self.grammar = grammar.into();
+        self.rotate_scratch_identity();
         self
     }
 
@@ -1925,12 +2013,14 @@ impl UpstreamSentenceModel {
     ) -> Self {
         self.max_sentences = max_sentences.clamp(1, 100);
         self.max_homophones = max_homophones;
+        self.rotate_scratch_identity();
         self
     }
 
     #[must_use]
     pub fn with_sentence_cutoff_threshold(mut self, sentence_cutoff_threshold: f64) -> Self {
         self.sentence_cutoff_threshold = sentence_cutoff_threshold;
+        self.rotate_scratch_identity();
         self
     }
 
@@ -1940,7 +2030,12 @@ impl UpstreamSentenceModel {
         texts: impl IntoIterator<Item = impl Into<String>>,
     ) -> Self {
         self.excluded_texts = texts.into_iter().map(Into::into).collect();
+        self.rotate_scratch_identity();
         self
+    }
+
+    fn rotate_scratch_identity(&mut self) {
+        self.scratch_identity = SentenceModelScratchIdentity::default();
     }
 
     #[must_use]
@@ -2006,7 +2101,7 @@ impl UpstreamSentenceModel {
             return self.candidates_for_input_with_limit(input, max_candidates);
         }
 
-        if !scratch.is_ready_for(input, max_candidates) {
+        if !scratch.is_ready_for(input, max_candidates, self.scratch_identity.token()) {
             return self.rebuild_scratch(input, max_candidates, scratch);
         }
         if scratch.input.len() == input.len() {
@@ -2616,6 +2711,7 @@ impl UpstreamSentenceModel {
         let path_duration = path_start.map_or(Duration::ZERO, |start| start.elapsed());
         scratch.input = input.to_owned();
         scratch.max_candidates = max_candidates;
+        scratch.model_identity = Some(Arc::clone(self.scratch_identity.token()));
         self.candidates_for_cached_sentence_paths_with_limit(
             input,
             scratch,
@@ -3463,7 +3559,6 @@ impl UpstreamSentenceModel {
         let mut next_exact_spans = vec![Vec::new(); boundaries.len()];
         let mut seen_code_spans = record_volume_metrics.then(HashMap::<&str, usize>::new);
         let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
-        let mut character_code_cache = CharacterCodeCache::new();
 
         for (start_index, start) in boundaries.iter().copied().enumerate() {
             if start >= input.len() {
@@ -3577,36 +3672,33 @@ impl UpstreamSentenceModel {
                         reachable[span.end_index] = true;
                     }
                 }
-                let vocabulary_entries =
-                    self.storage.vocabulary_indices_for_first_code(false, code);
+                let vocabulary_entries = self.normal_vocabulary_indices_for_first_code_cached(
+                    code,
+                    &mut scratch.normal_vocabulary_indices_by_first_code,
+                );
                 if record_volume_metrics {
                     lookup_metrics.vocabulary_index_probes += 1;
                     lookup_metrics.vocabulary_rows_examined += vocabulary_entries.len();
                 }
                 let minimum_new_phrase_code_len = previous_len.saturating_sub(start);
-                for index in vocabulary_entries {
+                for &index in vocabulary_entries.iter() {
                     let (vocabulary_text, vocabulary_weight, phrase_codes) = match &self.storage {
                         PoetModelStorage::Owned(storage) => {
                             let vocabulary_entry = &storage.vocabulary[index];
-                            if !self.vocabulary_entry_matches_input_prefix_owned_after(
+                            let phrase_codes = self.derive_matching_phrase_codes_owned_after(
                                 storage,
                                 vocabulary_entry,
                                 suffix,
                                 code,
                                 minimum_new_phrase_code_len,
-                            ) {
+                            );
+                            if phrase_codes.is_empty() {
                                 continue;
                             }
                             (
                                 vocabulary_entry.text.as_str(),
                                 upstream_compiled_vocabulary_weight(vocabulary_entry.weight),
-                                self.derive_matching_phrase_codes_owned_after(
-                                    storage,
-                                    vocabulary_entry,
-                                    suffix,
-                                    code,
-                                    minimum_new_phrase_code_len,
-                                ),
+                                phrase_codes,
                             )
                         }
                         PoetModelStorage::ByteBacked(storage) => {
@@ -3615,13 +3707,14 @@ impl UpstreamSentenceModel {
                                 abbreviation: false,
                                 range: storage.vocabulary_chars_range(false, index),
                             };
-                            if !self.vocabulary_entry_matches_input_prefix_byte_backed_after(
+                            let phrase_codes = self.derive_matching_phrase_codes_byte_backed_after(
                                 chars,
                                 suffix,
                                 code,
                                 minimum_new_phrase_code_len,
-                                &mut character_code_cache,
-                            ) {
+                                &mut scratch.normal_character_codes,
+                            );
+                            if phrase_codes.is_empty() {
                                 continue;
                             }
                             (
@@ -3629,13 +3722,7 @@ impl UpstreamSentenceModel {
                                 upstream_compiled_vocabulary_weight(
                                     storage.vocabulary_weight(false, index),
                                 ),
-                                self.derive_matching_phrase_codes_byte_backed_after(
-                                    chars,
-                                    suffix,
-                                    code,
-                                    minimum_new_phrase_code_len,
-                                    &mut character_code_cache,
-                                ),
+                                phrase_codes,
                             )
                         }
                         PoetModelStorage::Empty => return None,
@@ -4732,6 +4819,90 @@ impl UpstreamSentenceModel {
             .into();
         cache.insert(ch, Arc::clone(&codes));
         codes
+    }
+
+    fn normal_vocabulary_indices_for_first_code_cached(
+        &self,
+        code: &str,
+        cache: &mut VocabularyIndexCache,
+    ) -> Arc<[usize]> {
+        if let Some(indices) = cache.get(code) {
+            return Arc::clone(indices);
+        }
+        let indices = self.storage.vocabulary_indices_for_first_code(false, code);
+        if indices.is_empty() {
+            return Arc::from(indices);
+        }
+        let indices: Arc<[usize]> = indices.into();
+        cache.insert(code.to_owned(), Arc::clone(&indices));
+        indices
+    }
+
+    #[cfg(test)]
+    pub(crate) fn cache_normal_vocabulary_indices_for_test(
+        &self,
+        code: &str,
+        scratch: &mut UpstreamSentenceScratch,
+    ) -> Arc<[usize]> {
+        self.normal_vocabulary_indices_for_first_code_cached(
+            code,
+            &mut scratch.normal_vocabulary_indices_by_first_code,
+        )
+    }
+
+    #[cfg(test)]
+    pub(crate) fn normal_vocabulary_match_and_codes_after_for_test(
+        &self,
+        vocabulary_index: usize,
+        input: &str,
+        first_code: &str,
+        minimum_code_len: usize,
+    ) -> (bool, Vec<String>) {
+        match &self.storage {
+            PoetModelStorage::Owned(storage) => {
+                let entry = &storage.vocabulary[vocabulary_index];
+                (
+                    self.vocabulary_entry_matches_input_prefix_owned_after(
+                        storage,
+                        entry,
+                        input,
+                        first_code,
+                        minimum_code_len,
+                    ),
+                    self.derive_matching_phrase_codes_owned_after(
+                        storage,
+                        entry,
+                        input,
+                        first_code,
+                        minimum_code_len,
+                    ),
+                )
+            }
+            PoetModelStorage::ByteBacked(storage) => {
+                let chars = ByteBackedVocabularyChars {
+                    storage,
+                    abbreviation: false,
+                    range: storage.vocabulary_chars_range(false, vocabulary_index),
+                };
+                let mut character_code_cache = CharacterCodeCache::new();
+                let matches = self.vocabulary_entry_matches_input_prefix_byte_backed_after(
+                    chars,
+                    input,
+                    first_code,
+                    minimum_code_len,
+                    &mut character_code_cache,
+                );
+                let codes = self.derive_matching_phrase_codes_byte_backed_after(
+                    chars,
+                    input,
+                    first_code,
+                    minimum_code_len,
+                    &mut character_code_cache,
+                );
+                (matches, codes)
+            }
+            PoetModelStorage::Empty => (false, Vec::new()),
+        }
     }
 
     fn derive_matching_phrase_codes_from_spans(

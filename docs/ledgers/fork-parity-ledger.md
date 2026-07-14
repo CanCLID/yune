@@ -217,8 +217,8 @@ the fixed eight-row default-on/explicit-false matrix. This registry does not
 merge the two mechanisms, redefine TypeDuck as the canonical candidate oracle,
 or authorize a schema-id split.
 
-M59 closes with this boundary unchanged. The final source-current browser and
-package gates preserve TypeDuck as a profile/regression lane, and the completed
+M59 closes with this boundary unchanged. Browser and package gates at closeout
+source `5fa986d8` preserve TypeDuck as a profile/regression lane, and the completed
 plan and evidence ledger remain the closeout record; M60 may formalize
 onboarding and explicit opt-out provenance but must not unify or reimplement the
 two mechanisms.

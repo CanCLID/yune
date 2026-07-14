@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "packet": "m59-source-current-lane-a-revalidation-2026-07-13",
+  "status": "accepted",
+  "repair_commit": "443cc636862806e4f0dd1e12ab2e2e45f4189154",
+  "source_tree": "875a5d8705ff70d4765ca4dde87a941343f57d7a",
+  "release_dll": {
+    "included": false,
+    "bytes": 4249088,
+    "sha256": "f829a14033c4cad5e594e50349ee40f104686159404628343bd7673a9467f49b"
+  },
+  "acceptance": {
+    "lane_a_inputs": 13,
+    "lane_a_candidates": 5705,
+    "exact_cases": 13,
+    "exceptions_used": 0,
+    "beyond_oracle_depth_used": false,
+    "all_terminal_pages_reached": true,
+    "pre_fix_exact_cases": 12,
+    "pre_fix_failing_input": "ngohaig"
+  },
+  "oracle": {
+    "librime_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "committed_capture_sha256": "56e7aafabcfac7eb7d3b209d5929eff88c65aeaa1b98fee0464e6b1fcda8c1ca",
+    "fresh_capture_sha256": "2997934b26db0da66e22d7f7f52a4ccf5d1cf48d85e4524b1c036b8b68e035df",
+    "fresh_vs_committed_exact_cases": 13
+  },
+  "capture": {
+    "sha256": "f7a05b09ebbae6eb528fbef714678bf8f9b78aeb84956b5e11de545aee1d8c2d",
+    "source_clean": true,
+    "source_shared_tree_sha256": "b76c540136b54162df6cc00a2b9159719fb7c207c99e5a6c9625abbe08aa9e5c",
+    "staged_shared_tree_sha256": "a169531b04449c38875eca42c14ce2ddb95d32037f2178de603e0d80c47adfd8"
+  },
+  "binary_payloads_copied": false,
+  "packet_file_count": 8,
+  "packet_bytes_excluding_manifest": 5170044,
+  "file_inventory": [
+    {
+      "path": "oracle-refresh-exact.csv",
+      "bytes": 7442,
+      "sha256": "b23999c0ccefcbb957594ab413493cae2f9fcf8086c0b2df8c4ccfa76675ca28"
+    },
+    {
+      "path": "oracle-refresh-exact.json",
+      "bytes": 14766,
+      "sha256": "0fd8504d35a0e152ffe6266dd51948ebda22d6d6571f57a056d01c42385eedc7"
+    },
+    {
+      "path": "pre-fix-exact.csv",
+      "bytes": 7450,
+      "sha256": "287b881107fc084134ee5fe112143cd678cca75bf4bb7b865cfca52e7a914d44"
+    },
+    {
+      "path": "pre-fix-exact.json",
+      "bytes": 33501,
+      "sha256": "f51f58a469786cd2238183684334d3341c9df96b1f84783f279d14ec63515bda"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5530,
+      "sha256": "6a081fc4bf535cc915f8dbcc1ce31e61db6b0c4b906b8a87f1161893d2f83b89"
+    },
+    {
+      "path": "source-current-exact.csv",
+      "bytes": 7442,
+      "sha256": "e69bb3be44f861a27b87727fcfc99d7eca0873b0101c3349905f0c0978a1387b"
+    },
+    {
+      "path": "source-current-exact.json",
+      "bytes": 14766,
+      "sha256": "3e5f6f101b311482106d753751fe93645832d1b13fb493e1c2d81eccd932fb98"
+    },
+    {
+      "path": "source-current-yune.json",
+      "bytes": 5079147,
+      "sha256": "f7a05b09ebbae6eb528fbef714678bf8f9b78aeb84956b5e11de545aee1d8c2d"
+    }
+  ]
+}

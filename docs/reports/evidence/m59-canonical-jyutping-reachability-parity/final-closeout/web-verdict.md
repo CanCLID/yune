@@ -1,7 +1,7 @@
 # Web verdict
 
-Verdict: **PASS for the source-current functional, packaging, and WEB-04
-surfaces required by M59.**
+Verdict: **PASS for the `5fa986d8` functional, packaging, and WEB-04 surfaces
+required by M59.** No later browser rerun is claimed.
 
 ## Builds
 
@@ -22,14 +22,14 @@ WASM verification; native fallback remained forbidden.
 ## Browser
 
 - WEB-04 + M58 focused gate: 4/4 PASS.
-- Current WEB-05 controls: 4 PASS, one declared public-demo-only skip.
+- `5fa986d8` WEB-05 controls: 4 PASS, one declared public-demo-only skip.
 - `yune-web.spec.ts`: 75 PASS, four declared public-mode skips.
-- Unique current functional total: 79 PASS, five declared skips.
+- Unique `5fa986d8` functional total: 79 PASS, five declared skips.
 
 Three stale/asynchronous E2E assumptions were fixed and reverified:
 
 1. Plain Luna's WEB-04 `youhuiyong` control now uses the same provenance-backed
-   `有會用` result as the source-current native/browser lane.
+   `有會用` result as the `5fa986d8` native/browser lane.
 2. Candidate selection waits for an actual input/candidate state change, and
    the prediction test resets diagnostics before each request and waits for the
    fresh full `ngo` worker response instead of accepting an earlier response.

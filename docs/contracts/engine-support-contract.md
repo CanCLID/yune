@@ -81,11 +81,12 @@ eight-row deploy matrix plus the direct selectable tracked `jyut6ping3` path.
 New schema assets enter the registry as blocking open rows. This is an
 acceptance/audit rule, not a schema-id gate or ABI surface.
 
-M59 closes this contract with source-current native, fail-closed Emscripten,
-tracked-app/public-package, and functional-browser evidence. WEB-04 is complete
-at `5/5`: the browser proves all four Octagram ranking rows, the plain-Luna
-default-off control, and missing-model fail-closed behavior. The historical
-WEB-05 same-WASM comparison remains bound to its original binary and was not
+M59 closes this contract with final native evidence at `443cc636`; fail-closed
+Emscripten, tracked-app/public-package, and functional-browser evidence remains
+bound to closeout source `5fa986d8`. All five WEB-04
+requirements are complete: the browser proves all four Octagram ranking rows,
+the plain-Luna default-off control, and missing-model fail-closed behavior. The
+historical WEB-05 same-WASM comparison remains bound to its original binary and was not
 rebaselined as a cross-binary M59 gate.
 
 ### Upstream Luna Compiled-Weight Semantics

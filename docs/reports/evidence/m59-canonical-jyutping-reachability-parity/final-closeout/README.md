@@ -2,17 +2,21 @@
 
 Status: **VALID — M59 closes under the full D-47/D-48 contract.**
 
-The production source under test is `5fa986d80a6f1481f7c04c64af41467d3767bf61`.
-The final E2E synchronization fixes, policy update, documentation, and this
-packet land in the commit containing this file; they do not modify production
-Rust or browser-runtime code.
+The production source under test for this original closeout packet is
+`5fa986d80a6f1481f7c04c64af41467d3767bf61`. The final E2E synchronization
+fixes, policy update, documentation, and this packet did not modify production
+Rust or browser-runtime code at that boundary. Independent follow-up
+`443cc636` later changed native collector behavior; its source-current Lane A
+and performance evidence lives in the sibling revalidation packets and
+supersedes this packet for final-source claims. No later browser rerun is
+claimed.
 
 ## Final verdicts
 
-- D-47 performance: the final behavior source `5879405c` remains green at
+- D-47 performance: source-current final behavior `443cc636` is green at
   `32/32` aggregate rows and `160/160` individual observations under the signed
-  ceilings. No production code changed after that source; REACH-03 at
-  `5fa986d8` changed manifests, coverage metadata, tooling, and tests only.
+  ceilings. The sibling source-current performance packet supersedes the
+  original `5879405c` ratchet as final-source evidence.
 - D-48 Lane A: strict `13/13` and all `5,705` captured positions exact.
 - D-48 Lane B: all seven captured inputs exact by candidate text and position;
   the deployed 37-character and 59-character page shapes are exact.
@@ -20,7 +24,7 @@ Rust or browser-runtime code.
   unmarked lane `12/12` unchanged.
 - REACH-03: 60 manifest assets, 10 schema-asset dispositions, three
   configuration carriers, and nine executable validation rows.
-- WEB-04: the source-current browser gate proves all four plain/Octagram rows,
+- WEB-04: the `5fa986d8` browser gate proves all four plain/Octagram rows,
   the plain-Luna default-off control, and missing-model fail-closed fallback.
 
 ## Native closeout
@@ -51,8 +55,8 @@ See [native verdict](native-verdict.md) and `logs/native/`.
 - pinned Octagram model: 10,513,408 bytes and SHA-256
   `574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3`;
 - tracked app build: green;
-- unique current functional Playwright coverage: 79 passed and five declared
-  public-mode skips across `yune-web.spec.ts` and the current WEB-05 controls.
+- unique `5fa986d8` functional Playwright coverage: 79 passed and five declared
+  public-mode skips across `yune-web.spec.ts` and the closeout WEB-05 controls.
 
 The functional run was split into disjoint subsets so already-passed tests were
 not repeated after serial failures. Every failure and targeted recovery is

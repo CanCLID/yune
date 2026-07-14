@@ -62,3 +62,8 @@ docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-la
 # hashes these normalized UTF-8 logs and browser JSON files; no binary payloads
 # are stored in the evidence subtree.
 docs/reports/evidence/m59-canonical-jyutping-reachability-parity/final-closeout/** -text whitespace=-blank-at-eol,-blank-at-eof
+
+# Preserve the source-current M59 performance revalidation byte-for-byte. The
+# aggregate provenance binds the original Windows receipts and rejected-run
+# diagnostics, so Git must not normalize this raw evidence subtree.
+docs/reports/evidence/m59-canonical-jyutping-reachability-parity/source-current-performance-revalidation-2026-07-13/** -text whitespace=-blank-at-eol,-blank-at-eof

@@ -1,0 +1,1280 @@
+{
+  "tool": "compare-candidate-order.py",
+  "tool_version": "5",
+  "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+  "policy": "exact",
+  "inputs": [
+    "be",
+    "bei",
+    "bein",
+    "being",
+    "beingo",
+    "beix",
+    "beixngoxx",
+    "ngohaig",
+    "ngohaigo",
+    "n",
+    "nri",
+    "mgoi",
+    "zijiguk"
+  ],
+  "all_accepted": false,
+  "cases": [
+    {
+      "input": "be",
+      "policy": "exact",
+      "oracle_count": 4,
+      "actual_count": 4,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "19ce08b1c635177202963ccc31918c1d1ebdd2904482a7c530a081d47fe760db",
+      "actual_rows_sha256": "19ce08b1c635177202963ccc31918c1d1ebdd2904482a7c530a081d47fe760db",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "bei",
+      "policy": "exact",
+      "oracle_count": 139,
+      "actual_count": 139,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "4beccc3afd54288eb814f77f4c02805ede1181ccb20c71fdd9ce29061ef7012a",
+      "actual_rows_sha256": "4beccc3afd54288eb814f77f4c02805ede1181ccb20c71fdd9ce29061ef7012a",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "bein",
+      "policy": "exact",
+      "oracle_count": 5,
+      "actual_count": 5,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "6ded41b8d2ce446a6e08a15c78c0f33b69cef3fea3d5053839419f09a7c2310a",
+      "actual_rows_sha256": "6ded41b8d2ce446a6e08a15c78c0f33b69cef3fea3d5053839419f09a7c2310a",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "being",
+      "policy": "exact",
+      "oracle_count": 140,
+      "actual_count": 140,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "67a605d2f97846450bb92601482ac75b3f4bb08502ae72b76f290b4da899e377",
+      "actual_rows_sha256": "67a605d2f97846450bb92601482ac75b3f4bb08502ae72b76f290b4da899e377",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "beingo",
+      "policy": "exact",
+      "oracle_count": 142,
+      "actual_count": 142,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "b1e6f1bd9f0f180ddd9e2de4d028e77978a6be54f64b5ee2b71521f345ba4577",
+      "actual_rows_sha256": "b1e6f1bd9f0f180ddd9e2de4d028e77978a6be54f64b5ee2b71521f345ba4577",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "beix",
+      "policy": "exact",
+      "oracle_count": 36,
+      "actual_count": 36,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "cea5c3a1cb49fe73e0089a7aa7937bbbb8357a5b7a3a21d305f50976185386bc",
+      "actual_rows_sha256": "cea5c3a1cb49fe73e0089a7aa7937bbbb8357a5b7a3a21d305f50976185386bc",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "beixngoxx",
+      "policy": "exact",
+      "oracle_count": 38,
+      "actual_count": 38,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "a031e922a5a0a059dbe216562e82e583bf79e22a3284c428c2d4a622a99d9f01",
+      "actual_rows_sha256": "a031e922a5a0a059dbe216562e82e583bf79e22a3284c428c2d4a622a99d9f01",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "ngohaig",
+      "policy": "exact",
+      "oracle_count": 2050,
+      "actual_count": 2050,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 141,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "1d33916d8c5f1cd6631a16ce28befd2ed4ab3584b607dc625dc2f801454f4ed1",
+      "actual_rows_sha256": "a59f03a652ae48a7a6789c97e57a6d7ee2a01eddeb035cb3230a75d5f9e8fbea",
+      "diff_opcodes": [
+        {
+          "tag": "insert",
+          "oracle_start": 141,
+          "oracle_end": 141,
+          "actual_start": 141,
+          "actual_end": 142
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 143,
+          "oracle_end": 144,
+          "actual_start": 144,
+          "actual_end": 144
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 165,
+          "oracle_end": 165,
+          "actual_start": 165,
+          "actual_end": 168
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 166,
+          "oracle_end": 169,
+          "actual_start": 169,
+          "actual_end": 169
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 177,
+          "oracle_end": 177,
+          "actual_start": 177,
+          "actual_end": 178
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 178,
+          "oracle_end": 179,
+          "actual_start": 179,
+          "actual_end": 179
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 183,
+          "oracle_end": 183,
+          "actual_start": 183,
+          "actual_end": 185
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 184,
+          "oracle_end": 186,
+          "actual_start": 186,
+          "actual_end": 186
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 199,
+          "oracle_end": 199,
+          "actual_start": 199,
+          "actual_end": 200
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 200,
+          "oracle_end": 201,
+          "actual_start": 201,
+          "actual_end": 201
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 208,
+          "oracle_end": 208,
+          "actual_start": 208,
+          "actual_end": 209
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 209,
+          "oracle_end": 210,
+          "actual_start": 210,
+          "actual_end": 210
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 221,
+          "oracle_end": 221,
+          "actual_start": 221,
+          "actual_end": 222
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 223,
+          "oracle_end": 224,
+          "actual_start": 224,
+          "actual_end": 224
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 244,
+          "oracle_end": 244,
+          "actual_start": 244,
+          "actual_end": 245
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 246,
+          "oracle_end": 247,
+          "actual_start": 247,
+          "actual_end": 247
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 266,
+          "oracle_end": 266,
+          "actual_start": 266,
+          "actual_end": 267
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 267,
+          "oracle_end": 268,
+          "actual_start": 268,
+          "actual_end": 268
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 274,
+          "oracle_end": 274,
+          "actual_start": 274,
+          "actual_end": 275
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 275,
+          "oracle_end": 276,
+          "actual_start": 276,
+          "actual_end": 276
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 288,
+          "oracle_end": 288,
+          "actual_start": 288,
+          "actual_end": 289
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 289,
+          "oracle_end": 290,
+          "actual_start": 290,
+          "actual_end": 290
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 323,
+          "oracle_end": 323,
+          "actual_start": 323,
+          "actual_end": 324
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 324,
+          "oracle_end": 325,
+          "actual_start": 325,
+          "actual_end": 325
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 336,
+          "oracle_end": 336,
+          "actual_start": 336,
+          "actual_end": 337
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 338,
+          "oracle_end": 339,
+          "actual_start": 339,
+          "actual_end": 339
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 340,
+          "oracle_end": 342,
+          "actual_start": 340,
+          "actual_end": 340
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 344,
+          "oracle_end": 344,
+          "actual_start": 342,
+          "actual_end": 344
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 374,
+          "oracle_end": 374,
+          "actual_start": 374,
+          "actual_end": 375
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 375,
+          "oracle_end": 376,
+          "actual_start": 376,
+          "actual_end": 376
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 383,
+          "oracle_end": 383,
+          "actual_start": 383,
+          "actual_end": 385
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 384,
+          "oracle_end": 385,
+          "actual_start": 386,
+          "actual_end": 386
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 390,
+          "oracle_end": 391,
+          "actual_start": 391,
+          "actual_end": 391
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 392,
+          "oracle_end": 392,
+          "actual_start": 392,
+          "actual_end": 393
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 393,
+          "oracle_end": 394,
+          "actual_start": 394,
+          "actual_end": 394
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 396,
+          "oracle_end": 396,
+          "actual_start": 396,
+          "actual_end": 397
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 397,
+          "oracle_end": 398,
+          "actual_start": 398,
+          "actual_end": 398
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 447,
+          "oracle_end": 447,
+          "actual_start": 447,
+          "actual_end": 452
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 448,
+          "oracle_end": 450,
+          "actual_start": 453,
+          "actual_end": 453
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 451,
+          "oracle_end": 453,
+          "actual_start": 454,
+          "actual_end": 454
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 459,
+          "oracle_end": 460,
+          "actual_start": 460,
+          "actual_end": 460
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 474,
+          "oracle_end": 474,
+          "actual_start": 474,
+          "actual_end": 475
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 475,
+          "oracle_end": 476,
+          "actual_start": 476,
+          "actual_end": 476
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 480,
+          "oracle_end": 480,
+          "actual_start": 480,
+          "actual_end": 481
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 482,
+          "oracle_end": 483,
+          "actual_start": 483,
+          "actual_end": 483
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 504,
+          "oracle_end": 504,
+          "actual_start": 504,
+          "actual_end": 505
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 505,
+          "oracle_end": 506,
+          "actual_start": 506,
+          "actual_end": 506
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 511,
+          "oracle_end": 511,
+          "actual_start": 511,
+          "actual_end": 513
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 513,
+          "oracle_end": 514,
+          "actual_start": 515,
+          "actual_end": 515
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 516,
+          "oracle_end": 517,
+          "actual_start": 517,
+          "actual_end": 517
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 548,
+          "oracle_end": 548,
+          "actual_start": 548,
+          "actual_end": 549
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 549,
+          "oracle_end": 549,
+          "actual_start": 550,
+          "actual_end": 554
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 554,
+          "oracle_end": 555,
+          "actual_start": 559,
+          "actual_end": 559
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 560,
+          "oracle_end": 561,
+          "actual_start": 564,
+          "actual_end": 564
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 565,
+          "oracle_end": 566,
+          "actual_start": 568,
+          "actual_end": 568
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 567,
+          "oracle_end": 568,
+          "actual_start": 569,
+          "actual_end": 569
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 571,
+          "oracle_end": 572,
+          "actual_start": 572,
+          "actual_end": 572
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 584,
+          "oracle_end": 584,
+          "actual_start": 584,
+          "actual_end": 591
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 595,
+          "oracle_end": 596,
+          "actual_start": 602,
+          "actual_end": 602
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 600,
+          "oracle_end": 601,
+          "actual_start": 606,
+          "actual_end": 606
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 604,
+          "oracle_end": 605,
+          "actual_start": 609,
+          "actual_end": 609
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 610,
+          "oracle_end": 611,
+          "actual_start": 614,
+          "actual_end": 614
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 619,
+          "oracle_end": 620,
+          "actual_start": 622,
+          "actual_end": 622
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 623,
+          "oracle_end": 624,
+          "actual_start": 625,
+          "actual_end": 625
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 626,
+          "oracle_end": 627,
+          "actual_start": 627,
+          "actual_end": 627
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 635,
+          "oracle_end": 635,
+          "actual_start": 635,
+          "actual_end": 637
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 636,
+          "oracle_end": 636,
+          "actual_start": 638,
+          "actual_end": 639
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 637,
+          "oracle_end": 637,
+          "actual_start": 640,
+          "actual_end": 642
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 638,
+          "oracle_end": 640,
+          "actual_start": 643,
+          "actual_end": 643
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 641,
+          "oracle_end": 644,
+          "actual_start": 644,
+          "actual_end": 644
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 650,
+          "oracle_end": 650,
+          "actual_start": 650,
+          "actual_end": 651
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 653,
+          "oracle_end": 654,
+          "actual_start": 654,
+          "actual_end": 654
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 680,
+          "oracle_end": 683,
+          "actual_start": 680,
+          "actual_end": 711
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 687,
+          "oracle_end": 687,
+          "actual_start": 715,
+          "actual_end": 747
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 688,
+          "oracle_end": 689,
+          "actual_start": 748,
+          "actual_end": 748
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 691,
+          "oracle_end": 692,
+          "actual_start": 750,
+          "actual_end": 750
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 702,
+          "oracle_end": 703,
+          "actual_start": 760,
+          "actual_end": 760
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 704,
+          "oracle_end": 707,
+          "actual_start": 761,
+          "actual_end": 761
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 709,
+          "oracle_end": 710,
+          "actual_start": 763,
+          "actual_end": 763
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 714,
+          "oracle_end": 716,
+          "actual_start": 767,
+          "actual_end": 767
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 718,
+          "oracle_end": 720,
+          "actual_start": 769,
+          "actual_end": 769
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 721,
+          "oracle_end": 722,
+          "actual_start": 770,
+          "actual_end": 770
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 723,
+          "oracle_end": 725,
+          "actual_start": 771,
+          "actual_end": 771
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 727,
+          "oracle_end": 729,
+          "actual_start": 773,
+          "actual_end": 773
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 731,
+          "oracle_end": 732,
+          "actual_start": 775,
+          "actual_end": 775
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 734,
+          "oracle_end": 735,
+          "actual_start": 777,
+          "actual_end": 777
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 737,
+          "oracle_end": 739,
+          "actual_start": 779,
+          "actual_end": 779
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 743,
+          "oracle_end": 744,
+          "actual_start": 783,
+          "actual_end": 783
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 746,
+          "oracle_end": 748,
+          "actual_start": 785,
+          "actual_end": 785
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 749,
+          "oracle_end": 752,
+          "actual_start": 786,
+          "actual_end": 786
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 754,
+          "oracle_end": 755,
+          "actual_start": 788,
+          "actual_end": 788
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 756,
+          "oracle_end": 757,
+          "actual_start": 789,
+          "actual_end": 789
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 759,
+          "oracle_end": 760,
+          "actual_start": 791,
+          "actual_end": 791
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 763,
+          "oracle_end": 764,
+          "actual_start": 794,
+          "actual_end": 794
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 766,
+          "oracle_end": 767,
+          "actual_start": 796,
+          "actual_end": 796
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 769,
+          "oracle_end": 770,
+          "actual_start": 798,
+          "actual_end": 798
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 771,
+          "oracle_end": 775,
+          "actual_start": 799,
+          "actual_end": 799
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 782,
+          "oracle_end": 783,
+          "actual_start": 806,
+          "actual_end": 806
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 786,
+          "oracle_end": 788,
+          "actual_start": 809,
+          "actual_end": 809
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 789,
+          "oracle_end": 790,
+          "actual_start": 810,
+          "actual_end": 810
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 792,
+          "oracle_end": 793,
+          "actual_start": 812,
+          "actual_end": 812
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 799,
+          "oracle_end": 802,
+          "actual_start": 818,
+          "actual_end": 818
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 803,
+          "oracle_end": 804,
+          "actual_start": 819,
+          "actual_end": 819
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 810,
+          "oracle_end": 811,
+          "actual_start": 825,
+          "actual_end": 825
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 813,
+          "oracle_end": 815,
+          "actual_start": 827,
+          "actual_end": 827
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 817,
+          "oracle_end": 818,
+          "actual_start": 829,
+          "actual_end": 829
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 820,
+          "oracle_end": 821,
+          "actual_start": 831,
+          "actual_end": 831
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 825,
+          "oracle_end": 827,
+          "actual_start": 835,
+          "actual_end": 835
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 828,
+          "oracle_end": 829,
+          "actual_start": 836,
+          "actual_end": 836
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 834,
+          "oracle_end": 838,
+          "actual_start": 841,
+          "actual_end": 841
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 840,
+          "oracle_end": 841,
+          "actual_start": 843,
+          "actual_end": 843
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 845,
+          "oracle_end": 847,
+          "actual_start": 847,
+          "actual_end": 847
+        }
+      ],
+      "failure_classes": [
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "ngohaigo",
+      "policy": "exact",
+      "oracle_count": 113,
+      "actual_count": 113,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "82512131beadd2f2da1d734fd1d34040c3b1994ff91f023f4d625d5eba3f6401",
+      "actual_rows_sha256": "82512131beadd2f2da1d734fd1d34040c3b1994ff91f023f4d625d5eba3f6401",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "n",
+      "policy": "exact",
+      "oracle_count": 1309,
+      "actual_count": 1309,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+      "actual_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "nri",
+      "policy": "exact",
+      "oracle_count": 1309,
+      "actual_count": 1309,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+      "actual_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "mgoi",
+      "policy": "exact",
+      "oracle_count": 4,
+      "actual_count": 4,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "2e7b6a5419bb136ac0df6d9596be5514433e7754a171833aab4d714ff5303f47",
+      "actual_rows_sha256": "2e7b6a5419bb136ac0df6d9596be5514433e7754a171833aab4d714ff5303f47",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "zijiguk",
+      "policy": "exact",
+      "oracle_count": 416,
+      "actual_count": 416,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "2592ace8dd32a1d559b882041a80c09d2b21508eb868502acf43811034c815a4",
+      "actual_rows_sha256": "2592ace8dd32a1d559b882041a80c09d2b21508eb868502acf43811034c815a4",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    }
+  ],
+  "provenance": {
+    "oracle": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json",
+      "sha256": "56e7aafabcfac7eb7d3b209d5929eff88c65aeaa1b98fee0464e6b1fcda8c1ca"
+    },
+    "actual": {
+      "path": "external/actual",
+      "sha256": "4ee70e89176db668f9c28f253dd4dfc0242214ddb0911b6883d3571ea088e6be"
+    },
+    "exceptions": null,
+    "tool_path": "scripts/compare-candidate-order.py",
+    "tool_version": "5",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "effective_argv": [
+      "--oracle",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json",
+      "--actual",
+      "external/actual",
+      "--policy",
+      "exact",
+      "--output-json",
+      "external/output-json",
+      "--output-csv",
+      "external/output-csv"
+    ],
+    "effective_invocation": "python scripts/compare-candidate-order.py --oracle docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json --actual external/actual --policy exact --output-json external/output-json --output-csv external/output-csv"
+  }
+}

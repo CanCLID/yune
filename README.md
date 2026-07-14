@@ -132,13 +132,19 @@ Yune is an active engine project.
   twice on the honest metric and re-run green at M58 closeout. M58 also fixed
   current `yune-web` TypeDuck/profile reachability for `beingo` / `畀` and
   `zi` / `諮` by short-input profile-ranked paging, without first-page promotion.
-  M59 is complete under the full D-47/D-48 contract. The final behavior source
-  `5879405c` passes all 32 aggregate and all 160 individual signed-ratchet
-  observations, while `5fa986d8` reconciles the exact 60-asset shipped schema
+  M59 is complete under the full D-47/D-48 contract. Final behavior source
+  `443cc636` passes all 32 aggregate and all 160 individual signed-ratchet
+  observations in the source-current follow-up packet, while `5fa986d8`
+  reconciles the exact 60-asset shipped schema
   tree to 10 schema-asset dispositions, three configuration carriers, and nine
-  executable validation rows. Final fail-closed Emscripten, app/public builds,
-  native recovery, and source-current functional Playwright gates are recorded
-  in the closeout packet; WEB-04 is restored to complete at `5/5`.
+  executable validation rows. Fail-closed Emscripten, app/public builds, native
+  recovery, and functional Playwright gates remain source-bound to closeout
+  source `5fa986d8`; no browser rerun is claimed for the later native collector
+  repair. All five WEB-04 requirements are complete. The
+  independent closeout follow-up at `07845e02` makes manifest reconciliation
+  bidirectional for the full tree, and `443cc636` fixes the shipping-source
+  transformed-tie regression it exposed; the clean canonical recapture is
+  again exact at 13/13 and all 5,705 positions without an exception.
 - **Public demo:** `yune-web` is deployed at <https://yune-web.pages.dev>. It's
   a Yune engine demo, not a claim that browser-level performance is solved.
 - **AI posture:** the AI layer exists but is default-off, local-only in the web

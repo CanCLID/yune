@@ -8,8 +8,8 @@ path,bytes,sha256
 "browser/worker-0-WEB-04-octagram-profile-loads-pinned-model-and-changes-Luna-ranking__web04-octagram-browser-ranking.json",10768,e38698188700880374bb8d630d68de9765b52abf71c9ea432ce9c97f7db15770
 "browser/worker-0-WEB-04-plain-Luna-remains-default-off-without-grammar-model__browser-run.log",111,1380a43e4dbfeb2f71a4b2d779c2c50d93500af8d5c05b3f644a95f40e422b15
 "browser/worker-0-WEB-04-plain-Luna-remains-default-off-without-grammar-model__web04-plain-luna-negative-control.json",1276,6ee7dddac1e2a926ad9d46d9c419657c058d82423fc484e4b30dd7c1c6271a76
-"commands.md",7329,8f6a68d06530bacc4164763e8e50f7c80c2e9703e2c883b1d47a6f6a24c4a3a6
-"d47-d48-reconciliation.md",1636,02a866d59aa61a2b46a6113ae632a81dea54ff182b4a41564aee84ce4b711466
+"commands.md",7325,9fef43a89fc2a40ed24500cd19817130b8ddaf1e49e2dabdd6b91165ee58079c
+"d47-d48-reconciliation.md",1901,b9e46f06a6a0824b30b9d0049921d4ed72f3ad66abc966859918e138f9b9172d
 "logs/native/01-workspace-interrupted-normalized.txt",57593,2689912a325093fa3d99b6efc44b73b651225d883e81617cf83d0c2aae1bb89c
 "logs/native/02-cantonese-parity-serial.txt",3347,2df1e42f7569997b0ca0134b5240ec1847d0da186edd2e8a76ee7b8907daa792
 "logs/native/03-yune-core-unrun-integration.txt",8374,38c21b33fd675af1b2b2a7b22eaf85c8a387547b12c396d6e7c1a044281a6161
@@ -38,7 +38,7 @@ path,bytes,sha256
 "logs/web/20-playwright-remainder-list.txt",6791,0f0fae497895294f7fa4ebb70767d6bde90e055b15254da759261699afb71431
 "logs/web/21-playwright-tail-list.txt",2455,7ab9bdc4d11e5e586ab170f13a8c015bd6f98c96e4ae0571e0d76059d20a669e
 "logs/web/22-playwright-sync-review-recovery.txt",270,462475f36d833eb0d819a4cb313498daf31643aac41cbe9ee91ebb893d2f4700
-"native-verdict.md",918,57fd5380d118c661fb151a40863c13d68edecb0519f068794194e01191677aa6
+"native-verdict.md",914,5825f843f2b1d52933a3e684fce0f2ade957adebf2030ab4bb7b5ac74f2531d8
 "provenance.txt",1161,bc828c7eb995bd0fe5e3157ba5b5ed93f88e1a0fb4017c45461744f37684996c
-"README.md",4469,c0be07b4187ed023069f18d3095871e48cd0d687553230e321d3ad7d051b9203
-"web-verdict.md",1991,6d85d6c2146b29f9fa9d97c18167819ce812712dc4b05305e6d0e4fec81cc8e7
+"README.md",4711,f49c65e60f4fa7ec65b0400aafcf5bbaf3348bd2b71210392721298a9274c8d4
+"web-verdict.md",2024,55632c12d43cc307fe3cc3e05c4387a803bc51afb30da30e2b534497befd7fad

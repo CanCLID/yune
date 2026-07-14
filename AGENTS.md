@@ -43,8 +43,8 @@ TypeDuck profile split).
   Lane B exact for all seven captured inputs, Cangjie marked `12/12` with its
   owning suite `3 passed / 0 ignored`, deployed 37/59 Luna page-shape parity,
   schema-general default-on reachability coverage across all shipped schema
-  assets, and a final performance ratchet of `32/32` aggregate rows and
-  `160/160` individual observations. Completed plan:
+  assets, and a source-current `443cc636` performance ratchet of `32/32`
+  aggregate rows and `160/160` individual observations. Completed plan:
   `docs/plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`.
 - **M47 (iOS-budget native memory reduction) is complete for its portable scope.**
   Phase 0 + RED-01…RED-08 byte-backed the native footprint (table, prism, *and*

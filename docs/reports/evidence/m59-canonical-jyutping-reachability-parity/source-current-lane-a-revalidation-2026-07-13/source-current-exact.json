@@ -1,0 +1,493 @@
+{
+  "tool": "compare-candidate-order.py",
+  "tool_version": "5",
+  "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+  "policy": "exact",
+  "inputs": [
+    "be",
+    "bei",
+    "bein",
+    "being",
+    "beingo",
+    "beix",
+    "beixngoxx",
+    "ngohaig",
+    "ngohaigo",
+    "n",
+    "nri",
+    "mgoi",
+    "zijiguk"
+  ],
+  "all_accepted": true,
+  "cases": [
+    {
+      "input": "be",
+      "policy": "exact",
+      "oracle_count": 4,
+      "actual_count": 4,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "19ce08b1c635177202963ccc31918c1d1ebdd2904482a7c530a081d47fe760db",
+      "actual_rows_sha256": "19ce08b1c635177202963ccc31918c1d1ebdd2904482a7c530a081d47fe760db",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "bei",
+      "policy": "exact",
+      "oracle_count": 139,
+      "actual_count": 139,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "4beccc3afd54288eb814f77f4c02805ede1181ccb20c71fdd9ce29061ef7012a",
+      "actual_rows_sha256": "4beccc3afd54288eb814f77f4c02805ede1181ccb20c71fdd9ce29061ef7012a",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "bein",
+      "policy": "exact",
+      "oracle_count": 5,
+      "actual_count": 5,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "6ded41b8d2ce446a6e08a15c78c0f33b69cef3fea3d5053839419f09a7c2310a",
+      "actual_rows_sha256": "6ded41b8d2ce446a6e08a15c78c0f33b69cef3fea3d5053839419f09a7c2310a",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "being",
+      "policy": "exact",
+      "oracle_count": 140,
+      "actual_count": 140,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "67a605d2f97846450bb92601482ac75b3f4bb08502ae72b76f290b4da899e377",
+      "actual_rows_sha256": "67a605d2f97846450bb92601482ac75b3f4bb08502ae72b76f290b4da899e377",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "beingo",
+      "policy": "exact",
+      "oracle_count": 142,
+      "actual_count": 142,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "b1e6f1bd9f0f180ddd9e2de4d028e77978a6be54f64b5ee2b71521f345ba4577",
+      "actual_rows_sha256": "b1e6f1bd9f0f180ddd9e2de4d028e77978a6be54f64b5ee2b71521f345ba4577",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "beix",
+      "policy": "exact",
+      "oracle_count": 36,
+      "actual_count": 36,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "cea5c3a1cb49fe73e0089a7aa7937bbbb8357a5b7a3a21d305f50976185386bc",
+      "actual_rows_sha256": "cea5c3a1cb49fe73e0089a7aa7937bbbb8357a5b7a3a21d305f50976185386bc",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "beixngoxx",
+      "policy": "exact",
+      "oracle_count": 38,
+      "actual_count": 38,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "a031e922a5a0a059dbe216562e82e583bf79e22a3284c428c2d4a622a99d9f01",
+      "actual_rows_sha256": "a031e922a5a0a059dbe216562e82e583bf79e22a3284c428c2d4a622a99d9f01",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "ngohaig",
+      "policy": "exact",
+      "oracle_count": 2050,
+      "actual_count": 2050,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "1d33916d8c5f1cd6631a16ce28befd2ed4ab3584b607dc625dc2f801454f4ed1",
+      "actual_rows_sha256": "1d33916d8c5f1cd6631a16ce28befd2ed4ab3584b607dc625dc2f801454f4ed1",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "ngohaigo",
+      "policy": "exact",
+      "oracle_count": 113,
+      "actual_count": 113,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "82512131beadd2f2da1d734fd1d34040c3b1994ff91f023f4d625d5eba3f6401",
+      "actual_rows_sha256": "82512131beadd2f2da1d734fd1d34040c3b1994ff91f023f4d625d5eba3f6401",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "n",
+      "policy": "exact",
+      "oracle_count": 1309,
+      "actual_count": 1309,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+      "actual_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "nri",
+      "policy": "exact",
+      "oracle_count": 1309,
+      "actual_count": 1309,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+      "actual_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "mgoi",
+      "policy": "exact",
+      "oracle_count": 4,
+      "actual_count": 4,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "2e7b6a5419bb136ac0df6d9596be5514433e7754a171833aab4d714ff5303f47",
+      "actual_rows_sha256": "2e7b6a5419bb136ac0df6d9596be5514433e7754a171833aab4d714ff5303f47",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "zijiguk",
+      "policy": "exact",
+      "oracle_count": 416,
+      "actual_count": 416,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "2592ace8dd32a1d559b882041a80c09d2b21508eb868502acf43811034c815a4",
+      "actual_rows_sha256": "2592ace8dd32a1d559b882041a80c09d2b21508eb868502acf43811034c815a4",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    }
+  ],
+  "provenance": {
+    "oracle": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json",
+      "sha256": "56e7aafabcfac7eb7d3b209d5929eff88c65aeaa1b98fee0464e6b1fcda8c1ca"
+    },
+    "actual": {
+      "path": "external/actual",
+      "sha256": "f7a05b09ebbae6eb528fbef714678bf8f9b78aeb84956b5e11de545aee1d8c2d"
+    },
+    "exceptions": null,
+    "tool_path": "scripts/compare-candidate-order.py",
+    "tool_version": "5",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "effective_argv": [
+      "--oracle",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json",
+      "--actual",
+      "external/actual",
+      "--policy",
+      "exact",
+      "--output-json",
+      "external/output-json",
+      "--output-csv",
+      "external/output-csv"
+    ],
+    "effective_invocation": "python scripts/compare-candidate-order.py --oracle docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json --actual external/actual --policy exact --output-json external/output-json --output-csv external/output-csv"
+  }
+}

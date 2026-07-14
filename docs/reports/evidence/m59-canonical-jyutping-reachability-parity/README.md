@@ -10,8 +10,29 @@ pinned `rime/rime-cantonese` vs `librime 1.17.0` + `rime-cantonese`; **Lane B** 
 Yune `luna_pinyin` vs `librime 1.17.0` + upstream luna. TypeDuck profile is a
 regression guard, not an acceptance oracle.
 
+> **Independent-review follow-up (2026-07-13):** commit `07845e02` makes
+> manifest reconciliation bidirectional across every regular schema-tree file
+> and rejects unsupported/symbolic-link entries. A clean source-current Lane A
+> run then exposed a real post-4c `ngohaig` equal-weight ordering regression at
+> 12/13. Commit `443cc636` restores compiled-model traversal for transformed
+> graphs while retaining Lane B's direct collector phase on identity-normal
+> graphs. The clean release-DLL recapture is now strict `13/13` across all 5,705
+> positions with no exception; the accepted capture, rejected comparator, fresh
+> oracle stability proof, and hashes are in
+> [`source-current-lane-a-revalidation-2026-07-13/`](./source-current-lane-a-revalidation-2026-07-13/).
+> Five clean 17+1 performance rounds from the same final behavior source are in
+> [`source-current-performance-revalidation-2026-07-13/`](./source-current-performance-revalidation-2026-07-13/):
+> `32/32` aggregate rows and `160/160` individual observations pass unchanged
+> ceilings, including both 37/59-character rows.
+> This follow-up supersedes the shipping-source gap in the original closeout
+> packet without rewriting its historical receipts. Increment 4e's `59`-asset
+> verification was correct at that boundary; `5fa986d8` subsequently added the
+> final Octagram asset, producing the accepted `60`-asset tree. Increment 4c's
+> authoritative packet total is `29,498,879` bytes excluding its manifest; the
+> preserved quality-review prose retains its earlier arithmetic typo.
+
 > **Final closeout (2026-07-13):**
-> [`final-closeout/`](./final-closeout/) is the source-current release/browser
+> [`final-closeout/`](./final-closeout/) is the source-bound release/browser
 > reconciliation packet for production source `5fa986d8`. It retains the
 > successful prefix of the exact native gate, records the host-allocation abort
 > at `cantonese_parity`, and resumes only the interrupted and never-reached
@@ -19,9 +40,9 @@ regression guard, not an acceptance oracle.
 > declared ignores preserved, doc-tests green, and release build green. The web
 > lane records a fail-closed Emscripten build, typecheck, tracked-app and public-
 > package builds, and 79 unique functional Playwright passes with five declared
-> public-mode skips. WEB-04's three source-current browser tests cover all four
+> public-mode skips. WEB-04's three `5fa986d8` browser tests cover all four
 > ranking rows plus the plain-Luna and missing-model controls; the separate M58
-> focused row also passes. WEB-04 is complete `5/5`, M59-EVIDENCE-01 and
+> focused row also passes. All five WEB-04 requirements are complete; M59-EVIDENCE-01 and
 > M59-GATES-01 are complete, and M59 closes at `11/11` requirements.
 >
 > The 150-sample startup benchmark is explicitly outside M59 correctness and
@@ -30,7 +51,7 @@ regression guard, not an acceptance oracle.
 > All functional failures and targeted recoveries are preserved, and the packet
 > stores text receipts and hashes rather than generated binaries.
 >
-> **Final behavior/performance basis:**
+> **Increment 4e behavior basis:**
 > [`increment-4e-lane-b-exact-order/`](./increment-4e-lane-b-exact-order/) is
 > the accepted Increment 4e packet for clean production source `5879405c` and
 > evidence commit `d5af8304`. All captured pages for `moboyi`, `boyi`, `yi`,
@@ -38,9 +59,17 @@ regression guard, not an acceptance oracle.
 > page shape, position, and terminal-page state over tracked byte-backed Luna
 > assets. The exact deployed 37/59-character product gate is green. Native
 > WEB-04 behavior is `8/8` across four plain/null and four Octagram rows; this is
-> not a source-current Playwright/browser claim. Five fresh complete 17+1 rounds
-> pass all `32/32` aggregate rows and all `160/160` individual observations
-> under unchanged signed ceilings. M59-PARITY-02 and M59-REACH-04 are complete.
+> not a source-current Playwright/browser claim. Its five fresh complete 17+1
+> rounds pass all `32/32` aggregate rows and all `160/160` individual
+> observations under unchanged signed ceilings.
+>
+> **Final source-current performance basis:** final behavior source `443cc636`
+> revalidates Lane B exact order and passes a fresh one-build/four-reuse 17+1
+> ratchet at `32/32` aggregate and `160/160` individual observations. The
+> authoritative packet is
+> [`source-current-performance-revalidation-2026-07-13/`](./source-current-performance-revalidation-2026-07-13/).
+> M59-PARITY-02 and M59-REACH-04 are complete. Browser/WASM evidence remains
+> bound to closeout source `5fa986d8`; no `443cc636` browser rerun is claimed.
 >
 > Commit `5fa986d8` completes M59-REACH-03 without adding binary evidence. The
 > public and public-demo manifests are identical and cover the exact 60-asset
@@ -51,7 +80,7 @@ regression guard, not an acceptance oracle.
 > newly discovered schema assets automatically and creates a blocking open
 > acceptance row; the checker rejects manifest/tree, carrier, runtime, or
 > acceptance drift. The final-closeout packet reconciles this source with all
-> other accepted increments and the source-current release/browser gates.
+> other accepted increments and the `5fa986d8` release/browser gates.
 >
 > **Historical Increment 4d update (2026-07-12):**
 > [`increment-4d-cangjie-cj1/`](./increment-4d-cangjie-cj1/) is the final
@@ -187,17 +216,17 @@ regression guard, not an acceptance oracle.
 
 ### VALID — Final closeout reconciliation
 
-- `final-closeout/` binds the final source, D-47/D-48 outcomes, native
+- `final-closeout/` binds closeout source `5fa986d8`, D-47/D-48 outcomes, native
   nonduplicative recovery, fail-closed Emscripten/typecheck/build/package
   receipts, schema/model hashes, and complete functional browser accounting.
-- WEB-04 is source-current and complete `5/5`. The three browser cases cover
+- All five WEB-04 requirements are complete at source `5fa986d8`. The three browser cases cover
   all four ranking rows, plain Luna, and missing-model fail-closed behavior;
   the separate M58 focused row also passes.
 - The startup benchmark is explicitly excluded as unrelated to M59 correctness,
   and the historical WEB-05 same-WASM row is not rebaselined across binaries.
   The packet contains no generated binary payload.
 
-### VALID — Increment 4e Lane B and final performance acceptance packet
+### VALID — Historical Increment 4e Lane B/performance boundary
 
 - `increment-4e-lane-b-exact-order/` preserves the complete seven-input Lane B
   comparator, the exact deployed 37/59 page-shape proof, native WEB-04 `8/8`
@@ -205,11 +234,13 @@ regression guard, not an acceptance oracle.
   focused verification, and two independent reviews. It contains no DLL, CLI,
   benchmark executable, grammar model, compiled table, deployed tree, or other
   binary payload.
-- Acceptance is Lane B exact page/position order for all seven captured inputs,
+- At the 4e boundary, acceptance is Lane B exact page/position order for all seven captured inputs,
   long-row page shape exact, native WEB-04 `8/8`, and performance `32/32`
   aggregate plus `160/160` individual observations under unchanged ceilings.
-  It closes M59-PARITY-02 and M59-REACH-04. Browser/Playwright and final M59
-  closeout claims remain outside this packet.
+  It closed M59-PARITY-02 and M59-REACH-04 at that source. Final-source
+  M59-REACH-04 is superseded by the `443cc636` source-current performance
+  packet; browser/Playwright and final M59 closeout claims remain outside this
+  historical packet.
 
 ### VALID — M59-REACH-03 shipped-schema coverage
 

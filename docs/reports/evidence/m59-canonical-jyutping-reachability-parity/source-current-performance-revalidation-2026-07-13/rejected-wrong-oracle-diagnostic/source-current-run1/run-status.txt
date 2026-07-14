@@ -1,0 +1,3 @@
+﻿status=failed
+date_utc=2026-07-14T02:19:00.7665291Z
+detail=Track A threshold regression detected: track_a_peak_working_set_bytes[] observed=208318464 ceiling=195028378 status=fail; yune_librime_median_ratio[] observed=4.606 ceiling=1.091 status=fail; median_us[] observed=289125.100 ceiling=25470.280 status=fail

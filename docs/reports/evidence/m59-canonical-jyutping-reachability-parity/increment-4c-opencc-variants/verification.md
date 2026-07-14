@@ -90,6 +90,6 @@ Two independent final reviews passed with no P1/P2 finding: one for the
 specification/acceptance boundary and one for code quality, ABI safety, test
 coverage, and evidence integrity. Their verdicts are preserved under
 `reviews/`. The staged publication audit reconciles all 260 packet-local files
-and 29,497,347 bytes excluding the manifest, every path/size/SHA-256, seven JSON
+and 29,498,879 bytes excluding the manifest, every path/size/SHA-256, seven JSON
 files, relative links, text-only extensions, NUL checks, and Git-filter identity.
 No unrelated path is staged.

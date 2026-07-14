@@ -3579,9 +3579,9 @@ fn m59_luna_moboyi_composes_mo_bo_yi_on_byte_backed_product() {
     // 莫伯洢 from moboyi by partial single selection (莫→`莫bo yi`, 伯→`莫伯yi`,
     // 洢→commit 莫伯洢; 洢 reachable at oracle index 155) — captured in
     // crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json
-    // (pinned by upstream_luna_leading_single_composition.rs). Yune surfaces the
-    // singles at different candidate positions than librime (recorded there); M59
-    // asserts reachability + recompose, not candidate-position parity.
+    // (pinned by upstream_luna_leading_single_composition.rs). Increment 4e's
+    // complete-list gate separately proves exact librime candidate positions for
+    // all seven Lane B inputs; this test owns the partial-selection chain.
     m59_luna_compose_from_leading_singles(
         "m59-luna-moboyi",
         "moboyi",
@@ -3686,9 +3686,9 @@ fn m59_luna_zhongguo_completion_class_reaches_leading_singles() {
     // Oracle provenance (M59 finding #7): rime/librime 1.17.0 also reaches 中 for
     // zhongguo (at global index 11) and zhonggao (index 3) and recomposes on
     // partial selection — captured in the m59-luna-leading-single-composition
-    // fixture. Yune's product surfaces 中 earlier (page 0) than librime's index 11
-    // because its completion ordering diverges; M59 asserts REACHABILITY, not
-    // position parity (the divergence is recorded in the fixture + its test).
+    // fixture. Increment 4e's exact-order gate separately proves Yune matches
+    // librime at global index 11. This focused regression keeps its narrower
+    // reachability and partial-recomposition assertion.
     let _guard = test_guard();
     let runtime = YuneWebRuntime::create_with_schema("m59-luna-zhongguo-reach", "luna_pinyin");
     stage_and_deploy_tracked_luna(&runtime);

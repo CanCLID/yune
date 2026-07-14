@@ -2,16 +2,17 @@
 
 Date: 2026-07-13 (M59 final acceptance plus historical diagnostics)
 
-> **M59 supersession:** final Windows behavior source `5879405c` restores the
+> **M59 supersession:** final Windows behavior source `443cc636` preserves the
 > named `/3` behavior, matches the accepted Lane A/Lane B/Cangjie and deployed
 > 37/59 surfaces, and passes the unchanged signed ratchet at `32/32` aggregate
-> rows and `160/160` individual observations. `5fa986d8` adds the final 60-asset
-> REACH-03 registry without changing production behavior. Every `afb7079b`
+> rows and `160/160` individual observations in the source-current follow-up
+> packet. `5fa986d8` records the accepted 60-asset REACH-03 registry and
+> `07845e02` makes full-tree reconciliation bidirectional. Every `afb7079b`
 > macOS table, `6/17` read, `n`/`zh` diagnosis, and `/3` zero-candidate statement
 > below is a historical, source-bound diagnostic—not current-main acceptance or
 > a current optimization claim. No exact-current cross-platform rerun has
 > replaced it. Final evidence:
-> [`evidence/m59-canonical-jyutping-reachability-parity/final-closeout/`](./evidence/m59-canonical-jyutping-reachability-parity/final-closeout/).
+> [`evidence/m59-canonical-jyutping-reachability-parity/`](./evidence/m59-canonical-jyutping-reachability-parity/).
 
 This dashboard preserves the standing gate and historical diagnostic context.
 Older milestone closeout narrative and superseded benchmark rows remain in

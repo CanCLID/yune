@@ -70,10 +70,10 @@ that earned the attribution here — the discipline M55 lacked:
   ("Flip perf-gate protocol").
 
 M59 final acceptance does not rebaseline this historical flip packet. Five
-fresh complete rounds at final behavior source `5879405c` pass `32/32`
+fresh complete rounds at final behavior source `443cc636` pass `32/32`
 aggregate rows and `160/160` individual observations under the same signed
-ceilings. The final reconciliation is under
-`../m59-canonical-jyutping-reachability-parity/final-closeout/`.
+ceilings. The final reconciliation and source-current follow-up are under
+`../m59-canonical-jyutping-reachability-parity/`.
 
 ## Gate-verdict rule (pre-declared)
 

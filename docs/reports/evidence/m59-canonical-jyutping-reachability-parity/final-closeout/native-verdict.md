@@ -14,6 +14,6 @@ Verdict: **PASS with targeted recovery from a recorded host-memory abort.**
 | Doc-tests | PASS |
 | Release build | PASS |
 
-The recovery is intentionally non-duplicative: successful source-current
+The recovery is intentionally non-duplicative: successful `5fa986d8`
 targets from the broad run were not rerun. The normalized interrupted receipt
 and all recovery receipts are in `logs/native/`.

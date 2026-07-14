@@ -11,10 +11,13 @@ The signed final ceilings contain four adjusted rows, not three:
 | 37-character Luna input | 2.339 |
 | 59-character Luna input | 1.748 |
 
-The final behavior source `5879405c` passed five rounds at `32/32` aggregate
-rows and `160/160` individual observations. The later REACH-03 source
-`5fa986d8` contains no production behavior change, so no performance rebaseline
-or repeat was permitted or needed.
+Increment 4e source `5879405c` passed five rounds at `32/32` aggregate rows and
+`160/160` individual observations. The later REACH-03 source `5fa986d8`
+contained no production behavior change. Independent review then found a
+shipping-source transformed-graph regression; after repair, final behavior
+source `443cc636` passed a fresh five rounds at `32/32` aggregate and `160/160`
+individual observations under the same ceilings. The sibling source-current
+performance packet is authoritative for final M59-REACH-04 acceptance.
 
 ## D-48 exact-order closure
 

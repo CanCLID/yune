@@ -10,7 +10,7 @@
 > Increment 2's explicit TypeDuck activation and profile-driven unified forward
 > navigation landed at `e37ee011`; `cantonese_parity` is 41/41,
 > `typeduck_windows_boundary` is 4/4, physical/API controls are equivalent, and
-> source-current WASM reaches `zi -> 諮` in four PageDown operations. The green
+> source-bound `e37ee011` WASM reaches `zi -> 諮` in four PageDown operations. The green
 > evidence and informational algebra/CJ-1/OpenCC/risk checkpoint are under
 > `increment-2-profile-paging/`. Increment 3a's compiled-sort and oracle-capture
 > series is complete through `d55b203e`. Increment 3b is accepted at
@@ -48,14 +48,14 @@
 > ignored`, and the unmarked control is exact `12/12` against its pre-4d
 > capture. Its one-build/four-reuse five-round guard passes all 32 aggregate
 > median rows and all 160 individual observations under unchanged ceilings.
-> M59-PARITY-03 and CJ-1 are complete. Increment 4e is implemented at clean
-> production source `5879405c`: all seven captured Lane B inputs match pinned
+> M59-PARITY-03 and CJ-1 are complete. At the historical Increment 4e boundary,
+> production source `5879405c` makes all seven captured Lane B inputs match pinned
 > librime page-for-page and position-for-position; the deployed 37- and
 > 59-character rows have the required one-best-sentence-then-phrase page shape;
 > and the source-built native WEB-04 runner is `8/8` across four plain/null and
 > four Octagram rows. Five fresh complete 17+1 rounds pass all `32/32` aggregate
 > rows and all `160/160` individual observations under unchanged signed ceilings,
-> so M59-PARITY-02 and M59-REACH-04 are complete. The tracked packet is
+> closing M59-PARITY-02 and M59-REACH-04 at that source. The tracked packet is
 > `increment-4e-lane-b-exact-order/` and its evidence commit is `d5af8304`.
 > Commit `5fa986d8` completes M59-REACH-03: both manifests contain the exact
 > 60-asset schema tree; the checked-in registry dispositions all 10 schema assets
@@ -65,12 +65,24 @@
 > a blocking open registry row. Final executable evidence now records the
 > nonduplicative native recovery, fail-closed Emscripten build, typecheck,
 > tracked-app/public-package builds, complete functional Playwright coverage,
-> and source-current WEB-04 proof. The three WEB-04 browser tests cover all four
+> and WEB-04 proof at closeout source `5fa986d8`. The three WEB-04 browser tests cover all four
 > ranking rows plus the plain-Luna and missing-model controls; M58's separate
-> focused row is green. WEB-04 is complete `5/5`, and all 11 M59 requirements
+> focused row is green. All five WEB-04 requirements and all 11 M59 requirements
 > are complete. The 150-sample startup benchmark is not an M59 correctness gate,
 > and WEB-05's historical same-WASM comparison remains bound to its original
 > binary rather than being rebaselined across the final WASM.
+>
+> Independent closeout follow-up `07845e02` makes manifest/tree reconciliation
+> bidirectional for every regular asset. Its clean shipping-source Lane A run
+> found a real post-4c transformed-tie regression; `443cc636` repairs the
+> structural identity/transformed collector split. A clean release-DLL capture
+> is strict `13/13` across all 5,705 canonical positions with no exception, and
+> the rejected 12/13 comparator is preserved beside the accepted evidence.
+> Five fresh complete 17+1 rounds at final behavior source `443cc636` pass all
+> `32/32` aggregate rows and all `160/160` individual observations under the
+> unchanged signed ceilings, including `n`, `ni`, `hao`, and both 37/59 rows.
+> This source-current packet supersedes `5879405c` for M59-REACH-04. No browser,
+> WASM, ABI, or schema-payload rerun is claimed after `5fa986d8`.
 >
 > Nothing remaining moves to M60 or another milestone. The blocking-review
 > conditions for 4a and 4b are satisfied. Reviews for 4c and later non-4a/4b
@@ -109,7 +121,7 @@
 - **M59 complete (2026-07-13):** D-47 is green under unchanged signed ceilings;
   D-48 Lane A, Lane B, and Cangjie are exact on their captured surfaces;
   REACH-03, final evidence, native recovery, fail-closed WASM, package builds,
-  and source-current functional browser gates are closed. The final evidence
+  and `5fa986d8` functional browser gates are closed. The final evidence
   packet is `reports/evidence/m59-canonical-jyutping-reachability-parity/final-closeout/`.
 - **Prior execution REJECTED and reverted** (`c70774ce` reverts `77a9540a`): it
   faked reachability with per-input `match` arms replaying oracle candidates
@@ -223,17 +235,19 @@
   `k` rows. Five fresh one-build/four-reuse rounds pass all 32 signed aggregate
   rows and all 160 individual observations under unchanged ceilings. Evidence:
   `increment-4d-cangjie-cj1/`. M59-PARITY-03 is complete.
-- **Increment 4e implemented at `5879405c`, packet `d5af8304`:** the complete
+- **Historical Increment 4e boundary at `5879405c`, packet `d5af8304`:** the complete
   captured Lane B set (`moboyi`, `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`,
   `guo`) is exact for candidate text, page number/size, page-local and global
   position, and final-page state over tracked byte-backed Luna assets. The exact
   deployed 37/59 page-shape gate is green. The source-built native WEB-04 runner
-  is `8/8`; final source-current Playwright also proves the three WEB-04 browser
+  is `8/8`; `5fa986d8` Playwright also proves the three WEB-04 browser
   cases covering all four ranking rows plus plain and missing-model controls.
   Five fresh one-build/four-reuse performance rounds pass all
   `32/32` aggregate rows and `160/160` individual observations under unchanged
-  ceilings, including `n`, `ni`, `hao`, and both long rows. M59-PARITY-02 and
-  M59-REACH-04 are complete.
+  ceilings, including `n`, `ni`, `hao`, and both long rows. This closed
+  M59-PARITY-02 and M59-REACH-04 at the 4e boundary; the later `443cc636`
+  source-current Lane B and five-round packet is authoritative for final-source
+  acceptance.
 - **M59-REACH-03 implemented at `5fa986d8`:** the public and public-demo
   manifests exactly cover 60 assets and match each other; the checked-in
   `schema-acceptance-coverage.json` dispositions all 10 schema assets and three
@@ -659,7 +673,7 @@ amendment):
 - [x] `requirements.md` M59 entry and `decisions.md` D-47/D-48 owner amendment
       sign-off.
 - [x] Move this plan to `completed/` after final executable-evidence
-      reconciliation, source-current WEB-04 Playwright (including plain and
+      reconciliation, `5fa986d8` WEB-04 Playwright (including plain and
       missing-model controls), and the native/WASM/app/manifest/browser/package
       closeout gates land. Completed 2026-07-13.
 

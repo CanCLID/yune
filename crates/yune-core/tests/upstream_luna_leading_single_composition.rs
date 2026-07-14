@@ -7,11 +7,10 @@
 //! (crates/yune-rime-api/tests/yune_web.rs `m59_luna_*`) are oracle-grounded here,
 //! never Yune-derived (conventions §7).
 //!
-//! Recorded divergence (NOT asserted against Yune): Yune's PRODUCT surfaces the
-//! leading single earlier than librime — e.g. `zhongguo` → 中 sits at librime
-//! global index 11, while Yune injects it onto page 0 — because Yune's
-//! completion/sentence ordering differs from librime. D-48 uses this complete
-//! capture as the exact-order oracle for the remaining M59 closure work.
+//! Increment 4e uses this complete capture as the exact-order oracle and proves
+//! Yune's product candidate text and positions match all seven Lane B inputs.
+//! The focused assertions below also retain the captured leading-single and
+//! partial-selection provenance used by the composition regressions.
 
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -407,8 +406,8 @@ fn oracle_composes_moboyi_to_the_non_lexicon_phrase_by_partial_selection() {
 fn oracle_reaches_each_leading_single_at_captured_position() {
     // Every acceptance input's leading single is reachable in librime's candidate
     // list at a finite global index — the historical reachability positions the
-    // earlier M59 rows cite. `zhongguo` 中@11 also records an exact-order
-    // divergence that remains open until the D-48 Lane B closure increment.
+    // earlier M59 rows cite. Increment 4e's separate complete-list gate proves
+    // Yune matches these exact positions, including `zhongguo` 中@11.
     let fixture = load_fixture();
     for (input, expected_index) in [
         // PRIMARY moboyi -> 莫伯洢 chain: 莫, 伯, and the rare 洢 (deep but reachable).

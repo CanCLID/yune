@@ -154,4 +154,4 @@ M58 yune-web TypeDuck profile reaches oracle-ranked reported candidates
 
 The final M58 rerun was required because its shared selection helper gained a
 state-change wait. WEB-04 did not use either modified helper and retained its
-source-current 3/3 result.
+`5fa986d8` 3/3 result.

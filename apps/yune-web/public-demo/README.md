@@ -43,7 +43,15 @@ npm.cmd --prefix apps/yune-web run build:public
 npm.cmd --prefix apps/yune-web/e2e run test:e2e:input-latency:public
 ```
 
-Set `YUNE_WEB_LATENCY_EVIDENCE_DIR` to preserve its JSON packet outside the
+The pre-publish run also exercises the reported 47-key Jyutping input at an
+unamplified 100 ms cadence. It binds every exact prefix, six-row candidate-page
+shape, p95 `<= 150 ms`, max `<= 250 ms`, and max worker queue wait `<= 100 ms`.
+It does not bind candidate text/order because no external oracle fixture exists
+for that exact input. A delayed host timer never causes a short catch-up burst;
+the original out-of-range gap stays red and blocks publication. The runner does
+not retry a measured red.
+
+Set `YUNE_WEB_LATENCY_OUTPUT_DIR` to preserve its JSON packet outside the
 tracked tree. Rust/WASM changes must first rebuild and copy the source-current
 Emscripten artifacts as the Cloudflare build below does. The Cloudflare build
 runs this gate after packaging, requires its exact pinned-toolchain receipt, and

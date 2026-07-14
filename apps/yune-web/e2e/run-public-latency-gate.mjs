@@ -24,6 +24,13 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 const appUrl = `http://${host}:${port}/`;
 const artifactManifestName = "public-artifact-manifest.json";
 const latencyEvidenceName = "input-latency-hard-stop.json";
+const normalTypingEvidenceName = "normal-typing-exact-input.json";
+const normalTypingInput =
+  "ngodeigungsijigaahaidoumaaigangeihaaijansougeoi";
+const normalTypingKeyIntervalMs = 100;
+const normalTypingP95CeilingMs = 150;
+const normalTypingMaxCeilingMs = 250;
+const normalTypingQueueWaitMaxCeilingMs = 100;
 const releaseScenarioNames = [
   "jyutping-short",
   "jyutping-historical-long-1",
@@ -386,6 +393,15 @@ function isNonemptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function percentile(values, proportion) {
+  if (values.length === 0) {
+    return null;
+  }
+  const sorted = [...values].sort((left, right) => left - right);
+  const index = Math.ceil((sorted.length - 1) * proportion);
+  return sorted[Math.min(index, sorted.length - 1)];
+}
+
 function assertReleaseLatencyReceipt(evidence) {
   const violations = [];
   const requireValue = (condition, message) => {
@@ -590,6 +606,161 @@ function assertReleaseLatencyReceipt(evidence) {
   }
 }
 
+function assertNormalTypingReceipt(evidence) {
+  const violations = [];
+  const requireValue = (condition, message) => {
+    if (!condition) {
+      violations.push(message);
+    }
+  };
+  const diagnostics = Array.isArray(evidence?.diagnostics)
+    ? evidence.diagnostics
+    : [];
+  const expectedPrefixes = Array.from(
+    { length: normalTypingInput.length },
+    (_, index) => normalTypingInput.slice(0, index + 1),
+  );
+  const totalPaintSamples = diagnostics
+    .map((diagnostic) => diagnostic?.totalKeydownToPaintMs)
+    .filter(Number.isFinite);
+  const queueWaitSamples = diagnostics
+    .map((diagnostic) => diagnostic?.workerQueueWaitMs)
+    .filter(Number.isFinite);
+  const rawCadenceGaps = diagnostics.slice(1).map(
+    (diagnostic, index) =>
+      diagnostic?.keydownAt - diagnostics[index]?.keydownAt,
+  );
+
+  requireValue(
+    evidence?.measurementCompleted === true &&
+      evidence.passed === true &&
+      evidence.buildInfo?.sourceCommit === currentHead,
+    "normal-typing receipt must be a passing measurement for current HEAD",
+  );
+  requireValue(
+    evidence?.typingMode === "normal-interactive-exact-input" &&
+      evidence.schemaId === "jyut6ping3" &&
+      evidence.input === normalTypingInput &&
+      evidence.inputLength === normalTypingInput.length &&
+      evidence.diagnosticCount === normalTypingInput.length &&
+      diagnostics.length === normalTypingInput.length,
+    "normal-typing receipt must cover the exact reported Jyutping input",
+  );
+  requireValue(
+    evidence?.keyIntervalMs === normalTypingKeyIntervalMs &&
+      sameJson(evidence.ceilingsMs, {
+        p95: normalTypingP95CeilingMs,
+        max: normalTypingMaxCeilingMs,
+        workerQueueWaitMax: normalTypingQueueWaitMaxCeilingMs,
+      }),
+    "normal-typing cadence and ceilings must remain binding",
+  );
+  requireValue(
+    sameJson(
+      diagnostics.map((diagnostic) =>
+        typeof diagnostic?.input === "string"
+          ? diagnostic.input.replace(/\s+/g, "")
+          : null,
+      ),
+      expectedPrefixes,
+    ),
+    "normal-typing diagnostics must cover every exact input prefix in order",
+  );
+  requireValue(
+    diagnostics.every(
+      (diagnostic) =>
+        diagnostic?.candidateCount === releaseVisibleCandidateCount &&
+        Number.isFinite(diagnostic?.totalCandidateCount) &&
+        diagnostic.totalCandidateCount >= releaseVisibleCandidateCount &&
+        isNonemptyString(diagnostic?.firstCandidateText) &&
+        diagnostic?.workerActionMultiplier === 1,
+    ),
+    "normal-typing diagnostics must use the unamplified worker and render complete pages",
+  );
+  requireValue(
+    totalPaintSamples.length === normalTypingInput.length &&
+      queueWaitSamples.length === normalTypingInput.length &&
+      diagnostics.every(
+        (diagnostic) =>
+          Number.isFinite(diagnostic?.keydownAt) &&
+          Number.isFinite(diagnostic?.workerProcessMs) &&
+          Number.isFinite(diagnostic?.workerRoundtripMs) &&
+          Number.isFinite(diagnostic?.responseMappingMs) &&
+          Number.isFinite(diagnostic?.reactUpdateMs) &&
+          Number.isFinite(diagnostic?.paintProxyMs),
+      ),
+    "normal-typing receipt must retain one complete finite timing sample per key",
+  );
+  requireValue(
+    Number.isFinite(evidence?.summary?.p95Ms) &&
+      evidence.summary.p95Ms <= normalTypingP95CeilingMs &&
+      evidence.summary.p95Ms === percentile(totalPaintSamples, 0.95) &&
+      Number.isFinite(evidence?.summary?.maxMs) &&
+      evidence.summary.maxMs <= normalTypingMaxCeilingMs &&
+      evidence.summary.maxMs === percentile(totalPaintSamples, 1) &&
+      Number.isFinite(evidence?.workerQueueWaitMaxMs) &&
+      evidence.workerQueueWaitMaxMs <= normalTypingQueueWaitMaxCeilingMs &&
+      evidence.workerQueueWaitMaxMs === percentile(queueWaitSamples, 1),
+    "normal-typing latency or queue wait exceeds its binding ceiling",
+  );
+  requireValue(
+    evidence?.cadence?.expectedIntervalMs === normalTypingKeyIntervalMs &&
+      sameJson(evidence.cadence.acceptedRangeMs, { min: 80, max: 125 }) &&
+      evidence.cadence.count === normalTypingInput.length - 1 &&
+      Array.isArray(evidence.cadence.invalidGaps) &&
+      evidence.cadence.invalidGaps.length === 0 &&
+      evidence.cadence.valid === true &&
+      rawCadenceGaps.length === normalTypingInput.length - 1 &&
+      rawCadenceGaps.every(
+        (value) => Number.isFinite(value) && value >= 80 && value <= 125,
+      ) &&
+      evidence.cadence.minMs === percentile(rawCadenceGaps, 0) &&
+      evidence.cadence.medianMs === percentile(rawCadenceGaps, 0.5) &&
+      evidence.cadence.p95Ms === percentile(rawCadenceGaps, 0.95) &&
+      evidence.cadence.maxMs === percentile(rawCadenceGaps, 1) &&
+      [
+        evidence.cadence.minMs,
+        evidence.cadence.medianMs,
+        evidence.cadence.p95Ms,
+        evidence.cadence.maxMs,
+      ].every(
+        (value) => Number.isFinite(value) && value >= 80 && value <= 125,
+      ),
+    "normal-typing receipt must prove all 46 cadence gaps within 80..125 ms",
+  );
+  const finalRows = Array.isArray(evidence?.finalVisibleCandidateOrder)
+    ? evidence.finalVisibleCandidateOrder
+    : [];
+  requireValue(
+    finalRows.length === releaseVisibleCandidateCount &&
+      finalRows.every(
+        (candidate) =>
+          isNonemptyString(candidate?.text) &&
+          (candidate?.source === null ||
+            typeof candidate?.source === "string"),
+      ) &&
+      diagnostics.at(-1)?.firstCandidateText === finalRows[0]?.text,
+    "normal-typing final page must contain six nonempty rows and match the final diagnostic",
+  );
+  requireValue(
+    evidence?.candidateValidation?.mode ===
+      "page-shape-only-no-oracle-claim" &&
+      isNonemptyString(evidence.candidateValidation.rationale),
+    "normal-typing receipt must preserve the explicit no-oracle candidate boundary",
+  );
+  requireValue(
+    Array.isArray(evidence?.assetRequestsDuringMeasurement) &&
+      evidence.assetRequestsDuringMeasurement.length === 0,
+    "normal-typing timed window must not fetch schema assets",
+  );
+
+  if (violations.length > 0) {
+    throw new Error(
+      `Normal-typing evidence violates its binding profile:\n- ${violations.join("\n- ")}`,
+    );
+  }
+}
+
 async function reportLatencyEvidence(prefix, requirePassingReceipt = false) {
   const evidencePath = path.join(outputDir, latencyEvidenceName);
   try {
@@ -638,13 +809,63 @@ async function reportLatencyEvidence(prefix, requirePassingReceipt = false) {
   }
 }
 
+async function reportNormalTypingEvidence(
+  prefix,
+  attemptOutputDir,
+  requirePassingReceipt = false,
+) {
+  const evidencePath = path.join(attemptOutputDir, normalTypingEvidenceName);
+  try {
+    const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
+    if (requirePassingReceipt) {
+      assertNormalTypingReceipt(evidence);
+    }
+    const summary = {
+      generatedAt: evidence.generatedAt,
+      measurementCompleted: evidence.measurementCompleted,
+      passed: evidence.passed,
+      schemaId: evidence.schemaId,
+      input: evidence.input,
+      inputLength: evidence.inputLength,
+      keyIntervalMs: evidence.keyIntervalMs,
+      ceilingsMs: evidence.ceilingsMs,
+      summary: evidence.summary,
+      workerQueueWaitMaxMs: evidence.workerQueueWaitMaxMs,
+      cadence: evidence.cadence,
+      finalVisibleCandidateOrder: evidence.finalVisibleCandidateOrder,
+      candidateValidation: evidence.candidateValidation,
+      buildInfo: evidence.buildInfo,
+    };
+    console.error(`${prefix}=${JSON.stringify(summary)}`);
+  } catch (error) {
+    if (requirePassingReceipt) {
+      throw new Error(
+        `Normal-typing gate did not produce a valid passing receipt at ${evidencePath}`,
+        { cause: error },
+      );
+    }
+    console.error(
+      `Normal-typing evidence unavailable at ${evidencePath}: ${error}`,
+    );
+  }
+}
+
 let gatePassed = false;
 try {
   await runLatencyGate();
   await reportLatencyEvidence("WEB03_LATENCY_PASS_EVIDENCE", true);
+  await reportNormalTypingEvidence(
+    "WEB03_NORMAL_TYPING_PASS_EVIDENCE",
+    outputDir,
+    true,
+  );
   gatePassed = true;
 } catch (error) {
   await reportLatencyEvidence("WEB03_LATENCY_FAILURE_EVIDENCE");
+  await reportNormalTypingEvidence(
+    "WEB03_NORMAL_TYPING_FAILURE_EVIDENCE",
+    outputDir,
+  );
   console.error(`WEB03 latency failure artifacts preserved at ${outputDir}`);
   throw error;
 } finally {

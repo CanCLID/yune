@@ -82,6 +82,24 @@ pass. A non-250 ms interval diagnostic validates cadence against its own
 predeclared `0.8x..1.25x` bounds; only the exact 250 ms / `200..312.5 ms`
 profile is release-grade.
 
+The same pre-publish run also binds a separate unamplified normal-typing
+canary for `jyut6ping3` using the reported 47-key input
+`ngodeigungsijigaahaidoumaaigangeihaaijansougeoi`. It types at a 100 ms
+interval, requires all 47 exact prefixes and 46 measured cadence gaps within
+`80..125 ms`, and fails above p95 `150 ms`, max `250 ms`, or max worker queue
+wait `100 ms`. Every prefix must expose a six-row candidate page with a
+nonempty first candidate, and the final page must expose six nonempty candidate
+texts. Because this exact input has no pinned external
+candidate-order fixture, the canary deliberately binds responsiveness and page
+shape only; it does not promote Yune's own output into an oracle.
+
+The cadence driver preserves its absolute phase during normal operation. If a
+host timer arrives late, it rebases the next deadline instead of generating a
+short catch-up gap. The original long gap remains recorded and red against the
+active unchanged range: `200..312.5 ms` for the release profile or `80..125 ms`
+for the normal canary. The public runner does not retry a measured red; any
+out-of-range gap remains a hard pre-publish failure.
+
 For a deployed canary, set an explicit URL and use the direct command:
 
 ```bash

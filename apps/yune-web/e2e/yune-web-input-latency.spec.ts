@@ -69,6 +69,16 @@ const RELEASE_KEY_INTERVAL_MS = 250;
 const KEY_INTERVAL_MIN_MS = KEY_INTERVAL_MS * 0.8;
 const KEY_INTERVAL_MAX_MS = KEY_INTERVAL_MS * 1.25;
 const EXPECTED_VISIBLE_CANDIDATE_COUNT = 6;
+const NORMAL_TYPING_INPUT =
+  "ngodeigungsijigaahaidoumaaigangeihaaijansougeoi";
+const NORMAL_TYPING_KEY_INTERVAL_MS = 100;
+const NORMAL_TYPING_KEY_INTERVAL_MIN_MS =
+  NORMAL_TYPING_KEY_INTERVAL_MS * 0.8;
+const NORMAL_TYPING_KEY_INTERVAL_MAX_MS =
+  NORMAL_TYPING_KEY_INTERVAL_MS * 1.25;
+const NORMAL_TYPING_P95_CEILING_MS = 150;
+const NORMAL_TYPING_MAX_CEILING_MS = 250;
+const NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS = 100;
 
 const JYUTPING_LONG_INPUTS = [
   "sihaacoenggeoisyujapgecukdou",
@@ -237,6 +247,35 @@ interface CadenceEvidence {
     gapMs: number | null;
   }>;
   valid: boolean;
+}
+
+interface NormalTypingEvidence {
+  generatedAt: string;
+  url: string;
+  measurementCompleted: boolean;
+  passed: boolean;
+  typingMode: "normal-interactive-exact-input";
+  schemaId: "jyut6ping3";
+  input: string;
+  inputLength: number;
+  diagnosticCount: number;
+  keyIntervalMs: number;
+  ceilingsMs: {
+    p95: number;
+    max: number;
+    workerQueueWaitMax: number;
+  };
+  summary: LatencySummary;
+  workerQueueWaitMaxMs: number | null;
+  cadence: CadenceEvidence;
+  diagnostics: PerfDiagnostic[];
+  finalVisibleCandidateOrder: CandidateRowSnapshot[];
+  candidateValidation: {
+    mode: "page-shape-only-no-oracle-claim";
+    rationale: string;
+  };
+  assetRequestsDuringMeasurement: AssetRequest[];
+  buildInfo: PublicBuildInfo;
 }
 
 interface CandidateOrderVerification extends FinalCandidateGuard {
@@ -525,7 +564,12 @@ function summarize(diagnostics: PerfDiagnostic[]): LatencySummary {
   };
 }
 
-function summarizeCadence(diagnostics: PerfDiagnostic[]): CadenceEvidence {
+function summarizeCadence(
+  diagnostics: PerfDiagnostic[],
+  expectedIntervalMs = KEY_INTERVAL_MS,
+): CadenceEvidence {
+  const acceptedMinMs = expectedIntervalMs * 0.8;
+  const acceptedMaxMs = expectedIntervalMs * 1.25;
   const gaps = diagnostics.slice(1).map((diagnostic, index) => {
     const previous = diagnostics[index];
     const gapMs = diagnostic.keydownAt - previous.keydownAt;
@@ -540,14 +584,14 @@ function summarizeCadence(diagnostics: PerfDiagnostic[]): CadenceEvidence {
   const invalidGaps = gaps.filter(
     (gap) =>
       gap.gapMs === null ||
-      gap.gapMs < KEY_INTERVAL_MIN_MS ||
-      gap.gapMs > KEY_INTERVAL_MAX_MS,
+      gap.gapMs < acceptedMinMs ||
+      gap.gapMs > acceptedMaxMs,
   );
   return {
-    expectedIntervalMs: KEY_INTERVAL_MS,
+    expectedIntervalMs,
     acceptedRangeMs: {
-      min: KEY_INTERVAL_MIN_MS,
-      max: KEY_INTERVAL_MAX_MS,
+      min: acceptedMinMs,
+      max: acceptedMaxMs,
     },
     count: gaps.length,
     minMs: percentile(finiteGaps, 0),
@@ -560,6 +604,43 @@ function summarizeCadence(diagnostics: PerfDiagnostic[]): CadenceEvidence {
       finiteGaps.length === gaps.length &&
       invalidGaps.length === 0,
   };
+}
+
+function nextCadenceDeadline(
+  previousDeadlineMs: number,
+  nowMs: number,
+  intervalMs: number,
+  minimumGapMs = intervalMs * 0.8,
+): number {
+  const phasePreservingDeadlineMs = previousDeadlineMs + intervalMs;
+  return phasePreservingDeadlineMs - nowMs < minimumGapMs
+    ? nowMs + intervalMs
+    : phasePreservingDeadlineMs;
+}
+
+async function typeAtCadence(
+  page: Page,
+  inputText: string,
+  intervalMs: number,
+): Promise<void> {
+  const keys = [...inputText];
+  let nextKeydownDeadlineMs = performance.now();
+  for (const [index, key] of keys.entries()) {
+    await page.keyboard.type(key);
+    if (index + 1 >= keys.length) {
+      break;
+    }
+
+    const nowMs = performance.now();
+    nextKeydownDeadlineMs = nextCadenceDeadline(
+      nextKeydownDeadlineMs,
+      nowMs,
+      intervalMs,
+    );
+    await page.waitForTimeout(
+      Math.max(0, nextKeydownDeadlineMs - nowMs),
+    );
+  }
 }
 
 function isPostReadySchemaRequest(url: string): boolean {
@@ -859,22 +940,11 @@ async function measureBurst(
   // Four keys per second sustains ordinary interactive typing while still
   // exposing queue growth. An 80 ms or zero-delay 59-key injection instead
   // turns a 4x worker profile into synthetic event flooding.
-  // Anchor each key to an absolute deadline so driver/host overhead cannot
-  // silently lower the declared input rate; observed browser gaps still fail.
-  const keys = [...inputText];
-  let nextKeydownDeadline = performance.now();
-  for (const [index, key] of keys.entries()) {
-    await page.keyboard.type(key);
-    if (index + 1 >= keys.length) {
-      break;
-    }
-
-    nextKeydownDeadline += KEY_INTERVAL_MS;
-    const remainingMs = nextKeydownDeadline - performance.now();
-    if (remainingMs > 0) {
-      await page.waitForTimeout(remainingMs);
-    }
-  }
+  // Keep the absolute phase during ordinary operation, but rebase after a
+  // delayed host timer rather than injecting a short catch-up gap. The receipt
+  // still records and rejects the original long gap against the unchanged
+  // cadence bounds.
+  await typeAtCadence(page, inputText, KEY_INTERVAL_MS);
   await expect
     .poll(async () => (await readPerfDiagnostics(page)).length, {
       timeout: DIAGNOSTIC_TIMEOUT_MS,
@@ -957,7 +1027,10 @@ async function learnTypeDuckRow(page: Page): Promise<void> {
   });
 }
 
-async function writeOptionalEvidence(value: unknown): Promise<void> {
+async function writeOptionalEvidence(
+  fileName: string,
+  value: unknown,
+): Promise<void> {
   if (!EVIDENCE_DIR) {
     return;
   }
@@ -965,13 +1038,20 @@ async function writeOptionalEvidence(value: unknown): Promise<void> {
   const path = await import("path");
   await fs.mkdir(EVIDENCE_DIR, { recursive: true });
   await fs.writeFile(
-    path.join(EVIDENCE_DIR, "input-latency-hard-stop.json"),
+    path.join(EVIDENCE_DIR, fileName),
     `${JSON.stringify(value, null, 2)}\n`,
     "utf8",
   );
 }
 
 test.describe.configure({ mode: "serial" });
+
+test("cadence scheduler rebases delayed host timers without a catch-up burst", () => {
+  expect(nextCadenceDeadline(1_000, 1_040, 250)).toBe(1_250);
+  expect(nextCadenceDeadline(1_000, 1_050, 250)).toBe(1_250);
+  expect(nextCadenceDeadline(1_000, 1_100, 250)).toBe(1_350);
+  expect(nextCadenceDeadline(1_000, 1_300, 250)).toBe(1_550);
+});
 
 test("WEB-03 input latency hard stop covers all public schemas and learned TypeDuck state", async ({
   page,
@@ -1325,7 +1405,207 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
       body: serialized,
       contentType: "application/json",
     });
-    await writeOptionalEvidence(evidence);
+    await writeOptionalEvidence("input-latency-hard-stop.json", evidence);
     await pageSession.detach().catch(() => undefined);
   }
+});
+
+test("normal Jyutping typing stays responsive for the reported exact input", async ({
+  page,
+}, testInfo) => {
+  const postReadyAssetRequests: AssetRequest[] = [];
+  await writeOptionalEvidence("normal-typing-exact-input.json", {
+    generatedAt: new Date().toISOString(),
+    url: null,
+    measurementCompleted: false,
+    passed: false,
+    typingMode: "normal-interactive-exact-input",
+    schemaId: "jyut6ping3",
+    input: NORMAL_TYPING_INPUT,
+    inputLength: NORMAL_TYPING_INPUT.length,
+    failurePhase: "setup-or-measurement-incomplete",
+  });
+  page.on("request", (request) => {
+    if (isPostReadySchemaRequest(request.url())) {
+      postReadyAssetRequests.push({
+        method: request.method(),
+        url: request.url(),
+      });
+    }
+  });
+
+  // The public worker's diagnostic hook accepts only the binding 4x stress
+  // profile. Omitting it is the product's ordinary 1x path.
+  await page.goto("/", {
+    waitUntil: "domcontentloaded",
+    timeout: APP_READY_TIMEOUT_MS,
+  });
+  await waitForAppReady(page);
+  const buildInfo = await readPublicBuildInfo(page);
+  await selectSchema(page, "jyut6ping3");
+  await clearComposition(page);
+  await resetPerfDiagnostics(page);
+  const input = composeInput(page);
+  await input.focus();
+  const assetRequestStart = postReadyAssetRequests.length;
+
+  await typeAtCadence(
+    page,
+    NORMAL_TYPING_INPUT,
+    NORMAL_TYPING_KEY_INTERVAL_MS,
+  );
+  await expect
+    .poll(async () => (await readPerfDiagnostics(page)).length, {
+      timeout: DIAGNOSTIC_TIMEOUT_MS,
+    })
+    .toBe(NORMAL_TYPING_INPUT.length);
+
+  const diagnostics = await readPerfDiagnostics(page);
+  const summary = summarize(diagnostics);
+  const cadence = summarizeCadence(
+    diagnostics,
+    NORMAL_TYPING_KEY_INTERVAL_MS,
+  );
+  const workerQueueWaitMaxMs = percentile(
+    numericValues(diagnostics, (diagnostic) => diagnostic.workerQueueWaitMs),
+    1,
+  );
+  const finalVisibleCandidateOrder = await readVisibleCandidateRows(page);
+  const assetRequestsDuringMeasurement = postReadyAssetRequests.slice(
+    assetRequestStart,
+  );
+  const expectedPrefixes = Array.from(
+    { length: NORMAL_TYPING_INPUT.length },
+    (_, index) => NORMAL_TYPING_INPUT.slice(0, index + 1),
+  );
+  const checks = {
+    diagnosticCount:
+      diagnostics.length === NORMAL_TYPING_INPUT.length,
+    exactPrefixes:
+      JSON.stringify(
+        diagnostics.map((diagnostic) =>
+          diagnostic.input.replace(/\s+/g, ""),
+        ),
+      ) === JSON.stringify(expectedPrefixes),
+    candidatePages: diagnostics.every(
+      (diagnostic) =>
+        diagnostic.candidateCount === EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+        diagnostic.totalCandidateCount >= EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+        typeof diagnostic.firstCandidateText === "string" &&
+        diagnostic.firstCandidateText.trim().length > 0,
+    ),
+    completeTimings: diagnostics.every(
+      (diagnostic) =>
+        Number.isFinite(diagnostic.keydownAt) &&
+        Number.isFinite(diagnostic.workerQueueWaitMs) &&
+        Number.isFinite(diagnostic.workerProcessMs) &&
+        Number.isFinite(diagnostic.workerRoundtripMs) &&
+        Number.isFinite(diagnostic.responseMappingMs) &&
+        Number.isFinite(diagnostic.reactUpdateMs) &&
+        Number.isFinite(diagnostic.paintProxyMs) &&
+        Number.isFinite(diagnostic.totalKeydownToPaintMs),
+    ),
+    unamplifiedWorker: diagnostics.every(
+      (diagnostic) => diagnostic.workerActionMultiplier === 1,
+    ),
+    cadence: cadence.valid,
+    p95:
+      summary.p95Ms !== null &&
+      summary.p95Ms <= NORMAL_TYPING_P95_CEILING_MS,
+    max:
+      summary.maxMs !== null &&
+      summary.maxMs <= NORMAL_TYPING_MAX_CEILING_MS,
+    queueWait:
+      workerQueueWaitMaxMs !== null &&
+      workerQueueWaitMaxMs <= NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS,
+    finalPage:
+      finalVisibleCandidateOrder.length ===
+        EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+      finalVisibleCandidateOrder.every(
+        (candidate) =>
+          typeof candidate.text === "string" &&
+          candidate.text.trim().length > 0 &&
+          (candidate.source === null ||
+            typeof candidate.source === "string"),
+      ),
+    finalDiagnostic:
+      diagnostics.at(-1)?.firstCandidateText ===
+      finalVisibleCandidateOrder[0]?.text,
+    noTimedAssetRequests: assetRequestsDuringMeasurement.length === 0,
+  };
+  const passed = Object.values(checks).every(Boolean);
+  const evidence: NormalTypingEvidence = {
+    generatedAt: new Date().toISOString(),
+    url: page.url(),
+    measurementCompleted: true,
+    passed,
+    typingMode: "normal-interactive-exact-input",
+    schemaId: "jyut6ping3",
+    input: NORMAL_TYPING_INPUT,
+    inputLength: NORMAL_TYPING_INPUT.length,
+    diagnosticCount: diagnostics.length,
+    keyIntervalMs: NORMAL_TYPING_KEY_INTERVAL_MS,
+    ceilingsMs: {
+      p95: NORMAL_TYPING_P95_CEILING_MS,
+      max: NORMAL_TYPING_MAX_CEILING_MS,
+      workerQueueWaitMax: NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS,
+    },
+    summary,
+    workerQueueWaitMaxMs,
+    cadence,
+    diagnostics,
+    finalVisibleCandidateOrder,
+    candidateValidation: {
+      mode: "page-shape-only-no-oracle-claim",
+      rationale:
+        "This exact product input has no pinned external candidate-order fixture. The canary binds responsiveness, every input prefix, and complete visible-page shape without treating Yune output as its own behavior oracle.",
+    },
+    assetRequestsDuringMeasurement,
+    buildInfo,
+  };
+  const serialized = `${JSON.stringify(evidence, null, 2)}\n`;
+  await testInfo.attach("normal-typing-exact-input", {
+    body: serialized,
+    contentType: "application/json",
+  });
+  await writeOptionalEvidence("normal-typing-exact-input.json", evidence);
+
+  expect.soft(checks.diagnosticCount, "every typed key must be measured").toBe(
+    true,
+  );
+  expect.soft(checks.exactPrefixes, "every exact input prefix must be observed").toBe(
+    true,
+  );
+  expect.soft(checks.candidatePages, "every key must render a complete candidate page").toBe(
+    true,
+  );
+  expect.soft(
+    checks.completeTimings,
+    "every typed key must retain a complete finite timing sample",
+  ).toBe(true);
+  expect.soft(checks.unamplifiedWorker, "normal typing must use the unamplified worker path").toBe(
+    true,
+  );
+  expect.soft(
+    cadence.valid,
+    `normal typing cadence must remain within ${NORMAL_TYPING_KEY_INTERVAL_MIN_MS}..${NORMAL_TYPING_KEY_INTERVAL_MAX_MS} ms`,
+  ).toBe(true);
+  expect.soft(summary.p95Ms ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
+    NORMAL_TYPING_P95_CEILING_MS,
+  );
+  expect.soft(summary.maxMs ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
+    NORMAL_TYPING_MAX_CEILING_MS,
+  );
+  expect.soft(
+    workerQueueWaitMaxMs ?? Number.POSITIVE_INFINITY,
+  ).toBeLessThanOrEqual(NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS);
+  expect.soft(checks.finalPage, "the final visible page must contain six nonempty rows").toBe(
+    true,
+  );
+  expect.soft(checks.finalDiagnostic, "the final diagnostic and rendered first candidate must agree").toBe(
+    true,
+  );
+  expect.soft(checks.noTimedAssetRequests, "timed typing must not fetch schema assets").toBe(
+    true,
+  );
 });

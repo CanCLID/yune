@@ -47,6 +47,9 @@ interface PendingPerfDiagnostic {
 	totalWorkerActionMs?: number;
 	wasmHeapBytes?: number;
 	peakWasmHeapBytes?: number;
+	candidateCount: number;
+	totalCandidateCount: number;
+	firstCandidateText?: string;
 }
 
 interface MetricUpdate {
@@ -88,9 +91,6 @@ function readLatestProcessKeyActionDiagnostic(input: string): ActionDiagnosticSn
 function appendPerfDiagnostic(diagnostic: PendingPerfDiagnostic & {
 	stateAppliedAt: number;
 	paintObservedAt: number;
-	candidateCount: number;
-	totalCandidateCount: number;
-	firstCandidateText?: string;
 	reactUpdateMs: number;
 	paintProxyMs: number;
 	totalKeydownToPaintMs: number;
@@ -178,6 +178,8 @@ export default function CandidatePanel({
 				else if (!state && key && isPrintable(key)) {
 					insert(key);
 				}
+				const candidateCount = result.isComposing ? Math.min(result.candidates.length, prefs.pageSize) : undefined;
+				const totalCandidateCount = result.isComposing ? result.candidates.length : undefined;
 				if (keydownContext) {
 					const actionDiagnostic = readLatestProcessKeyActionDiagnostic(keydownContext.input);
 					pendingPerfDiagnostics.current.push({
@@ -199,10 +201,11 @@ export default function CandidatePanel({
 						totalWorkerActionMs: actionDiagnostic?.totalMs,
 						wasmHeapBytes: result.memory?.wasmHeapBytes,
 						peakWasmHeapBytes: result.memory?.peakWasmHeapBytes,
+						candidateCount: candidateCount ?? 0,
+						totalCandidateCount: totalCandidateCount ?? 0,
+						firstCandidateText: result.isComposing ? result.candidates[0]?.text : undefined,
 					});
 				}
-				const candidateCount = result.isComposing ? Math.min(result.candidates.length, prefs.pageSize) : undefined;
-				const totalCandidateCount = result.isComposing ? result.candidates.length : undefined;
 				if (metricKind !== "ai") {
 					lastClassicStateRef.current = result.isComposing ? state : undefined;
 				}
@@ -394,8 +397,6 @@ export default function CandidatePanel({
 			return;
 		}
 		const stateAppliedAt = nowMs();
-		const renderedCandidates = inputState?.candidates.slice(0, prefs.pageSize) ?? [];
-		const totalCandidateCount = inputState?.candidates.length ?? 0;
 		for (const diagnostic of pending) {
 			requestAnimationFrame(() => {
 				// The first callback runs before its frame is painted. Observe from
@@ -407,9 +408,6 @@ export default function CandidatePanel({
 						...diagnostic,
 						stateAppliedAt,
 						paintObservedAt,
-						candidateCount: renderedCandidates.length,
-						totalCandidateCount,
-						firstCandidateText: renderedCandidates[0]?.text,
 						reactUpdateMs: Math.round(stateAppliedAt - diagnostic.responseMappingFinishedAt),
 						paintProxyMs: Math.round(paintObservedAt - stateAppliedAt),
 						totalKeydownToPaintMs: Math.round(paintObservedAt - diagnostic.keydownAt),
@@ -417,7 +415,7 @@ export default function CandidatePanel({
 				});
 			});
 		}
-	}, [inputState, prefs.pageSize]);
+	}, [inputState]);
 
 	useEffect(() => {
 		if (!prefs.enableAI) {

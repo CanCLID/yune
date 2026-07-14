@@ -2865,6 +2865,14 @@ impl StaticTableTranslator {
                     crate::m37_record_track_b_spelling_expansion(elapsed, lookups.len());
                 }
             }
+            // Product short keys can carry tens of thousands of prism
+            // descriptors, including repeated routes to the same canonical
+            // syllable. Retain the first admissible source-order route with an
+            // O(1) syllable-id bitset instead of linearly scanning `specs` for
+            // every descriptor. Keep vector materialization and the metric
+            // boundary above unchanged so historical prism attribution remains
+            // comparable.
+            let mut seen_syllable_ids = vec![false; syllabary_codes.len()];
             for lookup in lookups {
                 // Short TypeDuck rows can expose thousands of single-letter
                 // abbreviation descriptors.  Prune that family, not ordinary
@@ -2872,12 +2880,25 @@ impl StaticTableTranslator {
                 // the surface (for example `nei` -> `nei1`/`nei5`).  Treating
                 // every non-identical code as an abbreviation dropped the full
                 // exact family and let sentence/prefix fallback own the input.
+                // Do not mark pruned descriptors as seen: the former vector
+                // path allowed a later ordinary descriptor for the same
+                // syllable to survive this Track-B-only filter.
                 if track_b_short_prefix && (lookup.abbreviation || lookup.correction) {
                     continue;
                 }
-                if !specs.iter().any(|spec| spec.code == lookup.code)
-                    && self.storage.has_code(lookup.code)
-                {
+
+                // The raw exact spec is intentionally first and authoritative.
+                if lookup.code == lookup_code {
+                    continue;
+                }
+                let Some(seen) = seen_syllable_ids.get_mut(lookup.syllable_id) else {
+                    continue;
+                };
+                if *seen {
+                    continue;
+                }
+                *seen = true;
+                if self.storage.has_code(lookup.code) {
                     specs.push(LookupCodeSpec::alias(
                         lookup.code.to_owned(),
                         lookup_code.to_owned(),
@@ -9150,7 +9171,54 @@ fn has_proper_leading_prefix(lookup_code: &str) -> bool {
 #[cfg(test)]
 mod lookup_guard_tests {
     use super::{has_proper_leading_prefix, StaticTableTranslator};
-    use crate::{TableDictionary, TableEntry};
+    use crate::{
+        CandidateRequest, CompactTableStore, Context, DartsDoubleArray, RimePrismBinPayload,
+        RimePrismSpellingDescriptor, Status, TableDictionary, TableEntry, Translator,
+    };
+
+    fn descriptor(
+        spelling_type: i32,
+        correction: bool,
+        credibility: f32,
+    ) -> RimePrismSpellingDescriptor {
+        RimePrismSpellingDescriptor {
+            syllable_id: 0,
+            spelling_type,
+            is_correction: correction,
+            credibility,
+            tips: String::new(),
+        }
+    }
+
+    fn compact_alias_translator(
+        surface: &str,
+        canonical: &str,
+        descriptors: Vec<RimePrismSpellingDescriptor>,
+    ) -> StaticTableTranslator {
+        let dictionary = TableDictionary::new([
+            TableEntry::new(canonical, "FIRST", 100.0),
+            TableEntry::new(canonical, "SECOND", 90.0),
+        ]);
+        let store = CompactTableStore::from_dictionary(dictionary);
+        assert_eq!(store.syllabary_codes(), [canonical]);
+        let double_array =
+            DartsDoubleArray::build(&[(surface, 0)]).expect("synthetic prism surface should build");
+        let double_array_size = double_array.units().len() as u32;
+        StaticTableTranslator::from_compact_table_store(
+            store,
+            Some(RimePrismBinPayload {
+                dict_file_checksum: 1,
+                schema_file_checksum: 2,
+                num_syllables: 1,
+                num_spellings: 1,
+                double_array_size,
+                double_array: Some(double_array),
+                spelling_map: vec![descriptors],
+                corrections: Vec::new(),
+                tolerance_rules: Vec::new(),
+            }),
+        )
+    }
 
     #[test]
     fn proper_leading_prefix_uses_unicode_scalar_boundaries() {
@@ -9207,6 +9275,83 @@ mod lookup_guard_tests {
                 .collect::<Vec<_>>(),
             [("ngoi", None), ("ngo", Some(2))]
         );
+    }
+
+    #[test]
+    fn linear_prism_dedup_keeps_the_first_descriptor_for_a_canonical_syllable() {
+        let translator = compact_alias_translator(
+            "s",
+            "canonical",
+            vec![descriptor(2, false, -3.0), descriptor(0, false, 0.0)],
+        );
+
+        let specs = translator.expanded_lookup_specs("s");
+        assert_eq!(specs.len(), 2);
+        assert_eq!(specs[0].code, "s", "the raw exact must remain first");
+        assert_eq!(specs[1].code, "canonical");
+        assert!(specs[1].spelling_abbreviation);
+        assert!(!specs[1].spelling_correction);
+        assert_eq!(specs[1].spelling_credibility, -3.0);
+    }
+
+    #[test]
+    fn linear_prism_dedup_preserves_track_b_prune_before_first_seen() {
+        let translator = compact_alias_translator(
+            "n",
+            "canonical",
+            vec![descriptor(2, false, -3.0), descriptor(0, false, 0.0)],
+        )
+        .with_dynamic_correction_lookup(true);
+
+        let specs = translator.expanded_lookup_specs("n");
+        assert_eq!(specs.len(), 2);
+        assert_eq!(specs[0].code, "n");
+        assert_eq!(specs[1].code, "canonical");
+        assert!(
+            !specs[1].spelling_abbreviation && !specs[1].spelling_correction,
+            "the pruned abbreviation must not hide a later ordinary descriptor"
+        );
+        assert_eq!(specs[1].spelling_credibility, 0.0);
+    }
+
+    #[test]
+    fn linear_prism_dedup_keeps_bounded_output_field_for_field() {
+        let first = descriptor(2, false, -3.0);
+        let baseline = compact_alias_translator("s", "canonical", vec![first.clone()]);
+        let duplicate =
+            compact_alias_translator("s", "canonical", vec![first, descriptor(0, false, 0.0)]);
+        let request = CandidateRequest::bounded(1).with_debug_full_count(true);
+
+        let expected = baseline.translate_with_context_and_request(
+            "s",
+            &Status::default(),
+            &std::collections::HashMap::new(),
+            &Context::default(),
+            request,
+        );
+        let actual = duplicate.translate_with_context_and_request(
+            "s",
+            &Status::default(),
+            &std::collections::HashMap::new(),
+            &Context::default(),
+            request,
+        );
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn linear_prism_dedup_never_duplicates_the_raw_exact_spec() {
+        let translator = compact_alias_translator(
+            "canonical",
+            "canonical",
+            vec![descriptor(0, false, 0.0), descriptor(2, false, -3.0)],
+        );
+
+        let specs = translator.expanded_lookup_specs("canonical");
+        assert_eq!(specs.len(), 1);
+        assert_eq!(specs[0].code, "canonical");
+        assert_eq!(specs[0].lookup_code, "canonical");
     }
 
     #[test]

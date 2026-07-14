@@ -51,19 +51,36 @@ The command starts an exact preview of the already-built
 `public-demo/dist`, requires its source/hash-bearing `build-info.json`, fully
 reconciles the local package to `public-artifact-manifest.json`, verifies the
 served worker/app/WASM/schema-manifest bytes, and proves the split Jyutping prism
-startup path. It uses true keydown-to-paint
-diagnostics under 4x main-thread Chromium CPU throttling plus loopback-only,
+startup path. It uses keydown-to-double-`requestAnimationFrame` paint-proxy
+diagnostics (the established `totalKeydownToPaintMs` metric, not compositor
+presentation timing) under 4x main-thread Chromium CPU throttling plus loopback-only,
 synthetic 4x proportional ASCII-letter `processKey` service-time amplification
 and a sustained 250 ms key interval. Every timed key self-verifies the worker
 multiplier, lower and upper delay bounds, and effective service-time ratio. This
-is a queue-stress profile, not empirical 4x-device proof. The
+is a queue-stress profile, not empirical 4x-device proof. Every timed prefix
+must expose the configured six-row visible page, a total candidate count of at
+least six, and a nonempty first candidate. The receipt also records the final
+six-row text order and nullable production source fields for all eight fixed
+scenarios and verifies the strongest existing pinned or accepted
+first-candidate guard. The timed production path deliberately leaves
+`yune_inspector` disabled, so ordinary source labels remain null; the lack of a
+complete page-size-6 source-bearing oracle is carried as an explicit
+per-scenario residual. Consecutive diagnostic `keydownAt` timestamps
+must prove the actual 250 ms cadence stayed within the predeclared
+`200..312.5 ms` range (the one-key Cangjie row correctly has zero gaps). The
 gate fails at p95 above 750 ms, any key above 1000 ms, or any
 schema/split-part/manifest request during a timed window after the selected
 schema reaches ready. Its learned TypeDuck row must survive a page reload before
 timing. `YUNE_WEB_LATENCY_P95_MS`,
 `YUNE_WEB_LATENCY_MAX_MS`, `YUNE_WEB_LATENCY_CPU_THROTTLE`, and
 `YUNE_WEB_LATENCY_KEY_INTERVAL_MS` are explicit diagnostic overrides; release
-evidence uses the binding defaults.
+evidence uses the binding defaults. The public runner rejects any receipt that
+does not contain the exact eight-scenario order, 186 verified key diagnostics,
+4x/4x loopback profile, 250 ms cadence, and 750/1000 ms ceilings; a diagnostic
+override may report a non-release result but cannot produce a release-grade
+pass. A non-250 ms interval diagnostic validates cadence against its own
+predeclared `0.8x..1.25x` bounds; only the exact 250 ms / `200..312.5 ms`
+profile is release-grade.
 
 For a deployed canary, set an explicit URL and use the direct command:
 

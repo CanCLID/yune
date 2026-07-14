@@ -61,6 +61,15 @@ if (!IS_LOOPBACK_PREVIEW && EXPECTED_SOURCE_COMMIT === undefined) {
 const WORKER_ACTION_MULTIPLIER = IS_LOOPBACK_PREVIEW ? 4 : 1;
 const EVIDENCE_DIR = process.env.YUNE_WEB_LATENCY_EVIDENCE_DIR;
 
+const RELEASE_P95_CEILING_MS = 750;
+const RELEASE_MAX_CEILING_MS = 1000;
+const RELEASE_CPU_THROTTLE_RATE = 4;
+const RELEASE_WORKER_ACTION_MULTIPLIER = 4;
+const RELEASE_KEY_INTERVAL_MS = 250;
+const KEY_INTERVAL_MIN_MS = KEY_INTERVAL_MS * 0.8;
+const KEY_INTERVAL_MAX_MS = KEY_INTERVAL_MS * 1.25;
+const EXPECTED_VISIBLE_CANDIDATE_COUNT = 6;
+
 const JYUTPING_LONG_INPUTS = [
   "sihaacoenggeoisyujapgecukdou",
   "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
@@ -69,6 +78,105 @@ const LUNA_37_INPUT = "ceshiyixiachangjushuruxingnengzenyang";
 const LUNA_59_INPUT =
   "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong";
 const LEARNED_INPUT = "ngohaigo";
+
+const SCENARIO_NAMES = [
+  "jyutping-short",
+  "jyutping-historical-long-1",
+  "jyutping-historical-long-2",
+  "typeduck-learned-userdb-prefix",
+  "luna-short",
+  "luna-37",
+  "luna-59",
+  "cangjie-short",
+] as const;
+type ScenarioName = (typeof SCENARIO_NAMES)[number];
+
+const EXPECTED_RELEASE_DIAGNOSTIC_COUNT =
+  3 +
+  JYUTPING_LONG_INPUTS[0].length +
+  JYUTPING_LONG_INPUTS[1].length +
+  3 +
+  3 +
+  LUNA_37_INPUT.length +
+  LUNA_59_INPUT.length +
+  1;
+const EXPECTED_RELEASE_CADENCE_GAP_COUNT =
+  EXPECTED_RELEASE_DIAGNOSTIC_COUNT - SCENARIO_NAMES.length;
+
+interface FinalCandidateGuard {
+  mode: "first-candidate-only";
+  expectedFirstCandidateText: string;
+  provenance: string;
+  residual: string;
+}
+
+const PUBLIC_PAGE_SOURCE_RESIDUAL =
+  "No pinned page-size-6 browser fixture records the complete visible text+data-source order. The binding production timing deliberately leaves yune_inspector disabled, so ordinary source labels are null; the run records all six text rows and nullable production source fields, while only the existing authoritative first candidate is a binding order guard.";
+
+const FINAL_CANDIDATE_GUARDS: Record<ScenarioName, FinalCandidateGuard> = {
+  "jyutping-short": {
+    mode: "first-candidate-only",
+    expectedFirstCandidateText: "\u4fc2",
+    provenance:
+      "accepted public-product hai snapshot in apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/samples.json",
+    residual: PUBLIC_PAGE_SOURCE_RESIDUAL,
+  },
+  "jyutping-historical-long-1": {
+    mode: "first-candidate-only",
+    expectedFirstCandidateText:
+      "\u6642\u4e0b\u5834\u64da\u8f38\u5165\u5605\u901f\u5ea6",
+    provenance:
+      "accepted byte-backed product guard in crates/yune-rime-api/tests/yune_web.rs::web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion",
+    residual: PUBLIC_PAGE_SOURCE_RESIDUAL,
+  },
+  "jyutping-historical-long-2": {
+    mode: "first-candidate-only",
+    expectedFirstCandidateText:
+      "\u7747\u4e0b\u5982\u679c\u6253\u597d\u5834\u5605\u53e5\u5b50\u500b\u6027\u80fd\u6703\u9ede\u6a23",
+    provenance:
+      "accepted byte-backed product guard in crates/yune-rime-api/tests/yune_web.rs::web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion",
+    residual: PUBLIC_PAGE_SOURCE_RESIDUAL,
+  },
+  "typeduck-learned-userdb-prefix": {
+    mode: "first-candidate-only",
+    expectedFirstCandidateText: "\u6211",
+    provenance:
+      "accepted public-product ngo snapshot in apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/samples.json; the separately asserted learned row remains visible after reload",
+    residual: PUBLIC_PAGE_SOURCE_RESIDUAL,
+  },
+  "luna-short": {
+    mode: "first-candidate-only",
+    expectedFirstCandidateText: "\u597d",
+    provenance:
+      "pinned librime 1.17.0 hao row in crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-basic.json",
+    residual: PUBLIC_PAGE_SOURCE_RESIDUAL,
+  },
+  "luna-37": {
+    mode: "first-candidate-only",
+    expectedFirstCandidateText:
+      "\u6e2c\u8a66\u4e00\u4e0b\u9577\u53e5\u8f38\u5165\u6027\u80fd\u600e\u6a23",
+    provenance:
+      "pinned librime 1.17.0 sentence_benchmark_37 in crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-sentence-expanded.json",
+    residual:
+      "The pinned librime fixture certifies five text rows at page size 5 but has no source labels. The production timing leaves yune_inspector disabled, so the public page-size-6 text tail and nullable source fields remain recorded, not oracle-certified.",
+  },
+  "luna-59": {
+    mode: "first-candidate-only",
+    expectedFirstCandidateText:
+      "\u9019\u500b\u5f15\u64ce\u5176\u5be6\u61c9\u8a72\u652f\u6301\u8d85\u9577\u53e5\u5b50\u8f38\u5165\u624d\u80fd\u7528",
+    provenance:
+      "pinned librime 1.17.0 sentence_benchmark_59 in crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-sentence-expanded.json",
+    residual:
+      "The pinned librime fixture certifies five text rows at page size 5 but has no source labels. The production timing leaves yune_inspector disabled, so the public page-size-6 text tail and nullable source fields remain recorded, not oracle-certified.",
+  },
+  "cangjie-short": {
+    mode: "first-candidate-only",
+    expectedFirstCandidateText: "\u65e5",
+    provenance:
+      "pinned librime 1.17.0 paging_first_input page_1 in crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-basic.json",
+    residual: PUBLIC_PAGE_SOURCE_RESIDUAL,
+  },
+};
 const LEARNED_TEXT = "我係個";
 
 interface PerfDiagnostic {
@@ -113,8 +221,30 @@ interface LatencySummary {
   };
 }
 
+interface CadenceEvidence {
+  expectedIntervalMs: number;
+  acceptedRangeMs: {
+    min: number;
+    max: number;
+  };
+  count: number;
+  minMs: number | null;
+  medianMs: number | null;
+  p95Ms: number | null;
+  maxMs: number | null;
+  invalidGaps: Array<{
+    afterKeyIndex: number;
+    gapMs: number | null;
+  }>;
+  valid: boolean;
+}
+
+interface CandidateOrderVerification extends FinalCandidateGuard {
+  matched: boolean;
+}
+
 interface ScenarioEvidence {
-  name: string;
+  name: ScenarioName;
   schemaId: string;
   input: string;
   inputLength: number;
@@ -122,6 +252,9 @@ interface ScenarioEvidence {
   summary: LatencySummary;
   slowestKey: PerfDiagnostic | null;
   diagnostics: PerfDiagnostic[];
+  cadence: CadenceEvidence;
+  finalVisibleCandidateOrder: CandidateRowSnapshot[];
+  candidateOrderVerification: CandidateOrderVerification;
   assetRequestsDuringMeasurement: AssetRequest[];
   learnedCandidateVisible?: boolean;
   persistedAfterReload?: boolean;
@@ -392,6 +525,43 @@ function summarize(diagnostics: PerfDiagnostic[]): LatencySummary {
   };
 }
 
+function summarizeCadence(diagnostics: PerfDiagnostic[]): CadenceEvidence {
+  const gaps = diagnostics.slice(1).map((diagnostic, index) => {
+    const previous = diagnostics[index];
+    const gapMs = diagnostic.keydownAt - previous.keydownAt;
+    return {
+      afterKeyIndex: index + 1,
+      gapMs: Number.isFinite(gapMs) ? gapMs : null,
+    };
+  });
+  const finiteGaps = gaps
+    .map((gap) => gap.gapMs)
+    .filter((gap): gap is number => gap !== null);
+  const invalidGaps = gaps.filter(
+    (gap) =>
+      gap.gapMs === null ||
+      gap.gapMs < KEY_INTERVAL_MIN_MS ||
+      gap.gapMs > KEY_INTERVAL_MAX_MS,
+  );
+  return {
+    expectedIntervalMs: KEY_INTERVAL_MS,
+    acceptedRangeMs: {
+      min: KEY_INTERVAL_MIN_MS,
+      max: KEY_INTERVAL_MAX_MS,
+    },
+    count: gaps.length,
+    minMs: percentile(finiteGaps, 0),
+    medianMs: percentile(finiteGaps, 0.5),
+    p95Ms: percentile(finiteGaps, 0.95),
+    maxMs: percentile(finiteGaps, 1),
+    invalidGaps,
+    valid:
+      gaps.length === Math.max(0, diagnostics.length - 1) &&
+      finiteGaps.length === gaps.length &&
+      invalidGaps.length === 0,
+  };
+}
+
 function isPostReadySchemaRequest(url: string): boolean {
   const pathname = new URL(url).pathname;
   return (
@@ -571,6 +741,21 @@ function assertScenario(scenario: ScenarioEvidence): void {
     `${scenario.name}: schema, split-part, and manifest assets must not be fetched during timed typing`,
   ).toEqual([]);
   for (const [index, diagnostic] of scenario.diagnostics.entries()) {
+    const candidateLabel = `${scenario.name}: key ${index + 1} candidate page`;
+    expect.soft(
+      diagnostic.candidateCount,
+      `${candidateLabel} must expose the complete configured visible page`,
+    ).toBe(EXPECTED_VISIBLE_CANDIDATE_COUNT);
+    expect.soft(
+      diagnostic.totalCandidateCount,
+      `${candidateLabel} total count must cover every visible row`,
+    ).toBeGreaterThanOrEqual(EXPECTED_VISIBLE_CANDIDATE_COUNT);
+    expect.soft(
+      typeof diagnostic.firstCandidateText === "string" &&
+        diagnostic.firstCandidateText.trim().length > 0,
+      `${candidateLabel} must expose a nonempty first candidate`,
+    ).toBe(true);
+
     const label = `${scenario.name}: key ${index + 1} worker slowdown`;
     expect.soft(
       diagnostic.workerActionMultiplier,
@@ -615,6 +800,36 @@ function assertScenario(scenario: ScenarioEvidence): void {
     ).toBeGreaterThanOrEqual(baseMs + amplificationMs - 2);
   }
   expect.soft(
+    scenario.cadence.count,
+    `${scenario.name}: cadence must contain one gap per consecutive key pair`,
+  ).toBe(Math.max(0, scenario.inputLength - 1));
+  expect.soft(
+    scenario.cadence.valid,
+    `${scenario.name}: actual keydown cadence must remain within ${KEY_INTERVAL_MIN_MS}..${KEY_INTERVAL_MAX_MS} ms`,
+  ).toBe(true);
+  expect.soft(
+    scenario.finalVisibleCandidateOrder,
+    `${scenario.name}: final visible page must contain the accepted page size`,
+  ).toHaveLength(EXPECTED_VISIBLE_CANDIDATE_COUNT);
+  for (const [index, candidate] of scenario.finalVisibleCandidateOrder.entries()) {
+    expect.soft(
+      typeof candidate.text === "string" && candidate.text.trim().length > 0,
+      `${scenario.name}: final candidate ${index + 1} must record nonempty text`,
+    ).toBe(true);
+    expect.soft(
+      candidate.source === null || typeof candidate.source === "string",
+      `${scenario.name}: final candidate ${index + 1} must record its nullable production source field`,
+    ).toBe(true);
+  }
+  expect.soft(
+    scenario.candidateOrderVerification.matched,
+    `${scenario.name}: final first candidate must match ${scenario.candidateOrderVerification.provenance}`,
+  ).toBe(true);
+  expect.soft(
+    scenario.diagnostics.at(-1)?.firstCandidateText,
+    `${scenario.name}: final result-specific diagnostic must match the rendered first candidate`,
+  ).toBe(scenario.finalVisibleCandidateOrder[0]?.text);
+  expect.soft(
     scenario.summary.p95Ms,
     `${scenario.name}: p95 keydown-to-paint exceeds ${P95_CEILING_MS} ms`,
   ).not.toBeNull();
@@ -630,7 +845,7 @@ function assertScenario(scenario: ScenarioEvidence): void {
 
 async function measureBurst(
   page: Page,
-  name: string,
+  name: ScenarioName,
   schemaId: string,
   inputText: string,
   postReadyAssetRequests: AssetRequest[],
@@ -670,6 +885,15 @@ async function measureBurst(
         : slowest,
     null,
   );
+  const cadence = summarizeCadence(diagnostics);
+  const finalVisibleCandidateOrder = await readVisibleCandidateRows(page);
+  const candidateGuard = FINAL_CANDIDATE_GUARDS[name];
+  const candidateOrderVerification: CandidateOrderVerification = {
+    ...candidateGuard,
+    matched:
+      finalVisibleCandidateOrder[0]?.text ===
+      candidateGuard.expectedFirstCandidateText,
+  };
   const scenario: ScenarioEvidence = {
     name,
     schemaId,
@@ -679,6 +903,9 @@ async function measureBurst(
     summary: summarize(diagnostics),
     slowestKey,
     diagnostics,
+    cadence,
+    finalVisibleCandidateOrder,
+    candidateOrderVerification,
     assetRequestsDuringMeasurement: postReadyAssetRequests.slice(
       assetRequestStart,
     ),
@@ -794,7 +1021,9 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
       scenarios.push(
         await measureBurst(
           page,
-          `jyutping-historical-long-${index + 1}`,
+          index === 0
+            ? "jyutping-historical-long-1"
+            : "jyutping-historical-long-2",
           "jyut6ping3",
           input,
           postReadyAssetRequests,
@@ -899,6 +1128,121 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
   } finally {
     const passed =
       measurementCompleted && !hardFailure && testInfo.errors.length === 0;
+    const scenarioNames = scenarios.map((scenario) => scenario.name);
+    const verifiedKeyCount = scenarios.reduce(
+      (total, scenario) => total + scenario.diagnosticCount,
+      0,
+    );
+    const cadenceGapCount = scenarios.reduce(
+      (total, scenario) => total + scenario.cadence.count,
+      0,
+    );
+    const candidatePageProfileValid =
+      scenarioNames.length === SCENARIO_NAMES.length &&
+      scenarios.every(
+        (scenario) =>
+          scenario.diagnostics.length === scenario.inputLength &&
+          scenario.diagnostics.every(
+            (diagnostic) =>
+              diagnostic.candidateCount ===
+                EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+              diagnostic.totalCandidateCount >=
+                EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+              typeof diagnostic.firstCandidateText === "string" &&
+              diagnostic.firstCandidateText.trim().length > 0,
+          ),
+      );
+    const candidateOrderProfileValid =
+      scenarioNames.length === SCENARIO_NAMES.length &&
+      scenarios.every(
+        (scenario) =>
+          scenario.finalVisibleCandidateOrder.length ===
+            EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+          scenario.finalVisibleCandidateOrder.every(
+            (candidate) =>
+              typeof candidate.text === "string" &&
+              candidate.text.trim().length > 0 &&
+              (candidate.source === null ||
+                typeof candidate.source === "string"),
+          ) &&
+          scenario.candidateOrderVerification.matched,
+      );
+    const cadenceProfileValid =
+      scenarioNames.length === SCENARIO_NAMES.length &&
+      cadenceGapCount === EXPECTED_RELEASE_CADENCE_GAP_COUNT &&
+      scenarios.every((scenario) => scenario.cadence.valid);
+    const profileValidity = {
+      valid:
+        candidatePageProfileValid &&
+        candidateOrderProfileValid &&
+        cadenceProfileValid,
+      candidatePages: {
+        expectedVisibleCandidateCount: EXPECTED_VISIBLE_CANDIDATE_COUNT,
+        valid: candidatePageProfileValid,
+      },
+      candidateOrder: {
+        scenarioCount: scenarios.length,
+        expectedScenarioCount: SCENARIO_NAMES.length,
+        valid: candidateOrderProfileValid,
+      },
+      cadence: {
+        expectedIntervalMs: KEY_INTERVAL_MS,
+        acceptedRangeMs: {
+          min: KEY_INTERVAL_MIN_MS,
+          max: KEY_INTERVAL_MAX_MS,
+        },
+        gapCount: cadenceGapCount,
+        expectedGapCount: EXPECTED_RELEASE_CADENCE_GAP_COUNT,
+        invalidGapCount: scenarios.reduce(
+          (total, scenario) =>
+            total + scenario.cadence.invalidGaps.length,
+          0,
+        ),
+        valid: cadenceProfileValid,
+      },
+    };
+    const diagnosticOverridesActive =
+      P95_CEILING_MS !== RELEASE_P95_CEILING_MS ||
+      MAX_CEILING_MS !== RELEASE_MAX_CEILING_MS ||
+      CPU_THROTTLE_RATE !== RELEASE_CPU_THROTTLE_RATE ||
+      KEY_INTERVAL_MS !== RELEASE_KEY_INTERVAL_MS;
+    const releaseProfileDeviations: string[] = [];
+    if (!IS_LOOPBACK_PREVIEW) {
+      releaseProfileDeviations.push("deployed-origin-canary");
+    }
+    if (P95_CEILING_MS !== RELEASE_P95_CEILING_MS) {
+      releaseProfileDeviations.push("p95-ceiling");
+    }
+    if (MAX_CEILING_MS !== RELEASE_MAX_CEILING_MS) {
+      releaseProfileDeviations.push("max-ceiling");
+    }
+    if (CPU_THROTTLE_RATE !== RELEASE_CPU_THROTTLE_RATE) {
+      releaseProfileDeviations.push("main-thread-throttle");
+    }
+    if (WORKER_ACTION_MULTIPLIER !== RELEASE_WORKER_ACTION_MULTIPLIER) {
+      releaseProfileDeviations.push("worker-action-multiplier");
+    }
+    if (KEY_INTERVAL_MS !== RELEASE_KEY_INTERVAL_MS) {
+      releaseProfileDeviations.push("key-interval");
+    }
+    if (JSON.stringify(scenarioNames) !== JSON.stringify(SCENARIO_NAMES)) {
+      releaseProfileDeviations.push("scenario-order");
+    }
+    if (verifiedKeyCount !== EXPECTED_RELEASE_DIAGNOSTIC_COUNT) {
+      releaseProfileDeviations.push("verified-key-count");
+    }
+    if (!profileValidity.valid) {
+      releaseProfileDeviations.push("measured-profile-invalid");
+    }
+    const releaseProfileValid =
+      IS_LOOPBACK_PREVIEW && releaseProfileDeviations.length === 0;
+    const releaseGradeVerdict = !passed
+      ? "fail"
+      : !IS_LOOPBACK_PREVIEW
+        ? "not-applicable"
+        : releaseProfileValid
+          ? "pass"
+          : "invalid-profile";
     const evidence = {
       generatedAt: new Date().toISOString(),
       url: page.url(),
@@ -906,6 +1250,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
       measurementCompleted,
       passed,
       thresholdVerdict: passed ? "pass" : "fail",
+      releaseGradeVerdict,
       recordedFailureCount: testInfo.errors.length + Number(hardFailure),
       browser: {
         project: testInfo.project.name,
@@ -923,11 +1268,29 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
               workerStressScope: IS_LOOPBACK_PREVIEW
                 ? "loopback-preview"
                 : "disabled-on-deployed-origin",
-              verifiedKeyCount: scenarios.reduce(
-                (total, scenario) => total + scenario.diagnosticCount,
-                0,
-              ),
+              verifiedKeyCount,
             } satisfies CpuProfileEvidence,
+      profileValidity,
+      releaseProfile: {
+        applicable: IS_LOOPBACK_PREVIEW,
+        valid: releaseProfileValid,
+        diagnosticOverridesActive,
+        deviations: releaseProfileDeviations,
+        expected: {
+          ceilingsMs: {
+            p95: RELEASE_P95_CEILING_MS,
+            max: RELEASE_MAX_CEILING_MS,
+          },
+          keyIntervalMs: RELEASE_KEY_INTERVAL_MS,
+          mainThreadThrottle: RELEASE_CPU_THROTTLE_RATE,
+          workerActionMultiplier: RELEASE_WORKER_ACTION_MULTIPLIER,
+          mechanism:
+            "main-cdp-plus-synthetic-keydown-worker-service-amplification",
+          workerStressScope: "loopback-preview",
+          scenarioNames: SCENARIO_NAMES,
+          verifiedKeyCount: EXPECTED_RELEASE_DIAGNOSTIC_COUNT,
+        },
+      },
       ceilingsMs: {
         p95: P95_CEILING_MS,
         max: MAX_CEILING_MS,

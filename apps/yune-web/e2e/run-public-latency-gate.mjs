@@ -24,6 +24,49 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 const appUrl = `http://${host}:${port}/`;
 const artifactManifestName = "public-artifact-manifest.json";
 const latencyEvidenceName = "input-latency-hard-stop.json";
+const releaseScenarioNames = [
+  "jyutping-short",
+  "jyutping-historical-long-1",
+  "jyutping-historical-long-2",
+  "typeduck-learned-userdb-prefix",
+  "luna-short",
+  "luna-37",
+  "luna-59",
+  "cangjie-short",
+];
+const releaseScenarioInputLengths = [3, 28, 52, 3, 3, 37, 59, 1];
+const releaseScenarioInputs = [
+  "hai",
+  "sihaacoenggeoisyujapgecukdou",
+  "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
+  "ngo",
+  "hao",
+  "ceshiyixiachangjushuruxingnengzenyang",
+  "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+  "a",
+];
+const releaseExpectedFirstCandidateTexts = [
+  "\u4fc2",
+  "\u6642\u4e0b\u5834\u64da\u8f38\u5165\u5605\u901f\u5ea6",
+  "\u7747\u4e0b\u5982\u679c\u6253\u597d\u5834\u5605\u53e5\u5b50\u500b\u6027\u80fd\u6703\u9ede\u6a23",
+  "\u6211",
+  "\u597d",
+  "\u6e2c\u8a66\u4e00\u4e0b\u9577\u53e5\u8f38\u5165\u6027\u80fd\u600e\u6a23",
+  "\u9019\u500b\u5f15\u64ce\u5176\u5be6\u61c9\u8a72\u652f\u6301\u8d85\u9577\u53e5\u5b50\u8f38\u5165\u624d\u80fd\u7528",
+  "\u65e5",
+];
+const releaseP95CeilingMs = 750;
+const releaseMaxCeilingMs = 1000;
+const releaseKeyIntervalMs = 250;
+const releaseCpuThrottleRate = 4;
+const releaseWorkerActionMultiplier = 4;
+const releaseVisibleCandidateCount = 6;
+const releaseVerifiedKeyCount = 186;
+const releaseCadenceGapCount =
+  releaseVerifiedKeyCount - releaseScenarioNames.length;
+const releaseMechanism =
+  "main-cdp-plus-synthetic-keydown-worker-service-amplification";
+const releaseWorkerStressScope = "loopback-preview";
 
 async function commandOutput(command, args, cwd) {
   return new Promise((resolve, reject) => {
@@ -335,29 +378,235 @@ async function runLatencyGate() {
   });
 }
 
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function isNonemptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function assertReleaseLatencyReceipt(evidence) {
+  const violations = [];
+  const requireValue = (condition, message) => {
+    if (!condition) {
+      violations.push(message);
+    }
+  };
+
+  requireValue(
+    evidence.measurementCompleted === true &&
+      evidence.passed === true &&
+      evidence.thresholdVerdict === "pass" &&
+      evidence.releaseGradeVerdict === "pass" &&
+      evidence.recordedFailureCount === 0 &&
+      evidence.buildInfo?.sourceCommit === currentHead,
+    "receipt is not a passing release-grade measurement for current HEAD",
+  );
+  requireValue(
+    sameJson(evidence.ceilingsMs, {
+      p95: releaseP95CeilingMs,
+      max: releaseMaxCeilingMs,
+    }),
+    "release ceilings must be exactly p95=750 ms and max=1000 ms",
+  );
+  requireValue(
+    evidence.keyIntervalMs === releaseKeyIntervalMs,
+    "release key interval must be exactly 250 ms",
+  );
+  requireValue(
+    evidence.cpuProfile?.mainThread?.requestedRate ===
+      releaseCpuThrottleRate,
+    "release main-thread throttle must be exactly 4x",
+  );
+  requireValue(
+    evidence.cpuProfile?.workerActionMultiplier ===
+      releaseWorkerActionMultiplier,
+    "release worker action multiplier must be exactly 4x",
+  );
+  requireValue(
+    evidence.cpuProfile?.mechanism === releaseMechanism,
+    `release mechanism must be ${releaseMechanism}`,
+  );
+  requireValue(
+    evidence.cpuProfile?.workerStressScope === releaseWorkerStressScope,
+    "release worker stress scope must be loopback-preview",
+  );
+
+  const scenarios = Array.isArray(evidence.scenarios)
+    ? evidence.scenarios
+    : [];
+  requireValue(
+    sameJson(
+      scenarios.map((scenario) => scenario?.name),
+      releaseScenarioNames,
+    ),
+    "release scenarios must use the exact 8-name order",
+  );
+
+  let diagnosticCount = 0;
+  let cadenceGapCount = 0;
+  for (const [index, scenario] of scenarios.entries()) {
+    const diagnostics = Array.isArray(scenario?.diagnostics)
+      ? scenario.diagnostics
+      : [];
+    diagnosticCount += diagnostics.length;
+    requireValue(
+      Number.isSafeInteger(scenario?.inputLength) &&
+        scenario.input === releaseScenarioInputs[index] &&
+        scenario.inputLength === releaseScenarioInputLengths[index] &&
+        scenario.diagnosticCount === scenario.inputLength &&
+        diagnostics.length === scenario.inputLength,
+      `${scenario?.name ?? `scenario-${index + 1}`} must contain one diagnostic per input key`,
+    );
+    const expectedPrefixes = Array.from(
+      { length: releaseScenarioInputs[index]?.length ?? 0 },
+      (_, prefixIndex) =>
+        releaseScenarioInputs[index].slice(0, prefixIndex + 1),
+    );
+    requireValue(
+      sameJson(
+        diagnostics.map((diagnostic) =>
+          typeof diagnostic?.input === "string"
+            ? diagnostic.input.replace(/\s+/g, "")
+            : null,
+        ),
+        expectedPrefixes,
+      ),
+      `${scenario?.name ?? `scenario-${index + 1}`} diagnostics must cover every exact input prefix in order`,
+    );
+    requireValue(
+      Number.isFinite(scenario?.summary?.p95Ms) &&
+        scenario.summary.p95Ms <= releaseP95CeilingMs &&
+        Number.isFinite(scenario?.summary?.maxMs) &&
+        scenario.summary.maxMs <= releaseMaxCeilingMs,
+      `${scenario?.name ?? `scenario-${index + 1}`} summary must satisfy the binding 750/1000 ms ceilings`,
+    );
+    for (const [diagnosticIndex, diagnostic] of diagnostics.entries()) {
+      requireValue(
+        diagnostic?.candidateCount === releaseVisibleCandidateCount &&
+          Number.isFinite(diagnostic?.totalCandidateCount) &&
+          diagnostic.totalCandidateCount >= releaseVisibleCandidateCount &&
+          isNonemptyString(diagnostic?.firstCandidateText),
+        `${scenario?.name ?? `scenario-${index + 1}`} diagnostic ${diagnosticIndex + 1} must prove a full six-row visible page`,
+      );
+    }
+
+    const finalVisibleOrder = Array.isArray(
+      scenario?.finalVisibleCandidateOrder,
+    )
+      ? scenario.finalVisibleCandidateOrder
+      : [];
+    requireValue(
+      finalVisibleOrder.length === releaseVisibleCandidateCount &&
+        finalVisibleOrder.every(
+          (candidate) =>
+            isNonemptyString(candidate?.text) &&
+            (candidate?.source === null ||
+              typeof candidate?.source === "string"),
+        ),
+      `${scenario?.name ?? `scenario-${index + 1}`} must record six final text rows and nullable production source fields`,
+    );
+    requireValue(
+      scenario?.candidateOrderVerification?.matched === true &&
+        scenario.candidateOrderVerification.mode ===
+          "first-candidate-only" &&
+        scenario.candidateOrderVerification.expectedFirstCandidateText ===
+          releaseExpectedFirstCandidateTexts[index] &&
+        finalVisibleOrder[0]?.text ===
+          releaseExpectedFirstCandidateTexts[index] &&
+        diagnostics.at(-1)?.firstCandidateText ===
+          finalVisibleOrder[0]?.text &&
+        isNonemptyString(scenario.candidateOrderVerification.provenance) &&
+        isNonemptyString(scenario.candidateOrderVerification.residual),
+      `${scenario?.name ?? `scenario-${index + 1}`} must carry the declared provenance and residual for its first-candidate guard`,
+    );
+
+    const expectedGapCount = Math.max(0, diagnostics.length - 1);
+    const cadence = scenario?.cadence;
+    cadenceGapCount += Number.isSafeInteger(cadence?.count)
+      ? cadence.count
+      : 0;
+    requireValue(
+      cadence?.expectedIntervalMs === releaseKeyIntervalMs &&
+        sameJson(cadence?.acceptedRangeMs, { min: 200, max: 312.5 }) &&
+        cadence?.count === expectedGapCount &&
+        Array.isArray(cadence?.invalidGaps) &&
+        cadence.invalidGaps.length === 0 &&
+        cadence?.valid === true,
+      `${scenario?.name ?? `scenario-${index + 1}`} must have a valid 200..312.5 ms cadence profile`,
+    );
+    const cadenceStats = [
+      cadence?.minMs,
+      cadence?.medianMs,
+      cadence?.p95Ms,
+      cadence?.maxMs,
+    ];
+    requireValue(
+      expectedGapCount === 0
+        ? cadenceStats.every((value) => value === null)
+        : cadenceStats.every(
+            (value) =>
+              Number.isFinite(value) && value >= 200 && value <= 312.5,
+          ),
+      `${scenario?.name ?? `scenario-${index + 1}`} cadence summary must be complete and within range`,
+    );
+  }
+
+  requireValue(
+    diagnosticCount === releaseVerifiedKeyCount &&
+      evidence.cpuProfile?.verifiedKeyCount === releaseVerifiedKeyCount,
+    "release receipt must contain exactly 186 diagnostics and verified keys",
+  );
+  requireValue(
+    cadenceGapCount === releaseCadenceGapCount,
+    `release receipt must contain exactly ${releaseCadenceGapCount} consecutive-key cadence gaps`,
+  );
+  requireValue(
+    evidence.profileValidity?.valid === true &&
+      evidence.profileValidity?.candidatePages?.valid === true &&
+      evidence.profileValidity?.candidatePages
+        ?.expectedVisibleCandidateCount === releaseVisibleCandidateCount &&
+      evidence.profileValidity?.candidateOrder?.valid === true &&
+      evidence.profileValidity?.cadence?.valid === true &&
+      evidence.profileValidity?.cadence?.gapCount ===
+        releaseCadenceGapCount &&
+      evidence.profileValidity?.cadence?.invalidGapCount === 0,
+    "release receipt must declare the measured candidate and cadence profile valid",
+  );
+  requireValue(
+    evidence.releaseProfile?.applicable === true &&
+      evidence.releaseProfile?.valid === true &&
+      evidence.releaseProfile?.diagnosticOverridesActive === false &&
+      Array.isArray(evidence.releaseProfile?.deviations) &&
+      evidence.releaseProfile.deviations.length === 0,
+    "diagnostic overrides or non-loopback profiles cannot produce a release-grade pass",
+  );
+
+  if (violations.length > 0) {
+    throw new Error(
+      `Latency evidence violates the binding release profile:\n- ${violations.join("\n- ")}`,
+    );
+  }
+}
+
 async function reportLatencyEvidence(prefix, requirePassingReceipt = false) {
   const evidencePath = path.join(outputDir, latencyEvidenceName);
   try {
     const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
-    if (
-      requirePassingReceipt &&
-      (evidence.measurementCompleted !== true ||
-        evidence.passed !== true ||
-        evidence.thresholdVerdict !== "pass" ||
-        evidence.recordedFailureCount !== 0 ||
-        evidence.buildInfo?.sourceCommit !== currentHead)
-    ) {
-      throw new Error(
-        "Latency evidence is not a passing receipt for the current source commit",
-      );
+    if (requirePassingReceipt) {
+      assertReleaseLatencyReceipt(evidence);
     }
     const summary = {
       generatedAt: evidence.generatedAt,
       measurementCompleted: evidence.measurementCompleted,
       passed: evidence.passed,
       thresholdVerdict: evidence.thresholdVerdict,
+      releaseGradeVerdict: evidence.releaseGradeVerdict,
       recordedFailureCount: evidence.recordedFailureCount,
       cpuProfile: evidence.cpuProfile,
+      profileValidity: evidence.profileValidity,
+      releaseProfile: evidence.releaseProfile,
       ceilingsMs: evidence.ceilingsMs,
       keyIntervalMs: evidence.keyIntervalMs,
       buildInfo: evidence.buildInfo,
@@ -366,6 +615,11 @@ async function reportLatencyEvidence(prefix, requirePassingReceipt = false) {
             name: scenario.name,
             inputLength: scenario.inputLength,
             summary: scenario.summary,
+            cadence: scenario.cadence,
+            finalVisibleCandidateOrder:
+              scenario.finalVisibleCandidateOrder,
+            candidateOrderVerification:
+              scenario.candidateOrderVerification,
             slowestKey: scenario.slowestKey,
           }))
         : [],

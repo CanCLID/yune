@@ -859,7 +859,22 @@ async function measureBurst(
   // Four keys per second sustains ordinary interactive typing while still
   // exposing queue growth. An 80 ms or zero-delay 59-key injection instead
   // turns a 4x worker profile into synthetic event flooding.
-  await page.keyboard.type(inputText, { delay: KEY_INTERVAL_MS });
+  // Anchor each key to an absolute deadline so driver/host overhead cannot
+  // silently lower the declared input rate; observed browser gaps still fail.
+  const keys = [...inputText];
+  let nextKeydownDeadline = performance.now();
+  for (const [index, key] of keys.entries()) {
+    await page.keyboard.type(key);
+    if (index + 1 >= keys.length) {
+      break;
+    }
+
+    nextKeydownDeadline += KEY_INTERVAL_MS;
+    const remainingMs = nextKeydownDeadline - performance.now();
+    if (remainingMs > 0) {
+      await page.waitForTimeout(remainingMs);
+    }
+  }
   await expect
     .poll(async () => (await readPerfDiagnostics(page)).length, {
       timeout: DIAGNOSTIC_TIMEOUT_MS,

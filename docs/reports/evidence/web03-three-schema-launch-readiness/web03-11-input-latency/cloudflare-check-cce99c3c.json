@@ -1,0 +1,14 @@
+{
+  "sourceCommit": "cce99c3cb3e198c019fb75e8e8839b80550d5a5c",
+  "deploymentId": "983487ea-1197-4081-ba2a-33b3ce3fe588",
+  "checkRunId": 87034949347,
+  "name": "Cloudflare Pages",
+  "status": "completed",
+  "conclusion": "failure",
+  "detailsUrl": "https://dash.cloudflare.com/?to=/b8115041c042b125ed83f7aaf5f99373/pages/view/yune-web/983487ea-1197-4081-ba2a-33b3ce3fe588",
+  "startedAt": "2026-07-14T08:18:28Z",
+  "completedAt": "2026-07-14T08:18:28Z",
+  "publicSummary": "Build failed.",
+  "authenticatedLogAvailableToRecorder": false,
+  "disposition": "preserved red; WEB03-11 remains open"
+}

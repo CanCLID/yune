@@ -3,14 +3,18 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::Value;
 
-use crate::poet::{UpstreamSentenceScratch, UpstreamSentenceScratchCacheCounts};
+use crate::poet::{
+    SurfaceVocabularyPartitionCacheCounts, UpstreamSentenceScratch,
+    UpstreamSentenceScratchCacheCounts, WeightedSentenceCodeSpan,
+};
 use crate::{
     build_poet_bin, build_table_bin, encode_octagram_key, make_sentences,
-    make_sentences_with_grammar, null_grammar_score, parse_rime_table_bin_dictionary,
-    CandidateSource, DartsDoubleArray, Grammar, MemoryOwnerClass, OctagramGrammar,
-    OctagramGrammarConfig, OctagramGrammarParseError, OwnedPoetBytes, PoetByteSource,
-    PresetVocabularyEntry, SentenceCodeSpan, StaticTableTranslator, TableDictionary, TableEntry,
-    Translator, UpstreamSentenceModel, WordGraph, WordGraphEntry, UPSTREAM_NO_GRAMMAR_PENALTY,
+    make_sentences_with_grammar, null_grammar_score, parse_poet_bin_summary,
+    parse_rime_table_bin_dictionary, CandidateSource, DartsDoubleArray, Grammar, MemoryOwnerClass,
+    OctagramGrammar, OctagramGrammarConfig, OctagramGrammarParseError, OwnedPoetBytes,
+    PoetByteSource, PresetVocabularyEntry, SentenceCodeSpan, StaticTableTranslator,
+    TableDictionary, TableEntry, Translator, UpstreamSentenceModel, WordGraph, WordGraphEntry,
+    UPSTREAM_NO_GRAMMAR_PENALTY,
 };
 
 #[test]
@@ -1399,6 +1403,333 @@ fn phrase_derivation_fusion_models() -> (UpstreamSentenceModel, UpstreamSentence
     )
     .expect("byte-backed phrase-derivation fusion fixture should parse");
     (owned, byte_backed)
+}
+
+fn surface_vocabulary_partition_models() -> (UpstreamSentenceModel, UpstreamSentenceModel) {
+    const CHECKSUM: u32 = 0x5903_0002;
+    let entries = vec![
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+        TableEntry::new("d", "D", 100.0),
+        TableEntry::new("b", "X", 100.0),
+        TableEntry::new("c", "X", 100.0),
+        TableEntry::new("z", "P", 100.0),
+    ];
+    let vocabulary = vec![
+        PresetVocabularyEntry::new("ABP", 1_000.0),
+        PresetVocabularyEntry::new("AXP", 900.0),
+        PresetVocabularyEntry::new("ACP", 800.0),
+        PresetVocabularyEntry::new("ADP", 700.0),
+    ];
+    let owned = UpstreamSentenceModel::from_table_entries_with_abbreviation_vocabulary(
+        entries.clone(),
+        &vocabulary,
+        &vocabulary,
+        10,
+    );
+    let byte_backed = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(build_poet_bin(
+            entries,
+            &vocabulary,
+            &vocabulary,
+            CHECKSUM,
+        ))) as Arc<dyn PoetByteSource>,
+        CHECKSUM,
+        10,
+    )
+    .expect("byte-backed surface-vocabulary partition fixture should parse");
+    (owned, byte_backed)
+}
+
+fn one_char_surface_vocabulary_partition_models() -> (UpstreamSentenceModel, UpstreamSentenceModel)
+{
+    const CHECKSUM: u32 = 0x5903_0003;
+    const NORMAL_VOCABULARY_SECTION_ID: u32 = 5;
+    let entries = vec![
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+        TableEntry::new("b", "X", 100.0),
+        TableEntry::new("c", "X", 100.0),
+        TableEntry::new("z", "P", 100.0),
+    ];
+    let vocabulary = vec![
+        PresetVocabularyEntry::new("ABP", 1_000.0),
+        PresetVocabularyEntry::new("AXP", 900.0),
+        PresetVocabularyEntry::new("ACP", 800.0),
+    ];
+
+    let mut owned = UpstreamSentenceModel::from_table_entries(entries.clone(), &vocabulary, 10);
+    owned.truncate_owned_vocabulary_chars_for_test(false, 0, 1);
+
+    let mut bytes = build_poet_bin(entries, &vocabulary, &vocabulary, CHECKSUM);
+    let summary = parse_poet_bin_summary(&bytes, CHECKSUM)
+        .expect("unmodified one-character external-byte fixture should parse");
+    let normal_vocabulary = summary
+        .sections
+        .iter()
+        .find(|section| section.id == NORMAL_VOCABULARY_SECTION_ID)
+        .expect("normal vocabulary section should exist");
+    assert_eq!(normal_vocabulary.stride, 20);
+    assert!(normal_vocabulary.count >= 1);
+    let first_row = normal_vocabulary.offset as usize;
+    bytes[first_row + 12..first_row + 16].copy_from_slice(&1_u32.to_le_bytes());
+    parse_poet_bin_summary(&bytes, CHECKSUM)
+        .expect("a structurally valid external one-character vocabulary row should parse");
+    let byte_backed = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(bytes)) as Arc<dyn PoetByteSource>,
+        CHECKSUM,
+        10,
+    )
+    .expect("byte-backed one-character external vocabulary fixture should parse");
+    (owned, byte_backed)
+}
+
+#[test]
+fn surface_vocabulary_partitions_preserve_family_order_and_deduplicate_polyphonic_membership() {
+    let (owned, byte_backed) = surface_vocabulary_partition_models();
+    for (label, model) in [("owned", &owned), ("byte-backed", &byte_backed)] {
+        let mut scratch = UpstreamSentenceScratch::default();
+        let compatible = model.surface_vocabulary_texts_for_second_codes_for_test(
+            false,
+            "a",
+            &["c", "b", "b"],
+            &mut scratch,
+        );
+        assert_eq!(
+            compatible,
+            ["ABP", "AXP", "ACP"],
+            "{label}: merged buckets must restore the original family order and emit the polyphonic X row once"
+        );
+
+        let reversed = model.surface_vocabulary_texts_for_second_codes_for_test(
+            false,
+            "a",
+            &["b", "c"],
+            &mut scratch,
+        );
+        assert_eq!(reversed, compatible, "{label}: query order must not leak");
+        assert_eq!(
+            scratch.surface_vocabulary_partition_cache_counts_for_test(),
+            SurfaceVocabularyPartitionCacheCounts {
+                normal_partitions: 1,
+                abbreviation_partitions: 0,
+                buckets: 3,
+                row_memberships: 5,
+                builds: 1,
+                build_rows: 4,
+                hits: 1,
+            },
+            "{label}: one source scan should serve every compatible second-code merge"
+        );
+
+        let abbreviation = model.surface_vocabulary_texts_for_second_codes_for_test(
+            true,
+            "a",
+            &["b", "c"],
+            &mut scratch,
+        );
+        assert_eq!(abbreviation, compatible, "{label}");
+        assert_eq!(
+            scratch.surface_vocabulary_partition_cache_counts_for_test(),
+            SurfaceVocabularyPartitionCacheCounts {
+                normal_partitions: 1,
+                abbreviation_partitions: 1,
+                buckets: 6,
+                row_memberships: 10,
+                builds: 2,
+                build_rows: 8,
+                hits: 1,
+            },
+            "{label}: normal and abbreviation partitions must remain distinct"
+        );
+
+        scratch.clear_sentence_state_preserving_surface_partitions();
+        let after_sentence_reset = model.surface_vocabulary_texts_for_second_codes_for_test(
+            false,
+            "a",
+            &["b"],
+            &mut scratch,
+        );
+        assert_eq!(after_sentence_reset, ["ABP", "AXP"], "{label}");
+        let counts = scratch.surface_vocabulary_partition_cache_counts_for_test();
+        assert_eq!(counts.builds, 2, "{label}: sentence reset must not rebuild");
+        assert_eq!(
+            counts.hits, 2,
+            "{label}: sentence reset must retain partitions"
+        );
+    }
+}
+
+#[test]
+fn surface_vocabulary_partitions_match_cold_graphs_and_obey_model_lifecycle() {
+    let (owned, byte_backed) = surface_vocabulary_partition_models();
+    let spans = [
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(0, 1, "a"), 0.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(1, 2, "b"), 0.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(1, 2, "c"), 0.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(2, 3, "z"), 0.0),
+    ];
+    let eligible = |_: &str, _: usize| true;
+    let excluded = HashSet::new();
+    let mut owned_root = None;
+    let mut owned_fallback = None;
+
+    for (label, model) in [("owned", &owned), ("byte-backed", &byte_backed)] {
+        let cold_root = model
+            .ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered(
+                "abz", &spans, 10, &eligible,
+            );
+        let mut scratch = UpstreamSentenceScratch::default();
+        let warm_root = model
+            .ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered_and_scratch(
+                "abz",
+                &spans,
+                10,
+                &eligible,
+                &mut scratch,
+            );
+        assert_eq!(
+            warm_root, cold_root,
+            "{label}: root-only warm/cold mismatch"
+        );
+        let root_counts = scratch.surface_vocabulary_partition_cache_counts_for_test();
+        assert_eq!(root_counts.normal_partitions, 1, "{label}");
+        assert_eq!(root_counts.builds, 1, "{label}");
+
+        scratch.clear_sentence_state_preserving_surface_partitions();
+        let cold_fallback = model.candidates_for_weighted_surface_code_spans_with_limit_excluding(
+            "abz", &spans, 10, &excluded,
+        );
+        let warm_fallback = model
+            .candidates_for_weighted_surface_code_spans_with_limit_excluding_and_scratch(
+                "abz",
+                &spans,
+                10,
+                &excluded,
+                &mut scratch,
+            );
+        assert_eq!(
+            warm_fallback, cold_fallback,
+            "{label}: all-start warm/cold mismatch"
+        );
+        let fallback_counts = scratch.surface_vocabulary_partition_cache_counts_for_test();
+        assert_eq!(
+            fallback_counts.normal_partitions, 3,
+            "{label}: all-start fallback should add only the newly reached b/c families"
+        );
+        assert_eq!(
+            fallback_counts.builds,
+            root_counts.builds + 2,
+            "{label}: root-to-fallback must reuse a and build only b/c"
+        );
+        assert!(
+            fallback_counts.hits > root_counts.hits,
+            "{label}: all-start fallback must hit the root partition"
+        );
+
+        if label == "owned" {
+            owned_root = Some(warm_root);
+            owned_fallback = Some(warm_fallback);
+        } else {
+            assert_eq!(Some(warm_root), owned_root, "owned/byte root mismatch");
+            assert_eq!(
+                Some(warm_fallback),
+                owned_fallback,
+                "owned/byte fallback mismatch"
+            );
+        }
+    }
+
+    let mut reused = UpstreamSentenceScratch::default();
+    let _ =
+        owned.surface_vocabulary_texts_for_second_codes_for_test(false, "a", &["b"], &mut reused);
+    let _ = byte_backed.surface_vocabulary_texts_for_second_codes_for_test(
+        false,
+        "a",
+        &["c"],
+        &mut reused,
+    );
+    assert_eq!(
+        reused.surface_vocabulary_partition_cache_counts_for_test(),
+        SurfaceVocabularyPartitionCacheCounts {
+            normal_partitions: 1,
+            abbreviation_partitions: 0,
+            buckets: 3,
+            row_memberships: 5,
+            builds: 1,
+            build_rows: 4,
+            hits: 0,
+        },
+        "cross-model reuse must fully invalidate the prior model's partitions"
+    );
+
+    let empty = byte_backed
+        .candidates_for_weighted_surface_code_spans_with_limit_excluding_and_scratch(
+            "",
+            &[],
+            10,
+            &excluded,
+            &mut reused,
+        );
+    assert!(empty.is_empty());
+    assert_eq!(
+        reused.surface_vocabulary_partition_cache_counts_for_test(),
+        SurfaceVocabularyPartitionCacheCounts::default(),
+        "empty composition must fully invalidate the surface cache"
+    );
+}
+
+#[test]
+fn surface_vocabulary_partitions_preserve_external_one_char_rows_with_a_live_second_span() {
+    let (owned, byte_backed) = one_char_surface_vocabulary_partition_models();
+    let spans = [
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(0, 1, "a"), 0.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(1, 2, "b"), 0.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(1, 2, "c"), 0.0),
+        WeightedSentenceCodeSpan::new(SentenceCodeSpan::new(2, 3, "z"), 0.0),
+    ];
+    let eligible = |_: &str, _: usize| true;
+    let mut owned_ranked = None;
+
+    for (label, model) in [("owned", &owned), ("byte-backed", &byte_backed)] {
+        let mut scratch = UpstreamSentenceScratch::default();
+        let survivors = model.surface_vocabulary_texts_for_second_codes_for_test(
+            false,
+            "a",
+            &["c", "b"],
+            &mut scratch,
+        );
+        assert_eq!(
+            survivors,
+            ["ABP", "AXP", "ACP"],
+            "{label}: the one-character row must remain in original family order"
+        );
+
+        let cold = model
+            .ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered(
+                "abz", &spans, 10, &eligible,
+            );
+        let warm = model
+            .ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered_and_scratch(
+                "abz",
+                &spans,
+                10,
+                &eligible,
+                &mut scratch,
+            );
+        assert_eq!(warm, cold, "{label}: one-character warm/cold order");
+        assert!(
+            warm.iter().any(|ranked| ranked.candidate.text == "ABP"),
+            "{label}: the legacy one-character row must remain reachable"
+        );
+        if label == "owned" {
+            owned_ranked = Some(warm);
+        } else {
+            assert_eq!(Some(warm), owned_ranked, "owned/byte exact order");
+        }
+    }
 }
 
 #[test]

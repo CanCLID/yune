@@ -3717,12 +3717,22 @@ impl StaticTableTranslator {
                 )
             };
             self.upstream_sentence_model().map_or_else(Vec::new, |model| {
-                model.ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered(
-                    input,
-                    &spans,
-                    visible,
-                    &eligible,
-                )
+                if let Some(scratch) = sentence_scratch.as_deref_mut() {
+                    model.ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered_and_scratch(
+                        input,
+                        &spans,
+                        visible,
+                        &eligible,
+                        scratch,
+                    )
+                } else {
+                    model.ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered(
+                        input,
+                        &spans,
+                        visible,
+                        &eligible,
+                    )
+                }
             })
         } else {
             self.upstream_sentence_model()
@@ -3841,8 +3851,16 @@ impl StaticTableTranslator {
                             scratch,
                         );
                     }
-                } else if let Some(scratch) = sentence_scratch.as_mut() {
-                    scratch.clear();
+                } else if let Some(scratch) = sentence_scratch.as_deref_mut() {
+                    scratch.clear_sentence_state_preserving_surface_partitions();
+                    return model
+                        .candidates_for_weighted_surface_code_spans_with_limit_excluding_and_scratch(
+                            input,
+                            &spans,
+                            model_limit,
+                            &self.dictionary_exclude,
+                            scratch,
+                        );
                 }
                 model.candidates_for_weighted_surface_code_spans_with_limit_excluding(
                     input,
@@ -8594,7 +8612,9 @@ impl StaticTableTranslator {
             request.include_debug_full_count,
         ) {
             if !scratch.upstream_sentence.is_for_input(input) {
-                scratch.clear();
+                scratch
+                    .upstream_sentence
+                    .clear_sentence_state_preserving_surface_partitions();
             }
             return result;
         }

@@ -48,7 +48,28 @@ const DEFAULT_SENTENCE_CUTOFF_THRESHOLD: f64 = 0.1;
 const SINGULAR_GRAMMAR_BEAM_WIDTH: usize = 7;
 type CharacterCodeCache = HashMap<char, Arc<[String]>>;
 type VocabularyIndexCache = HashMap<String, Arc<[usize]>>;
+type SurfaceVocabularyPartitionCache = HashMap<String, Arc<SurfaceVocabularyPartition>>;
 const ABBREVIATION_VOCABULARY_RAW_SPAN_BONUS: f64 = 500_000.0;
+
+#[derive(Clone, Debug, Default)]
+struct SurfaceVocabularyPartition {
+    /// The deployed first-code family in its original collector order.
+    family: Arc<[u32]>,
+    /// Original-family ordinals, partitioned by every canonical code of the
+    /// row's second character.  Ordinals keep a multi-bucket union stable
+    /// without duplicating full vocabulary indexes in every bucket.
+    ordinals_by_second_code: HashMap<String, Arc<[u32]>>,
+    /// Structurally valid external poet bytes can contain a one-character
+    /// vocabulary row even though Yune's builder filters those rows. Preserve
+    /// that legacy family member whenever a live second surface span exists.
+    always_ordinals: Arc<[u32]>,
+}
+
+#[derive(Debug)]
+struct SurfaceVocabularyQuery {
+    indices: Vec<usize>,
+    partition_build_rows: usize,
+}
 
 #[derive(Clone, Copy)]
 struct ByteBackedVocabularyChars<'a> {
@@ -1374,6 +1395,19 @@ pub struct UpstreamSentenceScratch {
     normal_character_codes: CharacterCodeCache,
     normal_vocabulary_indices_by_first_code: VocabularyIndexCache,
     model_identity: Option<Arc<u8>>,
+    // Surface-code graph collectors use the same immutable model rows on every
+    // monotonic key.  Keep their exact, source-ordered second-code partitions
+    // separate from sentence-path state so an abbreviation key, a completed
+    // syllable, and the next abbreviation key can share them safely.
+    normal_surface_vocabulary_partitions: SurfaceVocabularyPartitionCache,
+    abbreviation_surface_vocabulary_partitions: SurfaceVocabularyPartitionCache,
+    surface_model_identity: Option<Arc<u8>>,
+    #[cfg(test)]
+    surface_partition_builds: usize,
+    #[cfg(test)]
+    surface_partition_build_rows: usize,
+    #[cfg(test)]
+    surface_partition_hits: usize,
 }
 
 #[cfg(test)]
@@ -1384,6 +1418,18 @@ pub(crate) struct UpstreamSentenceScratchCacheCounts {
     pub(crate) character_code_bytes: usize,
     pub(crate) first_code_keys: usize,
     pub(crate) vocabulary_index_rows: usize,
+}
+
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(crate) struct SurfaceVocabularyPartitionCacheCounts {
+    pub(crate) normal_partitions: usize,
+    pub(crate) abbreviation_partitions: usize,
+    pub(crate) buckets: usize,
+    pub(crate) row_memberships: usize,
+    pub(crate) builds: usize,
+    pub(crate) build_rows: usize,
+    pub(crate) hits: usize,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1399,6 +1445,19 @@ type SentencePrefixCache = (
 
 impl UpstreamSentenceScratch {
     pub(crate) fn clear(&mut self) {
+        self.clear_sentence_state_preserving_surface_partitions();
+        self.normal_surface_vocabulary_partitions.clear();
+        self.abbreviation_surface_vocabulary_partitions.clear();
+        self.surface_model_identity = None;
+        #[cfg(test)]
+        {
+            self.surface_partition_builds = 0;
+            self.surface_partition_build_rows = 0;
+            self.surface_partition_hits = 0;
+        }
+    }
+
+    pub(crate) fn clear_sentence_state_preserving_surface_partitions(&mut self) {
         self.input.clear();
         self.max_candidates = 0;
         self.states_by_end.clear();
@@ -1410,6 +1469,18 @@ impl UpstreamSentenceScratch {
         self.normal_character_codes.clear();
         self.normal_vocabulary_indices_by_first_code.clear();
         self.model_identity = None;
+    }
+
+    fn prepare_surface_model(&mut self, model_identity: &Arc<u8>) {
+        if self
+            .surface_model_identity
+            .as_ref()
+            .is_some_and(|owner| Arc::ptr_eq(owner, model_identity))
+        {
+            return;
+        }
+        self.clear();
+        self.surface_model_identity = Some(Arc::clone(model_identity));
     }
 
     pub(crate) fn is_for_input(&self, input: &str) -> bool {
@@ -1429,6 +1500,9 @@ impl UpstreamSentenceScratch {
             && self.normal_character_codes.is_empty()
             && self.normal_vocabulary_indices_by_first_code.is_empty()
             && self.model_identity.is_none()
+            && self.normal_surface_vocabulary_partitions.is_empty()
+            && self.abbreviation_surface_vocabulary_partitions.is_empty()
+            && self.surface_model_identity.is_none()
     }
 
     #[cfg(test)]
@@ -1474,6 +1548,42 @@ impl UpstreamSentenceScratch {
                 .values()
                 .map(|indices| indices.len())
                 .sum(),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn surface_vocabulary_partition_cache_counts_for_test(
+        &self,
+    ) -> SurfaceVocabularyPartitionCacheCounts {
+        let partitions = self
+            .normal_surface_vocabulary_partitions
+            .values()
+            .chain(self.abbreviation_surface_vocabulary_partitions.values());
+        let (buckets, row_memberships) =
+            partitions.fold((0usize, 0usize), |(bucket_count, row_count), partition| {
+                (
+                    bucket_count
+                        .saturating_add(partition.ordinals_by_second_code.len())
+                        .saturating_add((!partition.always_ordinals.is_empty()) as usize),
+                    row_count
+                        .saturating_add(
+                            partition
+                                .ordinals_by_second_code
+                                .values()
+                                .map(|ordinals| ordinals.len())
+                                .sum::<usize>(),
+                        )
+                        .saturating_add(partition.always_ordinals.len()),
+                )
+            });
+        SurfaceVocabularyPartitionCacheCounts {
+            normal_partitions: self.normal_surface_vocabulary_partitions.len(),
+            abbreviation_partitions: self.abbreviation_surface_vocabulary_partitions.len(),
+            buckets,
+            row_memberships,
+            builds: self.surface_partition_builds,
+            build_rows: self.surface_partition_build_rows,
+            hits: self.surface_partition_hits,
         }
     }
 
@@ -1673,6 +1783,18 @@ impl PoetModelStorage {
                 out.extend_from_slice(&storage.vocabulary(abbreviation)[index].chars)
             }
             Self::ByteBacked(storage) => storage.vocabulary_chars_into(abbreviation, index, out),
+        }
+    }
+
+    fn vocabulary_second_char(&self, abbreviation: bool, index: usize) -> Option<char> {
+        match self {
+            Self::Empty => None,
+            Self::Owned(storage) => storage
+                .vocabulary(abbreviation)
+                .get(index)
+                .and_then(|entry| entry.chars.get(1))
+                .copied(),
+            Self::ByteBacked(storage) => storage.vocabulary_second_char(abbreviation, index),
         }
     }
 
@@ -2245,6 +2367,34 @@ impl UpstreamSentenceModel {
         self.candidates_for_graph_with_limit(input, &graph, max_candidates)
     }
 
+    pub(crate) fn candidates_for_weighted_surface_code_spans_with_limit_excluding_and_scratch(
+        &self,
+        input: &str,
+        spans: &[WeightedSentenceCodeSpan],
+        max_candidates: usize,
+        excluded_texts: &HashSet<String>,
+        scratch: &mut UpstreamSentenceScratch,
+    ) -> Vec<Candidate> {
+        if input.is_empty() {
+            scratch.clear();
+            return Vec::new();
+        }
+        if spans.is_empty() {
+            return Vec::new();
+        }
+
+        let graph = self.word_graph_for_code_spans_with_scratch(
+            input,
+            spans,
+            CodeSpanGraphOptions {
+                excluded_texts: Some(excluded_texts),
+                ..CodeSpanGraphOptions::complete(false, true)
+            },
+            Some(scratch),
+        );
+        self.candidates_for_graph_with_limit(input, &graph, max_candidates)
+    }
+
     /// Returns the complete direct script-translation families for the
     /// selected deployed spelling graph. These are graph edges beginning at
     /// zero (full phrases and every recognized proper prefix), not synthesized
@@ -2276,6 +2426,7 @@ impl UpstreamSentenceModel {
             spans,
             CodeSpanGraphOptions::complete(false, false),
             None,
+            None,
         )
     }
 
@@ -2296,6 +2447,33 @@ impl UpstreamSentenceModel {
                 ..CodeSpanGraphOptions::complete(false, false)
             },
             None,
+            None,
+        )
+    }
+
+    pub(crate) fn ranked_script_phrase_candidates_for_weighted_code_spans_with_limit_filtered_and_scratch(
+        &self,
+        input: &str,
+        spans: &[WeightedSentenceCodeSpan],
+        max_candidates: usize,
+        eligible_candidate: &CandidateEligibility<'_>,
+        scratch: &mut UpstreamSentenceScratch,
+    ) -> Vec<RankedScriptPhraseCandidate> {
+        if input.is_empty() {
+            scratch.clear();
+            return Vec::new();
+        }
+        self.ranked_script_phrase_candidates_for_weighted_code_spans_impl(
+            input,
+            spans,
+            CodeSpanGraphOptions {
+                root_only: true,
+                visible_limit: Some(max_candidates.max(1)),
+                eligible_candidate: Some(eligible_candidate),
+                ..CodeSpanGraphOptions::complete(false, false)
+            },
+            None,
+            Some(scratch),
         )
     }
 
@@ -2321,6 +2499,7 @@ impl UpstreamSentenceModel {
                 ..CodeSpanGraphOptions::complete(false, false)
             },
             Some(input.len()),
+            None,
         );
         (candidates.len() <= max_candidate_work).then_some(candidates)
     }
@@ -2331,6 +2510,7 @@ impl UpstreamSentenceModel {
         spans: &[WeightedSentenceCodeSpan],
         graph_options: CodeSpanGraphOptions<'_>,
         result_end: Option<usize>,
+        scratch: Option<&mut UpstreamSentenceScratch>,
     ) -> Vec<RankedScriptPhraseCandidate> {
         if input.is_empty() || spans.is_empty() {
             return Vec::new();
@@ -2347,13 +2527,14 @@ impl UpstreamSentenceModel {
         // their edges are discarded by `graph.get(&0)` below. Root-only still
         // walks later spans when matching a root phrase or its packed table
         // tail, so it is an ownership bound rather than a reachability cut.
-        let graph = self.word_graph_for_code_spans(
+        let graph = self.word_graph_for_code_spans_with_scratch(
             input,
             spans,
             CodeSpanGraphOptions {
                 root_only: true,
                 ..graph_options
             },
+            scratch,
         );
         let Some(edges) = graph.get(&0) else {
             return Vec::new();
@@ -2671,7 +2852,7 @@ impl UpstreamSentenceModel {
         max_candidates: usize,
         scratch: &mut UpstreamSentenceScratch,
     ) -> Vec<Candidate> {
-        scratch.clear();
+        scratch.clear_sentence_state_preserving_surface_partitions();
         let graph = self.word_graph_for_input(input);
         let grammar = self.grammar.scoring_grammar();
         scratch.states_by_end = collect_sentence_state_vec(
@@ -3502,7 +3683,7 @@ impl UpstreamSentenceModel {
         let previous_len = scratch.input.len();
         let entry_limit = self.word_graph_entry_limit();
         if previous_len >= input.len() || !input.starts_with(&scratch.input) {
-            scratch.clear();
+            scratch.clear_sentence_state_preserving_surface_partitions();
             return None;
         }
         let boundaries = input
@@ -3973,6 +4154,16 @@ impl UpstreamSentenceModel {
         spans: &[WeightedSentenceCodeSpan],
         options: CodeSpanGraphOptions<'_>,
     ) -> WordGraph {
+        self.word_graph_for_code_spans_with_scratch(input, spans, options, None)
+    }
+
+    fn word_graph_for_code_spans_with_scratch(
+        &self,
+        input: &str,
+        spans: &[WeightedSentenceCodeSpan],
+        options: CodeSpanGraphOptions<'_>,
+        mut scratch: Option<&mut UpstreamSentenceScratch>,
+    ) -> WordGraph {
         let CodeSpanGraphOptions {
             abbreviation,
             bounded_for_sentence_scoring,
@@ -4148,15 +4339,35 @@ impl UpstreamSentenceModel {
                 // cannot reach any second span, no vocabulary phrase can
                 // match; avoid cloning/scanning the complete first-code family
                 // on cold one-syllable keys such as n/ni/hao.
-                if spans_by_start
+                let Some(second_spans) = spans_by_start
                     .get(span.end_index)
-                    .map_or(true, Vec::is_empty)
-                {
+                    .filter(|spans| !spans.is_empty())
+                else {
                     continue;
-                }
-                let vocabulary_entries = self
-                    .storage
-                    .vocabulary_indices_for_first_code(abbreviation, span.code);
+                };
+                let second_codes = second_spans
+                    .iter()
+                    .map(|second_span| second_span.code)
+                    .collect::<Vec<_>>();
+                let (vocabulary_entries, partition_build_rows) =
+                    if let Some(scratch) = scratch.as_deref_mut() {
+                        let query = self.surface_vocabulary_indices_for_second_codes_cached(
+                            abbreviation,
+                            span.code,
+                            &second_codes,
+                            scratch,
+                        );
+                        (query.indices, query.partition_build_rows)
+                    } else {
+                        (
+                            self.storage
+                                .vocabulary_indices_for_first_code(abbreviation, span.code),
+                            0,
+                        )
+                    };
+                lookup_metrics.vocabulary_index_probes += 1;
+                lookup_metrics.vocabulary_rows_examined +=
+                    partition_build_rows.saturating_add(vocabulary_entries.len());
                 for index in vocabulary_entries {
                     let vocabulary_text = self.storage.vocabulary_text(abbreviation, index);
                     if self.excluded_texts.contains(vocabulary_text)
@@ -4836,6 +5047,156 @@ impl UpstreamSentenceModel {
         let indices: Arc<[usize]> = indices.into();
         cache.insert(code.to_owned(), Arc::clone(&indices));
         indices
+    }
+
+    fn surface_vocabulary_partition_cached(
+        &self,
+        abbreviation: bool,
+        first_code: &str,
+        scratch: &mut UpstreamSentenceScratch,
+    ) -> (Arc<SurfaceVocabularyPartition>, usize) {
+        scratch.prepare_surface_model(self.scratch_identity.token());
+        let cache = if abbreviation {
+            &mut scratch.abbreviation_surface_vocabulary_partitions
+        } else {
+            &mut scratch.normal_surface_vocabulary_partitions
+        };
+        if let Some(partition) = cache.get(first_code) {
+            #[cfg(test)]
+            {
+                scratch.surface_partition_hits += 1;
+            }
+            return (Arc::clone(partition), 0);
+        }
+
+        let family = self
+            .storage
+            .vocabulary_indices_for_first_code(abbreviation, first_code);
+        let mut ordinals_by_second_code = HashMap::<String, Vec<u32>>::new();
+        let mut always_ordinals = Vec::<u32>::new();
+        for (ordinal, &vocabulary_index) in family.iter().enumerate() {
+            let ordinal = u32::try_from(ordinal)
+                .expect("surface vocabulary family must fit the compiled u32 index domain");
+            let Some(second_char) = self
+                .storage
+                .vocabulary_second_char(abbreviation, vocabulary_index)
+            else {
+                always_ordinals.push(ordinal);
+                continue;
+            };
+            for second_code in self.storage.character_codes(abbreviation, second_char) {
+                ordinals_by_second_code
+                    .entry(second_code.to_owned())
+                    .or_default()
+                    .push(ordinal);
+            }
+        }
+        let ordinals_by_second_code = ordinals_by_second_code
+            .into_iter()
+            .map(|(code, mut ordinals)| {
+                ordinals.sort_unstable();
+                ordinals.dedup();
+                (code, Arc::<[u32]>::from(ordinals))
+            })
+            .collect();
+        always_ordinals.sort_unstable();
+        always_ordinals.dedup();
+        let build_rows = family.len();
+        let compact_family = family
+            .into_iter()
+            .map(|index| {
+                u32::try_from(index)
+                    .expect("surface vocabulary index must fit the compiled u32 index domain")
+            })
+            .collect::<Vec<_>>();
+        let partition = Arc::new(SurfaceVocabularyPartition {
+            family: Arc::from(compact_family),
+            ordinals_by_second_code,
+            always_ordinals: Arc::from(always_ordinals),
+        });
+        cache.insert(first_code.to_owned(), Arc::clone(&partition));
+        #[cfg(test)]
+        {
+            scratch.surface_partition_builds += 1;
+            scratch.surface_partition_build_rows += build_rows;
+        }
+        (partition, build_rows)
+    }
+
+    fn surface_vocabulary_indices_for_second_codes_cached(
+        &self,
+        abbreviation: bool,
+        first_code: &str,
+        second_codes: &[&str],
+        scratch: &mut UpstreamSentenceScratch,
+    ) -> SurfaceVocabularyQuery {
+        let (partition, partition_build_rows) =
+            self.surface_vocabulary_partition_cached(abbreviation, first_code, scratch);
+        let mut compatible_codes = second_codes.to_vec();
+        compatible_codes.sort_unstable();
+        compatible_codes.dedup();
+        let mut ordinals = partition.always_ordinals.to_vec();
+        for code in compatible_codes {
+            if let Some(bucket) = partition.ordinals_by_second_code.get(code) {
+                ordinals.extend_from_slice(bucket);
+            }
+        }
+        // One polyphonic second character can occur in several compatible
+        // buckets. Restore the original family traversal and remove only that
+        // duplicate membership before the unchanged phrase-code derivation.
+        ordinals.sort_unstable();
+        ordinals.dedup();
+        let indices = ordinals
+            .into_iter()
+            .map(|ordinal| partition.family[ordinal as usize] as usize)
+            .collect();
+        SurfaceVocabularyQuery {
+            indices,
+            partition_build_rows,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn surface_vocabulary_texts_for_second_codes_for_test(
+        &self,
+        abbreviation: bool,
+        first_code: &str,
+        second_codes: &[&str],
+        scratch: &mut UpstreamSentenceScratch,
+    ) -> Vec<String> {
+        self.surface_vocabulary_indices_for_second_codes_cached(
+            abbreviation,
+            first_code,
+            second_codes,
+            scratch,
+        )
+        .indices
+        .into_iter()
+        .map(|index| self.storage.vocabulary_text(abbreviation, index).to_owned())
+        .collect()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn truncate_owned_vocabulary_chars_for_test(
+        &mut self,
+        abbreviation: bool,
+        index: usize,
+        len: usize,
+    ) {
+        assert!(
+            len > 0,
+            "a test vocabulary row must keep its first character"
+        );
+        let PoetModelStorage::Owned(storage) = &mut self.storage else {
+            panic!("test vocabulary mutation requires owned storage");
+        };
+        let vocabulary = if abbreviation {
+            &mut storage.abbreviation_vocabulary
+        } else {
+            &mut storage.vocabulary
+        };
+        vocabulary[index].chars.truncate(len);
+        self.rotate_scratch_identity();
     }
 
     #[cfg(test)]

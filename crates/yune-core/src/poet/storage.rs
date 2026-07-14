@@ -609,6 +609,11 @@ impl ByteBackedPoetStore {
         }
     }
 
+    pub(super) fn vocabulary_second_char(&self, abbreviation: bool, index: usize) -> Option<char> {
+        let range = self.vocabulary_chars_range(abbreviation, index);
+        (range.count >= 2).then(|| self.vocabulary_char_at(abbreviation, range, 1))
+    }
+
     pub(super) fn vocabulary_chars_range(
         &self,
         abbreviation: bool,

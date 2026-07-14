@@ -3440,7 +3440,55 @@ fn m59_luna_long_sentence_page_order_matches_pinned_oracle_on_byte_backed_produc
             "pinned oracle snapshot must be composing"
         );
 
-        let page = process_input(state, input);
+        let page = if scenario == "sentence_benchmark_59" {
+            const LATE_INCOMPLETE_PROBE: &str =
+                "zhegeyinqingqishiyinggaizhichichaochangjuzishurucain";
+            let (probe_last_offset, probe_last_key) = LATE_INCOMPLETE_PROBE
+                .char_indices()
+                .next_back()
+                .expect("late incomplete probe should not be empty");
+            let _ = process_input(state, &LATE_INCOMPLETE_PROBE[..probe_last_offset]);
+            m37_metrics_enable(true);
+            m37_metrics_reset();
+            let probe_page =
+                response_json(unsafe { yune_web_process_key(state, probe_last_key as i32, 0) });
+            let probe_metrics = m37_metrics_snapshot();
+            m37_metrics_enable(false);
+            assert_eq!(
+                probe_page["context"]["input"],
+                Value::String(LATE_INCOMPLETE_PROBE.to_owned()),
+                "the latency probe must measure the exact warmed incomplete key"
+            );
+            assert_eq!(probe_page["context"]["page_no"], Value::Number(0.into()));
+            assert_eq!(
+                probe_page["context"]["highlighted"],
+                Value::Number(0.into())
+            );
+            assert_eq!(
+                probe_page["context"]["candidates"].as_array().map(Vec::len),
+                Some(5),
+                "the latency guard must still exercise a complete visible product page"
+            );
+            // Before two-span survivor partitioning this exact warmed key
+            // examined 62,430 root rows plus 649,824 all-start rows (712,254
+            // total). The source-current result is 2,179 + 21,577 = 23,756;
+            // 30,000 is that observed count with a rounded-up 25% guard band.
+            assert!(
+                probe_metrics.upstream_sentence_model_vocabulary_rows_examined <= 30_000,
+                "the late incomplete key must retain the two-span survivor collapse: {probe_metrics:?}"
+            );
+            assert_eq!(
+                probe_metrics.upstream_sentence_model_graph_rebuild_calls, 2,
+                "the guarded key must exercise both root-only and all-start surface graphs"
+            );
+            assert_eq!(
+                probe_metrics.upstream_sentence_model_incremental_reuse_hits, 0,
+                "the guarded key must not silently switch to the raw identity graph"
+            );
+            process_input(state, &input[LATE_INCOMPLETE_PROBE.len()..])
+        } else {
+            process_input(state, input)
+        };
         assert_eq!(
             page["context"]["input"],
             Value::String(input.to_owned()),

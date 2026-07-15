@@ -33,9 +33,11 @@ interface PendingPerfDiagnostic {
 	key?: string;
 	keydownAt: number;
 	workerQueuedAt: number;
+	workerSentAt: number;
 	workerStartedAt: number;
 	workerFinishedAt: number;
 	responseReceivedAt: number;
+	responseMappingStartedAt: number;
 	responseMappingFinishedAt: number;
 	workerQueueWaitMs?: number;
 	workerProcessMs?: number;
@@ -66,6 +68,12 @@ function nowMs() {
 	return performance.timeOrigin + performance.now();
 }
 
+function renderedInput(state: InputState | undefined) {
+	return state === undefined
+		? undefined
+		: state.inputBuffer.before + state.inputBuffer.active + state.inputBuffer.after;
+}
+
 function appendTypingDiagnostic(diagnostic: {
 	action: "processKey";
 	input?: string;
@@ -89,6 +97,8 @@ function readLatestProcessKeyActionDiagnostic(input: string): ActionDiagnosticSn
 }
 
 function appendPerfDiagnostic(diagnostic: PendingPerfDiagnostic & {
+	renderedInput: string;
+	renderRevision: number;
 	stateAppliedAt: number;
 	paintObservedAt: number;
 	reactUpdateMs: number;
@@ -131,6 +141,7 @@ export default function CandidatePanel({
 	const candidateList = useRef<HTMLTableElement>(null);
 	const dictionaryPanel = useRef<HTMLDivElement>(null);
 	const pendingPerfDiagnostics = useRef<PendingPerfDiagnostic[]>([]);
+	const committedRender = useRef<{ input: string | undefined; revision: number }>({ input: undefined, revision: 0 });
 	const lastClassicStateRef = useRef<InputState | undefined>();
 	const pendingAsciiModeShift = useRef<string | undefined>();
 	const pendingAsciiModeShiftWasChorded = useRef(false);
@@ -182,14 +193,17 @@ export default function CandidatePanel({
 				const totalCandidateCount = result.isComposing ? result.candidates.length : undefined;
 				if (keydownContext) {
 					const actionDiagnostic = readLatestProcessKeyActionDiagnostic(keydownContext.input);
+					const committedInput = renderedInput(result.isComposing ? state : undefined) ?? keydownContext.input;
 					pendingPerfDiagnostics.current.push({
-						input: result.isComposing ? result.inputBuffer.active || result.inputBuffer.before : keydownContext.input,
+						input: committedInput,
 						key: keydownContext.key,
 						keydownAt: keydownContext.keydownAt,
 						workerQueuedAt: actionDiagnostic?.enqueuedAt ?? keydownContext.keydownAt,
+						workerSentAt: actionDiagnostic?.sentAt ?? responseReceivedAt,
 						workerStartedAt: actionDiagnostic?.workerStartedAt ?? actionDiagnostic?.sentAt ?? responseReceivedAt,
 						workerFinishedAt: actionDiagnostic?.workerFinishedAt ?? responseReceivedAt,
 						responseReceivedAt: actionDiagnostic?.receivedAt ?? responseReceivedAt,
+						responseMappingStartedAt,
 						responseMappingFinishedAt,
 						workerQueueWaitMs: actionDiagnostic?.queueWaitMs,
 						workerProcessMs: actionDiagnostic?.workerMs,
@@ -393,12 +407,23 @@ export default function CandidatePanel({
 	useLayoutEffect(() => {
 		inputStateRef.current = inputState;
 		const pending = pendingPerfDiagnostics.current.splice(0);
-		if (pending.length === 0) {
+		const committedInput = renderedInput(inputState);
+		const renderRevision = committedRender.current.revision + 1;
+		committedRender.current = { input: committedInput, revision: renderRevision };
+		if (committedInput === undefined) {
 			return;
 		}
 		const stateAppliedAt = nowMs();
-		for (const diagnostic of pending) {
+		for (const diagnostic of pending.filter(diagnostic => diagnostic.input === committedInput)) {
 			requestAnimationFrame(() => {
+				if (
+					committedRender.current.revision !== renderRevision
+					|| committedRender.current.input !== committedInput
+				) {
+					// This state was superseded before the frame that would paint it.
+					// Leave the diagnostic absent so the gate fails closed.
+					return;
+				}
 				// The first callback runs before its frame is painted. Observe from
 				// the next frame so layout/paint of the applied candidate state is
 				// included in the latency hard stop.
@@ -406,6 +431,8 @@ export default function CandidatePanel({
 					const paintObservedAt = nowMs();
 					appendPerfDiagnostic({
 						...diagnostic,
+						renderedInput: committedInput,
+						renderRevision,
 						stateAppliedAt,
 						paintObservedAt,
 						reactUpdateMs: Math.round(stateAppliedAt - diagnostic.responseMappingFinishedAt),

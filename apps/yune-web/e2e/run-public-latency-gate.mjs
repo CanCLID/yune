@@ -455,6 +455,219 @@ function percentile(values, proportion) {
   return sorted[Math.min(index, sorted.length - 1)];
 }
 
+const crossContextClockToleranceMs = 2;
+const derivedDeltaRoundingToleranceMs = 1;
+
+function roundedRawDelta(start, end) {
+  return Math.round(Math.max(0, end - start));
+}
+
+function rawTimingSamples(diagnostics) {
+  return {
+    total: diagnostics.map((diagnostic) =>
+      roundedRawDelta(diagnostic.keydownAt, diagnostic.paintObservedAt),
+    ),
+    workerQueueWait: diagnostics.map((diagnostic) =>
+      roundedRawDelta(diagnostic.workerQueuedAt, diagnostic.workerSentAt),
+    ),
+    workerProcess: diagnostics.map((diagnostic) =>
+      roundedRawDelta(diagnostic.workerStartedAt, diagnostic.workerFinishedAt),
+    ),
+    workerRoundtrip: diagnostics.map((diagnostic) =>
+      roundedRawDelta(diagnostic.workerSentAt, diagnostic.responseReceivedAt),
+    ),
+    responseMapping: diagnostics.map((diagnostic) =>
+      roundedRawDelta(
+        diagnostic.responseMappingStartedAt,
+        diagnostic.responseMappingFinishedAt,
+      ),
+    ),
+    reactUpdate: diagnostics.map((diagnostic) =>
+      roundedRawDelta(
+        diagnostic.responseMappingFinishedAt,
+        diagnostic.stateAppliedAt,
+      ),
+    ),
+    paintProxy: diagnostics.map((diagnostic) =>
+      roundedRawDelta(diagnostic.stateAppliedAt, diagnostic.paintObservedAt),
+    ),
+  };
+}
+
+function rawLatencySummary(diagnostics) {
+  const raw = rawTimingSamples(diagnostics);
+  return {
+    medianMs: percentile(raw.total, 0.5),
+    p95Ms: percentile(raw.total, 0.95),
+    maxMs: percentile(raw.total, 1),
+    attributionP95Ms: {
+      workerQueueWait: percentile(raw.workerQueueWait, 0.95),
+      workerProcess: percentile(raw.workerProcess, 0.95),
+      workerRoundtrip: percentile(raw.workerRoundtrip, 0.95),
+      responseMapping: percentile(raw.responseMapping, 0.95),
+      reactUpdate: percentile(raw.reactUpdate, 0.95),
+      paintProxy: percentile(raw.paintProxy, 0.95),
+    },
+  };
+}
+
+function diagnosticTimingViolations(diagnostic, label) {
+  const violations = [];
+  const rawTimeline = [
+    ["keydownAt", diagnostic?.keydownAt],
+    ["workerQueuedAt", diagnostic?.workerQueuedAt],
+    ["workerSentAt", diagnostic?.workerSentAt],
+    ["workerStartedAt", diagnostic?.workerStartedAt],
+    ["workerFinishedAt", diagnostic?.workerFinishedAt],
+    ["responseReceivedAt", diagnostic?.responseReceivedAt],
+    ["responseMappingStartedAt", diagnostic?.responseMappingStartedAt],
+    ["responseMappingFinishedAt", diagnostic?.responseMappingFinishedAt],
+    ["stateAppliedAt", diagnostic?.stateAppliedAt],
+    ["paintObservedAt", diagnostic?.paintObservedAt],
+  ];
+  for (const [field, value] of rawTimeline) {
+    if (!Number.isFinite(value) || value < 0) {
+      violations.push(`${label} ${field} must be finite and nonnegative`);
+    }
+  }
+  for (let index = 1; index < rawTimeline.length; index += 1) {
+    const [previousField, previous] = rawTimeline[index - 1];
+    const [field, value] = rawTimeline[index];
+    if (
+      Number.isFinite(previous) &&
+      Number.isFinite(value) &&
+      value + crossContextClockToleranceMs < previous
+    ) {
+      violations.push(
+        `${label} raw timeline is not monotonic at ${previousField}->${field}`,
+      );
+    }
+  }
+  const derived = [
+    [
+      "workerQueueWaitMs",
+      diagnostic?.workerQueueWaitMs,
+      roundedRawDelta(diagnostic?.workerQueuedAt, diagnostic?.workerSentAt),
+    ],
+    [
+      "workerProcessMs",
+      diagnostic?.workerProcessMs,
+      roundedRawDelta(diagnostic?.workerStartedAt, diagnostic?.workerFinishedAt),
+    ],
+    [
+      "workerRoundtripMs",
+      diagnostic?.workerRoundtripMs,
+      roundedRawDelta(diagnostic?.workerSentAt, diagnostic?.responseReceivedAt),
+    ],
+    [
+      "responseMappingMs",
+      diagnostic?.responseMappingMs,
+      roundedRawDelta(
+        diagnostic?.responseMappingStartedAt,
+        diagnostic?.responseMappingFinishedAt,
+      ),
+    ],
+    [
+      "reactUpdateMs",
+      diagnostic?.reactUpdateMs,
+      roundedRawDelta(
+        diagnostic?.responseMappingFinishedAt,
+        diagnostic?.stateAppliedAt,
+      ),
+    ],
+    [
+      "paintProxyMs",
+      diagnostic?.paintProxyMs,
+      roundedRawDelta(diagnostic?.stateAppliedAt, diagnostic?.paintObservedAt),
+    ],
+    [
+      "totalWorkerActionMs",
+      diagnostic?.totalWorkerActionMs,
+      roundedRawDelta(diagnostic?.workerQueuedAt, diagnostic?.responseReceivedAt),
+    ],
+    [
+      "totalKeydownToPaintMs",
+      diagnostic?.totalKeydownToPaintMs,
+      roundedRawDelta(diagnostic?.keydownAt, diagnostic?.paintObservedAt),
+    ],
+  ];
+  for (const [field, actual, expected] of derived) {
+    if (!Number.isFinite(actual) || actual < 0) {
+      violations.push(`${label} ${field} must be finite and nonnegative`);
+    } else if (
+      !Number.isFinite(expected) ||
+      Math.abs(actual - expected) > derivedDeltaRoundingToleranceMs
+    ) {
+      violations.push(`${label} ${field} does not match its raw timestamps`);
+    }
+  }
+  for (const field of ["workerBaseElapsedMs", "workerAmplificationMs"]) {
+    if (!Number.isFinite(diagnostic?.[field]) || diagnostic[field] < 0) {
+      violations.push(`${label} ${field} must be finite and nonnegative`);
+    }
+  }
+  if (
+    typeof diagnostic?.input !== "string" ||
+    diagnostic.renderedInput !== diagnostic.input
+  ) {
+    violations.push(`${label} must identify the exact committed rendered input`);
+  }
+  if (
+    !Number.isSafeInteger(diagnostic?.renderRevision) ||
+    diagnostic.renderRevision <= 0
+  ) {
+    violations.push(`${label} renderRevision must be a positive integer`);
+  }
+  return violations;
+}
+
+function releaseStressViolations(scenario, expectedMultiplier) {
+  const violations = [];
+  for (const [index, diagnostic] of scenario.diagnostics.entries()) {
+    const label = `${scenario.name} diagnostic ${index + 1}`;
+    const baseMs = diagnostic?.workerBaseElapsedMs;
+    const amplificationMs = diagnostic?.workerAmplificationMs;
+    if (diagnostic?.workerActionMultiplier !== expectedMultiplier) {
+      violations.push(`${label} has the wrong worker action multiplier`);
+      continue;
+    }
+    if (!Number.isFinite(baseMs) || baseMs <= 0 || !Number.isFinite(amplificationMs)) {
+      violations.push(`${label} is missing finite worker stress measurements`);
+      continue;
+    }
+    const amplificationFloorMs = Math.max(
+      0,
+      baseMs * (expectedMultiplier - 1) * 0.8,
+    );
+    const amplificationCeilingMs = Math.max(
+      10,
+      baseMs * (expectedMultiplier - 1) * 1.25 + 10,
+    );
+    if (
+      amplificationMs < amplificationFloorMs ||
+      amplificationMs > amplificationCeilingMs
+    ) {
+      violations.push(`${label} amplification is outside its declared bounds`);
+    }
+    const expectedEffectiveMultiplier = (baseMs + amplificationMs) / baseMs;
+    if (
+      !Number.isFinite(diagnostic?.workerEffectiveMultiplier) ||
+      Math.abs(
+        diagnostic.workerEffectiveMultiplier - expectedEffectiveMultiplier,
+      ) > 0.001
+    ) {
+      violations.push(`${label} effective multiplier is not recomputable`);
+    }
+    if (
+      !Number.isFinite(diagnostic?.workerProcessMs) ||
+      diagnostic.workerProcessMs < baseMs + amplificationMs - 2
+    ) {
+      violations.push(`${label} worker time does not include its amplification`);
+    }
+  }
+  return violations;
+}
+
 function emitFullReceipt(prefix, rawReceipt) {
   const rawBytes = Buffer.from(rawReceipt, "utf8");
   const encoded = gzipSync(rawBytes, { level: 9 }).toString("base64");
@@ -573,12 +786,32 @@ function assertReleaseLatencyReceipt(evidence) {
       ),
       `${scenario?.name ?? `scenario-${index + 1}`} diagnostics must cover every exact input prefix in order`,
     );
+    const timingViolations = diagnostics.flatMap((diagnostic, diagnosticIndex) =>
+      diagnosticTimingViolations(
+        diagnostic,
+        `${scenario?.name ?? `scenario-${index + 1}`} diagnostic ${diagnosticIndex + 1}`,
+      ),
+    );
     requireValue(
-      Number.isFinite(scenario?.summary?.p95Ms) &&
-        scenario.summary.p95Ms <= releaseP95CeilingMs &&
-        Number.isFinite(scenario?.summary?.maxMs) &&
-        scenario.summary.maxMs <= releaseMaxCeilingMs,
-      `${scenario?.name ?? `scenario-${index + 1}`} summary must satisfy the binding 750/1000 ms ceilings`,
+      timingViolations.length === 0,
+      timingViolations[0] ??
+        `${scenario?.name ?? `scenario-${index + 1}`} timing set is invalid`,
+    );
+    requireValue(
+      diagnostics.every(
+        (diagnostic, diagnosticIndex) =>
+          diagnosticIndex === 0 ||
+          diagnostic.renderRevision >
+            diagnostics[diagnosticIndex - 1].renderRevision,
+      ),
+      `${scenario?.name ?? `scenario-${index + 1}`} diagnostics must use strictly increasing committed render revisions`,
+    );
+    const expectedSummary = rawLatencySummary(diagnostics);
+    requireValue(
+      sameJson(scenario?.summary, expectedSummary) &&
+        expectedSummary.p95Ms <= releaseP95CeilingMs &&
+        expectedSummary.maxMs <= releaseMaxCeilingMs,
+      `${scenario?.name ?? `scenario-${index + 1}`} summary must be recomputed from raw paint timestamps and satisfy the binding 750/1000 ms ceilings`,
     );
     for (const [diagnosticIndex, diagnostic] of diagnostics.entries()) {
       requireValue(
@@ -587,6 +820,28 @@ function assertReleaseLatencyReceipt(evidence) {
           diagnostic.totalCandidateCount >= releaseVisibleCandidateCount &&
           isNonemptyString(diagnostic?.firstCandidateText),
         `${scenario?.name ?? `scenario-${index + 1}`} diagnostic ${diagnosticIndex + 1} must prove a full six-row visible page`,
+      );
+    }
+    const stressViolations = releaseStressViolations(
+      scenario,
+      releaseWorkerActionMultiplier,
+    );
+    requireValue(
+      stressViolations.length === 0,
+      stressViolations[0] ??
+        `${scenario?.name ?? `scenario-${index + 1}`} worker stress profile is invalid`,
+    );
+    requireValue(
+      Array.isArray(scenario?.assetRequestsDuringMeasurement) &&
+        scenario.assetRequestsDuringMeasurement.length === 0,
+      `${scenario?.name ?? `scenario-${index + 1}`} timed window must not fetch schema assets`,
+    );
+    if (scenario?.name === "typeduck-learned-userdb-prefix") {
+      requireValue(
+        scenario.learnedCandidateVisible === true &&
+          scenario.persistedAfterReload === true &&
+          scenario.forcedCompleteFirstPageStable === true,
+        "TypeDuck learned row must remain visible, persisted after reload, and stable after forced paging",
       );
     }
 
@@ -697,6 +952,11 @@ function assertReleaseLatencyReceipt(evidence) {
       evidence.profileValidity?.candidatePages
         ?.expectedVisibleCandidateCount === releaseVisibleCandidateCount &&
       evidence.profileValidity?.candidateOrder?.valid === true &&
+      evidence.profileValidity?.timings?.valid === true &&
+      evidence.profileValidity?.timings?.crossContextClockToleranceMs ===
+        crossContextClockToleranceMs &&
+      evidence.profileValidity?.timings?.derivedDeltaRoundingToleranceMs ===
+        derivedDeltaRoundingToleranceMs &&
       evidence.profileValidity?.cadence?.valid === true &&
       evidence.profileValidity?.cadence?.gapCount ===
         releaseCadenceGapCount &&
@@ -733,12 +993,9 @@ function assertNormalTypingReceipt(evidence) {
     { length: normalTypingInput.length },
     (_, index) => normalTypingInput.slice(0, index + 1),
   );
-  const totalPaintSamples = diagnostics
-    .map((diagnostic) => diagnostic?.totalKeydownToPaintMs)
-    .filter(Number.isFinite);
-  const queueWaitSamples = diagnostics
-    .map((diagnostic) => diagnostic?.workerQueueWaitMs)
-    .filter(Number.isFinite);
+  const rawTimings = rawTimingSamples(diagnostics);
+  const totalPaintSamples = rawTimings.total;
+  const queueWaitSamples = rawTimings.workerQueueWait;
   const rawCadenceGaps = diagnostics.slice(1).map(
     (diagnostic, index) =>
       diagnostic?.keydownAt - diagnostics[index]?.keydownAt,
@@ -779,6 +1036,22 @@ function assertNormalTypingReceipt(evidence) {
     ),
     "normal-typing diagnostics must cover every exact input prefix in order",
   );
+  const timingViolations = diagnostics.flatMap((diagnostic, index) =>
+    diagnosticTimingViolations(
+      diagnostic,
+      `normal-typing diagnostic ${index + 1}`,
+    ),
+  );
+  requireValue(
+    timingViolations.length === 0 &&
+      diagnostics.every(
+        (diagnostic, index) =>
+          index === 0 ||
+          diagnostic.renderRevision > diagnostics[index - 1].renderRevision,
+      ),
+    timingViolations[0] ??
+      "normal-typing diagnostics must use distinct committed render revisions",
+  );
   requireValue(
     diagnostics.every(
       (diagnostic) =>
@@ -786,35 +1059,23 @@ function assertNormalTypingReceipt(evidence) {
         Number.isFinite(diagnostic?.totalCandidateCount) &&
         diagnostic.totalCandidateCount >= releaseVisibleCandidateCount &&
         isNonemptyString(diagnostic?.firstCandidateText) &&
-        diagnostic?.workerActionMultiplier === 1,
+        diagnostic?.workerActionMultiplier === 1 &&
+        Number.isFinite(diagnostic.workerAmplificationMs) &&
+        diagnostic.workerAmplificationMs >= 0,
     ),
     "normal-typing diagnostics must use the unamplified worker and render complete pages",
   );
+  const expectedSummary = rawLatencySummary(diagnostics);
   requireValue(
     totalPaintSamples.length === normalTypingInput.length &&
       queueWaitSamples.length === normalTypingInput.length &&
-      diagnostics.every(
-        (diagnostic) =>
-          Number.isFinite(diagnostic?.keydownAt) &&
-          Number.isFinite(diagnostic?.workerProcessMs) &&
-          Number.isFinite(diagnostic?.workerRoundtripMs) &&
-          Number.isFinite(diagnostic?.responseMappingMs) &&
-          Number.isFinite(diagnostic?.reactUpdateMs) &&
-          Number.isFinite(diagnostic?.paintProxyMs),
-      ),
-    "normal-typing receipt must retain one complete finite timing sample per key",
-  );
-  requireValue(
-    Number.isFinite(evidence?.summary?.p95Ms) &&
-      evidence.summary.p95Ms <= normalTypingP95CeilingMs &&
-      evidence.summary.p95Ms === percentile(totalPaintSamples, 0.95) &&
-      Number.isFinite(evidence?.summary?.maxMs) &&
-      evidence.summary.maxMs <= normalTypingMaxCeilingMs &&
-      evidence.summary.maxMs === percentile(totalPaintSamples, 1) &&
+      sameJson(evidence?.summary, expectedSummary) &&
+      expectedSummary.p95Ms <= normalTypingP95CeilingMs &&
+      expectedSummary.maxMs <= normalTypingMaxCeilingMs &&
       Number.isFinite(evidence?.workerQueueWaitMaxMs) &&
       evidence.workerQueueWaitMaxMs <= normalTypingQueueWaitMaxCeilingMs &&
       evidence.workerQueueWaitMaxMs === percentile(queueWaitSamples, 1),
-    "normal-typing latency or queue wait exceeds its binding ceiling",
+    "normal-typing summary must be recomputed from raw paint timestamps and satisfy its binding ceilings",
   );
   requireValue(
     evidence?.cadence?.expectedIntervalMs === normalTypingKeyIntervalMs &&
@@ -874,6 +1135,155 @@ function assertNormalTypingReceipt(evidence) {
   }
 }
 
+function assertMutationRejected(validator, evidence, mutate, label) {
+  const mutated = structuredClone(evidence);
+  mutate(mutated);
+  try {
+    validator(mutated);
+  } catch {
+    return;
+  }
+  throw new Error(`Latency validator self-test accepted ${label}`);
+}
+
+function selfTestReleaseValidator(evidence) {
+  const firstDiagnostic = (receipt) => receipt.scenarios[0].diagnostics[0];
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      delete firstDiagnostic(receipt).workerSentAt;
+    },
+    "a receipt with workerSentAt removed",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      delete firstDiagnostic(receipt).totalKeydownToPaintMs;
+    },
+    "a receipt with totalKeydownToPaintMs removed",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      firstDiagnostic(receipt).totalKeydownToPaintMs += 10_000;
+    },
+    "a receipt with a forged total timing",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      firstDiagnostic(receipt).renderedInput = "not-the-committed-input";
+    },
+    "a receipt with a forged rendered input",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      receipt.scenarios[0].diagnostics[1].renderRevision =
+        receipt.scenarios[0].diagnostics[0].renderRevision;
+    },
+    "a receipt with a duplicate render revision",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      firstDiagnostic(receipt).workerActionMultiplier = 1;
+    },
+    "a receipt with a forged worker multiplier",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      firstDiagnostic(receipt).workerAmplificationMs = Number.MAX_SAFE_INTEGER;
+    },
+    "a receipt with out-of-bounds worker amplification",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      receipt.scenarios[0].assetRequestsDuringMeasurement.push({
+        method: "GET",
+        url: "https://invalid.example/schema.bin",
+      });
+    },
+    "a receipt with a timed asset request",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      const learned = receipt.scenarios.find(
+        (scenario) => scenario.name === "typeduck-learned-userdb-prefix",
+      );
+      learned.persistedAfterReload = false;
+    },
+    "a receipt with a false learned-row guard",
+  );
+}
+
+function selfTestNormalTypingValidator(evidence) {
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      delete receipt.diagnostics[0].responseMappingStartedAt;
+    },
+    "a normal receipt with a raw timestamp removed",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      delete receipt.diagnostics[0].totalKeydownToPaintMs;
+    },
+    "a normal receipt with totalKeydownToPaintMs removed",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.diagnostics[0].renderedInput = "not-the-committed-input";
+    },
+    "a normal receipt with a forged rendered input",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.diagnostics[1].renderRevision =
+        receipt.diagnostics[0].renderRevision;
+    },
+    "a normal receipt with a duplicate render revision",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.diagnostics[0].workerQueueWaitMs += 10;
+    },
+    "a normal receipt with a forged derived timing",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.assetRequestsDuringMeasurement.push({
+        method: "GET",
+        url: "https://invalid.example/schema.bin",
+      });
+    },
+    "a normal receipt with a timed asset request",
+  );
+}
+
 async function reportLatencyEvidence(
   prefix,
   requirePassingReceipt = false,
@@ -885,6 +1295,7 @@ async function reportLatencyEvidence(
     const evidence = JSON.parse(rawReceipt);
     if (requirePassingReceipt) {
       assertReleaseLatencyReceipt(evidence);
+      selfTestReleaseValidator(evidence);
     }
     const summary = {
       generatedAt: evidence.generatedAt,
@@ -942,6 +1353,7 @@ async function reportNormalTypingEvidence(
     const evidence = JSON.parse(rawReceipt);
     if (requirePassingReceipt) {
       assertNormalTypingReceipt(evidence);
+      selfTestNormalTypingValidator(evidence);
     }
     const summary = {
       generatedAt: evidence.generatedAt,

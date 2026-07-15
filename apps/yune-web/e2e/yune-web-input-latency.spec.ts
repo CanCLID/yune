@@ -195,12 +195,16 @@ const LEARNED_TEXT = "我係個";
 
 interface PerfDiagnostic {
   input: string;
+  renderedInput: string;
+  renderRevision: number;
   key?: string;
   keydownAt: number;
   workerQueuedAt: number;
+  workerSentAt: number;
   workerStartedAt: number;
   workerFinishedAt: number;
   responseReceivedAt: number;
+  responseMappingStartedAt: number;
   responseMappingFinishedAt: number;
   stateAppliedAt: number;
   paintObservedAt: number;
@@ -507,63 +511,139 @@ function percentile(values: number[], proportion: number): number | null {
   return sorted[Math.min(index, sorted.length - 1)];
 }
 
-function numericValues(
-  diagnostics: PerfDiagnostic[],
-  select: (diagnostic: PerfDiagnostic) => number | undefined,
-): number[] {
-  return diagnostics
-    .map(select)
-    .filter((value): value is number =>
-      typeof value === "number" && Number.isFinite(value),
-    );
+const CROSS_CONTEXT_CLOCK_TOLERANCE_MS = 2;
+const DERIVED_DELTA_ROUNDING_TOLERANCE_MS = 1;
+
+function roundedRawDelta(start: number, end: number): number {
+  return Math.round(Math.max(0, end - start));
+}
+
+function rawTimingSamples(diagnostics: PerfDiagnostic[]) {
+  return {
+    total: diagnostics.map((diagnostic) =>
+      roundedRawDelta(diagnostic.keydownAt, diagnostic.paintObservedAt),
+    ),
+    workerQueueWait: diagnostics.map((diagnostic) =>
+      roundedRawDelta(diagnostic.workerQueuedAt, diagnostic.workerSentAt),
+    ),
+    workerProcess: diagnostics.map((diagnostic) =>
+      roundedRawDelta(diagnostic.workerStartedAt, diagnostic.workerFinishedAt),
+    ),
+    workerRoundtrip: diagnostics.map((diagnostic) =>
+      roundedRawDelta(diagnostic.workerSentAt, diagnostic.responseReceivedAt),
+    ),
+    responseMapping: diagnostics.map((diagnostic) =>
+      roundedRawDelta(
+        diagnostic.responseMappingStartedAt,
+        diagnostic.responseMappingFinishedAt,
+      ),
+    ),
+    reactUpdate: diagnostics.map((diagnostic) =>
+      roundedRawDelta(
+        diagnostic.responseMappingFinishedAt,
+        diagnostic.stateAppliedAt,
+      ),
+    ),
+    paintProxy: diagnostics.map((diagnostic) =>
+      roundedRawDelta(diagnostic.stateAppliedAt, diagnostic.paintObservedAt),
+    ),
+  };
+}
+
+function diagnosticTimingIsValid(diagnostic: PerfDiagnostic): boolean {
+  const rawTimeline = [
+    diagnostic.keydownAt,
+    diagnostic.workerQueuedAt,
+    diagnostic.workerSentAt,
+    diagnostic.workerStartedAt,
+    diagnostic.workerFinishedAt,
+    diagnostic.responseReceivedAt,
+    diagnostic.responseMappingStartedAt,
+    diagnostic.responseMappingFinishedAt,
+    diagnostic.stateAppliedAt,
+    diagnostic.paintObservedAt,
+  ];
+  if (
+    !rawTimeline.every((value) => Number.isFinite(value) && value >= 0) ||
+    rawTimeline.slice(1).some(
+      (value, index) =>
+        value + CROSS_CONTEXT_CLOCK_TOLERANCE_MS < rawTimeline[index],
+    )
+  ) {
+    return false;
+  }
+  const derived: Array<[number | undefined, number]> = [
+    [
+      diagnostic.workerQueueWaitMs,
+      roundedRawDelta(diagnostic.workerQueuedAt, diagnostic.workerSentAt),
+    ],
+    [
+      diagnostic.workerProcessMs,
+      roundedRawDelta(
+        diagnostic.workerStartedAt,
+        diagnostic.workerFinishedAt,
+      ),
+    ],
+    [
+      diagnostic.workerRoundtripMs,
+      roundedRawDelta(diagnostic.workerSentAt, diagnostic.responseReceivedAt),
+    ],
+    [
+      diagnostic.responseMappingMs,
+      roundedRawDelta(
+        diagnostic.responseMappingStartedAt,
+        diagnostic.responseMappingFinishedAt,
+      ),
+    ],
+    [
+      diagnostic.reactUpdateMs,
+      roundedRawDelta(
+        diagnostic.responseMappingFinishedAt,
+        diagnostic.stateAppliedAt,
+      ),
+    ],
+    [
+      diagnostic.paintProxyMs,
+      roundedRawDelta(diagnostic.stateAppliedAt, diagnostic.paintObservedAt),
+    ],
+    [
+      diagnostic.totalWorkerActionMs,
+      roundedRawDelta(diagnostic.workerQueuedAt, diagnostic.responseReceivedAt),
+    ],
+    [
+      diagnostic.totalKeydownToPaintMs,
+      roundedRawDelta(diagnostic.keydownAt, diagnostic.paintObservedAt),
+    ],
+  ];
+  return derived.every(
+    ([actual, expected]) =>
+      Number.isFinite(actual) &&
+      (actual ?? -1) >= 0 &&
+      Math.abs((actual ?? Number.NaN) - expected) <=
+        DERIVED_DELTA_ROUNDING_TOLERANCE_MS,
+  ) &&
+    Number.isFinite(diagnostic.workerBaseElapsedMs) &&
+    (diagnostic.workerBaseElapsedMs ?? -1) >= 0 &&
+    Number.isFinite(diagnostic.workerAmplificationMs) &&
+    (diagnostic.workerAmplificationMs ?? -1) >= 0 &&
+    diagnostic.input === diagnostic.renderedInput &&
+    Number.isSafeInteger(diagnostic.renderRevision) &&
+    diagnostic.renderRevision > 0;
 }
 
 function summarize(diagnostics: PerfDiagnostic[]): LatencySummary {
-  const totals = numericValues(
-    diagnostics,
-    (diagnostic) => diagnostic.totalKeydownToPaintMs,
-  );
+  const raw = rawTimingSamples(diagnostics);
   return {
-    medianMs: percentile(totals, 0.5),
-    p95Ms: percentile(totals, 0.95),
-    maxMs: percentile(totals, 1),
+    medianMs: percentile(raw.total, 0.5),
+    p95Ms: percentile(raw.total, 0.95),
+    maxMs: percentile(raw.total, 1),
     attributionP95Ms: {
-      workerQueueWait: percentile(
-        numericValues(
-          diagnostics,
-          (diagnostic) => diagnostic.workerQueueWaitMs,
-        ),
-        0.95,
-      ),
-      workerProcess: percentile(
-        numericValues(
-          diagnostics,
-          (diagnostic) => diagnostic.workerProcessMs,
-        ),
-        0.95,
-      ),
-      workerRoundtrip: percentile(
-        numericValues(
-          diagnostics,
-          (diagnostic) => diagnostic.workerRoundtripMs,
-        ),
-        0.95,
-      ),
-      responseMapping: percentile(
-        numericValues(
-          diagnostics,
-          (diagnostic) => diagnostic.responseMappingMs,
-        ),
-        0.95,
-      ),
-      reactUpdate: percentile(
-        numericValues(diagnostics, (diagnostic) => diagnostic.reactUpdateMs),
-        0.95,
-      ),
-      paintProxy: percentile(
-        numericValues(diagnostics, (diagnostic) => diagnostic.paintProxyMs),
-        0.95,
-      ),
+      workerQueueWait: percentile(raw.workerQueueWait, 0.95),
+      workerProcess: percentile(raw.workerProcess, 0.95),
+      workerRoundtrip: percentile(raw.workerRoundtrip, 0.95),
+      responseMapping: percentile(raw.responseMapping, 0.95),
+      reactUpdate: percentile(raw.reactUpdate, 0.95),
+      paintProxy: percentile(raw.paintProxy, 0.95),
     },
   };
 }
@@ -826,6 +906,14 @@ function assertScenario(scenario: ScenarioEvidence): void {
     `${scenario.name}: schema, split-part, and manifest assets must not be fetched during timed typing`,
   ).toEqual([]);
   for (const [index, diagnostic] of scenario.diagnostics.entries()) {
+    expect.soft(
+      diagnosticTimingIsValid(diagnostic),
+      `${scenario.name}: key ${index + 1} must retain one self-consistent raw timing timeline`,
+    ).toBe(true);
+    expect.soft(
+      index === 0 || diagnostic.renderRevision > scenario.diagnostics[index - 1].renderRevision,
+      `${scenario.name}: key ${index + 1} must have its own committed render revision`,
+    ).toBe(true);
     const candidateLabel = `${scenario.name}: key ${index + 1} candidate page`;
     expect.soft(
       diagnostic.candidateCount,
@@ -969,7 +1057,8 @@ async function measureBurst(
   const slowestKey = diagnostics.reduce<PerfDiagnostic | null>(
     (slowest, diagnostic) =>
       slowest === null ||
-      diagnostic.totalKeydownToPaintMs > slowest.totalKeydownToPaintMs
+      roundedRawDelta(diagnostic.keydownAt, diagnostic.paintObservedAt) >
+        roundedRawDelta(slowest.keydownAt, slowest.paintObservedAt)
         ? diagnostic
         : slowest,
     null,
@@ -1259,6 +1348,17 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
               diagnostic.firstCandidateText.trim().length > 0,
           ),
       );
+    const timingProfileValid =
+      scenarioNames.length === SCENARIO_NAMES.length &&
+      scenarios.every((scenario) =>
+        scenario.diagnostics.every(
+          (diagnostic, index) =>
+            diagnosticTimingIsValid(diagnostic) &&
+            (index === 0 ||
+              diagnostic.renderRevision >
+                scenario.diagnostics[index - 1].renderRevision),
+        ),
+      );
     const candidateOrderProfileValid =
       scenarioNames.length === SCENARIO_NAMES.length &&
       scenarios.every(
@@ -1282,7 +1382,8 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
       valid:
         candidatePageProfileValid &&
         candidateOrderProfileValid &&
-        cadenceProfileValid,
+        cadenceProfileValid &&
+        timingProfileValid,
       candidatePages: {
         expectedVisibleCandidateCount: EXPECTED_VISIBLE_CANDIDATE_COUNT,
         valid: candidatePageProfileValid,
@@ -1306,6 +1407,12 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
           0,
         ),
         valid: cadenceProfileValid,
+      },
+      timings: {
+        crossContextClockToleranceMs: CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+        derivedDeltaRoundingToleranceMs:
+          DERIVED_DELTA_ROUNDING_TOLERANCE_MS,
+        valid: timingProfileValid,
       },
     };
     const diagnosticOverridesActive =
@@ -1480,7 +1587,7 @@ async function runNormalTypingCanary(
     NORMAL_TYPING_KEY_INTERVAL_MS,
   );
   const workerQueueWaitMaxMs = percentile(
-    numericValues(diagnostics, (diagnostic) => diagnostic.workerQueueWaitMs),
+    rawTimingSamples(diagnostics).workerQueueWait,
     1,
   );
   const finalVisibleCandidateOrder = await readVisibleCandidateRows(page);
@@ -1508,18 +1615,17 @@ async function runNormalTypingCanary(
         diagnostic.firstCandidateText.trim().length > 0,
     ),
     completeTimings: diagnostics.every(
-      (diagnostic) =>
-        Number.isFinite(diagnostic.keydownAt) &&
-        Number.isFinite(diagnostic.workerQueueWaitMs) &&
-        Number.isFinite(diagnostic.workerProcessMs) &&
-        Number.isFinite(diagnostic.workerRoundtripMs) &&
-        Number.isFinite(diagnostic.responseMappingMs) &&
-        Number.isFinite(diagnostic.reactUpdateMs) &&
-        Number.isFinite(diagnostic.paintProxyMs) &&
-        Number.isFinite(diagnostic.totalKeydownToPaintMs),
+      (diagnostic, index) =>
+        diagnosticTimingIsValid(diagnostic) &&
+        (index === 0 ||
+          diagnostic.renderRevision >
+            diagnostics[index - 1].renderRevision),
     ),
     unamplifiedWorker: diagnostics.every(
-      (diagnostic) => diagnostic.workerActionMultiplier === 1,
+      (diagnostic) =>
+        diagnostic.workerActionMultiplier === 1 &&
+        Number.isFinite(diagnostic.workerAmplificationMs) &&
+        (diagnostic.workerAmplificationMs ?? -1) >= 0,
     ),
     cadence: cadence.valid,
     p95:

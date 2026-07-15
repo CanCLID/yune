@@ -117,7 +117,6 @@ export default function YuneControlSurface({
 			return;
 		}
 		if (IS_PUBLIC_DEMO) {
-			refreshDiagnostics();
 			return;
 		}
 		try {
@@ -140,6 +139,11 @@ export default function YuneControlSurface({
 	}, [refreshRemoteState, refreshSignal]);
 
 	useEffect(() => {
+		if (IS_PUBLIC_DEMO) {
+			// The public surface never renders diagnostic state. Polling and
+			// parsing it would create avoidable React work on the typing path.
+			return;
+		}
 		const timer = window.setInterval(refreshDiagnostics, 500);
 		return () => window.clearInterval(timer);
 	}, [refreshDiagnostics]);
@@ -202,7 +206,10 @@ export default function YuneControlSurface({
 		"?wasmAttributionFamily=luna-core",
 	];
 
-	return <section className="yd-control-surface" data-yune-control-surface>
+	return <section
+		className="yd-control-surface"
+		data-yune-control-surface
+		data-yune-diagnostics-polling={IS_PUBLIC_DEMO ? "disabled" : "enabled"}>
 		<header className="yd-control-surface-header">
 			<h3>{text.title}</h3>
 			<div className="yd-chip-row">

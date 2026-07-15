@@ -324,6 +324,10 @@ test("WEB-05 dev-power controls are visible only in the harness", async ({
   page,
 }) => {
   await openApp(page);
+  await expect(page.locator("[data-yune-control-surface]")).toHaveAttribute(
+    "data-yune-diagnostics-polling",
+    "enabled",
+  );
   await expect(page.locator("[data-yune-raw-response-viewer]")).toBeVisible();
   await expect(page.locator("[data-yune-freeform-set-option]")).toBeVisible();
   await expect(page.locator("[data-yune-freeform-customize]")).toBeVisible();
@@ -343,6 +347,10 @@ test("WEB-05 dev-power controls are visible only in the harness", async ({
 test("WEB-05 public demo hides debug and admin controls", async ({ page }) => {
   test.skip(!RUN_PUBLIC_DEMO_E2E, "Set WEB05_PUBLIC_DEMO_E2E=1 for public demo pass.");
   await openApp(page, PUBLIC_APP_URL);
+  await expect(page.locator("[data-yune-control-surface]")).toHaveAttribute(
+    "data-yune-diagnostics-polling",
+    "disabled",
+  );
   const hiddenSelectors = [
     "[data-yune-control-redeploy]",
     "[data-yune-control-invalidate-deploy-cache]",

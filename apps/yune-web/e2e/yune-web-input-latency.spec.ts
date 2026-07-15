@@ -455,6 +455,10 @@ async function waitForAppReady(page: Page): Promise<void> {
   await expect(page.locator("[data-yune-loading-indicator]")).toHaveCount(0, {
     timeout: APP_READY_TIMEOUT_MS,
   });
+  await expect(
+    page.locator("[data-yune-control-surface]"),
+    "the public typing path must not poll hidden development diagnostics",
+  ).toHaveAttribute("data-yune-diagnostics-polling", "disabled");
 }
 
 async function clearComposition(page: Page): Promise<void> {

@@ -9,10 +9,12 @@ milestone detail belongs in
 plans, reports, and evidence packets.
 
 Current status: M59 is complete, WEB03-11 is closed as maintenance, and the
-finalized M60 plan is ready for execution but not started. M60 is the sole next
-milestone. It formalizes and audits M59's already-shipped schema-general
-reachability capability; it does not change runtime behavior. M61 is
-unallocated. Current performance results and bottleneck analysis live only in
+finalized M60 plan is ready for execution but not started. M60 remains the sole
+authorized execution milestone. A draft M61 native Track A memory-owner plan is
+queued behind M60 for independent review; it is not authorized for execution.
+M60 formalizes and audits M59's already-shipped schema-general reachability
+capability without changing runtime behavior. Current performance results and
+bottleneck analysis live only in
 the
 [`Yune Performance Dashboard`](./reports/yune-vs-librime-performance.md).
 TypeDuck-Windows product/frontend work is owned by the separate
@@ -40,6 +42,10 @@ TypeDuck-Windows product/frontend work is owned by the separate
   — the single current cross-platform performance dashboard.
 - [`plans/active/m60-plan-schema-general-single-character-reachability.md`](./plans/active/m60-plan-schema-general-single-character-reachability.md)
   — the current execution authority and sole next milestone.
+- [`plans/active/m61-plan-native-track-a-memory-owner-reduction.md`](./plans/active/m61-plan-native-track-a-memory-owner-reduction.md)
+  — a non-authoritative draft queued after M60; it becomes executable only
+  after M60 closes and the M61 plan, requirements, and evidence contract pass
+  independent review.
 - [`plans/`](./plans) — active, reference, and completed execution records.
 
 ## Current Snapshot
@@ -48,7 +54,7 @@ TypeDuck-Windows product/frontend work is owned by the separate
 | --- | --- | --- |
 | Schema-general reachability | M59 ships default-on single-character reachability for every current and future schema automatically on install. Final native behavior/performance authority is `443cc636`; browser/WASM/package closeout remains bound to `5fa986d8`, with manifest follow-up `07845e02`. | Execute M60 as formalism and static governance only: retain `version: m59-reach03-v1`; add `reachabilityFormalismVersion: m60-reachability-v1` and `reachabilityOptOuts: []`; and audit onboarding through production merge semantics. No shipped opt-out is currently approved. |
 | Native performance | The signed M59 Windows ceilings remain authoritative. Final Windows source `443cc636` passes `32/32` aggregate and `160/160` individual observations. The reviewed Mac packet at `0111cf47` is diagnostic and source-unmatched. | Keep the Windows ratchet unchanged. Any causal platform claim or optimization proposal needs fresh same-source, same-lane evidence and an identified structural owner. |
-| Native memory | Track A remains materially above same-run librime on Windows and macOS. M47's comments-intact TypeDuck/Jyutping keyboard profile remains complete for its Windows private/dirty proxy, not Apple `phys_footprint`. | Measure the correct platform counter and rank owners before selecting an implementation. Do not inherit a historical memory result across artifact versions. |
+| Native memory | Track A remains materially above same-run librime on Windows and macOS. M47's comments-intact TypeDuck/Jyutping keyboard profile remains complete for its Windows private/dirty proxy, not Apple `phys_footprint`. | After M60, review/finalize the M61 draft for the Windows native Track A lane. Reproduce the exact post-M60 source, rank non-overlapping owners, and run an owned-versus-byte-backed POET diagnostic before selecting one branch. Historical bytes are context only. |
 | Web harness | WEB03-11 is closed at clean source `ef485b10`: the exact Cloudflare build gate and source-pinned production canary passed. This is maintenance evidence, not a refresh of M59 browser authority or the browser peer lane. | Keep WEB03-11 fail-closed. Remeasure the same-schema peer lane before making new startup, memory, or resource-size claims. |
 | AI-native layer | M11/M13 proved a default-off local AI layer above the deterministic engine. | Keep AI outside the classic path unless a named experiment explicitly enables it and owns privacy, memory, and behavior evidence. |
 | Platform products | TypeDuck-Windows product/frontend work has transferred to `CanCLID/yune-windows`. | Bring back only a separately proposed engine, package, or profile-API requirement with oracle evidence and owning tests. |
@@ -66,9 +72,20 @@ TypeDuck-Windows product/frontend work is owned by the separate
    or export, schema/profile id, oracle fixture or capture, benchmark, signed
    threshold, browser surface, Windows product, or M61 allocation belongs in
    M60.
-3. **Re-rank future work after M60.** Any performance, browser, memory,
-   profile-storage, or AI slice needs a fresh plan and owner evidence; none is
-   implicitly scheduled here.
+3. **Review and finalize M61 after M60.** Bind the actual M60 closeout SHA, add
+   the provisional requirement IDs to traceability, independently review the
+   measurement/threshold contract, and keep the plan non-executable until
+   those gates pass.
+4. **Execute M61 only if the fresh baseline confirms an owner.** The sole
+   acceptance lane is Windows native Track A `luna_pinyin`. Begin with five
+   fixed-binary owned rounds. Run the five-round byte-backed diagnostic only
+   after one green exploratory byte-backed round; retain a production change
+   only if same-process Windows private bytes and named-owner evidence
+   corroborate the whole-process reduction and every unchanged signed row stays
+   green.
+5. **Re-rank other future work after M61.** Browser memory, Apple-device
+   validation, product-profile storage, schema-id migration, and AI remain
+   separate lanes requiring their own owner evidence and scope.
 
 Trigger-gated only: extracting the full processor pipeline from
 `yune-rime-api` into `yune-core` waits for a real non-ABI consumer. Do not open
@@ -118,10 +135,10 @@ for measurements and owner-ranked bottlenecks.
 <a id="closing-the-188-mb-native-track-a-memory-gap"></a>
 
 Historical M49–M55 work framed the native Track A memory problem as the
-"188 MB gap." That number is not a current target or portable counter. The
-remaining decision is current: measure the selected lane and platform, rank
-retained owners, and validate memory and CPU independently under the unchanged
-compatibility and performance gates. Historical outcomes remain in the
+"188 MB gap." That number is not a current target or portable counter. The M61
+draft deliberately replaces it with a fresh exact-source Windows baseline,
+owner reconciliation, and a predeclared reduction bar while keeping memory and
+CPU independently gated. Historical outcomes remain in the
 [`milestone ledger`](./ledgers/milestone-history.md); current numbers remain in
 the [`performance dashboard`](./reports/yune-vs-librime-performance.md#native-startup-session-and-memory).
 
@@ -152,8 +169,9 @@ acceptance authorities.
 
 - **Apple-device memory validation:** measure M47's portable product profile
   with Apple `phys_footprint` in a real host when that platform lane is opened.
-- **Owner-ranked native memory polish:** RED-09/10/11-style asset/profile,
-  allocator, or startup work requires a new measurement and scoped plan.
+- **M47 product-profile memory polish:** RED-09/10/11-style asset/profile,
+  allocator, or keyboard-startup work remains separate from the queued M61
+  Track A plan and requires fresh product-lane ownership.
 - **Browser fair-lane work:** refresh the same-schema peer lane before choosing
   a startup, WASM-memory, or encoded-resource owner.
 - **TypeDuck profile storage or schema-id migration:** require explicit scope,

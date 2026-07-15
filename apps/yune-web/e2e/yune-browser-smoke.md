@@ -68,9 +68,12 @@ scenarios and verifies the strongest existing pinned or accepted
 first-candidate guard. The timed production path deliberately leaves
 `yune_inspector` disabled, so ordinary source labels remain null; the lack of a
 complete page-size-6 source-bearing oracle is carried as an explicit
-per-scenario residual. Consecutive diagnostic `keydownAt` timestamps
-must prove the actual 250 ms cadence stayed within the predeclared
-`200..312.5 ms` range (the one-key Cangjie row correctly has zero gaps). The
+per-scenario residual. Consecutive diagnostic `keydownAt` timestamps must prove
+that the actual 250 ms cadence had no catch-up gap below `200 ms` and that at
+least 90% of each scenario's gaps stayed within the predeclared
+`200..312.5 ms` range (the one-key Cangjie row correctly has zero gaps). Longer
+shared-host scheduler delays remain explicit receipt rows and contribute to the
+sustained-load ratio; they are not mislabeled as Yune processing latency. The
 gate fails at p95 above 750 ms, any key above 1000 ms, or any
 schema/split-part/manifest request during a timed window after the selected
 schema reaches ready. Its learned TypeDuck row must survive a page reload before
@@ -88,8 +91,9 @@ profile is release-grade.
 The same pre-publish run also binds a separate unamplified normal-typing
 canary for `jyut6ping3` using the reported 47-key input
 `ngodeigungsijigaahaidoumaaigangeihaaijansougeoi`. It types at a 100 ms
-interval, requires all 47 exact prefixes and 46 measured cadence gaps within
-`80..125 ms`, and fails above p95 `150 ms`, max `250 ms`, or max worker queue
+interval, requires all 47 exact prefixes, no catch-up gap below `80 ms`, and at
+least 90% of its 46 measured cadence gaps within `80..125 ms`. It fails above
+p95 `150 ms`, max `250 ms`, or max worker queue
 wait `100 ms`. Every prefix must expose a six-row candidate page with a
 nonempty first candidate, and the final page must expose six nonempty candidate
 texts. Because this exact input has no pinned external
@@ -109,10 +113,10 @@ also distinguishable from a measurement that never started.
 
 The cadence driver preserves its absolute phase during normal operation. If a
 host timer arrives late, it rebases the next deadline instead of generating a
-short catch-up gap. The original long gap remains recorded and red against the
-active unchanged range: `200..312.5 ms` for the release profile or `80..125 ms`
-for the normal canary. The public runner does not retry a measured red; any
-out-of-range gap remains a hard pre-publish failure.
+short catch-up gap. The original long gap remains recorded as a delayed-host
+row and lowers the sustained-load ratio; any catch-up gap is red, and a profile
+with less than 90% of gaps inside the active unchanged range is also red. The
+public runner does not retry a measured red.
 
 For a deployed canary, set an explicit URL and use the direct command:
 

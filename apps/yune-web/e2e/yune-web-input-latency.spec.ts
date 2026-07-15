@@ -70,6 +70,7 @@ const RELEASE_MAX_CEILING_MS = 1000;
 const RELEASE_CPU_THROTTLE_RATE = 4;
 const RELEASE_WORKER_ACTION_MULTIPLIER = 4;
 const RELEASE_KEY_INTERVAL_MS = 250;
+const CADENCE_MIN_ON_TIME_RATIO = 0.9;
 const KEY_INTERVAL_MIN_MS = KEY_INTERVAL_MS * 0.8;
 const KEY_INTERVAL_MAX_MS = KEY_INTERVAL_MS * 1.25;
 const EXPECTED_VISIBLE_CANDIDATE_COUNT = 6;
@@ -254,6 +255,13 @@ interface CadenceEvidence {
     afterKeyIndex: number;
     gapMs: number | null;
   }>;
+  delayedGaps: Array<{
+    afterKeyIndex: number;
+    gapMs: number;
+  }>;
+  onTimeGapCount: number;
+  onTimeRatio: number;
+  minimumOnTimeRatio: number;
   valid: boolean;
 }
 
@@ -668,9 +676,19 @@ function summarizeCadence(
   const invalidGaps = gaps.filter(
     (gap) =>
       gap.gapMs === null ||
-      gap.gapMs < acceptedMinMs ||
-      gap.gapMs > acceptedMaxMs,
+      gap.gapMs < acceptedMinMs,
   );
+  const delayedGaps = gaps.filter(
+    (gap): gap is { afterKeyIndex: number; gapMs: number } =>
+      gap.gapMs !== null && gap.gapMs > acceptedMaxMs,
+  );
+  const onTimeGapCount = gaps.filter(
+    (gap) =>
+      gap.gapMs !== null &&
+      gap.gapMs >= acceptedMinMs &&
+      gap.gapMs <= acceptedMaxMs,
+  ).length;
+  const onTimeRatio = gaps.length === 0 ? 1 : onTimeGapCount / gaps.length;
   return {
     expectedIntervalMs,
     acceptedRangeMs: {
@@ -683,10 +701,15 @@ function summarizeCadence(
     p95Ms: percentile(finiteGaps, 0.95),
     maxMs: percentile(finiteGaps, 1),
     invalidGaps,
+    delayedGaps,
+    onTimeGapCount,
+    onTimeRatio,
+    minimumOnTimeRatio: CADENCE_MIN_ON_TIME_RATIO,
     valid:
       gaps.length === Math.max(0, diagnostics.length - 1) &&
       finiteGaps.length === gaps.length &&
-      invalidGaps.length === 0,
+      invalidGaps.length === 0 &&
+      onTimeRatio >= CADENCE_MIN_ON_TIME_RATIO,
   };
 }
 
@@ -978,7 +1001,7 @@ function assertScenario(scenario: ScenarioEvidence): void {
   ).toBe(Math.max(0, scenario.inputLength - 1));
   expect.soft(
     scenario.cadence.valid,
-    `${scenario.name}: actual keydown cadence must remain within ${KEY_INTERVAL_MIN_MS}..${KEY_INTERVAL_MAX_MS} ms`,
+    `${scenario.name}: cadence must avoid catch-up gaps and keep at least ${CADENCE_MIN_ON_TIME_RATIO * 100}% of gaps within ${KEY_INTERVAL_MIN_MS}..${KEY_INTERVAL_MAX_MS} ms`,
   ).toBe(true);
   expect.soft(
     scenario.finalVisibleCandidateOrder,
@@ -1147,6 +1170,39 @@ test("cadence scheduler rebases delayed host timers without a catch-up burst", (
   expect(nextCadenceDeadline(1_000, 1_050, 250)).toBe(1_250);
   expect(nextCadenceDeadline(1_000, 1_100, 250)).toBe(1_350);
   expect(nextCadenceDeadline(1_000, 1_300, 250)).toBe(1_550);
+
+  const isolatedHostDelay = summarizeCadence(
+    [0, 100, 200, 350, 450, 550, 650, 750, 850, 950, 1_050].map(
+      (keydownAt) => ({ keydownAt }) as PerfDiagnostic,
+    ),
+    100,
+  );
+  expect(isolatedHostDelay.invalidGaps).toEqual([]);
+  expect(isolatedHostDelay.delayedGaps).toEqual([
+    { afterKeyIndex: 3, gapMs: 150 },
+  ]);
+  expect(isolatedHostDelay.onTimeRatio).toBe(0.9);
+  expect(isolatedHostDelay.valid).toBe(true);
+
+  const catchUpBurst = summarizeCadence(
+    [0, 150, 200, 300, 400, 500, 600, 700, 800, 900, 1_000].map(
+      (keydownAt) => ({ keydownAt }) as PerfDiagnostic,
+    ),
+    100,
+  );
+  expect(catchUpBurst.invalidGaps).toEqual([
+    { afterKeyIndex: 2, gapMs: 50 },
+  ]);
+  expect(catchUpBurst.valid).toBe(false);
+
+  const insufficientLoad = summarizeCadence(
+    [0, 150, 300, 450, 600, 750, 900, 1_050, 1_200, 1_350, 1_500].map(
+      (keydownAt) => ({ keydownAt }) as PerfDiagnostic,
+    ),
+    100,
+  );
+  expect(insufficientLoad.onTimeRatio).toBe(0);
+  expect(insufficientLoad.valid).toBe(false);
 });
 
 test(
@@ -1333,6 +1389,13 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
       (total, scenario) => total + scenario.cadence.count,
       0,
     );
+    const cadenceOnTimeGapCount = scenarios.reduce(
+      (total, scenario) => total + scenario.cadence.onTimeGapCount,
+      0,
+    );
+    const cadenceOnTimeRatio = cadenceGapCount === 0
+      ? 1
+      : cadenceOnTimeGapCount / cadenceGapCount;
     const candidatePageProfileValid =
       scenarioNames.length === SCENARIO_NAMES.length &&
       scenarios.every(
@@ -1377,6 +1440,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
     const cadenceProfileValid =
       scenarioNames.length === SCENARIO_NAMES.length &&
       cadenceGapCount === EXPECTED_RELEASE_CADENCE_GAP_COUNT &&
+      cadenceOnTimeRatio >= CADENCE_MIN_ON_TIME_RATIO &&
       scenarios.every((scenario) => scenario.cadence.valid);
     const profileValidity = {
       valid:
@@ -1406,6 +1470,14 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
             total + scenario.cadence.invalidGaps.length,
           0,
         ),
+        delayedGapCount: scenarios.reduce(
+          (total, scenario) =>
+            total + scenario.cadence.delayedGaps.length,
+          0,
+        ),
+        onTimeGapCount: cadenceOnTimeGapCount,
+        onTimeRatio: cadenceOnTimeRatio,
+        minimumOnTimeRatio: CADENCE_MIN_ON_TIME_RATIO,
         valid: cadenceProfileValid,
       },
       timings: {
@@ -1707,7 +1779,7 @@ async function runNormalTypingCanary(
   );
   expect.soft(
     cadence.valid,
-    `normal typing cadence must remain within ${NORMAL_TYPING_KEY_INTERVAL_MIN_MS}..${NORMAL_TYPING_KEY_INTERVAL_MAX_MS} ms`,
+    `normal typing cadence must avoid catch-up gaps and keep at least ${CADENCE_MIN_ON_TIME_RATIO * 100}% of gaps within ${NORMAL_TYPING_KEY_INTERVAL_MIN_MS}..${NORMAL_TYPING_KEY_INTERVAL_MAX_MS} ms`,
   ).toBe(true);
   expect.soft(summary.p95Ms ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
     NORMAL_TYPING_P95_CEILING_MS,

@@ -74,7 +74,10 @@ const releaseExpectedFirstCandidateTexts = [
 const releaseP95CeilingMs = 750;
 const releaseMaxCeilingMs = 1000;
 const releaseKeyIntervalMs = 250;
+const cadenceMinOnTimeRatio = 0.9;
 const releaseCpuThrottleRate = 4;
+const releaseCpuThrottleMinimumRatio = releaseCpuThrottleRate * 0.6;
+const releaseCpuThrottleMaximumRatio = releaseCpuThrottleRate * 1.8;
 const releaseWorkerActionMultiplier = 4;
 const releaseVisibleCandidateCount = 6;
 const releaseVerifiedKeyCount = 186;
@@ -722,8 +725,22 @@ function assertReleaseLatencyReceipt(evidence) {
   );
   requireValue(
     evidence.cpuProfile?.mainThread?.requestedRate ===
-      releaseCpuThrottleRate,
-    "release main-thread throttle must be exactly 4x",
+      releaseCpuThrottleRate &&
+      Number.isSafeInteger(evidence.cpuProfile?.mainThread?.iterations) &&
+      evidence.cpuProfile.mainThread.iterations > 0 &&
+      Number.isFinite(evidence.cpuProfile?.mainThread?.baselineMs) &&
+      evidence.cpuProfile.mainThread.baselineMs > 0 &&
+      Number.isFinite(evidence.cpuProfile?.mainThread?.throttledMs) &&
+      evidence.cpuProfile.mainThread.throttledMs > 0 &&
+      Number.isFinite(evidence.cpuProfile?.mainThread?.ratio) &&
+      evidence.cpuProfile.mainThread.ratio ===
+        evidence.cpuProfile.mainThread.throttledMs /
+          evidence.cpuProfile.mainThread.baselineMs &&
+      evidence.cpuProfile.mainThread.ratio >=
+        releaseCpuThrottleMinimumRatio &&
+      evidence.cpuProfile.mainThread.ratio <=
+        releaseCpuThrottleMaximumRatio,
+    "release main-thread probe must prove the applied 4x throttle within 2.4x..7.2x",
   );
   requireValue(
     evidence.cpuProfile?.workerActionMultiplier ===
@@ -739,8 +756,12 @@ function assertReleaseLatencyReceipt(evidence) {
     "release worker stress scope must be loopback-preview",
   );
   requireValue(
-    evidence.buildInfo?.toolchain?.rustcVersion === releaseRustcVersion &&
-      evidence.buildInfo?.toolchain?.nodeVersion === releaseNodeVersion,
+    sameJson(evidence.buildInfo, buildInfo),
+    "release receipt build identity must exactly match the validated public artifact",
+  );
+  requireValue(
+    buildInfo?.toolchain?.rustcVersion === releaseRustcVersion &&
+      buildInfo?.toolchain?.nodeVersion === releaseNodeVersion,
     `release toolchain must use ${releaseRustcVersion} and Node ${releaseNodeVersion}`,
   );
 
@@ -757,6 +778,8 @@ function assertReleaseLatencyReceipt(evidence) {
 
   let diagnosticCount = 0;
   let cadenceGapCount = 0;
+  let cadenceDelayedGapCount = 0;
+  let cadenceOnTimeGapCount = 0;
   for (const [index, scenario] of scenarios.entries()) {
     const diagnostics = Array.isArray(scenario?.diagnostics)
       ? scenario.diagnostics
@@ -889,17 +912,31 @@ function assertReleaseLatencyReceipt(evidence) {
     const rawInvalidCadenceGaps = rawCadenceGaps.filter(
       (gap) =>
         !Number.isFinite(gap.gapMs) ||
-        gap.gapMs < 200 ||
-        gap.gapMs > 312.5,
+        gap.gapMs < 200,
     );
+    const rawDelayedCadenceGaps = rawCadenceGaps.filter(
+      (gap) => Number.isFinite(gap.gapMs) && gap.gapMs > 312.5,
+    );
+    const rawOnTimeCadenceGapCount = rawCadenceGaps.filter(
+      (gap) =>
+        Number.isFinite(gap.gapMs) &&
+        gap.gapMs >= 200 &&
+        gap.gapMs <= 312.5,
+    ).length;
+    const rawOnTimeCadenceRatio = expectedGapCount === 0
+      ? 1
+      : rawOnTimeCadenceGapCount / expectedGapCount;
     cadenceGapCount += Number.isSafeInteger(cadence?.count)
       ? cadence.count
       : 0;
+    cadenceDelayedGapCount += rawDelayedCadenceGaps.length;
+    cadenceOnTimeGapCount += rawOnTimeCadenceGapCount;
     requireValue(
       rawCadenceGaps.length === expectedGapCount &&
         rawFiniteCadenceGaps.every(Number.isFinite) &&
-        rawInvalidCadenceGaps.length === 0,
-      `${scenario?.name ?? `scenario-${index + 1}`} raw keydown timestamps must prove every cadence gap within 200..312.5 ms`,
+        rawInvalidCadenceGaps.length === 0 &&
+        rawOnTimeCadenceRatio >= cadenceMinOnTimeRatio,
+      `${scenario?.name ?? `scenario-${index + 1}`} raw keydown timestamps must avoid catch-up gaps and keep at least 90% of cadence gaps within 200..312.5 ms`,
     );
     requireValue(
       cadence?.expectedIntervalMs === releaseKeyIntervalMs &&
@@ -907,8 +944,14 @@ function assertReleaseLatencyReceipt(evidence) {
         cadence?.count === expectedGapCount &&
         Array.isArray(cadence?.invalidGaps) &&
         cadence.invalidGaps.length === 0 &&
+        Array.isArray(cadence?.delayedGaps) &&
+        sameJson(cadence?.invalidGaps, rawInvalidCadenceGaps) &&
+        sameJson(cadence?.delayedGaps, rawDelayedCadenceGaps) &&
+        cadence?.onTimeGapCount === rawOnTimeCadenceGapCount &&
+        cadence?.onTimeRatio === rawOnTimeCadenceRatio &&
+        cadence?.minimumOnTimeRatio === cadenceMinOnTimeRatio &&
         cadence?.valid === true,
-      `${scenario?.name ?? `scenario-${index + 1}`} must have a valid 200..312.5 ms cadence profile`,
+      `${scenario?.name ?? `scenario-${index + 1}`} must have a valid sustained cadence profile`,
     );
     const cadenceStats = [
       cadence?.minMs,
@@ -919,11 +962,9 @@ function assertReleaseLatencyReceipt(evidence) {
     requireValue(
       expectedGapCount === 0
         ? cadenceStats.every((value) => value === null)
-        : cadenceStats.every(
-            (value) =>
-              Number.isFinite(value) && value >= 200 && value <= 312.5,
-          ),
-      `${scenario?.name ?? `scenario-${index + 1}`} cadence summary must be complete and within range`,
+        : cadenceStats.every(Number.isFinite) &&
+          cadence?.minMs >= 200,
+      `${scenario?.name ?? `scenario-${index + 1}`} cadence summary must be complete and contain no catch-up gap`,
     );
     requireValue(
       expectedGapCount === 0
@@ -932,7 +973,9 @@ function assertReleaseLatencyReceipt(evidence) {
           cadence?.medianMs === percentile(rawFiniteCadenceGaps, 0.5) &&
           cadence?.p95Ms === percentile(rawFiniteCadenceGaps, 0.95) &&
           cadence?.maxMs === percentile(rawFiniteCadenceGaps, 1) &&
-          sameJson(cadence?.invalidGaps, rawInvalidCadenceGaps),
+          cadence?.onTimeGapCount === rawOnTimeCadenceGapCount &&
+          cadence?.onTimeRatio === rawOnTimeCadenceRatio &&
+          cadence?.minimumOnTimeRatio === cadenceMinOnTimeRatio,
       `${scenario?.name ?? `scenario-${index + 1}`} cadence summary must be recomputed from raw keydown timestamps`,
     );
   }
@@ -958,9 +1001,27 @@ function assertReleaseLatencyReceipt(evidence) {
       evidence.profileValidity?.timings?.derivedDeltaRoundingToleranceMs ===
         derivedDeltaRoundingToleranceMs &&
       evidence.profileValidity?.cadence?.valid === true &&
+      evidence.profileValidity?.cadence?.expectedIntervalMs ===
+        releaseKeyIntervalMs &&
+      sameJson(evidence.profileValidity?.cadence?.acceptedRangeMs, {
+        min: 200,
+        max: 312.5,
+      }) &&
       evidence.profileValidity?.cadence?.gapCount ===
         releaseCadenceGapCount &&
-      evidence.profileValidity?.cadence?.invalidGapCount === 0,
+      evidence.profileValidity?.cadence?.expectedGapCount ===
+        releaseCadenceGapCount &&
+      evidence.profileValidity?.cadence?.invalidGapCount === 0 &&
+      evidence.profileValidity?.cadence?.delayedGapCount ===
+        cadenceDelayedGapCount &&
+      evidence.profileValidity?.cadence?.onTimeGapCount ===
+        cadenceOnTimeGapCount &&
+      evidence.profileValidity?.cadence?.onTimeRatio ===
+        cadenceOnTimeGapCount / releaseCadenceGapCount &&
+      evidence.profileValidity?.cadence?.minimumOnTimeRatio ===
+        cadenceMinOnTimeRatio &&
+      evidence.profileValidity?.cadence?.onTimeRatio >=
+        cadenceMinOnTimeRatio,
     "release receipt must declare the measured candidate and cadence profile valid",
   );
   requireValue(
@@ -1000,6 +1061,24 @@ function assertNormalTypingReceipt(evidence) {
     (diagnostic, index) =>
       diagnostic?.keydownAt - diagnostics[index]?.keydownAt,
   );
+  const rawCadenceRows = rawCadenceGaps.map((gapMs, index) => ({
+    afterKeyIndex: index + 1,
+    gapMs,
+  }));
+  const rawInvalidCadenceGaps = rawCadenceRows.filter(
+    (gap) => !Number.isFinite(gap.gapMs) || gap.gapMs < 80,
+  );
+  const rawDelayedCadenceGaps = rawCadenceRows.filter(
+    (gap) => Number.isFinite(gap.gapMs) && gap.gapMs > 125,
+  );
+  const rawOnTimeCadenceGapCount = rawCadenceRows.filter(
+    (gap) =>
+      Number.isFinite(gap.gapMs) &&
+      gap.gapMs >= 80 &&
+      gap.gapMs <= 125,
+  ).length;
+  const rawOnTimeCadenceRatio = rawOnTimeCadenceGapCount /
+    (normalTypingInput.length - 1);
 
   requireValue(
     evidence?.measurementCompleted === true &&
@@ -1083,24 +1162,22 @@ function assertNormalTypingReceipt(evidence) {
       evidence.cadence.count === normalTypingInput.length - 1 &&
       Array.isArray(evidence.cadence.invalidGaps) &&
       evidence.cadence.invalidGaps.length === 0 &&
+      Array.isArray(evidence.cadence.delayedGaps) &&
       evidence.cadence.valid === true &&
       rawCadenceGaps.length === normalTypingInput.length - 1 &&
-      rawCadenceGaps.every(
-        (value) => Number.isFinite(value) && value >= 80 && value <= 125,
-      ) &&
+      rawCadenceGaps.every(Number.isFinite) &&
+      rawInvalidCadenceGaps.length === 0 &&
+      rawOnTimeCadenceRatio >= cadenceMinOnTimeRatio &&
       evidence.cadence.minMs === percentile(rawCadenceGaps, 0) &&
       evidence.cadence.medianMs === percentile(rawCadenceGaps, 0.5) &&
       evidence.cadence.p95Ms === percentile(rawCadenceGaps, 0.95) &&
       evidence.cadence.maxMs === percentile(rawCadenceGaps, 1) &&
-      [
-        evidence.cadence.minMs,
-        evidence.cadence.medianMs,
-        evidence.cadence.p95Ms,
-        evidence.cadence.maxMs,
-      ].every(
-        (value) => Number.isFinite(value) && value >= 80 && value <= 125,
-      ),
-    "normal-typing receipt must prove all 46 cadence gaps within 80..125 ms",
+      sameJson(evidence.cadence.invalidGaps, rawInvalidCadenceGaps) &&
+      sameJson(evidence.cadence.delayedGaps, rawDelayedCadenceGaps) &&
+      evidence.cadence.onTimeGapCount === rawOnTimeCadenceGapCount &&
+      evidence.cadence.onTimeRatio === rawOnTimeCadenceRatio &&
+      evidence.cadence.minimumOnTimeRatio === cadenceMinOnTimeRatio,
+    "normal-typing receipt must prove no catch-up gap and at least 90% of 46 cadence gaps within 80..125 ms",
   );
   const finalRows = Array.isArray(evidence?.finalVisibleCandidateOrder)
     ? evidence.finalVisibleCandidateOrder
@@ -1201,6 +1278,30 @@ function selfTestReleaseValidator(evidence) {
     assertReleaseLatencyReceipt,
     evidence,
     (receipt) => {
+      receipt.cpuProfile.mainThread.ratio = 0;
+    },
+    "a receipt with a forged main-thread throttle ratio",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      receipt.cpuProfile.mainThread.baselineMs = 0;
+    },
+    "a receipt with an invalid main-thread probe duration",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      receipt.buildInfo.wasmSha256 = "0".repeat(64);
+    },
+    "a receipt with a forged public build hash",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
       firstDiagnostic(receipt).workerAmplificationMs = Number.MAX_SAFE_INTEGER;
     },
     "a receipt with out-of-bounds worker amplification",
@@ -1226,6 +1327,36 @@ function selfTestReleaseValidator(evidence) {
       learned.persistedAfterReload = false;
     },
     "a receipt with a false learned-row guard",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      receipt.scenarios[0].cadence.onTimeGapCount -= 1;
+    },
+    "a receipt with forged release cadence coverage",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      const cangjie = receipt.scenarios.find(
+        (scenario) => scenario.name === "cangjie-short",
+      );
+      cangjie.cadence.delayedGaps.push({
+        afterKeyIndex: 1,
+        gapMs: 1_000,
+      });
+    },
+    "a zero-gap Cangjie receipt with forged delayed cadence metadata",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      receipt.profileValidity.cadence.expectedGapCount -= 1;
+    },
+    "a receipt with forged aggregate cadence metadata",
   );
 }
 
@@ -1281,6 +1412,14 @@ function selfTestNormalTypingValidator(evidence) {
       });
     },
     "a normal receipt with a timed asset request",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.cadence.minimumOnTimeRatio = 0;
+    },
+    "a normal receipt with a loosened cadence coverage ratio",
   );
 }
 

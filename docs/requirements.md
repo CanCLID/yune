@@ -155,7 +155,7 @@ requirement is covered for the current v1.1.2 oracle slices; captured Cantonese
 engine fixtures are active, and the M10 T3 smoke now proves key input/output
 through the native TypeDuck-Windows/weasel IPC path. This T3 proof is a stock
 server/client IPC smoke, not an interactive TSF typing or visible panel
-rendering smoke; those move to the Phase 2 Windows product/frontend track.
+rendering smoke; those are owned by the dedicated Windows Yune repository.
 These requirements target that native path and no longer define Yune's active
 core oracle milestone.
 
@@ -165,7 +165,7 @@ core oracle milestone.
 - [x] **WIN-COMMENT-01**: Candidate comment semantics match the v1.1.2 oracle for dictionary lookup payloads, reverse lookup joins, and prompt/schema identity. Dictionary lookup payload bytes, schema-prompt bytes, and reverse-lookup joiner coverage are oracle-backed.
 - [x] **WIN-BUILD-01**: Yune produces a current TypeDuck-profile native Windows package (`rime.dll`, import `.lib`, upstream-shaped default headers, and `rime_typeduck_profile_api.h`) and the package script loads the packaged DLL through `rime_get_typeduck_profile_api()`.
 - [x] **WIN-PARITY-01**: Cantonese/Jyutping parity regression coverage locks the captured v1.1.2 engine behavior in active `cantonese_parity` tests; schema-menu/userdb observations remain frontend/T3 evidence limits.
-- [x] **WIN-FRONTEND-01**: TypeDuck-Windows builds/links against the Yune package and passes a stock real-server IPC smoke. Stock `TypeDuckServer.exe` starts from `output\`, loads packaged Yune `output\rime.dll`, and stock `TestTypeDuckIPC.exe /console` returns a nonzero session, sends `ngohaig` key events, and receives `status.schema_id=jyut6ping3` plus candidate/context data. Tracked evidence: `docs/plans/completed/m10-evidence/t3-stock-real-server/`. Caveat: interactive TSF typing, visible candidate-window rendering, and candidate-panel UI behavior are deferred to the Phase 2 Windows product/frontend track.
+- [x] **WIN-FRONTEND-01**: TypeDuck-Windows builds/links against the Yune package and passes a stock real-server IPC smoke. Stock `TypeDuckServer.exe` starts from `output\`, loads packaged Yune `output\rime.dll`, and stock `TestTypeDuckIPC.exe /console` returns a nonzero session, sends `ngohaig` key events, and receives `status.schema_id=jyut6ping3` plus candidate/context data. Tracked evidence: `docs/plans/completed/m10-evidence/t3-stock-real-server/`. Caveat: the dedicated Windows Yune repository owns interactive TSF typing, visible candidate-window rendering, and candidate-panel UI behavior.
 
 ## WEB-02 Jyutping WASM Memory Attribution Requirements
 
@@ -207,10 +207,10 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 - **PLUGIN-01**: Yune can load or adapt librime C++ plugin ABI extensions.
 - **PLUGIN-02**: Lua, dynamic octagram plugin loading, predict, proto, and other distribution plugin ecosystems have migration paths.
 
-### Product Frontend
+### Product Frontend (transferred)
 
-- **FRONTEND-01**: Yune ships a new graphical end-user frontend.
-- **FRONTEND-02**: Yune-specific UI features expose optional AI ranking and contextual completion controls.
+- **FRONTEND-01 (transferred)**: The dedicated Windows Yune repository owns a new graphical Windows end-user frontend. This engine repository owns only explicit package/API requirements brought back with an accepted proposal and tests.
+- **FRONTEND-02 (Windows/native transfer)**: `CanCLID/yune-windows` owns optional AI ranking and contextual-completion UI in the Windows product. The active repo-local M32 plan separately owns any future `yune-web` AI product surface. Any new native host-context, privacy, or ABI surface requires a separate engine proposal here.
 
 ### iOS Keyboard Developer Track
 
@@ -231,7 +231,7 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 
 ## M13 AI-native Frontend Exposure Requirements
 
-**Status: complete for TypeDuck-Web.** M13 exposes the M11 local AI layer through TypeDuck-Web only, default-off and local-first, with the key path still provider-free. Additional native frontend exposure remains future work.
+**Status: complete for TypeDuck-Web.** M13 exposes the M11 local AI layer through TypeDuck-Web only, default-off and local-first, with the key path still provider-free. Native product UI exposure belongs to its product repository; any new Yune host-context, privacy, or ABI requirement remains separate engine work.
 
 - [x] **M13-AI-01**: `yune_typeduck_process_key` remains provider-free and classic-first; AI provider work runs only through the second-pass `yune_typeduck_stage_ai` path.
 - [x] **M13-AI-02**: Browser AI is default-off, can be toggled without redeploy, and `set_ai_enabled(false)` clears any staged result for the current input.
@@ -1829,7 +1829,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WIN-COMMENT-01 | Phase 14 / 17 | Complete - dictionary payload, schema prompt, and joiner oracle covered |
 | WIN-BUILD-01 | Phase 15 / M10 | Complete - current TypeDuck-profile package/header smoke and packaged DLL profile lifecycle pass |
 | WIN-PARITY-01 | Phase 16 / M10 | Complete - captured v1.1.2 engine behavior is active; frontend-only schema-menu/userdb observations remain T3 evidence scope |
-| WIN-FRONTEND-01 | M10 | Complete - T1 build/link and stock T3 TypeDuckServer/TestTypeDuckIPC real-server IPC smoke pass against the Yune package; interactive TSF typing and visible candidate-panel rendering are Phase 2 frontend gates |
+| WIN-FRONTEND-01 | M10 | Complete - T1 build/link and stock T3 TypeDuckServer/TestTypeDuckIPC real-server IPC smoke pass against the Yune package; the dedicated `CanCLID/yune-windows` repository owns interactive TSF typing and visible candidate-panel rendering |
 | P2-WIN02-BOUNDARY-01 | P2-WIN-02 | Complete - Phase 0C `ngohaig` fixture and provenance are checked in |
 | P2-WIN02-BOUNDARY-02 | P2-WIN-02 | Complete - core and ABI tests assert TypeDuck `\f\r1,` rich comments |
 | P2-WIN02-BOUNDARY-03 | P2-WIN-02 | Complete - compiled lookup records and deployment side-dictionary rebuild are covered |
@@ -2267,4 +2267,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-13 - M59 remains complete under full Path A at 11/11 requirements. WEB03-11 is a separate active post-M59 browser-latency guard and clean-checkout native-gate corrective pending its first clean source-current binding run; its scope covers all public schemas, Luna 37/59, historical long Jyutping, and learned TypeDuck state without projecting new browser evidence onto the `5fa986d8` M59 receipt boundary. The historical 4a class-3 disposition remains unchanged and unused by final Lane A._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-14 - M59 remains complete under full Path A at 11/11 requirements. WEB03-11 is a separate active post-M59 browser-latency guard and clean-checkout native-gate corrective pending its first clean source-current binding run; its scope covers all public schemas, Luna 37/59, historical long Jyutping, and learned TypeDuck state without projecting new browser evidence onto the `5fa986d8` M59 receipt boundary. The historical 4a class-3 disposition remains unchanged and unused by final Lane A. D-49 transfers Windows TSF and product/frontend requirements to `CanCLID/yune-windows` while retaining Yune's engine/package/profile-API contract here._

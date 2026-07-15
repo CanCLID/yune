@@ -1,8 +1,18 @@
 # P2-WIN-01 TypeDuck-Windows Next Product Plan
 
-> **Status:** Draft / external review incorporated; P2-WIN-02 boundary closed and TSF input-delivery blocker classified - **Track:** Phase 2 Windows frontend product - **Created:** 2026-06-21 - **Updated:** 2026-06-22 - **Type:** strategy and execution-gate plan
+> **Status:** Superseded · **Milestone:** P2-WIN-01 (TypeDuck-Windows product track) · **Closed:** 2026-07-14 · **Type:** execution plan
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+> **Repository transfer:** Windows product/frontend execution now belongs to
+> [`CanCLID/yune-windows`](https://github.com/CanCLID/yune-windows). This
+> document is retained only as the
+> historical architecture, investigation, and handoff record. Its unchecked
+> TSF shell, candidate UI, settings, installer, diagnostics, and Windows product
+> evidence tasks are not active Yune-repository work. This repository continues
+> to own the engine/package boundary, upstream-shaped default ABI, named
+> TypeDuck profile API, oracle fixtures, and any separately reviewed engine or
+> API proposal requested by the Windows product.
 
 **Goal:** Build a modern Windows IME product for TypeDuck that uses Yune as the only runtime engine, while making an explicit repo/architecture decision before large implementation work starts.
 
@@ -54,6 +64,11 @@ The repo direction should be **decision-gated**, with this default bias:
 3. **Use a hybrid extraction path if needed.** Start a fresh repo, but transplant or adapt the smallest proven slices of `WeaselTSF`, `WeaselServer`, `WeaselIPC`, installer registration, smoke harnesses, and caret/candidate-window positioning until a native Yune-first shell is stable. Keep old UI/settings design out unless it earns its place.
 4. **Continue in the existing repo only if audit proves extraction is riskier than in-place modernization.** In-place work is acceptable if it is the fastest route to a shippable Yune-only Windows IME, but it should still delete librime fallback assumptions and old architecture debt as explicit milestones.
 
+**Final repository disposition (2026-07-14):** resolved in favor of the
+dedicated [`CanCLID/yune-windows`](https://github.com/CanCLID/yune-windows)
+repository. The decision-gated discussion below is preserved as historical
+reasoning, not as an open Yune-repository choice.
+
 ## Platform Stack Notes
 
 - Microsoft TSF is the official Windows text-service framework for IMEs and language input services; the actual IME boundary should treat TSF as the platform contract.
@@ -84,6 +99,10 @@ The repo direction should be **decision-gated**, with this default bias:
 **Acceptance gate:** A reviewer can see whether the existing TypeDuck-Windows platform shell can already dogfood Yune interactively, before any fresh-repo or extraction decision is made.
 
 ### Phase 0B - Audit, Process Model, And Repo Decision
+
+**Transfer status:** The repository-location decision is complete:
+`CanCLID/yune-windows` owns the active Windows plans. The unchecked audit items
+below are retained as historical handoff context and are not open tasks here.
 
 **Goal:** Decide fresh repo, existing repo, or hybrid extraction with evidence.
 
@@ -130,7 +149,7 @@ The repo direction should be **decision-gated**, with this default bias:
 
 ### Phase 0C - Boundary Crash Diagnosis
 
-**Status:** Completed as diagnosis in the TypeDuck-Windows repo. Follow-up implementation completed in Yune [`p2-win02-plan-typeduck-boundary-compat.md`](../completed/p2-win02-plan-typeduck-boundary-compat.md).
+**Status:** Completed as diagnosis in the TypeDuck-Windows repo. Follow-up implementation completed in Yune [`p2-win02-plan-typeduck-boundary-compat.md`](./p2-win02-plan-typeduck-boundary-compat.md).
 
 **Goal:** Localize the interactive Notepad crash before any rewrite or product spike hides the real compatibility problem.
 
@@ -257,7 +276,11 @@ The repo direction should be **decision-gated**, with this default bias:
 
 **Acceptance gate:** The product can be dogfooded as a daily IME with known issues documented and no critical install/uninstall or text-entry failures.
 
-## Repo Decision Matrix
+## Historical Repo Decision Matrix (resolved)
+
+**Resolution:** Select the dedicated
+[`CanCLID/yune-windows`](https://github.com/CanCLID/yune-windows) repository.
+The matrix records the earlier alternatives and tradeoffs.
 
 | Choice | Choose when | Avoid when |
 | --- | --- | --- |
@@ -283,7 +306,10 @@ The second external review of the Phase 0A/0B deliverables endorsed the process 
 - Phase 0C is now complete in TypeDuck-Windows and classified the original blocker as a Yune TypeDuck-profile compatibility/boundary bug. P2-WIN-02 completed that Yune-side fix and IPC proof, then approved TSF reruns classified the remaining raw-ASCII behavior as non-Yune TSF input-delivery/frontend-shell work.
 - Re-evaluate the repo decision before temporary TSF shell/input-delivery work in the old repo becomes permanent.
 
-## Open Questions For Review
+## Questions Transferred To The Windows Repository
+
+These product decisions are owned by `CanCLID/yune-windows`; they are not open
+Yune engine-repository requirements.
 
 - Exactly how much of the existing server/IPC wire protocol should survive unchanged versus be narrowed for a Yune-only host?
 - Can WebView2 host the M24 settings/dictionary UI without unacceptable installer, runtime, accessibility, or security cost?

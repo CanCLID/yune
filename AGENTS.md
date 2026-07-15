@@ -34,10 +34,13 @@ TypeDuck profile split).
   smoke through the named TypeDuck profile ABI and the M24 historical
   TypeDuck-Web-derived dogfooding/demo-hardening batch. Future `yune-web`
   dogfood reports should start a new scoped plan rather than reopening Phase 1.
-- **Phase 2 is product/platform work.** The first Phase 2 planning artifact is
-  `docs/plans/active/p2-win01-plan-typeduck-windows-next.md`, for a Yune-first
-  TypeDuck-Windows product/frontend. Phase 2 work must not widen Yune's default
-  upstream ABI.
+- **Windows product/platform work is externally owned.** The dedicated Windows
+  Yune repository owns the TypeDuck-Windows frontend/product schedule. This
+  repository retains the superseded handoff record at
+  `docs/plans/completed/p2-win01-plan-typeduck-windows-next.md` and owns only the
+  engine/package contract, named profile API, oracle fixtures, and separately
+  reviewed cross-repository engine proposals. Windows product needs must not
+  widen Yune's default upstream ABI.
 - **M59 canonical reachability and exact-order closure is complete.** The final
   accepted state has Lane A strict `13/13` across 5,705 captured positions,
   Lane B exact for all seven captured inputs, Cangjie marked `12/12` with its
@@ -57,8 +60,10 @@ TypeDuck profile split).
   remains a far-future platform validation gate, and RED-09/10/11 remain optional
   future engine-optimization candidates; none is a newly opened numbered
   milestone. Completed plan:
-  `docs/plans/completed/m47-plan-ios-budget-native-memory-reduction.md`; report:
-  `docs/reports/ios-memory-budget.md`. Lean probe: `crates/yune-rime-api/tests/native_memory_probe.rs`.
+  `docs/plans/completed/m47-plan-ios-budget-native-memory-reduction.md`; current
+  result: `docs/reports/yune-vs-librime-performance.md`; full chronology:
+  `docs/reports/history/2026-06-29-ios-memory-budget-pre-consolidation.md`.
+  Lean probe: `crates/yune-rime-api/tests/native_memory_probe.rs`.
 - **AI foundation exists.** M11 completed the core/CLI AI layer. M13 exposed it
   in the web harness now canonical as `yune-web`: default-off, local-only,
   second-pass `stage_ai` flow.
@@ -114,8 +119,9 @@ TypeDuck profile split).
   tests, and recorded evidence. Browser-visible claims require Playwright or
   equivalent real-browser evidence.
 - **TypeDuck-Windows:** M10 proves Yune can satisfy the existing native backend
-  profile smoke. Future Windows work is Phase 2 product/frontend work; do not
-  use it as a reason to widen default `rime_get_api()`.
+  profile smoke. The dedicated Windows Yune repository owns subsequent TSF and
+  product/frontend work; do not use it as a reason to widen default
+  `rime_get_api()` here.
 
 ## Codex Workflow Preference
 

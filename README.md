@@ -121,8 +121,8 @@ Yune is an active engine project.
   (TypeDuck-Web); the
   TypeDuck-Windows backend has package/header, profile-ABI, and stock
   real-server IPC compatibility smoke through the named profile accessor,
-  while interactive TSF typing and visible candidate UI remain Phase 2
-  product/frontend work.
+  while the dedicated Windows Yune repository owns interactive TSF typing and
+  visible candidate UI product work.
 - **Current work:** milestones M38-M59 are complete, with M55 closed under a
   2026-07-04 corrective re-baseline: the benchmark now reads context after
   every keypress (the interactive shape), three pre-corrective closeout

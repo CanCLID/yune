@@ -117,11 +117,11 @@ The public build pins Rust 1.96.1, Emscripten 4.0.23, and SDK Node 22.16.0.
 WEB03-11 remains active until the first clean source-current Cloudflare build
 passes that binding profile.
 
-## Planned Or Parked Tracks
+## Planned, Parked, Or Transferred Tracks
 
 | Milestone or track | Status | Meaning |
 | --- | --- | --- |
-| P2-WIN-01 TypeDuck-Windows next product/frontend | Draft / product track | Primary Phase 2 Windows product direction after shared Yune blockers are cleared. Resume at the Windows repo/process and TSF input-delivery/frontend-shell checkpoint. |
+| P2-WIN-01 TypeDuck-Windows next product/frontend | Superseded here / transferred externally | [`CanCLID/yune-windows`](https://github.com/CanCLID/yune-windows) owns TSF input delivery, candidate UI, settings, installer, diagnostics, and product evidence. Yune retains the historical architecture/handoff record and owns only separately proposed engine/package/profile-API work. [`plans/completed/p2-win01-plan-typeduck-windows-next.md`](../plans/completed/p2-win01-plan-typeduck-windows-next.md) |
 | M32 AI-native public demo/product expansion | Planned / later | Builds richer local-first AI UX, privacy/memory controls, and public-demo evidence on top of M11/M13 after an explicit product decision. |
 | TypeDuck-Web product integration | Future | Needs a dedicated product-integration track before changing a separately cloned `TypeDuck-HK/TypeDuck-Web` checkout. |
 | iOS keyboard developer support | Future | Needs a Yune-native package/host contract; Cantoboard/TypeDuck iOS repos are platform-integration provenance, not code to port wholesale. |

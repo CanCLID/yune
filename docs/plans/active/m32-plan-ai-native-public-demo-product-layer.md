@@ -30,7 +30,7 @@
 > - **Numbering.** "M32" predates the completed M33–M46; consider renumbering to
 >   the next free milestone at execution time to avoid out-of-sequence confusion.
 
-**Goal:** Expand Yune's AI-native layer into a richer public-demo/product surface after an explicit product-priority decision, without changing deterministic classic input behavior or delaying the Windows frontend by default.
+**Goal:** Expand Yune's AI-native layer into a richer public-demo/product surface after an explicit product-priority decision, without changing deterministic classic input behavior or coupling this repository to the external Windows frontend schedule.
 
 **Architecture:** M32 builds on the completed M11 core/CLI AI layer and the completed M13 default-off yune-web exposure. Classic input remains provider-free, synchronous, and byte-identical when AI is off. AI is a second-pass, explicitly labeled, local-first layer with privacy and memory controls; any remote-provider path requires an explicit decision and remains off by default. The first public Yune web demo should keep AI hidden or developer-only unless M32 deliberately changes that with reviewed evidence.
 
@@ -103,7 +103,7 @@ Out of scope:
 **Files:**
 
 - Read: `docs/roadmap.md`
-- Read: `docs/plans/active/p2-win01-plan-typeduck-windows-next.md`
+- Read: `docs/plans/completed/p2-win01-plan-typeduck-windows-next.md`
 - Read: `docs/plans/reference/m11-design-ai-native.md`
 - Read: `docs/plans/completed/m13-plan-ai-native-frontend-exposure.md`
 - Create: `apps/yune-web/e2e/results/m32-ai-product/product-priority-decision.md`

@@ -1763,6 +1763,41 @@ oracle candidates, and circular oracle-derived fixtures are prohibited.
   is explicitly not an M59 correctness gate. WEB-05's historical same-WASM row
   is excluded rather than rebaselined across a different binary.
 
+### M60 Schema-General Reachability Capability Formalism
+
+**Status: finalized and ready; not started.** M60 formalizes the default-on
+capability M59 already shipped. It adds fail-closed opt-out and onboarding
+governance without changing reachability, ranking, schema installation, ABI,
+browser behavior, or any signed performance threshold. The finalized plan is
+[`plans/active/m60-plan-schema-general-single-character-reachability.md`](./plans/active/m60-plan-schema-general-single-character-reachability.md).
+
+- [ ] **M60-CONTRACT-01**: One canonical contract records the default-on
+  invariant, explicit-false semantics, selection/recomposition scope,
+  anti-gaming prohibitions, M59 evidence boundary, and the actual per-input
+  `prefix_fallback_owned` precedence rule.
+- [ ] **M60-OPTOUT-01**: The live M59-seeded acceptance registry is versioned
+  for M60 and contains an exactly empty current `reachabilityOptOuts` array plus
+  a complete, owner-approved future row schema keyed by exact schema asset,
+  setting asset, and deployed translator namespace; no placeholder/current
+  opt-out is added.
+- [ ] **M60-AUDIT-01**: The mandatory checker and synthetic tests enforce a
+  classified-root disposition for every tracked schema YAML plus a bijection
+  between every affected shipped namespaced explicit-false tuple and valid
+  opt-out rows, rejecting duplicate, incomplete, expired, unsafe, unknown,
+  unregistered, overlapping, open, orphaned, or stale records.
+- [ ] **M60-ONBOARD-01**: The updater and onboarding contract keep every new
+  schema in the registered repository-owned product roots blocking-open until
+  classification, correct oracle/owner provenance, and a narrow real-path
+  acceptance test are supplied; unsupported/N/A and an auto-created opt-out
+  cannot close it, and a future product root must register with the checker.
+- [ ] **M60-BOUNDARY-01**: M59 and WEB03-11 evidence stays source-bound and
+  immutable; M60 changes no Rust behavior, ABI, schema/profile id, browser or
+  Windows product surface, performance threshold, oracle fixture, or M61 scope.
+- [ ] **M60-EVIDENCE-01**: Exact-source text-only evidence records the checker,
+  negative tests, two narrow deploy-path tests, onboarding test, link audit,
+  evidence-growth guard, diff check, and two independent reviews; the plan moves
+  to completed only in the final closeout commit.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -1960,6 +1995,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M59-EVIDENCE-01 | M59 | Complete - `final-closeout/` reconciles the accepted Lane A, Lane B, Cangjie, 37/59, REACH-03, performance, native recovery, fail-closed WASM, package, and browser receipts with hashes and no generated binaries |
 | M59-DEPLOY-01 | M59 | Complete - `2ee0805f` matches pinned librime missing/malformed top-level schema and dependency semantics with real-path regression coverage |
 | M59-GATES-01 | M59 | Complete - retained native prefix plus nonduplicative serial recovery, release build, fail-closed Emscripten, typecheck, tracked/public builds, WEB-04 3/3, M58 1/1, and all unique functional Playwright rows pass; startup benchmark and cross-binary WEB-05 baseline are explicitly excluded |
+| M60-CONTRACT-01 | M60 | Planned - canonical default-on/explicit-false and per-input dual-mechanism capability contract |
+| M60-OPTOUT-01 | M60 | Planned - versioned live registry with exact empty current opt-out collection and namespaced future row schema |
+| M60-AUDIT-01 | M60 | Planned - fail-closed tracked-schema root inventory plus affected-schema/namespaced-explicit-false opt-out bijection and production-validator negatives |
+| M60-ONBOARD-01 | M60 | Planned - schemas in registered product roots remain blocking-open until classified and real-path accepted; new product roots must register |
+| M60-BOUNDARY-01 | M60 | Planned - no behavior, ABI, profile/schema-id, browser, performance, Windows product, or M61 expansion |
+| M60-EVIDENCE-01 | M60 | Planned - compact exact-source evidence, targeted gates, links, growth guard, and two reviews |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
@@ -2259,17 +2300,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M52 Track A guardrails and blocker disposition requirements: 6 total, 6 complete, 0 active
 - M53 engine release-readiness audit requirements: 5 total, 5 complete, 0 active
 - M54 native octagram grammar support requirements: 7 total, 7 complete, 0 active
-- WEB-03 public launch and browser latency requirements: 11 total, 10 complete, 1 active pending the first clean source-current binding gate
+- WEB-03 public launch and browser latency requirements: 11 total, 11 complete, 0 active
 - WEB-04 octagram debug harness requirements: 5 total, 5 complete, 0 active
 - M55 native Track A match-or-beat requirements: 8 total, 8 complete, 0 active
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
 - M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
 - M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 11 complete, 0 active
+- M60 schema-general reachability capability-formalism requirements: 6 total, 0 complete, 6 planned
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
-- Mapped to phases: 434
+- Mapped to phases: 439
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-15 - M59 remains complete under full Path A at 11/11 requirements. WEB03-11 is complete at clean source `ef485b10` after its binding local gate, Cloudflare deployment, and source-pinned production canary passed; this browser evidence is not projected onto the `5fa986d8` M59 receipt boundary. The historical 4a class-3 disposition remains unchanged and unused by final Lane A. D-49 transfers Windows TSF and product/frontend requirements to `CanCLID/yune-windows` while retaining Yune's engine/package/profile-API contract here._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-15 - M59 remains complete under full Path A at 11/11 requirements. WEB03-11 is complete at clean source `ef485b10` after its binding local gate, Cloudflare deployment, and source-pinned production canary passed; this browser evidence is not projected onto the `5fa986d8` M59 receipt boundary. M60 is finalized with six planned formalism-only requirements and no behavior, ABI, threshold, Windows-product, or M61 expansion. The historical 4a class-3 disposition remains unchanged and unused by final Lane A. D-49 transfers Windows TSF and product/frontend requirements to `CanCLID/yune-windows` while retaining Yune's engine/package/profile-API contract here._

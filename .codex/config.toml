@@ -3,6 +3,8 @@
 model = "gpt-5.6-sol"
 model_reasoning_effort = "ultra"
 
+sandbox_mode = "danger-full-access"
+approval_policy = "never"
 [features]
 multi_agent = true
 

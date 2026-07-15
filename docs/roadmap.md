@@ -1,554 +1,176 @@
 # Roadmap
 
-Yune is a Rust input-method engine that uses **upstream librime as a
-compatibility and performance oracle** while building a cleaner Rust engine.
-This file is the live dashboard: it records current state, next decisions,
-scope boundaries, and readiness gates. Completed milestone detail lives in
+Yune is a Rust input-method engine that uses upstream librime as a
+compatibility oracle while building a cleaner, AI-native-capable engine. This
+file is the live operating dashboard: it records current state, the next
+authorized sequence, scope boundaries, and readiness gates. Completed
+milestone detail belongs in
 [`ledgers/milestone-history.md`](./ledgers/milestone-history.md), completed
-plans, reports, and evidence folders.
+plans, reports, and evidence packets.
 
-Current status: Phase 1 named-target compatibility is complete; M47's portable
-TypeDuck/Jyutping keyboard memory work is complete for the Windows proxy; M51
-froze the engine support contract and ABI boundaries; M53 re-verified the
-engine docs and
-public claims for release-readiness; M54 adds native octagram-compatible grammar
-support for the named upstream `luna_pinyin` target without implementing the
-librime C++ plugin ABI; WEB-04 makes that path observable in `yune-web` through
-a default-off debug profile. M55 closes under the 2026-07-04 **corrective
-re-baseline**: real graph-work wins landed (long rows improved ~35%, startup and
-session measured faster than librime), three pre-corrective closeout mechanisms
-were identified as measurement artifacts and reverted, the benchmark now reads
-context after every keypress, the then-current `YUNE-POET/2` byte-backed poet
-storage was an explicit opt-in (the latency ceilings bind), and the corrective
-`reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv` began
-as the standing native Track A regression gate (green twice, with a fresh M56
-closeout proof that passes with tight headroom). M59 later retained it as the
-consolidated registry, adding owner-signed injection-on re-derivations and nine
-newly signed Increment-0 rows. M56 adds productization
-hardening for external frontends: compiled-artifact staleness fails loudly or
-rebuilds on real paths, cold/warm conformance covers `luna_pinyin` and TypeDuck
-`jyut6ping3`, user-data lifecycle gaps are dispositioned, and all discovered C
-ABI exports are guarded by an abuse-suite-ratcheted panic boundary without ABI
-widening. The corrected M56 closeout keeps optional poet storage out of the
-default product schema payload. M59's sentence/phrase ordering work extends the
-current artifact to `YUNE-POET/3`; stale `/2` artifacts are
-rejected and rebuilt rather than interpreted under the expanded layout.
-Independent macOS native verification then
-exposed a Yune-side Track A sentence-model construction anomaly in the long and
-abbreviation rows; M57 repaired that platform/comparability defect by accepting
-the macOS upstream Luna MARISA checksum pair through the target-scoped compact
-compiled-table path, restoring the expected sentence-model owner shape, and
-proving two full macOS native verification passes. The macOS bundle is now valid
-evidence for the repaired rows, not a new general performance verdict. M58 then
-rebased canonical Jyutping candidate claims on upstream `rime/librime 1.17.0`
-plus pinned `rime/rime-cantonese`, confirmed the reported `zijiguk` / `諮議局`
-case is first under the canonical oracle, fixed current `yune-web`
-TypeDuck/profile `beingo` / 畀 and `zi` / 諮 reachability by preserving
-short-input profile-ranked paging, and kept the schema-id split audit-only
-pending explicit sign-off. The authoritative Windows M59 Increment 4a packet is
-implemented at `ca52ec42` and review-fixed at `2257fbbe`; its historical strict
-Lane A comparator was `2/5`. On 2026-07-11 the owner renewed the narrowly scoped
-D-48 class-3 exception for all `6,086` captured equal-weight inversions, with
-zero cross-weight inversions, no beyond-oracle-depth use, and the recorded
-revisit triggers. Increment 4b landed through `d508e05b` and received the
-designated Opus approval. Increment 4c is implemented at clean source
-`e11557e2`: the complete 13-input all-page Lane A capture is strict `13/13`
-across 5,705 candidate text/order/position rows, preedit, and commit preview,
-with no exception or beyond-depth use. The historical class-3 disposition is
-unused by this final capture. Canonical comments retain 854 explicitly
-non-gating differences outside D-48's text/order contract. Five fresh
-source-bound runs pass all 32 aggregate median rows under unchanged ceilings,
-with two individual red observations preserved. Increment 4d closes Cangjie;
-Increment 4e at `5879405c` closes seven-input Lane B exact order, the deployed
-37/59 page shape, native WEB-04 `8/8`, and its then-current `32/32` aggregate
-plus `160/160` individual performance acceptance. Commit `5fa986d8` closes REACH-03 with the
-exact 60-asset schema tree and acceptance registry. M59 is complete: the final
-packet records nonduplicative native recovery, fail-closed Emscripten,
-typecheck, tracked/public builds, and complete functional Playwright coverage;
-All five WEB-04 requirements are complete and the plan is archived.
-Independent follow-up commit `07845e02` makes the 60-asset manifest check
-bidirectional for every regular file. Its clean shipping-source Lane A run
-exposed a post-4c `ngohaig` tie regression; `443cc636` repairs that structural
-identity/transformed collector split, and a clean release recapture restores
-strict `13/13` across all 5,705 positions with no exception.
-Five fresh complete 17+1 rounds at final behavior source `443cc636` pass all
-`32/32` aggregate rows and all `160/160` individual observations under the
-unchanged ceilings. Browser/WASM evidence remains bound to the `5fa986d8`
-closeout and is not described as a `443cc636` browser rerun.
-A separate macOS follow-up, measured only at source `89875ee2`, repairs the
-expanded upstream Luna 37/59 page-shape defect, preserves compiled natural-log
-weight semantics and the inclusive 5% pronunciation boundary across stored
-`f32`, and matches both pinned pages in five fixed-binary rounds. It is a
-source-scoped diagnostic, not a combined-source measurement or a new Mac
-performance gate, threshold, milestone, or change to the independently recorded
-Windows disposition. It did not cause or supersede that disposition.
-The historical source-bound post-fix root-cause diagnostic at `afb7079b`
-supersedes that packet's performance interpretation for its source while
-retaining its repair evidence; it is not current-main evidence.
-Across all 17 Track A rows, Yune wins six aggregate rows and loses eleven. The
-apparent 37/59 wins (`0.399x` / `0.205x`) are concentrated in intermediate
-prefixes whose candidate text differs from librime; on candidate-text-matched
-prefixes Yune is `1.420x` / `1.204x`, and no complete long-prefix snapshot is
-oracle-exact. Short rows also execute materially more work (`n` `8.682x`, `zh`
-`4.092x` librime's instructions). macOS Nano allocation contributes to the
-ratio but does not explain the behavior or work-volume gaps. The durable
-diagnosis is
-[`reports/evidence/m59-post-fix-root-cause-20260711/`](./reports/evidence/m59-post-fix-root-cause-20260711/).
-It is diagnostic only: no signed Windows ceiling, baseline, exception, or
-milestone changes.
-The later source-matched Mac follow-up records tracked source clean before each
-run at `5879405c` against pinned librime in five fixed-binary rounds;
-after-move cleanliness is inferred from subsequent clean preflights. All 17
-Track A median ratios and pooled worsts are below `1.0x`; complete-input
-candidates match its source-matched Windows packet, focused Lane-B and 37/59
-gates pass, and logical model shape is cross-platform exact. Seven ratio
-differences are close, six notable, and four material. This packet predates the
-authoritative `443cc636` Windows follow-up and remains diagnostic only: the
-signed Windows baseline and ceilings are unchanged, and no milestone or
-performance fix is opened. It also discloses that the unmodified harness wrote
-each round to an untracked transient worktree directory before moving it
-external, so it is not fully protocol-conforming acceptance evidence. Evidence:
-[`reports/evidence/m59-final-source-macos-20260713/`](./reports/evidence/m59-final-source-macos-20260713/),
-the archived
-[`macOS comparison`](./reports/history/2026-07-14-yune-vs-librime-macos-performance-pre-consolidation.md),
-and the archived
-[`root-cause analysis`](./reports/history/2026-07-14-yune-vs-librime-root-cause-analysis-pre-consolidation.md).
-The later current-source Mac diagnostic at `0111cf47` retains five complete
-fixed-binary rounds with all 17 Track A medians and pooled worsts below `1.0x`;
-the 37/59 pages are exact, and Track B's five-run median is `5.607 µs/key`.
-Fable found no blocker or major issue after independently recomputing the raw
-samples and joins. Its four minor documentation findings are resolved in the
-tracked packet. This source still does not match final-Windows `443cc636`, and
-the Mac boundary receipts contain material UI noise, so no pure platform-speed
-attribution or new acceptance gate follows. Evidence:
-[`reports/evidence/m59-current-source-macos-20260714/`](./reports/evidence/m59-current-source-macos-20260714/).
+Current status: M59 is complete, WEB03-11 is closed as maintenance, and the
+finalized M60 plan is ready for execution but not started. M60 is the sole next
+milestone. It formalizes and audits M59's already-shipped schema-general
+reachability capability; it does not change runtime behavior. M61 is
+unallocated. Current performance results and bottleneck analysis live only in
+the
+[`Yune Performance Dashboard`](./reports/yune-vs-librime-performance.md).
+TypeDuck-Windows product/frontend work is owned by the separate
+[`CanCLID/yune-windows`](https://github.com/CanCLID/yune-windows) repository.
 
-> **Compatibility oracle.** Upstream librime latest stable is the default
-> behavior reference for user-visible schema semantics, standard ABI contracts,
-> deployed data, and migration. The current pinned upstream target is
-> `rime/librime 1.17.0`
-> (`33e78140250125871856cdc5b42ddc6a5fcd3cd4`):
-> <https://github.com/rime/librime>. This is a referenced upstream repository,
-> not a local checkout path.
+> **Compatibility authority.** The default core oracle is upstream
+> `rime/librime 1.17.0` at
+> `33e78140250125871856cdc5b42ddc6a5fcd3cd4`. Canonical Jyutping also uses
+> pinned `rime/rime-cantonese`; TypeDuck-HK/librime `v1.1.2` remains a
+> profile-only oracle. The complete target and precedence contract is in
+> [`contracts/engine-support-contract.md`](./contracts/engine-support-contract.md)
+> and [`decisions.md`](./decisions.md).
 
-## Document Map
+## Authority Map
 
-- This file - current engine roadmap dashboard, next sequence, scope
-  boundaries, and readiness gates.
-- [`conventions.md`](./conventions.md) - architecture, stack, repo structure,
-  coding/testing conventions, C ABI rules, integrations, and current risks.
+- [`conventions.md`](./conventions.md) — architecture, repository and testing
+  conventions, evidence handling, C ABI rules, and current risks.
 - [`contracts/engine-support-contract.md`](./contracts/engine-support-contract.md)
-  - supported engine targets, evidence-lane rules, ABI boundaries, and profile
-  accessors.
-- [`requirements.md`](./requirements.md) - requirement IDs, status,
-  traceability, and closeout counts.
-- [`decisions.md`](./decisions.md) - standing principles and decision log.
-- [`ledgers/milestone-history.md`](./ledgers/milestone-history.md) - completed
-  milestone ledger and historical closeout pointers formerly carried in this
-  roadmap.
+  — supported targets, oracle precedence, ABI boundaries, and evidence lanes.
+- [`requirements.md`](./requirements.md) — requirement status and traceability.
+- [`decisions.md`](./decisions.md) — standing principles and binding decisions.
+- [`ledgers/milestone-history.md`](./ledgers/milestone-history.md) — completed
+  milestone outcomes and historical closeout pointers.
 - [`reports/yune-vs-librime-performance.md`](./reports/yune-vs-librime-performance.md)
-  - single current dashboard for all-platform benchmark results,
-    visualizations, evidence boundaries, and bottleneck analysis.
-- [`reports/evidence/m59-post-fix-root-cause-20260711/`](./reports/evidence/m59-post-fix-root-cause-20260711/)
-  - immutable five-round Mac packet at historical source `afb7079b`.
-- [`reports/evidence/m59-current-source-macos-20260714/`](./reports/evidence/m59-current-source-macos-20260714/)
-  - reviewed five-round current-source Mac diagnostic at `0111cf47`, complete
-    17-row/Track-B tables, cross-platform candidate evidence, portable report,
-    and full external-packet manifest.
-- [`reports/evidence/m59-final-source-macos-20260713/`](./reports/evidence/m59-final-source-macos-20260713/)
-  - historical source-matched Increment-4e Mac diagnostic at `5879405c`,
-    disclosed output-location deviation, fixed-binary audit, behavior gates,
-    and validated report.
-- [`reports/history/2026-06-29-ios-memory-budget-pre-consolidation.md`](./reports/history/2026-06-29-ios-memory-budget-pre-consolidation.md)
-  - archived M47 native single-active-schema Windows-proxy memory detail; the
-    current result and Apple `phys_footprint` boundary are in the dashboard.
-- [`plans/completed/m52-plan-track-a-guardrails-and-disposition.md`](./plans/completed/m52-plan-track-a-guardrails-and-disposition.md)
-  - historical native Track A guardrail and blocker-disposition milestone.
-- [`plans/completed/m55-plan-native-track-a-match-or-beat-program.md`](./plans/completed/m55-plan-native-track-a-match-or-beat-program.md)
-  - native Track A performance milestone, closed under the 2026-07-04
-    corrective re-baseline
-    ([`corrective record`](./reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md));
-    established the per-key measurement and original ratchet foundation later
-    expanded by M59.
-- [`plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/completed/m59-plan-canonical-jyutping-reachability-parity.md)
-  - current canonical reachability closeout and owner of the signed Increment-0
-    17-row baseline, consolidated gate, and final D-47/D-48 acceptance.
+  — the single current cross-platform performance dashboard.
 - [`plans/active/m60-plan-schema-general-single-character-reachability.md`](./plans/active/m60-plan-schema-general-single-character-reachability.md)
-  - finalized next milestone: formalize M59's already-shipped schema-general
-    reachability contract, empty explicit opt-out registry, and fail-closed
-    future-schema onboarding without changing engine behavior.
-- [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md)
-  - engine productization hardening milestone for staleness-proofing,
-    cold/warm product-path conformance, user-data lifecycle, and ABI crash
-    policy.
-- [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md)
-  - macOS Track A sentence-model parity and verification repair milestone.
-- [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md)
-  - native octagram-compatible grammar support milestone.
-- [`plans/completed/m51-plan-engine-support-contract-abi-freeze.md`](./plans/completed/m51-plan-engine-support-contract-abi-freeze.md)
-  - engine support contract and ABI freeze milestone.
-- [`plans/completed/m47-plan-ios-budget-native-memory-reduction.md`](./plans/completed/m47-plan-ios-budget-native-memory-reduction.md)
-  - portable TypeDuck/Jyutping keyboard memory reduction milestone.
-- [`plans/completed/web03-plan-three-schema-launch-readiness.md`](./plans/completed/web03-plan-three-schema-launch-readiness.md)
-  - launch compiled-asset contract and browser remeasure milestone.
-- [`plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md`](./plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md)
-  - browser octagram debug harness and default-off Luna profile milestone.
-- [`plans/`](./plans) - active, reference, and completed plans.
-
-> The GSD planning system (`.planning/`) has been retired; durable planning now
-> lives under `docs/`.
+  — the current execution authority and sole next milestone.
+- [`plans/`](./plans) — active, reference, and completed execution records.
 
 ## Current Snapshot
 
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
-| Schema-general capability governance | M59 already ships default-on single-character reachability for every schema. M60 is review-corrected and ready to execute as a documentation/static-governance milestone; no current shipped opt-out exists. | Add the canonical capability contract, retain the M59 coverage version with a separate M60 formalism version, and use a read-only Rust audit tool backed by production merge semantics to feed the mandatory fail-closed checker and onboarding workflow. Correct stale schema-wide TypeDuck precedence prose to the actual per-input `prefix_fallback_owned` rule. Do not change runtime behavior or allocate M61. |
-| Engine performance | The signed M59 ceilings remain authoritative. Final-M59 Windows `443cc636` passes `32/32` aggregate and `160/160` individual observations; the [reviewed Mac packet](./reports/evidence/m59-current-source-macos-20260714/) at `0111cf47` has all 17 Track A medians and pooled worsts below `1.0x`. The sources are not matched. Current Track A memory remains about `8.9x` same-run librime on Windows and `11.8x` same-run librime RSS on macOS. | Keep the signed Windows ratchet unchanged. Use the single [`performance dashboard`](./reports/yune-vs-librime-performance.md) for current numbers. Any platform-causal claim needs an exact-source matched quiet-machine lane. |
-| TypeDuck/Jyutping product memory | M47's portable scope is complete. The comments-intact `jyut6ping3_mobile` keyboard profile reached about `67 MB` working set / `22 MB` private on Windows proxy evidence, with table, prism, and rich lookup/comment payloads byte-backed from compiled storage. | Apple `phys_footprint` proof remains unnumbered far-future platform validation. Optional RED-09/10/11-style polish needs a fresh owner-ranked plan. |
-| Web harness startup and memory | WEB03-11 is closed at clean source `ef485b10`: the exact Cloudflare entrypoint passed 8/8 scenarios and 186/186 keys under the binding 4x/4x profile, the Pages deployment succeeded, and the source-pinned production 47-key canary measured `43 ms` p95 / `44 ms` max with zero worker queue wait. The latest fair browser peer snapshot still shows `1.577x` ready time, `4.000x` WASM memory, and `3.471x` encoded resources. | Keep WEB03-11 as maintenance. Refresh the same-schema browser peer lane before claiming a new startup or footprint result. |
-| AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
-| Future platform work | Platform-specific native frontends remain outside this repo roadmap. [`CanCLID/yune-windows`](https://github.com/CanCLID/yune-windows) owns the TypeDuck-Windows TSF and product/frontend track; this repository retains only the [superseded handoff record](./plans/completed/p2-win01-plan-typeduck-windows-next.md). | Route Windows product work to its dedicated repository. Bring back only a named engine/package/API proposal with oracle evidence and owning tests; do not widen the default ABI implicitly. |
-
-## Current Guardrails
-
-The current native regression gate uses the **corrective per-key** measurement
-shape (the benchmark reads context after every keypress; batch-shaped
-pre-corrective results, including the retracted phase-5 run 5/6 numbers, are
-not comparable). Its consolidated registry has mixed provenance: retained M55
-corrective rows, four M59 injection-on re-derivations, and nine newly signed
-M59 Increment-0 rows:
-
-- Threshold source:
-  [`reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`](./reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
-- Consecutive green proof runs:
-  [`corrective-2026-07-04/gate-run-d/threshold-check.csv`](./reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/gate-run-d/threshold-check.csv)
-  and
-  [`corrective-2026-07-04/gate-run-e/threshold-check.csv`](./reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/gate-run-e/threshold-check.csv)
-- Freshest source-bound proof:
-  [`reports/evidence/m59-canonical-jyutping-reachability-parity/source-current-performance-revalidation-2026-07-13/gate-verdict.csv`](./reports/evidence/m59-canonical-jyutping-reachability-parity/source-current-performance-revalidation-2026-07-13/gate-verdict.csv)
-  (`32/32` aggregate and `160/160` individual observations pass unchanged
-  ceilings)
-- Manual command shape:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 `
-  -OutputRoot docs\reports\evidence\<new-run> `
-  -Iterations 9 -SessionIterations 60 -KeyIterations 80 `
-  -TrackAInputs n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu `
-  -TrackBInputs neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung `
-  -DeployProductBeforeBenchmark `
-  -TrackAThresholds docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv `
-  -FailOnRegression
-```
-
-The gate is local/manual because it needs same-run librime `1.17.0` artifacts.
-Do not summarize a guard pass as "Yune is always faster than librime." The gate
-proves named native Track A and Track B regression rows against committed
-ceilings. The signed M59 Increment-0 baseline contains rows inherited from M55,
-four M59 re-derivations, and nine newly signed M59 rows. Final-M59 Windows
-`443cc636` observes all 17 input ratios below `1.00x` while passing the unchanged
-gate. Latest Mac `0111cf47` also has all 17 medians and pooled worsts below
-`1.00x`, but it is a source-unmatched diagnostic and does not become a signed
-gate or a platform-speed claim.
-
-## Performance North Star
-
-Broad, unqualified claims that "Yune is faster than librime" remain
-unsupported across every lane. Performance is lane-specific. Current Windows
-and Mac Track A latency observations are below parity, but their Yune sources
-do not match. Track A memory remains about `8.9x` same-run librime on Windows
-and `11.8x` same-run librime RSS on macOS; the latest browser peer lane remains
-`4.000x` on WASM memory and `3.471x` on encoded resources. The signed M59
-registry is unchanged. The M55 corrective lesson also stands: a gate is only
-as honest as its measurement shape, and a new observation is not automatically
-a new baseline.
-
-A future milestone that aims to **surpass librime** must be scoped as
-performance research, not launch-readiness cleanup. It should:
-
-- name one lane first, such as native Track A `luna_pinyin`, TypeDuck/Jyutping
-  product profile, or browser fair-lane memory;
-- capture fresh same-run Yune/librime evidence and a noise band before code
-  changes;
-- choose one structural owner before editing code;
-- set a real win bar, such as `<=1.0x` median on selected latency rows or a
-  measured memory target, rather than only a no-regression ceiling;
-- preserve oracle behavior and the M51 ABI contract; and
-- close as partial/no-go if the owner is not real or the win requires
-  unacceptable parity risk.
-
-The current `0111cf47` Mac sequence is complete as a same-Mac diagnostic. No
-latency implementation is selected. If platform attribution becomes necessary,
-run the exact same Yune source on quiet Windows and Mac machines before
-selecting an engine owner. Native memory needs a correct Apple counter and a
-fresh owner-ranked packet before optimization; browser runtime floor and
-startup remain separate work. Every lane must preserve oracle behavior, the
-unchanged signed gate, and the M51 ABI contract. Reviewed evidence:
-[`reports/evidence/m59-current-source-macos-20260714/`](./reports/evidence/m59-current-source-macos-20260714/).
-
-## Native Track A Memory Gap
-
-The gap remains open. Final-M59 Windows `443cc636` records a Track A peak
-median of `153,899,008 B`, still about `8.9x` same-run librime. The latest Mac
-diagnostic records `190,578,688 B` median peak RSS, about `11.8x` same-run
-librime RSS; those platform counters are not interchangeable. M55's
-`YUNE-POET/2` opt-in record (`~113.2 MB`, behavior-valid but latency-blocked)
-is historical. `YUNE-POET/3` supersedes `/2` for compatibility and rebuild
-purposes without inheriting its measured memory result.
-
-Current decision:
-
-1. **The M55 corrective artifact is the measurement foundation, and the M59
-   Increment-0 registry is the standing native gate.** The consolidated file
-   retains M55 startup/session/memory, win, and Track B rows; adds four
-   M59 injection-on re-derivations; and signs nine new M59 inputs.
-2. **The `/2` byte-backed result is historical.** `113.2 MB` is a valid M55
-   opt-in record, but `/3` cannot inherit it. M59 restores the named `/3`
-   prefix/page behavior: Lane B is exact for all seven captured inputs and the
-   37/59 deployed page shape is exact.
-3. **Any next memory decision needs its own measurement.** M59's behavior and
-   unchanged-ceiling performance acceptance do not establish a byte-backed `/3`
-   memory win. Design incremental/lazy indexing and measure memory and CPU
-   separately under the consolidated gate; do not assume a direct scratch port
-   is sufficient.
+| Schema-general reachability | M59 ships default-on single-character reachability for every current and future schema automatically on install. Final native behavior/performance authority is `443cc636`; browser/WASM/package closeout remains bound to `5fa986d8`, with manifest follow-up `07845e02`. | Execute M60 as formalism and static governance only: retain `version: m59-reach03-v1`; add `reachabilityFormalismVersion: m60-reachability-v1` and `reachabilityOptOuts: []`; and audit onboarding through production merge semantics. No shipped opt-out is currently approved. |
+| Native performance | The signed M59 Windows ceilings remain authoritative. Final Windows source `443cc636` passes `32/32` aggregate and `160/160` individual observations. The reviewed Mac packet at `0111cf47` is diagnostic and source-unmatched. | Keep the Windows ratchet unchanged. Any causal platform claim or optimization proposal needs fresh same-source, same-lane evidence and an identified structural owner. |
+| Native memory | Track A remains materially above same-run librime on Windows and macOS. M47's comments-intact TypeDuck/Jyutping keyboard profile remains complete for its Windows private/dirty proxy, not Apple `phys_footprint`. | Measure the correct platform counter and rank owners before selecting an implementation. Do not inherit a historical memory result across artifact versions. |
+| Web harness | WEB03-11 is closed at clean source `ef485b10`: the exact Cloudflare build gate and source-pinned production canary passed. This is maintenance evidence, not a refresh of M59 browser authority or the browser peer lane. | Keep WEB03-11 fail-closed. Remeasure the same-schema peer lane before making new startup, memory, or resource-size claims. |
+| AI-native layer | M11/M13 proved a default-off local AI layer above the deterministic engine. | Keep AI outside the classic path unless a named experiment explicitly enables it and owns privacy, memory, and behavior evidence. |
+| Platform products | TypeDuck-Windows product/frontend work has transferred to `CanCLID/yune-windows`. | Bring back only a separately proposed engine, package, or profile-API requirement with oracle evidence and owning tests. |
 
 ## Authoritative Sequence
 
-1. **M53 engine release-readiness audit is complete.** The five-dimension audit
-   (support-contract consistency, ABI-wording-vs-code, M52 guardrail freshness,
-   public claim wording, link/evidence integrity) found the substantive
-   invariants clean with no ABI/guardrail/link drift; the only real defects were
-   public-facing claim drift in `README.md` (and one linked archived report)
-   across performance, compatibility scope, oracle-precedence,
-   frontend-validation, ABI/drop-in, and Rust safety/lint-scope wording, now
-   corrected to contract-accurate, M52 lane-specific wording. Evidence:
-   [`reports/evidence/m53-engine-release-readiness-audit/`](./reports/evidence/m53-engine-release-readiness-audit/).
-   Plan:
-   [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md).
-2. **M54 native octagram-compatible grammar support is complete.** Yune now
-   supports the named upstream `luna_pinyin` octagram target through a native
-   Rust `Grammar` provider and logical `.gram` resource loading. Evidence:
-   [`reports/evidence/m54-native-octagram-grammar-support/`](./reports/evidence/m54-native-octagram-grammar-support/).
-   Plan:
-   [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md).
-3. **WEB-04 octagram debug harness is complete at M59 closeout source `5fa986d8`.** The tracked `apps/yune-web`
-   harness exposes `luna_pinyin_octagram` as a default-off profile, delivers the
-   pinned lotem `.gram` through `extraSharedAssets`, and records diagnostics.
-   Historical evidence proved all four ranking rows plus the plain and missing-
-   model controls. M59 4e restores the source-built native gate to `8/8`
-   without weakening the delivery/fail-closed contract; final Playwright passes
-   all three WEB-04 cases covering every ranking row and both controls.
-   Evidence:
-   [`reports/evidence/web04-octagram-debug-harness/`](./reports/evidence/web04-octagram-debug-harness/).
-   Plan:
-   [`plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md`](./plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md).
-4. **M55 native Track A program is closed under the 2026-07-04 corrective
-   re-baseline.** Real wins landed (long rows improved ~35%, startup/session
-   faster than librime, Track B guard rows improved, `YUNE-POET/2` byte-backed
-   storage built and parity-preserving); the pre-corrective closeout's
-   headline numbers were retracted as measurement artifacts (key deferral,
-   benchmark-input aliases, uninvalidated config cache — all reverted), the
-   benchmark now reads context per keypress, byte-backed poet is an explicit
-   opt-in, and the corrective ratchet established the gate foundation, green
-   twice before M59 expanded the consolidated registry. No
-   ABI/browser/product/platform scope widening. Corrective record:
-   [`reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/`](./reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/).
-   Plan:
-   [`plans/completed/m55-plan-native-track-a-match-or-beat-program.md`](./plans/completed/m55-plan-native-track-a-match-or-beat-program.md).
-5. **M56 engine productization hardening is complete.** The engine now has
-   inventory-backed compiled-artifact staleness policy and tests, cold/warm
-   conformance for `luna_pinyin` and TypeDuck `jyut6ping3`, user-data lifecycle
-   coverage, all-discovered-export FFI guards, an ABI abuse suite, and an
-   explicit release panic strategy (`panic = "abort"` retained). No ABI
-   widening, no behavior change on defined happy paths. Evidence:
-   [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/).
-   Plan:
-   [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md).
-6. **WEB-05 harness control surface is complete.** The "surface all controls"
-   follow-up carved out of M21 now exposes every engine control/diagnostic
-   reachable through existing `apps/yune-web` seams in the playground, with
-   dev-power controls gated out of the public demo by the shared
-   `IS_PUBLIC_DEMO` constant. Corrective same-WASM Playwright evidence captures
-   the default-behavior baseline from parent `a87c6b88`; demo-mode evidence
-   proves the new debug/admin controls and WEB-05 raw/cache/asset data pulls are
-   absent from the public demo. Named follow-ups remain for persisted-config
-   deploy-cache freshness and the current Extended charset browser-effect N/A
-   row. No engine or web-runtime package changes. Evidence:
-   [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/).
-   Plan:
-   [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md).
-7. **M57 macOS Track A sentence-model parity and verification repair is
-   complete.** The independent macOS rerun found that local librime stayed
-   oracle-shaped, but Yune built a different Luna sentence-model shape:
-   `poet.entries_by_code` dropped from the Windows corrective `513,353` owner
-   shape to `191,984`, `poet.abbreviation_vocabulary` expanded from the 11-row
-   M42 target set to the full `421,966` vocabulary, the two abbreviation rows
-   skipped abbreviation discovery, and the long rows exploded graph work. M57
-   fixed the Yune-side construction defect by accepting the macOS upstream Luna
-   MARISA checksum pair (`0xb3d4e98e` / `0x29d56c89`) behind the existing
-   target gate, restored compact model counts (`332,604` codes, `513,353`
-   expanded entries, 11-row abbreviation vocabulary), and produced two full
-   macOS native verification passes. Evidence:
-   [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/).
-   Plan:
-   [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md).
-8. **M58 Jyutping oracle rebase and TypeDuck/profile bug disposition is
-   complete for reachability, with a recorded performance residual.** Canonical Cantonese/Jyutping candidate ordering, segmentation,
-   fallback, and completion are now evidenced from upstream `rime/librime
-   1.17.0` plus pinned `rime/rime-cantonese`, not TypeDuck-HK/librime v1.1.2.
-   The user-specified `zijiguk` input for `諮議局` captures `諮議局` as the first
-   canonical candidate, so no canonical admission issue is reproduced. The
-   shipped/current `yune-web` TypeDuck/profile lane still had page-navigation
-   reachability bugs for `beingo` / 畀 and `zi` / 諮; M58 fixes them by retaining
-   enough TypeDuck/profile-ranked candidates for page-size-6 browser paging
-   without promoting the targets onto the first page, and the long-composition
-   follow-up lets `zijiguk` page to standalone `諮`, commit `諮`, and recompose
-   `jiguk`. Historical M14-M28 TypeDuck fixtures remain profile-lane regression
-   guards. At the M58 boundary, the then-standing ratchet failed the recorded
-   Track A `ni`/`hao`/`zhongguo` rows plus the Track B long-Jyutping latency
-   row. M59 later superseded that current-status residual with a final
-   `32/32` aggregate and `160/160` individual pass; the M58 miss remains only
-   historical evidence of the boundary.
-   The preferred schema split
-   remains canonical `jyut6ping3` plus TypeDuck `jyut6ping3_typeduck`, but no
-   id split or userdb/cache-key migration landed; Phase 3 records the blast
-   radius pending explicit sign-off. Evidence:
-   [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/).
-   Plan:
-   [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md).
-9. **M59 canonical Jyutping reachability parity is complete under full
-   D-47/D-48.** Increment 4e at `5879405c` closes the
-   seven-input Lane B exact-order surface, deployed 37/59 page shape, native
-   WEB-04 `8/8`, and the signed `32/32` aggregate plus `160/160` individual
-   performance gate. Lane A is strict `13/13` across 5,705 captured positions,
-   Cangjie is strict `12/12`, and REACH-03 reconciles 60 assets to ten schema
-   dispositions, three carriers, and nine validation rows. The later
-   `443cc636` Windows follow-up is final M59 behavior/performance authority;
-   browser gates remain bound to `5fa986d8`. A source-matched diagnostic at
-   `5879405c` records five fixed-
-   binary Mac rounds with all 17 medians below `1.0x`; it does not alter M59's
-   signed Windows authority. Evidence:
-   [`reports/evidence/m59-canonical-jyutping-reachability-parity/`](./reports/evidence/m59-canonical-jyutping-reachability-parity/).
-   Plan:
-   [`plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/completed/m59-plan-canonical-jyutping-reachability-parity.md).
-10. **M60 schema-general reachability capability formalism is finalized and
-    review-corrected.** It will document the already-shipped M59 default,
-    correct stale schema-wide precedence prose to the per-input
-    `prefix_fallback_owned` rule, retain the M59 registry version while adding a
-    separately versioned empty opt-out formalism, and make shipped-schema
-    onboarding fail closed through a production-semantic read-only Rust audit
-    tool. It changes no runtime behavior, C ABI/API table/export, threshold,
-    browser surface, or Windows product scope. Plan:
-    [`plans/active/m60-plan-schema-general-single-character-reachability.md`](./plans/active/m60-plan-schema-general-single-character-reachability.md).
-11. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
-   high-water floor or another freshly measured owner, only with a new scoped
-   plan.
-12. **Future AI-native engine experiments** - later, and only after classic
-   engine performance is no longer dominated by avoidable pipeline costs.
-13. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
-   fresh owner evidence, and no TypeDuck-profile speed claim unless the profile
-   row is explicitly selected as the target.
-Trigger-gated, not scheduled: extracting the full processor pipeline from
-`yune-rime-api` into `yune-core` lands only when a real non-ABI consumer needs
-the full input path. Do not milestone that extraction speculatively.
+1. **Execute M60.** Add the canonical capability contract; retain
+   `version: m59-reach03-v1`; add
+   `reachabilityFormalismVersion: m60-reachability-v1` and
+   `reachabilityOptOuts: []`; add a production-semantic read-only Rust audit,
+   fail-closed onboarding checks, compact source-bound evidence, and closeout
+   documentation. Correct stale schema-wide TypeDuck precedence prose to the
+   actual per-input `prefix_fallback_owned` rule.
+2. **Close M60 without widening scope.** No runtime behavior, C ABI/API table
+   or export, schema/profile id, oracle fixture or capture, benchmark, signed
+   threshold, browser surface, Windows product, or M61 allocation belongs in
+   M60.
+3. **Re-rank future work after M60.** Any performance, browser, memory,
+   profile-storage, or AI slice needs a fresh plan and owner evidence; none is
+   implicitly scheduled here.
 
-## Historical Closeouts
+Trigger-gated only: extracting the full processor pipeline from
+`yune-rime-api` into `yune-core` waits for a real non-ABI consumer. Do not open
+a milestone for speculative layering work.
 
-Detailed closeout narratives for completed milestones are now owned by
-[`ledgers/milestone-history.md`](./ledgers/milestone-history.md), completed
-plans, and report/evidence folders. This roadmap keeps only the live dashboard
-and current decision rules.
+## Current Guardrails
 
-## Track Map
+- **Reachability:** M59's schema-general default-on guarantee is shipped and is
+  not reopened by M60. No per-schema enablement, input allowlist, baked oracle
+  output, or silent onboarding exclusion is acceptable. No shipped opt-out is
+  currently approved; M60 adds the explicit empty array and exact formalism
+  version above. An opt-out requires a complete owner-approved record.
+- **Onboarding:** every new schema asset in a registered repository-owned
+  product root receives a blocking `status: open` row. Unsupported/N/A or an
+  auto-created opt-out cannot close it. Every future product root must register
+  with the checker, and the production updater must use the tested
+  reconciliation helper without synthesizing, approving, suggesting, or
+  implying an opt-out.
+- **Performance:** the consolidated
+  [`M59 threshold registry`](./reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
+  remains the native authority; the freshest source-bound proof is the
+  [`443cc636` gate verdict](./reports/evidence/m59-canonical-jyutping-reachability-parity/source-current-performance-revalidation-2026-07-13/gate-verdict.csv).
+  Raw benchmark output stays outside the tracked repository, and only compact
+  curated receipts may be imported. A Mac diagnostic is not a new Windows
+  baseline, platform-speed verdict, or threshold.
+- **Evidence lanes:** native engine evidence does not prove browser, frontend,
+  package, deployment, iOS-device, or application-visible performance. Preserve
+  source identity and do not project a result across binaries or counters.
+- **Compatibility and ABI:** preserve oracle behavior, the M51 support
+  contract, default upstream `rime_get_api()`, TypeDuck-profile-only extension
+  surfaces, and the synchronized `yune_web_*` export family.
+- **Product ownership:** this repository owns the engine and shared web harness.
+  Platform frontend/product work stays in its owning repository unless a named
+  engine boundary is proposed explicitly.
 
-| Track | Scope | Current source of truth |
-| --- | --- | --- |
-| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, Track A guardrails, M59 signed/final evidence, source-bound Mac diagnostics, M57 macOS Track A sentence-model repair, historical native Track A research evidence, and TypeDuck/Jyutping profile storage | M59 Increment-0 baseline and consolidated registry, final-M59 `443cc636` follow-up, Increment-4e Windows/Mac paired packets, current performance reports, M57 Mac repair evidence, and historical M55/M52/M50 plus M47 product-memory evidence. |
-| Web harness startup and memory | Tracked `apps/yune-web/` production build, public-demo dist, browser shell, asset/cache delivery, worker/WASM startup, persistence, schema selection, first key-to-paint, Chromium memory, compiled-asset contract, debug-only octagram harness diagnostics, and WEB-05 control/diagnostic surface | WEB-05 plan/evidence, WEB-04 plan/evidence, WEB-03 plan/evidence, WEB-02 owner classification, WEB-01 measured no-go, M41 startup evidence, and browser reports. |
-| Core compatibility | Upstream behavior fixtures, standard ABI-observable behavior, staleness policy, user-data lifecycle, and ABI crash/threading/poison policy | Requirements, decisions, engine support contract, per-milestone plans, M53 release-readiness audit (`reports/evidence/m53-engine-release-readiness-audit/`), and M56 productization evidence. |
-| AI-native engine research | Default-off AI behavior layered above the deterministic engine | Future explicit engine experiments only. |
-| Historical record | Completed milestone outcomes and reference/provenance pointers | Milestone history ledger. |
+## Performance North Star
 
-## Milestone Ledger
+Performance is lane-specific; Yune is not described as universally faster
+than librime. A future performance milestone must name one lane, capture fresh
+same-run baseline and noise evidence, identify one structural owner before code
+changes, define a real win bar, preserve oracle and ABI behavior, and be willing
+to close partial or no-go. No latency implementation is currently selected.
+See the
+[`current dashboard`](./reports/yune-vs-librime-performance.md#current-bottleneck-analysis)
+for measurements and owner-ranked bottlenecks.
 
-| Milestone or track | Status | Current roadmap meaning |
-| --- | --- | --- |
-| M0-M36 | Complete | Historical compatibility, frontend-validation, browser, product, and early performance build-out; see the milestone history ledger. |
-| M37-M45 | Complete / measured blockers | Native and browser performance history leading to the M45/WEB-01/M46 handoff; see the history ledger and completed plans. |
-| WEB-01/02/03 | Complete | Browser memory attribution, stale-asset owner classification, and launch compiled-asset contract. |
-| WEB-04 | Complete; closeout-source reproof under M59 | Default-off `luna_pinyin_octagram` browser debug harness with non-vendored pinned lotem `.gram`, delivery diagnostics, native `8/8`, and `5fa986d8` Playwright covering all four ranking rows plus plain and missing-model controls. No `443cc636` browser rerun is claimed. Historical plan: [`plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md`](./plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md). |
-| M47 | Complete for portable scope | TypeDuck/Jyutping comments-intact keyboard memory is under the Windows private/dirty proxy target; Apple `phys_footprint` proof remains parked. |
-| M48-M52 | Complete | Engine correctness, support-contract, and historical Track A guardrail closeouts; M52 is superseded by the corrective M55 per-key gate (the metric changed: context is read per keypress). |
-| M53 | Complete | Engine release-readiness audit (docs/evidence only): five-dimension consistency/ABI/guardrail/claim/link audit with adversarial verification; substantive invariants clean, no drift; corrected stale `README.md`/archived public-claim wording to the contract-accurate M52 lane-specific record. Plan: [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md). |
-| M54 | Complete | Native octagram-compatible grammar support for the named upstream `luna_pinyin` target, with pinned lotem oracle data, RIME-LMDG validation evidence, external model checksums, clean-room Rust `.gram` parsing/scoring, null-grammar and TypeDuck regression gates, and no public C ABI change. Plan: [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md). |
-| M55 | Complete (corrective re-baseline) | Native Track A performance program, closed 2026-07-04 after a corrective review. Real: 37-char `3.05x -> 1.913x`, 59-char `2.25x -> 1.528x`, `ni` `2.433x`, `hao` `1.574x`, startup `0.895x`, session `0.864x`, win rows locked `<1.00x`, Track B guards green and tightened (~3x better startup/session absolutes), `YUNE-POET/2` byte-backed poet built (opt-in `113.2 MB`, latency-blocked; default owned `185.7 MB`). Retracted as measurement artifacts: the pre-corrective `0.237x`/`0.086x`/`0.286x` rows (key deferral, benchmark-input aliases, uninvalidated config cache - all reverted; benchmark now reads context per keypress). Corrective gate green twice. Corrective record: [`reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/`](./reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/). Plan: [`plans/completed/m55-plan-native-track-a-match-or-beat-program.md`](./plans/completed/m55-plan-native-track-a-match-or-beat-program.md). |
-| M56 | Complete | Engine productization hardening for external Windows/iOS frontend consumers: staleness-proofing + isolated cold/warm conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards, session-registry poison recovery, and explicit release `panic = "abort"` policy; no ABI change, behavior-preserving on defined happy paths, and no new default product `*.poet.bin` payloads. Evidence: [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/). Plan: [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md). |
-| M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
-| WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, 13 retained Phase 1 surface rows implemented through existing `apps/yune-web` seams, unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior unchanged, public demo debug/admin controls plus WEB-05 raw/cache/asset data pulls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Named follow-ups: persisted-config deploy-cache freshness and current Extended charset browser-effect N/A. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
-| M58 | Complete for reachability; historical perf residual recorded | Canonical Jyutping candidate behavior was recaptured from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; TypeDuck-HK/librime v1.1.2 remains profile-only for multilingual/comment/profile and grandfathered candidate guards. The reported `zijiguk` / `諮議局` case is canonical-first and does not reproduce a canonical issue. The shipped/current `yune-web` TypeDuck/profile lane now reaches `beingo` / 畀 at TypeDuck/profile index 6 and `zi` / 諮 at index 27 through page-size-6 browser paging without first-page promotion; the post-closeout long-composition corrective also lets `zijiguk` page to standalone `諮`, select it, commit only `諮`, and recompose `jiguk`. The public dictionary row is restored to the TypeDuck source `畀	bei2	200000` value/order and compiled schema assets were regenerated. The standing M55/Track B ratchet failed twice after the long-composition follow-up (`ni`, `hao`, `zhongguo`, and Track B long-Jyutping latency), so that residual is retained as M58-boundary evidence; M59 later superseded its current status with the final `32/32` plus `160/160` pass. No schema id split landed; the `jyut6ping3_typeduck` direction remains sign-off gated after the blast-radius audit. Evidence: [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/). Plan: [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
-| M59 | Complete — full Path A D-47/D-48 closeout | General single-character reachability is default-on and schema-general; the reverted gamed execution remains excluded. Workspace fidelity (`2ee0805f`), unified TypeDuck/profile navigation (`e37ee011`), compiled `sort: original` (`d55b203e`), transformed-algebra reachability (`2cb7e411`), source-current Lane A strict `13/13` over 5,705 rows (`443cc636`), Cangjie strict `12/12` with `3 passed / 0 ignored` (`38e759f6`), seven-input Lane B exact order, exact 37/59 page shape, and final unchanged-ceiling `32/32` aggregate plus `160/160` individual performance acceptance (`443cc636`) are complete. `5fa986d8` records the accepted 60-asset schema tree and `07845e02` enforces exact bidirectional manifest/tree equality for every regular asset. Browser/WASM/package receipts remain bound to the `5fa986d8` closeout; no later browser rerun is claimed. All five WEB-04 requirements are complete. The startup benchmark is outside M59 correctness, and WEB-05's historical same-WASM baseline is not rebaselined. The renewed historical class-3 exception remains unused by final Lane A. Evidence: [`reports/evidence/m59-canonical-jyutping-reachability-parity/`](./reports/evidence/m59-canonical-jyutping-reachability-parity/). Plan: [`plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/completed/m59-plan-canonical-jyutping-reachability-parity.md). |
-| M60 | Finalized and review-corrected — ready; not started | Formalism-only follow-up to M59: canonical capability contract, live M59-seeded acceptance registry retaining its coverage version with a separate formalism version, empty current opt-out collection, production-semantic read-only Rust audit output, fail-closed opt-out/schema-onboarding checks, and compact source-bound evidence. It changes no runtime behavior, C ABI/API table/export, schema/profile id, signed ceiling, browser surface, or Windows product scope. M61 remains unallocated. Plan: [`plans/active/m60-plan-schema-general-single-character-reachability.md`](./plans/active/m60-plan-schema-general-single-character-reachability.md). |
+<a id="closing-the-188-mb-native-track-a-memory-gap"></a>
 
-**M59 supplemental macOS diagnostic and resolution note (2026-07-10–13; no
-milestone or active-scope change):** At exact signed Increment-0 source
-`457751824b8944676dc44912b9ce31ff29d78403`, a read-only macOS diagnostic
-reproduced the [already disclosed M55 expanded-Luna first-page debt](./reports/evidence/m55-native-match-or-beat/phase-3r-fixture-expansion/README.md)
-on the 37- and 59-character rows: pinned librime emits its one-best full
-sentence followed by shorter phrase candidates, while Yune exposes up to five
-full-span sentence paths. The supplemental follow-up repairs that cross-platform
-Yune defect and a compiled-log weight-domain error at independently measured
-source `89875ee2`; five fixed-binary macOS rounds match both pinned-librime long
-pages exactly. The Mac-versus-Windows latency comparison remains diagnostic
-only, with signed ceilings unchanged. That historical evidence did not measure
-the later Increment-4e source. The source-matched `5879405c` packet does, while
-still leaving the authoritative signed Windows record unchanged; it predates
-final M59 `443cc636` and current main. Lane A and
-Lane B were closed by independent Windows 4c and 4e packets. [Original diagnostic](./reports/evidence/m59-macos-librime-analysis-20260710/README.md);
-[supplemental repair evidence](./reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-luna-script-translation-order/README.md);
-[Increment-4e Mac packet](./reports/evidence/m59-final-source-macos-20260713/README.md);
-[current-source Mac packet](./reports/evidence/m59-current-source-macos-20260714/README.md);
-[source-bound Mac report](./reports/history/2026-07-14-yune-vs-librime-macos-performance-pre-consolidation.md).
+Historical M49–M55 work framed the native Track A memory problem as the
+"188 MB gap." That number is not a current target or portable counter. The
+remaining decision is current: measure the selected lane and platform, rank
+retained owners, and validate memory and CPU independently under the unchanged
+compatibility and performance gates. Historical outcomes remain in the
+[`milestone ledger`](./ledgers/milestone-history.md); current numbers remain in
+the [`performance dashboard`](./reports/yune-vs-librime-performance.md#native-startup-session-and-memory).
 
 ## Scope Ledger
 
-A living map so "parity" always names a target. Deferred rows move into scope
-only when an engine target needs them; nothing here commits to a timeline.
+This is the current target boundary. Completed examples and chronology live in
+the support contract and milestone history.
 
-| In scope - target-driven, measured | Deferred - implement when an engine target needs it | Non-goal |
+| In scope | Deferred until a named target needs it | Non-goal |
 | --- | --- | --- |
-| `luna_pinyin` core versus upstream `1.17.0`, including M17's null-grammar sentence/lattice slice; M59's exact seven-input complete-list Lane B introduced at `5879405c` and revalidated at `443cc636`; the deployed one-best-sentence-then-phrase 37/59 page shape; M18 punctuation processor slices; completed M42 abbreviation sentence parity for `cszysmsrsd`/`zybfshmsru`; completed M48 `jianli`/`biancheng` over-segmentation parity; and completed M54 native octagram-compatible grammar support for the named upstream target. The earlier source-scoped `89875ee2` packet remains historical provenance for the compiled-log/inclusive-5% repair, not the current Lane B acceptance source. | Broader learned `.gram`/octagram behavior, contextual translation, and plugin-backed gears beyond the named M54 target | Bit-for-bit parity with librime internals |
-| Common RIME schemas added through explicit breadth milestones | Further schema breadth only with fresh oracle fixtures and owning tests | Unbounded schema checklist work |
-| Canonical Cantonese/Jyutping candidate behavior: upstream `rime/librime 1.17.0` + pinned `rime/rime-cantonese`; exact Yune-facing id direction gated by M58 Phase 3 sign-off | TypeDuck multilingual comments/profile/display behavior and grandfathered profile candidate guards under current shipped ids until a signed-off split; preferred future id `jyut6ping3_typeduck` | Using bare `schema_id: jyut6ping3` as provenance when schema sources differ; renaming product ids without blast-radius/userdb evidence |
-| **Compose an arbitrary non-lexicon phrase one character at a time — DEFAULT-ON for EVERY schema** (M59 owner amendment 2026-07-07, binding): `luna_pinyin`, `jyut6ping3`/rime-cantonese, **cangjie/shape schemas**, and **any FUTURE schema (e.g. `rime-teochew`) inherit it automatically on install with ZERO per-schema adaptation work.** Engine/translator-level default (opt-out only, recorded reason). Delivered IN M59. | The finalized M60 formalism milestone may document and enforce the capability contract, empty current opt-out registry, and fail-closed onboarding; the default-on guarantee itself is **not** deferred or reopened | Per-input hardcoding or baked oracle data; **any per-schema adaptation work** required to enable the feature; a schema silently failing onboarding as "unsupported" |
-| Native engine performance guardrails for startup, session lifecycle, lookup, lazy/page-bounded translation, context export, memory, and allocation | Frontend/application delivery evidence and platform packaging | Claiming application-visible wins from native engine evidence |
-| AI-native layer on the compatible deterministic base | Richer AI experiments after the classic engine path is competitive | Replacing or altering classic input paths by default |
+| Upstream `luna_pinyin` behavior for the named target set, including the accepted native grammar lane | Broader learned grammar/plugin behavior and contextual translation | Bit-for-bit parity with librime internals |
+| Captured common-schema targets, including `double_pinyin`, `cangjie5`, and `bopomofo`; `cangjie5` also retains its order-parity contract | Further schema breadth only with fresh oracle fixtures and owning tests | Unbounded schema-checklist work |
+| Canonical Jyutping against upstream librime plus pinned rime-cantonese; TypeDuck multilingual/comment/profile behavior in its profile lane | A `jyut6ping3_typeduck` id split only after explicit sign-off and migration evidence | Treating a shared schema id as proof that differently sourced schemas have identical provenance |
+| Default-on single-character composition for every current and future schema automatically on install, with zero per-schema adaptation; M60 actively formalizes and audits this shipped guarantee | Future opt-out or onboarding-formalism evolution only after a separately approved need | Per-input hardcoding, baked oracle data, schema allowlists, or silent unsupported onboarding |
+| Native startup, session, lookup, translation, context, memory, and allocation guardrails | Frontend/application delivery and platform packaging evidence | Claiming application-visible wins from native-only evidence |
+| Default-off AI behavior layered above the compatible deterministic engine | Richer local-first AI experiments with explicit privacy and memory ownership | Replacing or altering classic input paths by default |
+
+## Historical Closeouts
+
+Completed milestone narratives are deliberately not repeated here. Use the
+[`milestone history ledger`](./ledgers/milestone-history.md), completed plans,
+and evidence packets. Superseded performance interpretation and platform
+diagnostics are indexed by
+[`reports/history/README.md`](./reports/history/README.md); they are not current
+acceptance authorities.
 
 ## Deferred / Future
 
-- **Far-future Apple-device memory validation:** confirm M47's ~22 MB Windows
-  private/dirty proxy on real Apple hardware when a Mac/Xcode environment exists.
-  Build a minimal iOS keyboard extension or macOS host loading the comments-intact
-  `jyut6ping3_mobile` profile and measure `phys_footprint` in Instruments. This
-  is intentionally not a numbered milestone while the current focus remains
-  portable engine optimization.
-- **Future M47-derived engine memory polish:** RED-09 compiled-asset/profile
-  slimming, RED-10 allocator strategy, and RED-11 startup hygiene remain optional
-  engine candidates. They are useful for download size, cold start, WASM, and
-  conservative resident footprint, but are not required for the current
-  iOS-dirty proxy result. Open them only with a fresh owner-ranked plan.
-- **librime C++ plugin ABI** (Lua, dynamic octagram plugin loading, predict,
-  proto): deferred until a concrete engine target requires it; M54's native
-  octagram-compatible grammar support is not C++ plugin ABI support. Prefer
-  Yune-native extension points first.
-- **AI-native input layer beyond M13:** future work owns richer local-first AI
-  behavior, privacy/memory controls, and any explicit remote-provider decision.
-  Until then, proven AI remains default-off and outside the classic performance
-  path.
+- **Apple-device memory validation:** measure M47's portable product profile
+  with Apple `phys_footprint` in a real host when that platform lane is opened.
+- **Owner-ranked native memory polish:** RED-09/10/11-style asset/profile,
+  allocator, or startup work requires a new measurement and scoped plan.
+- **Browser fair-lane work:** refresh the same-schema peer lane before choosing
+  a startup, WASM-memory, or encoded-resource owner.
+- **TypeDuck profile storage or schema-id migration:** require explicit scope,
+  userdb/cache-key migration evidence, and profile-specific oracle guards.
+- **librime C++ plugin ABI:** defer Lua, dynamic octagram plugins, predict, and
+  proto until a concrete engine target requires them; prefer Yune-native
+  extension points.
+- **AI beyond M13:** require an explicit local-first product/engine experiment
+  with privacy, memory, and behavior gates.
+
+No deferred item allocates a milestone number or commits to a timeline.
 
 ## Principles
 
-The standing principles that govern all current and future work - librime as
-oracle, target-driven scope, support-contract/ABI boundaries, evidence-lane
-separation, and upstream-first oracle sequencing - have one canonical home:
-[`conventions.md`](./conventions.md), [`decisions.md`](./decisions.md), and
+The standing principles—librime as oracle, target-driven scope,
+support-contract and ABI boundaries, evidence-lane separation, raw-evidence
+retention outside Git, and upstream-first oracle sequencing—have one canonical
+home: [`conventions.md`](./conventions.md),
+[`decisions.md`](./decisions.md), and
 [`contracts/engine-support-contract.md`](./contracts/engine-support-contract.md).

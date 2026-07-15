@@ -1,0 +1,42 @@
+{
+  "sourceCommit": "ef485b102b3a5e75359e547008b47ed89eb89c7e",
+  "sourceTreeState": "clean",
+  "cloudflareDeploymentId": "e4ad5c7b-4084-47f7-abe7-e2a034c443ef",
+  "cloudflareCheckRunId": 87291719576,
+  "cloudflareCheckConclusion": "success",
+  "toolchain": {
+    "rustc": "1.96.1",
+    "emscripten": "4.0.23",
+    "node": "22.16.0"
+  },
+  "artifacts": {
+    "schemaManifestSha256": "5565dfbaab79ce2d5309418338c2ed446138f3958a0023bceebcfd4c6311be86",
+    "wasmSha256": "60048129d4c40c8b40c1f07b88d75df303130e0513c5076c3f5ab0f8d1205c7b",
+    "publicArtifactManifestSha256": "f6a6d894735944cf679a76d70235119e27becda8ce41f60502b78999b42e2861"
+  },
+  "localReleaseGate": {
+    "scenarios": 8,
+    "verifiedKeys": 186,
+    "cadenceGaps": 178,
+    "onTimeCadenceGaps": 178,
+    "thresholdVerdict": "pass",
+    "releaseGradeVerdict": "pass"
+  },
+  "deployedCanary": {
+    "scenarios": 8,
+    "verifiedKeys": 186,
+    "cadenceGaps": 178,
+    "onTimeCadenceGaps": 178,
+    "thresholdVerdict": "pass",
+    "releaseGradeVerdict": "not-applicable",
+    "releaseProfileApplicable": false,
+    "releaseProfileDeviations": [
+      "deployed-origin-canary",
+      "worker-action-multiplier"
+    ],
+    "normalTypingP95Ms": 43,
+    "normalTypingMaxMs": 44,
+    "normalTypingWorkerQueueWaitMaxMs": 0
+  },
+  "externalPacket": "$HOME/yune-web03-11-closeout-ef485b10"
+}

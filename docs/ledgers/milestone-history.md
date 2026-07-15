@@ -114,8 +114,11 @@ page order while preventing a persisted row from forcing eager full-dictionary
 translation on every key. The exact normal-typing canary runs first so a later
 release-profile red cannot suppress its receipt; either red blocks, with no retry.
 The public build pins Rust 1.96.1, Emscripten 4.0.23, and SDK Node 22.16.0.
-WEB03-11 remains active until the first clean source-current Cloudflare build
-passes that binding profile.
+WEB03-11 closed at clean source `ef485b10`: the exact Cloudflare build entrypoint
+passed the binding 8-scenario / 186-key profile, deployment
+`e4ad5c7b-4084-47f7-abe7-e2a034c443ef` succeeded, and the source-pinned
+production canary passed. The compact closeout is retained under
+[`web03-11-input-latency/`](../reports/evidence/web03-three-schema-launch-readiness/web03-11-input-latency/).
 
 ## Planned, Parked, Or Transferred Tracks
 

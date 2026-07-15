@@ -1006,7 +1006,7 @@ browser latency hard stop in WEB03-11.
   `honangwui -> 可能會`. Fixed in `a76fcd59`; guard added in `d1c0171a`. Gates:
   yune-core `259/0`, `cantonese_parity` `37/0`, `upstream_luna_pinyin_parity`
   `12/0`, `yune_web` `35/0`, clippy `-D warnings` + fmt clean.
-- [ ] **WEB03-11**: Browser input latency has a focused single-worker hard stop that
+- [x] **WEB03-11**: Browser input latency has a focused single-worker hard stop that
   covers all three public schemas, the historical long Jyutping rows, Luna
   37/59, and a real TypeDuck row learned through the UI. Binding defaults use
   4x main-thread Chromium CPU throttling plus loopback-only, synthetic 4x
@@ -1032,6 +1032,11 @@ browser latency hard stop in WEB03-11.
   measurement cannot suppress the exact receipt.
   Latency-gate failures retain complete JSON receipts in bounded gzip/base64 log
   chunks plus hashes of their exact bytes; there are no measured-red retries.
+  Closed at clean source `ef485b10`: the binding local lane passed 8/8 scenarios,
+  186/186 keys, and 178/178 on-time cadence gaps; Cloudflare deployment
+  `e4ad5c7b-4084-47f7-abe7-e2a034c443ef` succeeded; and the source-pinned
+  deployed canary passed with the independent 47-key row at `43 ms` p95,
+  `44 ms` max, and `0 ms` maximum worker queue wait.
 
 ## WEB-04 Octagram Debug Harness Requirements
 
@@ -2267,4 +2272,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-14 - M59 remains complete under full Path A at 11/11 requirements. WEB03-11 is a separate active post-M59 browser-latency guard and clean-checkout native-gate corrective pending its first clean source-current binding run; its scope covers all public schemas, Luna 37/59, historical long Jyutping, and learned TypeDuck state without projecting new browser evidence onto the `5fa986d8` M59 receipt boundary. The historical 4a class-3 disposition remains unchanged and unused by final Lane A. D-49 transfers Windows TSF and product/frontend requirements to `CanCLID/yune-windows` while retaining Yune's engine/package/profile-API contract here._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-15 - M59 remains complete under full Path A at 11/11 requirements. WEB03-11 is complete at clean source `ef485b10` after its binding local gate, Cloudflare deployment, and source-pinned production canary passed; this browser evidence is not projected onto the `5fa986d8` M59 receipt boundary. The historical 4a class-3 disposition remains unchanged and unused by final Lane A. D-49 transfers Windows TSF and product/frontend requirements to `CanCLID/yune-windows` while retaining Yune's engine/package/profile-API contract here._

@@ -1,6 +1,6 @@
 # Yune Performance Dashboard
 
-Updated: 2026-07-14
+Updated: 2026-07-15
 
 This is the single current performance report for Yune. It covers native
 Windows, native macOS, the Track B product guard, the browser peer lane, the
@@ -19,11 +19,10 @@ measurements and longer source-bound investigations are kept in
 - **The iOS-budget lane remains a Windows proxy, not an iOS result.** The
   comments-intact keyboard profile is `67.4 MB` steady / `80.1 MB` peak with
   `22.5 MB` private; on-device `phys_footprint` is still unmeasured.
-- **The latest measured web build passed, but current-main web performance is
-  unmeasured.** Pre-hardening source `0111cf47` passed the deployed 47-key
-  canary at `51 ms` p95 / `55 ms` max with zero worker queue buildup and the
-  local 8-scenario / 186-key stress gate. Fail-closed receipt hardening at
-  `68df2d16` changes the validated UI path and has not been rerun.
+- **The source-current web interaction gate passes.** Clean source `ef485b10`
+  passed the local 8-scenario / 186-key binding 4x/4x profile, its Cloudflare
+  deployment, and the source-pinned production canary. The deployed 47-key row
+  measured `43 ms` p95 / `44 ms` max with zero worker queue wait.
 - **Browser startup and footprint remain the clearest peer deficits.** In the
   latest fair same-schema peer run, Yune is `1.577x` on ready time, `4.000x` on
   WASM memory, and `3.471x` on unique encoded resources. First-input and commit
@@ -65,7 +64,7 @@ reinterpreting those ceilings.
 | Windows native | `443cc636862806e4f0dd1e12ab2e2e45f4189154` | librime `33e78140250125871856cdc5b42ddc6a5fcd3cd4` | 5 rounds; `9/60/80`; product deployment | final-M59 source-current guard; `32/32` aggregate and `160/160` individual observations pass |
 | macOS native | `0111cf47c09bfe7a4a3d55a1832f35a55bc59435` | librime `33e78140250125871856cdc5b42ddc6a5fcd3cd4` | 5 fixed-binary rounds; `9/60/80`; product deployment | artifact/identity/completeness checks pass; quiet-machine condition was not continuous |
 | Windows iOS-budget proxy | M47 RED-08, measured 2026-06-29 | no peer; 48/64 MB product targets | fresh-process native probe | portable optimization scope complete; on-device validation pending |
-| Web interaction | `0111cf47c09bfe7a4a3d55a1832f35a55bc59435` | no peer | local full release-stress gate plus deployed normal-typing canary | pre-hardening source-bound pass; current-main validator not rerun |
+| Web interaction | `ef485b102b3a5e75359e547008b47ed89eb89c7e` | no peer | local full release-stress gate, Cloudflare deployment, and deployed canary | WEB03-11 source-current pass; no browser-peer ratio formed |
 | Browser peer | measured 2026-06-28 | My RIME | same-schema `luna_pinyin` comparison | latest fair browser peer snapshot; Jyutping peer rows excluded as dictionary-confounded |
 | Linux native | — | — | no current packet | unmeasured; no Linux performance claim |
 | iOS device | — | — | no on-device packet | unmeasured; no Apple `phys_footprint` claim |
@@ -214,12 +213,11 @@ comparison, but it is not a source-current remeasurement of the later web
 build. The `0111cf47` web receipts observe a `128 MiB` Yune WASM heap;
 without a same-run My RIME result, no refreshed peer ratio is formed.
 
-## Latest pre-hardening web interaction receipts
+## Current WEB03-11 web interaction receipts
 
-The measured `0111cf47` web build directly addresses normal typing rather than
-native engine microbenchmarks alone. These receipts pass at that source, but
-they predate fail-closed receipt hardening at `68df2d16` and do not satisfy a
-current-main validation claim.
+The measured clean `ef485b10` web build validates the hardened public typing
+path and closes WEB03-11. It does not refresh the separate browser-peer startup,
+memory, or payload ratios.
 
 ### Normal 47-key Jyutping input
 
@@ -228,8 +226,8 @@ Input:
 
 | Surface | Keys | Median | p95 | Max | Worker queue max | Verdict |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| deployed `yune-web.pages.dev` | `47/47` | `49 ms` | `51 ms` | `55 ms` | `0 ms` | pass |
-| local release preview | `47/47` | `37 ms` | `39 ms` | `51 ms` | `0 ms` | pass |
+| deployed `yune-web.pages.dev` | `47/47` | `41 ms` | `43 ms` | `44 ms` | `0 ms` | pass |
+| local release preview | `47/47` | `46 ms` | `47 ms` | `48 ms` | `0 ms` | pass |
 
 The deployed canary used a normal 100 ms typing cadence. The local receipt used
 the same exact input and release build. Neither shows the earlier multi-second
@@ -242,18 +240,20 @@ scenario. Ceilings are `750 ms` p95 and `1,000 ms` max.
 
 | Scenario | Schema | Keys | p95 | Max | Verdict |
 | --- | --- | ---: | ---: | ---: | --- |
-| `jyutping-short` | `jyut6ping3` | 3 | `76 ms` | `76 ms` | pass |
-| `jyutping-historical-long-1` | `jyut6ping3` | 28 | `70 ms` | `105 ms` | pass |
-| `jyutping-historical-long-2` | `jyut6ping3` | 52 | `50 ms` | `51 ms` | pass |
-| `typeduck-learned-userdb-prefix` | `jyut6ping3` | 3 | `60 ms` | `60 ms` | pass |
-| `luna-short` | `luna_pinyin` | 3 | `51 ms` | `51 ms` | pass |
-| `luna-37` | `luna_pinyin` | 37 | `101 ms` | `118 ms` | pass |
-| `luna-59` | `luna_pinyin` | 59 | `141 ms` | `158 ms` | pass |
-| `cangjie-short` | `cangjie5` | 1 | `42 ms` | `42 ms` | pass |
+| `jyutping-short` | `jyut6ping3` | 3 | `84 ms` | `84 ms` | pass |
+| `jyutping-historical-long-1` | `jyut6ping3` | 28 | `71 ms` | `102 ms` | pass |
+| `jyutping-historical-long-2` | `jyut6ping3` | 52 | `39 ms` | `55 ms` | pass |
+| `typeduck-learned-userdb-prefix` | `jyut6ping3` | 3 | `68 ms` | `68 ms` | pass |
+| `luna-short` | `luna_pinyin` | 3 | `42 ms` | `42 ms` | pass |
+| `luna-37` | `luna_pinyin` | 37 | `140 ms` | `190 ms` | pass |
+| `luna-59` | `luna_pinyin` | 59 | `164 ms` | `180 ms` | pass |
+| `cangjie-short` | `cangjie5` | 1 | `63 ms` | `63 ms` | pass |
 
-Result: 8/8 scenarios and 186/186 keys recorded, threshold verdict pass,
-release-grade verdict pass. This is a local loopback release-stress receipt,
-not the still-missing durable full Cloudflare build-gate receipt.
+Result: 8/8 scenarios, 186/186 keys, and 178/178 on-time cadence gaps;
+threshold and release-grade verdicts pass. Cloudflare ran this exact entrypoint
+successfully before publishing the same clean source. The deployed-origin lane
+also passed 8/8 and 186/186, but is a canary with worker amplification disabled,
+not a substitute for the binding loopback profile.
 
 ## Current bottleneck analysis
 
@@ -263,7 +263,7 @@ not the still-missing durable full Cloudflare build-gate receipt.
 | Native startup/session | Windows is around parity and run-sensitive; Mac is below parity but noisy | monitor; no platform conclusion | source-matched quiet-machine Windows/Mac run |
 | Native memory | about `8.9x` peer on Windows and `11.8x` peer RSS on Mac | current native bottleneck; no memory-win claim | owner-level retained/mapped attribution plus Apple `phys_footprint` where relevant |
 | iOS-budget product proxy | comments-intact `67.4 MB` steady / `80.1 MB` peak / `22.5 MB` private on Windows | portable scope complete; iOS budget unproven | on-device `phys_footprint` |
-| Browser interaction | pre-hardening local/deployed exact-input and full local stress receipts pass at `0111cf47` | source-bound pass only; current-main performance unmeasured | rerun the hardened local full gate and deployed canary; then capture the durable Cloudflare full-gate receipt |
+| Browser interaction | source-current local binding gate, Cloudflare deployment, and deployed canary pass at `ef485b10` | WEB03-11 closed; keep as maintenance | rerun only when the owning product path or gate contract changes |
 | Browser startup | latest fair peer ratio `1.577x` | current peer deficit | refreshed same-run same-schema browser peer capture |
 | Browser WASM/payload | latest fair peer ratios `4.000x` / `3.471x`; `0111cf47` Yune heap observed at `128 MiB` | clearest browser bottleneck | refreshed peer run plus resource/heap owner attribution |
 | Candidate behavior | 16/17 exact; deterministic `zhongdengchangdu` difference | correctness discrepancy, not established performance cause | fix only under explicit behavior scope, then rerun the owning guard |
@@ -271,8 +271,8 @@ not the still-missing durable full Cloudflare build-gate receipt.
 
 The evidence does not support a new engine performance fix merely because a
 ratio differs by platform. The current priorities are browser footprint and
-startup, native memory ownership, the durable Cloudflare receipt, and a
-source-matched platform run if causal attribution becomes necessary.
+startup, native memory ownership, and a source-matched platform run if causal
+attribution becomes necessary.
 
 ## Evidence and reproducibility
 

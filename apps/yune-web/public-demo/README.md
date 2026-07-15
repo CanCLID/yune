@@ -113,5 +113,11 @@ M31 deployed the public demo to:
 
 <https://yune-web.pages.dev>
 
+WEB03-11 closed at clean source `ef485b10`: the exact build entrypoint passed
+the binding 8-scenario / 186-key gate, the Git-integrated Pages deployment
+succeeded, and the source-pinned production canary passed. The public runtime
+keeps the status header but disables hidden diagnostics polling and excludes
+the development cockpit from the typing path.
+
 Production deploys are triggered automatically by pushes to `main`. Manual
 Wrangler direct uploads are retained only as an emergency fallback.

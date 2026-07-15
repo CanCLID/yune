@@ -1,13 +1,54 @@
 # WEB03-11 Browser Input-Latency Hard Stop
 
-Status: candidate evidence; Cloudflare acceptance remains pending.
+Status: complete at `ef485b10`.
 
-This directory preserves the first complete release-profile receipt after the
-WEB03-11 engine and browser-guard correctives. The receipt is intentionally not
-called the final Cloudflare verdict: the Git-integrated deployment for the same
-source commit returned a generic failed check, while its authenticated build log
-was unavailable to this session. A later source-current Cloudflare PASS and a
-post-deploy production canary are still required before WEB03-11 can close.
+## Final closeout boundary
+
+WEB03-11 closed on 2026-07-15 at clean source
+`ef485b102b3a5e75359e547008b47ed89eb89c7e`. The exact Cloudflare build
+entrypoint passed from a disposable detached clone, the Git-integrated Pages
+deployment `e4ad5c7b-4084-47f7-abe7-e2a034c443ef` succeeded, production
+`build-info.json` named that exact clean source with Rust `1.96.1`, Emscripten
+`4.0.23`, and Node `22.16.0`, and the source-pinned production canary passed.
+
+The binding local 4x/4x lane recorded all 8 scenarios, all 186 keys, and all
+178 cadence gaps on time. The deployed-origin lane also recorded 8/8,
+186/186, and 178/178; it is a post-deploy canary with worker amplification
+disabled, not a replacement for the binding loopback release profile. The
+independent deployed 47-key Jyutping canary measured `43 ms` p95, `44 ms`
+maximum, and `0 ms` maximum worker queue wait, with all 46 gaps on time.
+
+Compact receipts are [`closeout-ef485b10.json`](./closeout-ef485b10.json),
+[`local-release-gate-ef485b10.csv`](./local-release-gate-ef485b10.csv), and
+[`deployed-canary-ef485b10.csv`](./deployed-canary-ef485b10.csv). Full JSON,
+commands, and logs remain external at `$HOME/yune-web03-11-closeout-ef485b10`.
+The compact packet hashes are pinned in
+[`manifest-ef485b10.sha256`](./manifest-ef485b10.sha256).
+The first deployed invocation passed but retained only its log because the
+local-run output variable was used; the preserved, explicitly named
+`deployed-canary-receipt-capture` repeated the same unchanged source/policy and
+also passed. No measured red was discarded or retried.
+
+The directly preceding clean `981ab059` Cloudflare measurement also remains a
+red, preserved externally at `$HOME/yune-web03-11-closeout-981ab059`. Its exact
+47-key normal row passed, but the binding `jyutping-short` row recorded only
+1/2 on-time gaps (including a `395.4 ms` delay), the next row stopped at 27/28
+diagnostics, and the aggregate timed out incomplete/fail. That source was not
+retried. `ef485b10` is a corrective new source that removes hidden public-path
+diagnostics polling; it does not cherry-pick the earlier run.
+
+The still earlier `cce99c3c` red below also remains historical evidence and is
+not rewritten by this closeout.
+
+## Historical `cce99c3c` candidate boundary
+
+The remainder of this document preserves the first complete release-profile
+receipt after the WEB03-11 engine and browser-guard correctives. At that
+historical boundary it was intentionally not called the final Cloudflare
+verdict: the Git-integrated deployment for the same source commit returned a
+generic failed check, while its authenticated build log was unavailable to that
+session. The final `ef485b10` boundary above now supplies the later pass and
+production canary without rewriting this history.
 
 ## Source and artifact identity
 

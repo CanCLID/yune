@@ -151,9 +151,9 @@ Yune is an active engine project.
   current platform-speed delta is claimed. The signed Windows baseline and
   ceilings remain unchanged.
 - **Public demo:** `yune-web` is deployed at <https://yune-web.pages.dev>. The
-  current exact 47-key normal-typing canary passes at `51 ms` p95 / `55 ms`
-  max with zero worker queue buildup; browser startup and footprint remain
-  separate open deficits.
+  current `ef485b10` exact 47-key normal-typing canary passes at `43 ms` p95 /
+  `44 ms` max with zero worker queue buildup; browser startup and footprint
+  remain separate open deficits.
 - **AI posture:** the AI layer exists but is default-off, local-only in the web
   harness, and outside the classic deterministic input path.
 
@@ -216,11 +216,10 @@ batch-shaped numbers are not comparable.
   Windows and `11.8x` same-run librime RSS on macOS. Browser footprint remains
   a separate deficit: the latest fair peer lane is `4.000x` on WASM memory and
   `3.471x` on unique encoded resources.
-- **Web interaction:** the latest measured `0111cf47` normal typing passes the deployed
-  47-key canary at `51 ms` p95 / `55 ms` max with zero worker queue buildup;
-  the full local release-stress gate passes all 8 scenarios and 186 keys. These
-  receipts predate fail-closed hardening at `68df2d16`; current-main web
-  performance is unmeasured.
+- **Web interaction:** clean source `ef485b10` passes the binding local
+  8-scenario / 186-key 4x/4x release gate, its Cloudflare Pages deployment, and
+  the source-pinned production canary. The deployed 47-key row is `43 ms` p95 /
+  `44 ms` max with zero worker queue wait.
 - **Track B:** the current Windows product guard is `16.900 us/key` median and
   the current Mac guard is `5.607 us/key` median, but the platform counters are
   not directly interchangeable and the lane has

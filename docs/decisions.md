@@ -794,3 +794,10 @@ _Current update: 2026-07-14 - D-49 transfers P2-WIN-01 Windows TSF and
 product/frontend execution to `CanCLID/yune-windows`. This repository retains
 the engine/package/profile-API contract and the superseded handoff record; the
 completed P2-WIN-02 boundary fix remains closed._
+WEB03-11 maintenance closeout: clean source `ef485b10` removes hidden
+development-diagnostics polling from the public typing path while preserving
+the public status header and development cockpit. The exact Cloudflare
+entrypoint passed the unchanged binding 4x/4x profile over 8 scenarios and 186
+keys; Pages deployment `e4ad5c7b-4084-47f7-abe7-e2a034c443ef` succeeded; and
+the source-pinned deployed canary passed. This closes the latency hard stop as
+maintenance without changing the engine, ABI, cadence policy, or ceilings.

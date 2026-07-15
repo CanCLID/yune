@@ -2,7 +2,8 @@
 
 > **Milestone:** M60. **Status:** Finalized — ready for execution; not started.
 > **Track:** documentation and fail-closed static governance. **Created:**
-> 2026-07-06; **rescoped:** 2026-07-07; **finalized:** 2026-07-15.
+> 2026-07-06; **rescoped:** 2026-07-07; **finalized:** 2026-07-15;
+> **review-corrected:** 2026-07-15.
 
 ## Outcome
 
@@ -14,8 +15,9 @@ M60 closes when all six conditions hold:
 
 1. one canonical contract describes the default-on invariant and the actual
    per-input relationship between the two reachability mechanisms;
-2. the M59-founded acceptance coverage becomes an explicitly live, versioned
-   registry with an empty current opt-out collection;
+2. the M59-founded acceptance coverage remains format-compatible with its M59
+   gates and gains a separately versioned M60 formalism plus an empty current
+   opt-out collection;
 3. the manifest checker reconciles every affected shipped namespaced
    explicit-false tuple to a complete owner-approved opt-out record;
 4. every tracked schema YAML belongs to a machine-classified root, and the
@@ -30,10 +32,11 @@ M60 closes when all six conditions hold:
 
 M59 owns the behavior. In particular:
 
-- D-47 and M59-REACH-02 make
-  `<dictionary-translator namespace>/leading_syllable_reachability` default to
-  `true` for every deployed schema (the conventional namespace is
-  `translator`) unless a tracked setting explicitly says `false`;
+- D-47 and M59-REACH-02 establish the conventional
+  `translator/leading_syllable_reachability` default. The deployed
+  `engine/translators` prescription code generalizes that rule to each
+  dictionary-translator namespace, such as `script_translator@foo` → `foo`,
+  unless its effective tracked setting explicitly says `false`;
 - D-48 owns the existing candidate-order lanes and exceptions;
 - final native behavior and performance authority remains `443cc636`;
 - shipped registry/browser/package evidence remains bound to `5fa986d8`, with
@@ -67,19 +70,24 @@ M60 makes no Windows product change. M61 is not allocated or implied by this
 plan; any M61 scope requires a separate owner decision outside this plan.
 
 The governed shipped-product root is
-`apps/yune-web/public/schema/`, currently the repository's only non-fixture
-schema root. The engine-level default remains global. Test/oracle fixtures are
-not product onboarding rows. Any future repository-owned product schema root
-must register with the same checker before this governance claim can extend to
-it; an unregistered root is a hard failure, not implicit coverage.
+`apps/yune-web/public/schema/`, currently the repository's only registered
+product schema root. The engine-level default remains global. Test/oracle
+fixtures and historical evidence are separate classified roots, not product
+onboarding rows. Any future repository-owned product schema root must register
+with the same checker before this governance claim can extend to it; an
+unregistered root is a hard failure, not implicit coverage.
 
-The live registry gains a machine-readable schema-root inventory. The checker
-discovers every tracked `*.schema.yaml`, requires it to match exactly one
+The live registry gains a machine-readable schema-root inventory. The
+production checker discovers tracked schema files from
+`git ls-files -z -- '*.schema.yaml'`, requires each path to match exactly one
 registered root, and classifies that root as `product`, `test-fixture`, or
-`historical-evidence`. Product roots name their manifest and acceptance
-registry. Fixture/evidence roots carry explicit non-product dispositions.
-Unmatched or overlapping roots, product schema files outside a registered root,
-and symbolic-link entries fail. Synthetic tests must prove each case.
+`historical-evidence`. It does not substitute a filesystem walk that could
+silently include ignored files or miss tracked deletions. Product roots name
+their manifest and acceptance registry. Fixture/evidence roots carry explicit
+non-product dispositions. Unmatched or overlapping roots, product schema files
+outside a registered root, symbolic-link entries, and execution outside a Git
+worktree fail. Synthetic tests use an explicitly injected tracked-path list and
+must prove each case.
 
 ## Runtime Truth To Formalize
 
@@ -94,9 +102,10 @@ The two mechanisms remain distinct:
   (`prefix_fallback_owned`); otherwise the independent leading-syllable path
   remains available.
 
-The last point corrects stale prose in the fork-parity ledger and completed M59
-plan. M60 may add a clearly dated documentation correction to those records,
-but it must not edit M59 evidence or present the correction as new behavior.
+The last point corrects stale prose in D-47, the fork-parity ledger, and the
+completed M59 plan. M60 may add a clearly dated documentation correction to
+those records, but it must not edit M59 evidence or present the correction as
+new behavior.
 
 ## Requirements
 
@@ -114,6 +123,15 @@ M60-AUDIT-01, M60-ONBOARD-01, M60-BOUNDARY-01, and M60-EVIDENCE-01.
 - [ ] State that schema-id branches, input allowlists, promotion tables, baked
       oracle output, circular fixtures, per-schema `true` flags, and silent
       unsupported/N/A onboarding are prohibited.
+- [ ] Include an authority table that keeps final M59 native behavior and
+      performance at `443cc636`, shipped registry/browser/package evidence at
+      `5fa986d8` plus `07845e02`, and WEB03-11 measurement at `ef485b10`
+      source-bound rather than projecting any lane onto M60.
+- [ ] State the exact covered translator arms and add a narrow regression for a
+      prefix-fallback-enabled request that owns no proper prefix, so the
+      corrected per-input prose is pinned to the real leading-single path. The
+      upstream-table lazy bounded arm at `translator/mod.rs:5094` must be
+      classified explicitly rather than silently generalized.
 - [ ] Correct the stale schema-wide precedence wording in
       `docs/ledgers/fork-parity-ledger.md` and add a dated correction to the
       completed M59 plan and D-47 while preserving their historical evidence
@@ -122,8 +140,11 @@ M60-AUDIT-01, M60-ONBOARD-01, M60-BOUNDARY-01, and M60-EVIDENCE-01.
 ### 2. Live registry and empty opt-out collection
 
 - [ ] Treat `apps/yune-web/schema-acceptance-coverage.json` as the live
-      successor seeded by M59, advance its version to an M60 formalism version,
-      and leave the historical M59 packet unchanged.
+      successor seeded by M59. Retain `version: m59-reach03-v1` because the M59
+      checker, updater, and load-bearing Rust gate bind that coverage format;
+      add and validate a separate
+      `reachabilityFormalismVersion: m60-reachability-v1`. Leave the historical
+      M59 packet unchanged.
 - [ ] Add the exact-root inventory and tracked-schema discovery contract above;
       no tracked schema YAML may sit outside one classified root.
 - [ ] Add `reachabilityOptOuts: []`. No current shipped schema has an approved
@@ -131,8 +152,8 @@ M60-AUDIT-01, M60-ONBOARD-01, M60-BOUNDARY-01, and M60-EVIDENCE-01.
 - [ ] Update `mechanismContract` to state the per-input precedence rule and link
       the canonical contract.
 
-A future opt-out row has this exact logical shape; the implementation may add a
-schema version but must not weaken any field:
+A future opt-out row has this exact logical shape. Any later schema-format
+version is additive and must not weaken a field:
 
 ```json
 {
@@ -172,65 +193,118 @@ owner decision that narrows D-47. It cannot be inferred from test-only temporary
 configuration, generated output, missing evidence, or a dependency-only row.
 The only allowed evidence kinds are `oracle` and `owner-spec`.
 
-The checker derives each dictionary-translator namespace from
-`engine/translators` exactly as deployment does, including prescriptions such
-as `script_translator@foo`, and stores the resulting effective path such as
-`foo/leading_syllable_reachability`. It parses effective YAML configuration;
-it must recognize nested mappings, slash-path keys, patch/custom overlays, and
-quoted or unquoted booleans rather than relying on a literal-text regex.
+### Production-semantic audit architecture
 
-Production-parser fixtures also cover `__include` inheritance, `__patch`
-override precedence, multiple setting-source attribution, and unresolved
-include/patch failure. Any RIME merge construct the audit cannot resolve fails
-closed; it is never treated as absence of an opt-out.
+The JavaScript checker must not grow an independent RIME configuration
+compiler. M60 adds a narrow, read-only Rust audit path that reuses the
+production deployment/config-compiler semantics:
+
+- add an internal audit module plus the tooling-only binary
+  `crates/yune-rime-api/src/bin/yune-schema-reachability-audit.rs`;
+- any library entry point needed by that binary is `#[doc(hidden)]`, has no
+  `extern "C"`/`no_mangle` export, and is not added to either Rime API table;
+- reuse the production include, patch, custom-overlay, nested/slash-key, and
+  translator-prescription resolution rather than copying those rules into the
+  binary or JavaScript;
+- instrument that same resolution to emit deterministic JSON tuples containing
+  `schemaAsset`, `schemaId`, translator component, namespace, `configPath`,
+  effective boolean, `settingAsset` (`null` only for an inherited default with
+  no literal setting), ordered directive/source trace, and hashes of every
+  contributing tracked asset; and
+- fail when a directive inside the dependency closure of
+  `engine/translators` or a derived
+  `<namespace>/leading_syllable_reachability` path is unresolved or unsupported.
+  Unrelated configuration branches need not become a full compiler target.
+
+`apps/yune-web/scripts/check-schema-asset-manifest.mjs` invokes this binary
+through a fixed `cargo run --locked -q -p yune-rime-api --release --bin
+yune-schema-reachability-audit -- ...` command, reusing the product release
+build profile, and consumes its stdout. The production entry point rejects a
+missing tool, nonzero exit, malformed output, asset-hash mismatch, or
+caller-supplied replacement JSON. JavaScript owns the registry/root/path/
+bijection policy; Rust owns effective deployment semantics and setting-source
+attribution. This is an explicitly allowed tooling-only Rust touchpoint, not an
+engine-behavior or C-ABI change.
+
+The audit recognizes exactly the booleans deployment accepts: YAML booleans and
+quoted `"true"`/`"false"` strings case-insensitively, including `"TRUE"` and
+`"False"`. It must not silently invent broader `yes`/`no`/`on`/`off` semantics.
+
+A shared synthetic fixture tree and declarative expected tuples cover
+`script_translator@foo`, root and nested `__include`, mapping/string/sequence
+`__patch`, custom-overlay precedence, optional references, multiple setting
+sources, case-insensitive quoted false, and unresolved references. The expected
+tuples are authored from the fixture source, not generated by either system
+under test. A new narrow Rust gate drives the real deploy/task path over that
+tree and compares runtime-effective behavior plus the audit trace to those
+tuples; the Node test consumes the same Rust audit output. No JavaScript-authored
+merge result is allowed to certify JavaScript/Rust equivalence.
 
 The reconciliation key is (`settingAsset`, `configPath`, `schemaAsset`). If one
 shared carrier setting affects several installable schema assets, it requires
-one owner-approved row for each affected `schemaAsset`. A shared/global false
-setting whose complete affected-schema set cannot be enumerated is prohibited.
+one owner-approved row for each affected `schemaAsset`. The complete affected
+set is the finite set of accepted product-schema rows whose Rust-emitted source
+trace contains that `settingAsset`/`configPath`. Every deployed dictionary-
+translator prescription in every product schema must resolve to exactly one
+audit tuple keyed by schema asset, component, and namespace. A shared/global
+false setting is prohibited when that finite affected-schema set cannot be
+derived from the registered roots, carriers, and resolved traces.
 
 ### 3. Mandatory fail-closed checker
 
 - [ ] Extend `apps/yune-web/scripts/check-schema-asset-manifest.mjs`; the static
-      audit is mandatory, not optional.
-- [ ] Derive every deployed dictionary-translator namespace from the shipped
-      schema tree and declared configuration carriers, then scan its effective
-      namespaced `leading_syllable_reachability` setting.
+      audit is mandatory, not optional. Refactor the current import-side-effect
+      script into an exported validator plus a thin production entry point; the
+      entry point must always run the Rust extractor and the validator.
+- [ ] Consume every Rust-derived deployed dictionary-translator namespace from
+      the shipped schema tree and declared configuration carriers, then scan its
+      effective namespaced `leading_syllable_reachability` setting.
 - [ ] Require exactly one complete opt-out row for each affected shipped
       (`settingAsset`, `configPath`, `schemaAsset`) false-setting tuple and
       exactly one tracked false tuple for each opt-out row.
 - [ ] Resolve `schemaAsset`, `settingAsset`, `schemaId`, `acceptanceId`, evidence
       path, and approval decision against tracked current files and an accepted
       real-path row.
-- [ ] Reject duplicate ids or asset/config pairs, missing or malformed fields,
-      unknown or unmanifested assets, open/unresolved acceptance rows, orphaned
-      records, stale records after asset removal, non-40-hex commits, unsafe or
-      missing repo-relative paths, empty surfaces/triggers, invalid dates, and
-      expired `reviewBy` dates.
+- [ ] Reject duplicate ids or exact reconciliation-key triplets, missing or
+      malformed fields, unknown or unmanifested assets, open/unresolved
+      acceptance rows, orphaned records, stale records after asset removal,
+      non-40-hex commits, unsafe or missing repo-relative paths, empty
+      surfaces/triggers, invalid dates, and expired `reviewBy` dates.
 - [ ] Keep the current `reachabilityOptOuts` collection empty and green.
 - [ ] Extend `check-schema-asset-manifest.test.mjs` with one fully synthetic
       valid future opt-out and negative cases for every rejection class above.
       Synthetic fixtures prove the format without creating a current opt-out.
-      They must call the exported production parser/validator with temporary
-      roots and a fixed injected UTC/as-of date; no copied test-only validator
-      is accepted. Include namespaced translator, shared-carrier, include,
-      patch-precedence, multiple-source, and unresolved-merge cases.
+      They must call the exported production validator with temporary roots, an
+      injected tracked-path list, the real Rust extractor, and a fixed UTC/as-of
+      date; no copied test-only validator or merge implementation is accepted.
+      The thin production entry point must call that same validator with
+      `git ls-files` discovery and the real UTC clock. Include explicit-false
+      with no opt-out row, opt-out with no false tuple, namespaced translator,
+      shared-carrier, include, patch-precedence, multiple-source,
+      case-insensitive-string, unresolved-merge, and expired-row cases.
 
 ### 4. Fail-closed onboarding and updater
 
-- [ ] Document this sequence: add the schema asset; regenerate the manifest;
+- [ ] Add the normative `## Schema onboarding` procedure to
+      `docs/contracts/schema-general-reachability.md` and link it from
+      `docs/conventions.md`. Document this sequence: add the schema asset;
+      regenerate the manifest;
       run the updater; classify shipped/runtime/dependency/nonshipped ownership;
       resolve the automatically created blocking `status: open` row; attach
       D-24/D-31-correct oracle or owner-spec provenance; add the narrow deploy-
       path test; then mark the row accepted and run the checker.
 - [ ] Preserve the updater's automatic open-row behavior for every new schema
-      asset. It must preserve the opt-out collection and never synthesize,
-      approve, or suggest an opt-out.
+      asset. It must preserve the M59 coverage version, M60 formalism version,
+      root inventory, and opt-out collection, and never synthesize, approve, or
+      suggest an opt-out.
 - [ ] Extract an injectable reconciliation helper from the production updater
-      and exercise that exact helper from
+      and require the production updater entry point to call it. Exercise that
+      exact helper and the end-to-end production entry point from
       `apps/yune-web/scripts/update-schema-asset-manifest.test.mjs`. Prove with
       a temporary tree that onboarding a new schema creates a blocking open row
-      and cannot pass as unsupported/N/A.
+      and cannot pass as unsupported/N/A, while an existing formalism/root/
+      opt-out block survives byte-for-byte except for deliberate canonical JSON
+      formatting.
 - [ ] Keep shipped schemas, dependency-only assets, runtime mirrors, canonical
       `rime-cantonese` validation, and mandatory nonshipped validation rows
       explicitly distinct.
@@ -240,12 +314,21 @@ setting whose complete affected-schema set cannot be enumerated is prohibited.
 - [ ] Update the support contract, requirements, decisions, roadmap, top-level
       README, milestone history, and parity ledger only for the formalism
       actually delivered.
+- [ ] Add `scripts/check-current-doc-links.py` and
+      `scripts/tests/test_current_doc_links.py`; the production utility must
+      reject missing, escaping, or symbolic-link local targets and consume an
+      explicit touched-current-doc list.
+- [ ] Add `scripts/verify-packet-manifest.py` and
+      `scripts/tests/test_packet_manifest.py`; enforce exact bidirectional
+      packet membership, byte sizes, SHA-256 values, safe paths, and no
+      symbolic links.
 - [ ] Move this plan to `docs/plans/completed/` only in the final closeout
       commit after implementation, gates, reviews, and compact evidence pass.
 
-This planning-finalization change separately corrected the pre-existing WEB03
-requirement-count summary to `11/11` complete. That factual housekeeping is
-already done and is excluded from M60 execution and evidence claims.
+This planning-finalization series separately corrected the pre-existing WEB03
+requirement status to `11/11` complete and reconciled the three WEB-02 plus
+eleven WEB-03 traceability rows. That factual housekeeping is excluded from M60
+execution and evidence claims.
 
 ## Execution Sequence
 
@@ -253,34 +336,46 @@ already done and is excluded from M60 execution and evidence claims.
    branch/upstream relation, tracked status, the excluded staged config path,
    timestamps, tool versions, and the fixed oracle/profile pins. Stop if any
    other unexplained change overlaps M60 files.
-2. **Contract and enforcement commit.** Add the contract, versioned empty
-   registry, checker/updater changes, static tests, and narrowly required doc
-   corrections. Commit only explicit M60 paths directly on `main`; no branch or
+2. **Contract and enforcement commit.** Add the contract, separate formalism
+   version, empty registry collection, Rust audit tool, checker/updater changes,
+   static and narrow real-path tests, and required doc corrections. Tooling-only
+   Rust code and tests are explicitly in scope; runtime behavior, C ABI, API
+   tables, exports, schemas, and thresholds are not. Use the isolated-tree,
+   intent-to-add, and path-limited procedure below for this commit as well as
+   closeout. Commit only explicit M60 paths directly on `main`; no branch or
    registered worktree is planned.
 3. **Implementation gates.** Run only the exact behavior/static checks below.
    Write complete raw output to a create-new external root such as
    `$HOME/yune-m60-schema-reachability-formalism/<source-sha>/`.
-4. **Assemble the final candidate tree.** Curate the compact packet, update
-   current docs, and prepare the plan move to `completed/`. Record the distinct
-   implementation commit in the packet. The tracked packet does not attempt to
-   contain either its own candidate-tree hash or closeout commit SHA. Build the
-   isolated candidate index described below before either review.
+4. **Assemble the pre-review candidate tree.** Curate the compact packet with a
+   pre-review manifest covering every then-present packet file but without the
+   two not-yet-created review receipts, update current docs, and prepare the plan
+   move to `completed/`. Record the distinct implementation commit in the
+   packet. Build the isolated candidate index described below and preserve its
+   tree as `m60-pre-review-tree.txt`; never overwrite it with a later hash.
 5. **Independent review 1 — requirement/evidence compliance.** Verify M59,
    D-47/D-48, runtime code, contract, registry, and evidence boundaries agree.
 6. **Independent review 2 — change isolation and checker quality.** Verify the
    bijection, negative cases, path safety, expiry behavior, updater behavior,
-   documentation accuracy, final candidate-tree isolation, and absence of
-   engine/ABI/performance changes.
-7. **Record reviews and run final-tree gates.** Add both review receipts, then
-   run the link, packet-manifest, evidence-growth, and diff checks against the
-   complete isolated candidate. Preserve failures and rerun only the affected
-   slice under an explicit retry name.
+   documentation accuracy, pre-review candidate isolation, and absence of
+   runtime/ABI/performance changes.
+7. **Record reviews and build the final candidate.** Each receipt names the
+   preserved pre-review tree. Add only
+   `review-requirements.md` and `review-isolation.md`, regenerate
+   `packet-manifest.csv`, and rebuild the isolated index as
+   `m60-final-candidate-tree.txt`. Prove the complete pre-review-to-final tree
+   diff contains exactly those three paths; any other change invalidates the
+   reviews and returns to step 4. Then run the link, packet-manifest,
+   evidence-growth, and diff checks against the final candidate. Preserve
+   failures and rerun only the affected slice under an explicit retry name.
 8. **Closeout commit and push.** Commit only M60 paths, prove the resulting
-   `HEAD^{tree}` equals the reviewed candidate tree, push `main`, re-run the
+   `HEAD^{tree}` equals the final candidate tree, push `main`, re-run the
    range/final-tree checks against the committed closeout, and verify remote
-   source identity. Record the containing closeout SHA only in an external
-   post-push receipt and the handoff; do not create a self-referential follow-up
-   commit. Confirm the unrelated staged config remains staged and uncommitted.
+   source identity. The reviews bind the pre-review tree; the exact three-path
+   delta proof binds it to the final tree. Record the containing closeout SHA
+   only in an external post-push receipt and the handoff; do not create a
+   self-referential follow-up commit. Confirm the unrelated staged config
+   remains staged and uncommitted.
 
 ## Load-Bearing Verification
 
@@ -290,6 +385,8 @@ node --test apps/yune-web/scripts/check-schema-asset-manifest.test.mjs
 node --test apps/yune-web/scripts/update-schema-asset-manifest.test.mjs
 cargo test -p yune-rime-api --test yune_web m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false
 cargo test -p yune-rime-api --test yune_web m59_manifest_plain_jyut6ping3_real_deploy_default_on_and_explicit_false
+cargo test -p yune-rime-api --test yune_web m60_namespaced_reachability_audit_matches_real_deploy
+cargo test -p yune-core prefix_fallback_without_owned_prefix_keeps_leading_syllable_reachability
 python3 -m unittest scripts/tests/test_current_doc_links.py scripts/tests/test_packet_manifest.py
 ```
 
@@ -298,21 +395,97 @@ targets and missing touched-path inputs. Packet tests enforce exact
 bidirectional membership and reject duplicate/missing rows, traversal or
 symbolic links, and byte-size or SHA-256 mismatches.
 
-Create `$OUT/m60-paths.txt` as the explicit M60 commit allowlist. Build the
-candidate index from `HEAD`, not from the real index that already stages the
-user-owned config. Build it before both reviews, then rebuild it after adding
-the review receipts and before the final-tree checks:
+Before implementation, create and retain these newline-delimited external
+lists in `LC_ALL=C` sorted, unique order; empty, duplicate, absolute, escaping,
+unmatched, or stale entries fail:
+
+- `$OUT/m60-implementation-paths.txt`: every path in the implementation commit;
+- `$OUT/m60-implementation-new-paths.txt`: its paths not known to Git at the
+  implementation base;
+- `$OUT/m60-paths.txt`: every final M60 path, including deletions, new files,
+  and the two review receipts;
+- `$OUT/m60-pre-review-paths.txt`: the final list minus the two not-yet-created
+  review receipts; the pre-review `packet-manifest.csv` remains included;
+- `$OUT/m60-new-paths.txt`: the subset not known to Git at the closeout base;
+- `$OUT/touched-current-docs.txt`: current Markdown files from the allowlist,
+  excluding deleted/historical-only files;
+- `$OUT/m60-evidence-paths.txt`: every curated M60 packet path; and
+- `$OUT/post-review-allowed-paths.txt`: exactly
+  `packet-manifest.csv`, `review-isolation.md`, and
+  `review-requirements.md` under the M60 evidence root.
+
+Before the implementation commit, build an isolated candidate from its two
+implementation lists, write `m60-implementation-tree.txt`, add intent-to-add
+entries only for its new-path subset, commit with `git commit --only
+--pathspec-from-file`, require `HEAD^{tree}` to equal the preserved tree, and
+require `.codex/config.toml` to remain the only real staged path. The detailed
+closeout commands below are normative for that operation with the corresponding
+implementation filenames substituted; do not use a less isolated first-commit
+shortcut.
+
+```sh
+rm -f "$OUT/m60-implementation.index"
+GIT_INDEX_FILE="$OUT/m60-implementation.index" git read-tree HEAD
+GIT_INDEX_FILE="$OUT/m60-implementation.index" git add -A \
+  --pathspec-from-file="$OUT/m60-implementation-paths.txt"
+GIT_INDEX_FILE="$OUT/m60-implementation.index" git write-tree \
+  > "$OUT/m60-implementation-tree.txt"
+test "$(git diff --cached --name-only)" = ".codex/config.toml"
+LC_ALL=C sort -u "$OUT/m60-implementation-paths.txt" \
+  > "$OUT/m60-implementation-paths.sorted"
+LC_ALL=C sort -u "$OUT/m60-implementation-new-paths.txt" \
+  > "$OUT/m60-implementation-new-paths.sorted"
+cmp "$OUT/m60-implementation-paths.txt" \
+  "$OUT/m60-implementation-paths.sorted"
+cmp "$OUT/m60-implementation-new-paths.txt" \
+  "$OUT/m60-implementation-new-paths.sorted"
+comm -23 "$OUT/m60-implementation-new-paths.sorted" \
+  "$OUT/m60-implementation-paths.sorted" \
+  > "$OUT/m60-implementation-new-paths-not-allowed.txt"
+test ! -s "$OUT/m60-implementation-new-paths-not-allowed.txt"
+test -z "$(git diff --name-only --diff-filter=A)"
+git add --intent-to-add \
+  --pathspec-from-file="$OUT/m60-implementation-new-paths.txt"
+git diff --name-only --diff-filter=A | LC_ALL=C sort \
+  > "$OUT/m60-implementation-intent-actual.txt"
+cmp "$OUT/m60-implementation-new-paths.sorted" \
+  "$OUT/m60-implementation-intent-actual.txt"
+git commit --only \
+  --pathspec-from-file="$OUT/m60-implementation-paths.txt" \
+  -m "Implement M60 reachability formalism"
+test "$(git rev-parse HEAD^{tree})" = "$(cat "$OUT/m60-implementation-tree.txt")"
+test "$(git diff --cached --name-only)" = ".codex/config.toml"
+test -z "$(git diff --name-only --diff-filter=A)"
+```
+
+Build the candidate index from `HEAD`, not from the real index that already
+stages the user-owned config. Before both reviews, preserve the first tree:
+
+```sh
+rm -f "$OUT/m60.index"
+GIT_INDEX_FILE="$OUT/m60.index" git read-tree HEAD
+GIT_INDEX_FILE="$OUT/m60.index" git add -A --pathspec-from-file="$OUT/m60-pre-review-paths.txt"
+GIT_INDEX_FILE="$OUT/m60.index" git write-tree > "$OUT/m60-pre-review-tree.txt"
+```
+
+After the two receipts are copied from the external review output, regenerate
+`packet-manifest.csv` so its exact membership includes them, rebuild the index,
+and prove the only tree changes since review are the two receipts and manifest:
 
 ```sh
 rm -f "$OUT/m60.index"
 GIT_INDEX_FILE="$OUT/m60.index" git read-tree HEAD
 GIT_INDEX_FILE="$OUT/m60.index" git add -A --pathspec-from-file="$OUT/m60-paths.txt"
-GIT_INDEX_FILE="$OUT/m60.index" git write-tree > "$OUT/m60-candidate-tree.txt"
+GIT_INDEX_FILE="$OUT/m60.index" git write-tree > "$OUT/m60-final-candidate-tree.txt"
+git diff-tree --no-commit-id --name-only -r \
+  "$(cat "$OUT/m60-pre-review-tree.txt")" \
+  "$(cat "$OUT/m60-final-candidate-tree.txt")" \
+  | LC_ALL=C sort > "$OUT/post-review-actual-paths.txt"
+LC_ALL=C sort "$OUT/post-review-allowed-paths.txt" > "$OUT/post-review-expected-paths.txt"
+cmp "$OUT/post-review-expected-paths.txt" "$OUT/post-review-actual-paths.txt"
 ```
 
-M60 adds and owns two small repository-wide documentation/evidence utilities so
-the final checks are reproducible rather than ad hoc. Only after the isolated
-index has been rebuilt for the complete packet and review receipts, run:
+Only after that proof, run the final checks:
 
 ```sh
 python3 scripts/check-current-doc-links.py --paths-from "$OUT/touched-current-docs.txt"
@@ -321,11 +494,34 @@ python3 scripts/check-evidence-growth.py --repo-root . --paths-from "$OUT/m60-ev
 GIT_INDEX_FILE="$OUT/m60.index" git diff --cached --check
 ```
 
-Use this isolated index for both reviews and the candidate diff check. Commit
-the same allowlisted paths with `git commit --only`, then require
-`git rev-parse HEAD^{tree}` to equal `m60-candidate-tree.txt`. This proves the
-reviewed tree is the committed M60 tree while leaving `.codex/config.toml`
-staged in the real index.
+`git commit --only` cannot name a path that is untracked in the real index even
+when it exists in the isolated candidate. Immediately before closeout, confirm
+the real staged-path list contains only the pre-existing user-owned config,
+then add intent-to-add entries only for `$OUT/m60-new-paths.txt` and perform the
+path-limited commit:
+
+```sh
+test "$(git diff --cached --name-only)" = ".codex/config.toml"
+LC_ALL=C sort -u "$OUT/m60-paths.txt" > "$OUT/m60-paths.sorted"
+LC_ALL=C sort -u "$OUT/m60-new-paths.txt" > "$OUT/m60-new-paths.sorted"
+cmp "$OUT/m60-paths.txt" "$OUT/m60-paths.sorted"
+cmp "$OUT/m60-new-paths.txt" "$OUT/m60-new-paths.sorted"
+comm -23 "$OUT/m60-new-paths.sorted" "$OUT/m60-paths.sorted" \
+  > "$OUT/m60-new-paths-not-allowed.txt"
+test ! -s "$OUT/m60-new-paths-not-allowed.txt"
+test -z "$(git diff --name-only --diff-filter=A)"
+git add --intent-to-add --pathspec-from-file="$OUT/m60-new-paths.txt"
+git diff --name-only --diff-filter=A | LC_ALL=C sort \
+  > "$OUT/m60-intent-actual.txt"
+cmp "$OUT/m60-new-paths.sorted" "$OUT/m60-intent-actual.txt"
+git commit --only --pathspec-from-file="$OUT/m60-paths.txt" -m "Close M60 reachability formalism"
+test "$(git rev-parse HEAD^{tree})" = "$(cat "$OUT/m60-final-candidate-tree.txt")"
+test "$(git diff --cached --name-only)" = ".codex/config.toml"
+test -z "$(git diff --name-only --diff-filter=A)"
+```
+
+The pre-review tree, final tree, exact three-path delta, and commit-tree equality
+are distinct proofs. Do not call the final tree itself reviewed.
 
 After the closeout commit, repeat the last three applicable checks against the
 committed tree using `--compare-base <m60-base> --treeish HEAD` for the evidence
@@ -333,12 +529,14 @@ guard, verify the packet manifest from `HEAD`, and run
 `git diff --check <m60-base>..HEAD`. Zero broken current-document links, packet
 hash mismatches, evidence-policy violations, or whitespace errors are accepted.
 
-The two narrow Rust tests are load-bearing because they prevent a paper-only
+The four narrow Rust tests are load-bearing because they prevent a paper-only
 formalism from drifting away from the real default-on/explicit-false deploy
-path. Do not run M59 performance, full Rust, WASM, browser, Cloudflare,
-packaging, memory, or latency suites. If M60 unexpectedly requires production
-Rust, browser, ABI, schema payload, or threshold changes, stop and request a
-new scope decision rather than expanding this milestone.
+path, bind the Rust audit output to deployment, and lock the corrected per-input
+precedence. The planned Rust audit module, tooling binary, and focused tests are
+in scope. Do not run M59 performance, full Rust, WASM, browser, Cloudflare,
+packaging, memory, or latency suites. If M60 requires a runtime behavior change,
+C ABI/API-table/export change, schema payload change, or threshold change, stop
+and request a new scope decision rather than expanding this milestone.
 
 ## Evidence Contract
 
@@ -347,17 +545,18 @@ Keep raw attempts outside the repository. Curate only text receipts under
 
 - `README.md` with verdict and exact source boundary;
 - `provenance.txt` and `commands.md`;
-- schema-manifest checker and Node negative-test summaries;
-- the two narrow deploy-path test summaries;
+- schema-manifest checker, Rust extractor, and Node negative-test summaries;
+- the four narrow Rust test summaries;
 - onboarding/open-row test, link-audit, evidence-growth, and diff-check output;
-- requirement/evidence review and change-isolation/checker review;
+- `review-requirements.md` and `review-isolation.md`, each naming the preserved
+  pre-review tree;
 - `packet-manifest.csv` with byte size and SHA-256 for every packet file except
   itself.
 
-The external packet additionally retains the M60-only candidate-tree hash and
-the post-push receipt naming the containing closeout SHA and proving remote
-equality. Neither is inserted into the tracked packet, which avoids impossible
-self-reference.
+The external packet additionally retains the distinct pre-review and final
+candidate-tree hashes, the exact three-path delta proof, and the post-push
+receipt naming the containing closeout SHA and proving remote equality. None is
+inserted into the tracked packet, which avoids impossible self-reference.
 
 No raw metrics, binaries, compiled schemas, WASM, screenshots, benchmark data,
 or copied M59 artifacts belong in this packet. The packet must remain below the
@@ -367,6 +566,10 @@ repository's 10 MiB curated-evidence cap.
 
 - A setup failure before a gate completes may be corrected and retried under an
   explicit `retry-N-<reason>` directory.
+- An allowlist path that is stale, unmatched, outside the repository, or absent
+  from the expected new-path subset is a setup failure before candidate
+  measurement. Preserve the failed command and retry explicitly after fixing
+  the list; never weaken path matching.
 - A completed red checker or test run is preserved externally with its source,
   command, and disposition. After a fix, rerun only the affected owning check;
   do not erase or rename the red as a setup failure.

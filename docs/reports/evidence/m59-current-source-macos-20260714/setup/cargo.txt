@@ -1,0 +1,9 @@
+cargo 1.96.1 (356927216 2026-06-26)
+release: 1.96.1
+commit-hash: 356927216a2d746168cf76e5e88cc3f4b58e029d
+commit-date: 2026-06-26
+host: aarch64-apple-darwin
+libgit2: 1.9.2 (sys:0.20.4 vendored)
+libcurl: 8.7.1 (sys:0.4.87+curl-8.19.0 system ssl:(SecureTransport) LibreSSL/3.3.6)
+ssl: OpenSSL 3.5.4 30 Sep 2025
+os: Mac OS 26.5.2 [64-bit]

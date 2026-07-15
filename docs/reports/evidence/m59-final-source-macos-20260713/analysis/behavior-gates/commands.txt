@@ -1,0 +1,14 @@
+Worktree: <detached-yune-worktree>
+External target: <external-evidence-root>/behavior-target
+
+Gate 1 command:
+CARGO_TARGET_DIR=<external-evidence-root>/behavior-target cargo test -p yune-rime-api --test yune_web m59_lane_b_product_matches_complete_pinned_librime_order -- --nocapture
+
+Gate 1 capture invocation:
+/usr/bin/script -q <external-evidence-root>/aggregate/behavior-gates/m59-lane-b-product.log env CARGO_TARGET_DIR=<external-evidence-root>/behavior-target cargo test -p yune-rime-api --test yune_web m59_lane_b_product_matches_complete_pinned_librime_order -- --nocapture
+
+Gate 2 command:
+CARGO_TARGET_DIR=<external-evidence-root>/behavior-target cargo test -p yune-rime-api --test yune_web m59_luna_long_sentence_page_order_matches_pinned_oracle_on_byte_backed_product -- --nocapture
+
+Gate 2 capture invocation:
+/usr/bin/script -q <external-evidence-root>/aggregate/behavior-gates/m59-luna-long-sentence-page-order.log env CARGO_TARGET_DIR=<external-evidence-root>/behavior-target cargo test -p yune-rime-api --test yune_web m59_luna_long_sentence_page_order_matches_pinned_oracle_on_byte_backed_product -- --nocapture

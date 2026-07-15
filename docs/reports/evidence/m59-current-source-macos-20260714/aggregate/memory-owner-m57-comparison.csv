@@ -1,0 +1,74 @@
+engine,track,schema_id,owner_id,mapping_mode,present_current,present_m57,normalized_shape_match,changed_fields
+yune,track-a-comparison,luna_pinyin,compact_table.candidate_comment_payload,byte_backed,True,True,True,
+yune,track-a-comparison,luna_pinyin,compact_table.candidate_text_payload,byte_backed,True,True,True,
+yune,track-a-comparison,luna_pinyin,compact_table.corrections_tolerance,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,True,True,True,
+yune,track-a-comparison,luna_pinyin,compact_table.dict_settings,"BTreeMap<String, String>",True,True,True,
+yune,track-a-comparison,luna_pinyin,compact_table.lookup_records,none,True,True,True,
+yune,track-a-comparison,luna_pinyin,compact_table.preset_vocabulary,Vec<PresetVocabularyEntry>,True,True,True,
+yune,track-a-comparison,luna_pinyin,compact_table.stems,"HashMap<String, Vec<String>>",True,True,True,
+yune,track-a-comparison,luna_pinyin,compact_table.storage,byte_backed:mmap,True,True,True,
+yune,track-a-comparison,luna_pinyin,compact_table.syllabary_codes,Vec<String>,True,True,True,
+yune,track-a-comparison,luna_pinyin,compact_table.syllable_ids_by_code,"HashMap<String, usize>",True,True,True,
+yune,track-a-comparison,luna_pinyin,poet.abbreviation_vocabulary,Vec<ModelVocabularyEntry>,True,True,True,
+yune,track-a-comparison,luna_pinyin,poet.entries_by_code,Vec<ModelEntry>,True,True,True,
+yune,track-a-comparison,luna_pinyin,poet.lookup_index,SentenceLookupIndex,True,True,True,
+yune,track-a-comparison,luna_pinyin,poet.normal_character_code_index,sorted Box<[String]>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-a-comparison,luna_pinyin,poet.vocabulary,Vec<ModelVocabularyEntry>,True,True,True,
+yune,track-a-comparison,luna_pinyin,prism.corrections_tolerance,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,True,True,True,
+yune,track-a-comparison,luna_pinyin,prism.double_array_units,byte_backed:mmap,True,True,True,
+yune,track-a-comparison,luna_pinyin,prism.spelling_map,byte_backed:mmap,True,True,True,
+yune,track-a-comparison,luna_pinyin,prism.tips_payload,byte_backed:mmap,True,True,True,
+yune,track-a-comparison,luna_pinyin,reverse_lookup.comments_index,lazy_unloaded,True,True,True,
+yune,track-a-comparison,luna_pinyin,reverse_lookup.config,ReverseLookupTranslator,True,True,True,
+yune,track-a-comparison,luna_pinyin,reverse_lookup.entries,lazy_unloaded,True,True,True,
+yune,track-a-comparison,luna_pinyin,runtime.session_state,SessionState,True,True,True,
+yune,track-a-comparison,luna_pinyin,schema.processors,SessionState processors,True,True,True,
+yune,track-a-comparison,luna_pinyin,session.userdb,UserDb,True,True,True,
+yune,track-a-comparison,luna_pinyin,translator.bounded_upstream_script_cache,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-a-comparison,luna_pinyin,translator.entries_by_code,compact_table,True,True,True,
+yune,track-a-comparison,luna_pinyin,translator.leading_fetch_index,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-a-comparison,luna_pinyin,translator.leading_fetch_seed,Vec<String>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-a-comparison,luna_pinyin,translator.normal_codes,compact_table.has_code,True,True,True,
+yune,track-a-comparison,luna_pinyin,translator.prefix_fallback_window_cache,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-a-comparison,luna_pinyin,translator.spelling_abbreviation_entries,"HashSet<(String, String, String)>",True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-a-comparison,luna_pinyin,translator.spelling_correction_entries,"HashSet<(String, String, String)>",True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-a-comparison,luna_pinyin,translator.spelling_correction_surfaces,HashSet<String>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-a-comparison,luna_pinyin,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,Vec<PresetVocabularyEntry>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-a-comparison,luna_pinyin,translator.upstream_sentence_model_build_source,"Option<Vec<(String, Candidate)>>",True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-a-comparison,luna_pinyin,translator.upstream_sentence_model_preset_vocabulary_recipe,Vec<PresetVocabularyEntry>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,compact_table.candidate_comment_payload,table_bin_byte_refs,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,compact_table.candidate_text_payload,table_bin_byte_refs,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,compact_table.corrections_tolerance,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,compact_table.dict_settings,"BTreeMap<String, String>",True,True,True,
+yune,track-b-product,jyut6ping3_mobile,compact_table.lookup_records,byte_backed_lookup_payload(byte_backed; mmap; index_bytes=2486376),False,True,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,compact_table.lookup_records,byte_backed_lookup_payload(byte_backed; mmap; index_bytes=497328),True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,compact_table.lookup_records,none,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,compact_table.preset_vocabulary,Vec<PresetVocabularyEntry>,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,compact_table.stems,"HashMap<String, Vec<String>>",True,True,True,
+yune,track-b-product,jyut6ping3_mobile,compact_table.storage,byte_backed:mmap,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,compact_table.syllabary_codes,Vec<String>,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,compact_table.syllable_ids_by_code,none,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,dictionary_lookup_filter.lookup_records,byte_backed_lookup_payload(byte_backed; mmap; index_bytes=1003960),True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,dictionary_lookup_filter.lookup_records,byte_backed_lookup_payload(byte_backed; mmap; index_bytes=5019536),False,True,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,poet.abbreviation_vocabulary,none,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,poet.entries_by_code,none,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,poet.lookup_index,none,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,prism.corrections_tolerance,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,prism.double_array_units,byte_backed:mmap,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,prism.spelling_map,byte_backed:mmap,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,prism.tips_payload,byte_backed:mmap,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,runtime.session_state,SessionState,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,schema.processors,SessionState processors,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,session.userdb,UserDb,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,translator.bounded_upstream_script_cache,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,translator.entries_by_code,compact_table,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,translator.leading_fetch_index,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,translator.leading_fetch_seed,Vec<String>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,translator.normal_codes,compact_table.has_code,True,True,True,
+yune,track-b-product,jyut6ping3_mobile,translator.prefix_fallback_window_cache,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,translator.spelling_abbreviation_entries,"HashSet<(String, String, String)>",True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,translator.spelling_correction_entries,"HashSet<(String, String, String)>",True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,translator.spelling_correction_surfaces,HashSet<String>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,Vec<PresetVocabularyEntry>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,translator.upstream_sentence_model_build_source,"Option<Vec<(String, Candidate)>>",True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source
+yune,track-b-product,jyut6ping3_mobile,translator.upstream_sentence_model_preset_vocabulary_recipe,Vec<PresetVocabularyEntry>,True,False,False,engine;track;schema_id;owner_id;module;structure;byte_class;sharing_scope;mapping_mode;evidence_source

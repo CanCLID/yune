@@ -1,17 +1,22 @@
-# iOS-Budget Native Memory Report
+# iOS-Budget Native Memory Report — Archived Detail
+
+> Archived on 2026-07-14 when the current portable proxy results and validation
+> boundary moved into the single
+> [`performance dashboard`](../yune-vs-librime-performance.md). This snapshot
+> preserves the full M47 measurement and reduction chronology.
 
 Date: 2026-06-29
 
 This report measures Yune's **native single-active-schema memory** against an iOS
 keyboard-extension budget (hard **64 MB**, target **48 MB**). It is a different
 lens from
-[`yune-vs-librime-performance.md`](./yune-vs-librime-performance.md) (which tracks
+[`yune-vs-librime-performance.md`](../yune-vs-librime-performance.md) (which tracks
 librime *parity*): here the bar is a **product memory budget**, because the
 intended product is a Cantoboard-style iOS keyboard
 ([Cantoboard](https://github.com/Cantoboard/Cantoboard),
 [librime-ios-build](https://github.com/Cantoboard/librime-ios-build)). The
 reduction work it motivates is the now-complete
-[`plans/completed/m47-plan-ios-budget-native-memory-reduction.md`](../plans/completed/m47-plan-ios-budget-native-memory-reduction.md).
+[`plans/completed/m47-plan-ios-budget-native-memory-reduction.md`](../../plans/completed/m47-plan-ios-budget-native-memory-reduction.md).
 
 **Status (2026-06-29): M47 portable scope complete.** Phase 0 + RED-01…RED-08
 took the comments-intact `jyut6ping3_mobile` keyboard profile from ~195 MB to
@@ -48,7 +53,7 @@ keyboard proxy is **67.4 MB** steady / **80.1 MB** peak.
 
 ## Methodology
 
-Probe: [`crates/yune-rime-api/tests/native_memory_probe.rs`](../../crates/yune-rime-api/tests/native_memory_probe.rs)
+Probe: [`crates/yune-rime-api/tests/native_memory_probe.rs`](../../../crates/yune-rime-api/tests/native_memory_probe.rs)
 (evidence-only, `#[ignore]`). It drives the native `RimeApi`
 (`setup`→`initialize`→`deploy`→`create_session`→`select_schema`→`process_key`)
 with `prebuilt_data_dir` set to the committed `.bin` bundle, so `deploy()`
@@ -129,7 +134,7 @@ steady↔peak gap (a ~184 MB transient that frees back); luna's 294 MB peak free
 ### 4. Pre-Phase-0 classification left ~235 MB un-owned
 
 Before M47 Phase 0, the owner profile
-([`track-b-yune-product/memory-owner-profile.csv`](./evidence/current-performance-dashboard-2026-06-28/native-current-benchmark/track-b-yune-product/memory-owner-profile.csv)):
+([`track-b-yune-product/memory-owner-profile.csv`](../evidence/current-performance-dashboard-2026-06-28/native-current-benchmark/track-b-yune-product/memory-owner-profile.csv)):
 
 | Owner | Bytes | Class |
 | --- | ---: | --- |
@@ -148,7 +153,7 @@ inside-load phase markers.
 ## Phase 0 attribution closeout (Windows-measured, 2026-06-28)
 
 Evidence:
-[`evidence/m47-ios-budget-native-memory-attribution-2026-06-28/`](./evidence/m47-ios-budget-native-memory-attribution-2026-06-28/)
+[`evidence/m47-ios-budget-native-memory-attribution-2026-06-28/`](../evidence/m47-ios-budget-native-memory-attribution-2026-06-28/)
 from the extended native probe. This is Windows `WorkingSetSize` /
 `PrivateUsage` evidence plus a test-local counting allocator, **not** iOS
 `phys_footprint`.
@@ -194,7 +199,7 @@ branch.
 ## RED-01 reduction closeout (Windows-measured, 2026-06-28)
 
 Evidence:
-[`evidence/m47-ios-budget-native-memory-reduction-red01-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red01-2026-06-28/)
+[`evidence/m47-ios-budget-native-memory-reduction-red01-2026-06-28/`](../evidence/m47-ios-budget-native-memory-reduction-red01-2026-06-28/)
 from the same native probe. This is Windows `WorkingSetSize` / `PrivateUsage`
 evidence, not iOS `phys_footprint`.
 
@@ -228,7 +233,7 @@ was later corrected by the prism attribution section below.
 ## Post-RED-01 prism attribution correction (Windows-measured, 2026-06-28)
 
 Evidence:
-[`evidence/m47-ios-budget-native-memory-prism-attribution-2026-06-28/`](./evidence/m47-ios-budget-native-memory-prism-attribution-2026-06-28/)
+[`evidence/m47-ios-budget-native-memory-prism-attribution-2026-06-28/`](../evidence/m47-ios-budget-native-memory-prism-attribution-2026-06-28/)
 from the same native probe and RED-01 keyboard-profile opt-out. This is an
 owner-table correction, not a reduction branch.
 
@@ -259,7 +264,7 @@ remains absent, so RED-01's keyboard-profile skip is still active.
 ## RED-02 prism runtime storage closeout (Windows-measured, 2026-06-28)
 
 Evidence:
-[`evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/)
+[`evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/`](../evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/)
 from the same native probe and RED-01 keyboard-profile opt-out. The `before/`
 folder is the 682be75a prism-attribution baseline; `current/` is the RED-02
 runtime parser result.
@@ -293,7 +298,7 @@ measured blocker is compact lookup-record materialization, not prism storage.
 ## RED-03 compact lookup-record closeout (Windows-measured, 2026-06-28)
 
 Evidence:
-[`evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/)
+[`evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/`](../evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/)
 from the same native probe, with RED-01 enabled and RED-03 applied through the
 temporary deployed schema's `translator/load_lookup_records: false` and
 `luna_pinyin/load_lookup_records: false` settings. The committed public schema
@@ -327,7 +332,7 @@ roughly **1.26x** over the 64 MB target.
 ## RED-04 reverse/UI optional pack closeout (Windows-measured, 2026-06-28)
 
 Evidence:
-[`evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/)
+[`evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/`](../evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/)
 from the same native probe, with RED-01 and RED-03 enabled and RED-04 applied
 through the temporary deployed schema's `luna_pinyin/load_translator: false`
 setting. The committed public schema bundle is unchanged, and default reverse
@@ -361,7 +366,7 @@ path rather than retained reverse/UI data.
 ## RED-05 deploy transient closeout (Windows-measured, 2026-06-28)
 
 Evidence:
-[`evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/)
+[`evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/`](../evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/)
 from the same native probe, with RED-01, RED-03, and RED-04 keyboard-profile
 gates enabled. The `before` reference is the RED-04 `current/` folder; RED-05's
 `current/` folder is the measured post-change run.
@@ -396,9 +401,9 @@ high-water **35.4 MB**. The next measured branch is therefore the primary
 ## Profile pin and RED-06 closeout (Windows-measured, 2026-06-29)
 
 Evidence:
-[`evidence/m47-ios-keyboard-profile-pin-2026-06-29/`](./evidence/m47-ios-keyboard-profile-pin-2026-06-29/)
+[`evidence/m47-ios-keyboard-profile-pin-2026-06-29/`](../evidence/m47-ios-keyboard-profile-pin-2026-06-29/)
 and
-[`evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/)
+[`evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/`](../evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/)
 from the same native probe. These are Windows `WorkingSetSize` /
 `PrivateUsage` measurements, not iOS `phys_footprint`.
 
@@ -461,7 +466,7 @@ allocator decay.
 ## RED-07 comments-intact lookup storage closeout (Windows-measured, 2026-06-29)
 
 Evidence:
-[`evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/)
+[`evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/`](../evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/)
 from the same native probe. These are Windows `WorkingSetSize` / `PrivateUsage`
 measurements, not iOS `phys_footprint`.
 
@@ -488,7 +493,7 @@ The owner movement is direct:
 | Full mobile | `96,384,893 B` `heap_owned_required` | `37,253,867 B` `shared_or_overlapping` byte-backed payload rows |
 
 Representative `zouhapci` candidates in
-[`rich-comments/rich-comment-zouhapci.json`](./evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/rich-comments/rich-comment-zouhapci.json)
+[`rich-comments/rich-comment-zouhapci.json`](../evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/rich-comments/rich-comment-zouhapci.json)
 retain `\f\r1,` TypeDuck dictionary-panel bytes after the storage change.
 
 RED-07 verdict: the removed bulk was live retained lookup/comment heap, not
@@ -502,7 +507,7 @@ path. No iOS-ready claim is made.
 ## Phase 0 attribution refresh (Windows-measured, 2026-06-29)
 
 Evidence:
-[`evidence/m47-ios-budget-native-memory-phase0-refresh-2026-06-29/`](./evidence/m47-ios-budget-native-memory-phase0-refresh-2026-06-29/)
+[`evidence/m47-ios-budget-native-memory-phase0-refresh-2026-06-29/`](../evidence/m47-ios-budget-native-memory-phase0-refresh-2026-06-29/)
 reruns the Phase 0 style owner split on current `main` after RED-07, without
 starting a reduction branch. The probe is still Windows
 `PROCESS_MEMORY_COUNTERS_EX.WorkingSetSize` / `PrivateUsage` plus the test-local
@@ -528,7 +533,7 @@ dictionary-panel/comment enrichment, not plain candidate text generation.
 ## RED-08 compact lookup/code-index closeout (Windows-measured, 2026-06-29)
 
 Evidence:
-[`evidence/m47-ios-budget-native-memory-reduction-red08-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red08-2026-06-29/).
+[`evidence/m47-ios-budget-native-memory-reduction-red08-2026-06-29/`](../evidence/m47-ios-budget-native-memory-reduction-red08-2026-06-29/).
 RED-08 keeps rich TypeDuck comments and normal Jyutping typing behavior. It
 sets `translator/load_lookup_records: false` for the mobile profile's primary
 translator, keeps `dictionary_lookup_filter` comment enrichment, replaces the
@@ -595,31 +600,31 @@ probe shows a steady live-vs-resident gap that Phase
 ## Evidence
 
 - Phased + per-schema working set:
-  [`evidence/ios-memory-budget-2026-06-28/native-working-set-by-phase.csv`](./evidence/ios-memory-budget-2026-06-28/native-working-set-by-phase.csv)
+  [`evidence/ios-memory-budget-2026-06-28/native-working-set-by-phase.csv`](../evidence/ios-memory-budget-2026-06-28/native-working-set-by-phase.csv)
 - Owner profile (Track B):
-  [`evidence/current-performance-dashboard-2026-06-28/native-current-benchmark/track-b-yune-product/memory-owner-profile.csv`](./evidence/current-performance-dashboard-2026-06-28/native-current-benchmark/track-b-yune-product/memory-owner-profile.csv)
+  [`evidence/current-performance-dashboard-2026-06-28/native-current-benchmark/track-b-yune-product/memory-owner-profile.csv`](../evidence/current-performance-dashboard-2026-06-28/native-current-benchmark/track-b-yune-product/memory-owner-profile.csv)
 - M47 Phase 0 attribution:
-  [`evidence/m47-ios-budget-native-memory-attribution-2026-06-28/`](./evidence/m47-ios-budget-native-memory-attribution-2026-06-28/)
+  [`evidence/m47-ios-budget-native-memory-attribution-2026-06-28/`](../evidence/m47-ios-budget-native-memory-attribution-2026-06-28/)
 - M47 RED-01 reduction:
-  [`evidence/m47-ios-budget-native-memory-reduction-red01-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red01-2026-06-28/)
+  [`evidence/m47-ios-budget-native-memory-reduction-red01-2026-06-28/`](../evidence/m47-ios-budget-native-memory-reduction-red01-2026-06-28/)
 - M47 post-RED-01 prism attribution correction:
-  [`evidence/m47-ios-budget-native-memory-prism-attribution-2026-06-28/`](./evidence/m47-ios-budget-native-memory-prism-attribution-2026-06-28/)
+  [`evidence/m47-ios-budget-native-memory-prism-attribution-2026-06-28/`](../evidence/m47-ios-budget-native-memory-prism-attribution-2026-06-28/)
 - M47 RED-02 prism runtime storage reduction:
-  [`evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/)
+  [`evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/`](../evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/)
 - M47 RED-03 compact lookup-record reduction:
-  [`evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/)
+  [`evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/`](../evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/)
 - M47 RED-04 reverse/UI optional pack reduction:
-  [`evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/)
+  [`evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/`](../evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/)
 - M47 RED-05 deploy transient reduction:
-  [`evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/)
+  [`evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/`](../evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/)
 - M47 profile pin:
-  [`evidence/m47-ios-keyboard-profile-pin-2026-06-29/`](./evidence/m47-ios-keyboard-profile-pin-2026-06-29/)
+  [`evidence/m47-ios-keyboard-profile-pin-2026-06-29/`](../evidence/m47-ios-keyboard-profile-pin-2026-06-29/)
 - M47 RED-06 compact-table parse transient reduction:
-  [`evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/)
+  [`evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/`](../evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/)
 - M47 RED-07 comments-intact lookup storage reduction:
-  [`evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/)
+  [`evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/`](../evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/)
 - M47 Phase 0 attribution refresh:
-  [`evidence/m47-ios-budget-native-memory-phase0-refresh-2026-06-29/`](./evidence/m47-ios-budget-native-memory-phase0-refresh-2026-06-29/)
+  [`evidence/m47-ios-budget-native-memory-phase0-refresh-2026-06-29/`](../evidence/m47-ios-budget-native-memory-phase0-refresh-2026-06-29/)
 - M47 RED-08 compact lookup/code-index reduction:
-  [`evidence/m47-ios-budget-native-memory-reduction-red08-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red08-2026-06-29/)
-- Probe: [`crates/yune-rime-api/tests/native_memory_probe.rs`](../../crates/yune-rime-api/tests/native_memory_probe.rs)
+  [`evidence/m47-ios-budget-native-memory-reduction-red08-2026-06-29/`](../evidence/m47-ios-budget-native-memory-reduction-red08-2026-06-29/)
+- Probe: [`crates/yune-rime-api/tests/native_memory_probe.rs`](../../../crates/yune-rime-api/tests/native_memory_probe.rs)

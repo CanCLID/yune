@@ -1,0 +1,21 @@
+check,status,detail
+mac_run_count,pass,5 measured logical rounds
+track_a_output_rows,pass,17
+track_a_output_unique_inputs,pass,17
+track_b_output_rows,pass,5
+component_output_rows,pass,34
+final_windows_gate_formulas,pass,median/worst/spread recomputed for 17 rows
+signed_i0_gate_formulas,pass,median/worst/spread recomputed for 17 rows
+signed_ceiling_join,pass,17/17 threshold rows match signed gate
+expanded_ceiling_join,pass,9/9 derivation rows match signed gate
+source_matched_windows_commit,pass,5879405c7b0f76af4dca7382f00b3e0605386f2c
+historical_signed_i0_windows_commit,pass,457751824b8944676dc44912b9ce31ff29d78403
+mac_source_commits_and_parameters,pass,"5/5 exact commits, inputs, iterations, and directly captured pre-output cleanliness"
+after_move_source_status,pass-inferred,runs 1-4 inferred clean from the next round preflight; run 5 inferred clean from the later behavior-gate preflight
+output_location_protocol,disclosed-deviation,"5/5 wrote first to an untracked disposable-worktree evidence directory, then moved external; no tracked source or binary changed"
+yune_binary_identity,pass,2e822d67e92794dace159b15104035954c6f2aee69e5d917793acb536e1deb56
+librime_binary_identity,pass,5a0b2b308a47141d4c6e0c23a48b3fcfdb49da2d846979cfee359660e1256dc9
+candidate_snapshot_identity,pass,bbad1dbb61f2ead3bd56a5b4888d5269737315a5a5c45fc10de5ce2da3d63408
+logical_owner_profile_exact,pass,"99/99 normalized rows exact across all five Mac and all five final-Windows files; process.*, schema.config, and session_id excluded"
+track_b_product_shape_exact,pass,"2/2 dictionary rows exact across all five Mac, all five final-Windows, and M57 files for checksum/storage/mapping fields"
+required_artifacts,pass,13/13 in each of 5 runs

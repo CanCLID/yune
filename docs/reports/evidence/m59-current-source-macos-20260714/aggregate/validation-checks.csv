@@ -1,0 +1,13 @@
+check,status,detail
+five_rounds,pass,5/5 complete
+track_a_rows,pass,17/17
+track_b_rows,pass,5/5
+yune_binary_identity,pass,f3365aae19d15b9d7b57dcccd30ce1c77347b8ee96a20f09ab001468074b226c
+librime_binary_identity,pass,1973349f4da44c5b71765f8d064ec30428a0fd42d66c9ae95bdb6dc27cd4eecc
+candidate_identity_across_rounds,pass,bbad1dbb61f2ead3bd56a5b4888d5269737315a5a5c45fc10de5ce2da3d63408
+current_peer_candidate_pages,diagnostic,16/17 exact; differences: zhongdengchangdu
+owner_shape_across_rounds,pass,030ed3692deb31abb04389b041f7e1b742caa209f966019ad028a377d10e4f80
+product_shape_across_rounds,pass,99ff2ebf402c4f653adb1d6ff1f428fba65fca95e8c88f5029a4bc5acb34a378
+signed_ceiling_join,pass,17/17 unchanged
+source_boundary,pass,Mac 0111cf47; Win final 443cc636; Win signed I0 45775182
+no_measured_retry,pass,runs 1-5 each measured once

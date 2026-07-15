@@ -1,0 +1,7 @@
+order,metric,yune_value,my_rime_value,unit,yune_my_rime_ratio,parity_read
+1,Ready to input,1000,634,ms,1.577,My RIME lower
+2,Input to candidate,74,95,ms,0.779,Yune lower
+3,Commit,107,119,ms,0.899,Yune lower
+4,WASM ready,64.0,16.0,MiB,4.000,My RIME lower
+5,WASM peak,64.0,16.0,MiB,4.000,My RIME lower
+6,Unique encoded resources,29.5,8.5,MiB,3.471,My RIME lower

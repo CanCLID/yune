@@ -26,7 +26,7 @@ Measured outcomes:
   still records `127,475,712 B` peak working set, so peak memory is not solved.
 
 Latest review snapshot:
-[`./evidence/reframed-comparison-review-2026-06-27/`](./evidence/reframed-comparison-review-2026-06-27/).
+[`./evidence/reframed-comparison-review-2026-06-27/`](../evidence/reframed-comparison-review-2026-06-27/).
 It confirms the same Track A conclusion with normal run-to-run noise:
 `hao 2.199x`, `n 3.534x`, and `ni 3.698x`, with a `128,364,544 B` Track A peak.
 Those precise values are recorded only in the run-labeled evidence; public
@@ -41,7 +41,7 @@ peak. M46's byte-backed `source_fallback=false` evidence remains the valid Track
 B product memory source.
 
 Clean Track B follow-up:
-[`./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/`](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/).
+[`./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/`](../evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/).
 This rerun uses `-DeployProductBeforeBenchmark` and records
 `compiled_ready=true`, `selected_storage=byte_backed`, table/prism `mmap`, and
 `source_fallback=false`. It confirms M46's root-cause read: Track B still peaks
@@ -63,9 +63,9 @@ multi-syllable phrase composition (`ngogokdak -> 我覺得`) and visible
 then preserves TypeDuck order by consumed prefix length, dictionary weight, and
 stable emission order.
 
-![M45 short-key same-run ratio gates](./evidence/m45-native-short-key-memory-attribution/visuals/m45-short-key-ratios.svg)
+![M45 short-key same-run ratio gates](../evidence/m45-native-short-key-memory-attribution/visuals/m45-short-key-ratios.svg)
 
-![M45 steady resident and peak memory bands](./evidence/m45-native-short-key-memory-attribution/visuals/m45-memory-bands.svg)
+![M45 steady resident and peak memory bands](../evidence/m45-native-short-key-memory-attribution/visuals/m45-memory-bands.svg)
 
 ## M45 Cause Map
 
@@ -153,26 +153,26 @@ blocker, not as full memory success.
 ## Evidence
 
 - M45 evidence root:
-  [`./evidence/m45-native-short-key-memory-attribution/`](./evidence/m45-native-short-key-memory-attribution/)
+  [`./evidence/m45-native-short-key-memory-attribution/`](../evidence/m45-native-short-key-memory-attribution/)
 - M45 phase-0 benchmark:
-  [`./evidence/m45-native-short-key-memory-attribution/phase-0-native-baseline/`](./evidence/m45-native-short-key-memory-attribution/phase-0-native-baseline/)
+  [`./evidence/m45-native-short-key-memory-attribution/phase-0-native-baseline/`](../evidence/m45-native-short-key-memory-attribution/phase-0-native-baseline/)
 - M45 phase-0 candidate oracle:
-  [`./evidence/m45-native-short-key-memory-attribution/phase-0-short-key-oracle/`](./evidence/m45-native-short-key-memory-attribution/phase-0-short-key-oracle/)
+  [`./evidence/m45-native-short-key-memory-attribution/phase-0-short-key-oracle/`](../evidence/m45-native-short-key-memory-attribution/phase-0-short-key-oracle/)
 - M45 phase-0 verdict:
-  [`./evidence/m45-native-short-key-memory-attribution/phase-0-verdict.md`](./evidence/m45-native-short-key-memory-attribution/phase-0-verdict.md)
+  [`./evidence/m45-native-short-key-memory-attribution/phase-0-verdict.md`](../evidence/m45-native-short-key-memory-attribution/phase-0-verdict.md)
 - M45 final benchmark:
-  [`./evidence/m45-native-short-key-memory-attribution/final-native-benchmark/`](./evidence/m45-native-short-key-memory-attribution/final-native-benchmark/)
+  [`./evidence/m45-native-short-key-memory-attribution/final-native-benchmark/`](../evidence/m45-native-short-key-memory-attribution/final-native-benchmark/)
 - M45 final candidate comparison:
-  [`./evidence/m45-native-short-key-memory-attribution/final-candidate-comparison/oracle-vs-yune-candidate-output.md`](./evidence/m45-native-short-key-memory-attribution/final-candidate-comparison/oracle-vs-yune-candidate-output.md)
+  [`./evidence/m45-native-short-key-memory-attribution/final-candidate-comparison/oracle-vs-yune-candidate-output.md`](../evidence/m45-native-short-key-memory-attribution/final-candidate-comparison/oracle-vs-yune-candidate-output.md)
 - M45 final memory attribution:
-  [`./evidence/m45-native-short-key-memory-attribution/final-memory-attribution.md`](./evidence/m45-native-short-key-memory-attribution/final-memory-attribution.md)
+  [`./evidence/m45-native-short-key-memory-attribution/final-memory-attribution.md`](../evidence/m45-native-short-key-memory-attribution/final-memory-attribution.md)
 - M45 visual evidence:
-  [`./evidence/m45-native-short-key-memory-attribution/visuals/`](./evidence/m45-native-short-key-memory-attribution/visuals/)
+  [`./evidence/m45-native-short-key-memory-attribution/visuals/`](../evidence/m45-native-short-key-memory-attribution/visuals/)
 - M45 final gates:
-  [`./evidence/m45-native-short-key-memory-attribution/final-native-benchmark/final-gates.md`](./evidence/m45-native-short-key-memory-attribution/final-native-benchmark/final-gates.md)
+  [`./evidence/m45-native-short-key-memory-attribution/final-native-benchmark/final-gates.md`](../evidence/m45-native-short-key-memory-attribution/final-native-benchmark/final-gates.md)
 
 Historical predecessor evidence remains under
-[`./evidence/m44-native-performance-owner-reduction/`](./evidence/m44-native-performance-owner-reduction/).
+[`./evidence/m44-native-performance-owner-reduction/`](../evidence/m44-native-performance-owner-reduction/).
 
 ## M46 Track B/Jyutping Memory Attribution
 
@@ -208,9 +208,9 @@ a scale view, not a strict additive heap decomposition, because rows mix
 required heap, mmap file-backed bytes, guarded translator state, and overlapping
 logical payloads.
 
-![Post-M46 clean Track B memory scale](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/visuals/track-b-clean-memory-scale.svg)
+![Post-M46 clean Track B memory scale](../evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/visuals/track-b-clean-memory-scale.svg)
 
-![Post-M46 clean Track B owner scale](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/visuals/track-b-clean-owner-scale.svg)
+![Post-M46 clean Track B owner scale](../evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/visuals/track-b-clean-owner-scale.svg)
 
 M46 Phase 0 therefore did not authorize a Track B `rsmarisa`, payload, scolar,
 reverse-index, or transient memory optimization branch. It selected
@@ -223,20 +223,20 @@ Jyutping, Cangjie -> Luna -> Jyutping, and Jyutping -> Luna -> Jyutping all
 return `nei -> 你` with six candidates, zero worker action errors, and the same
 `893.1 MiB` WASM high-water.
 
-![M46 Branch A browser memory and correctness](./evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
+![M46 Branch A browser memory and correctness](../evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
 
 The same clean rerun also keeps Track B latency framed as a Yune-only product
 guard. Short-prefix rows remain the heavy cases, while the 50+ guard stays
 small; this is not a fair cross-engine comparison lane.
 
-![Post-M46 clean Track B latency profile](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/visuals/track-b-clean-latency-profile.svg)
+![Post-M46 clean Track B latency profile](../evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/visuals/track-b-clean-latency-profile.svg)
 
 M46 therefore records `schema-switch-correctness-fixed-memory-unchanged` and
 `measured-no-go-owner-unclassified`. No native Track B or browser WASM memory
 success is claimed.
 
 M46 evidence:
-[`./evidence/m46-jyutping-native-wasm-memory-attribution/`](./evidence/m46-jyutping-native-wasm-memory-attribution/).
+[`./evidence/m46-jyutping-native-wasm-memory-attribution/`](../evidence/m46-jyutping-native-wasm-memory-attribution/).
 
 ## WEB-02 Public-Demo Jyutping Owner Classification
 
@@ -272,9 +272,9 @@ compiled-asset contract so Jyutping selects current byte-backed storage, then
 rerun the browser high-water measurement.
 
 Evidence:
-[`./evidence/web02-jyutping-wasm-memory-attribution/`](./evidence/web02-jyutping-wasm-memory-attribution/).
+[`./evidence/web02-jyutping-wasm-memory-attribution/`](../evidence/web02-jyutping-wasm-memory-attribution/).
 
-![WEB-02 public-demo Jyutping storage owner scale](./evidence/web02-jyutping-wasm-memory-attribution/visuals/web02-public-demo-storage-owner.svg)
+![WEB-02 public-demo Jyutping storage owner scale](../evidence/web02-jyutping-wasm-memory-attribution/visuals/web02-public-demo-storage-owner.svg)
 
 ## WEB-03 Launch Asset Contract Closeout
 
@@ -350,17 +350,17 @@ coverage for `ngogokdak -> 我覺得`, and browser public-demo smoke for both
 `ngogokdak -> 我覺得` and the `zouhapci` visible dictionary rows.
 
 Evidence:
-[`./evidence/web03-three-schema-launch-readiness/`](./evidence/web03-three-schema-launch-readiness/).
+[`./evidence/web03-three-schema-launch-readiness/`](../evidence/web03-three-schema-launch-readiness/).
 Follow-up evidence:
-[`./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md`](./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md).
+[`./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md`](../evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md).
 Latency follow-up evidence:
-[`../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/).
+[`../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/).
 
-![WEB-03 browser WASM memory closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-wasm-memory.svg)
+![WEB-03 browser WASM memory closeout](../evidence/web03-three-schema-launch-readiness/visuals/web03-browser-wasm-memory.svg)
 
-![WEB-03 browser timing closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-timing.svg)
+![WEB-03 browser timing closeout](../evidence/web03-three-schema-launch-readiness/visuals/web03-browser-timing.svg)
 
-![WEB-03 Jyutping latency regression fix](./evidence/web03-three-schema-launch-readiness/visuals/web03-jyutping-latency-regression-fix.svg)
+![WEB-03 Jyutping latency regression fix](../evidence/web03-three-schema-launch-readiness/visuals/web03-jyutping-latency-regression-fix.svg)
 
 ## Memory Synthesis: M43-M46
 

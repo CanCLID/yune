@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="640" viewBox="0 0 760 640" role="img" aria-labelledby="title desc" style="max-width:100%;height:auto;background:#fbfcfe">
+<title id="title">Fair same-schema browser Yune/My RIME ratios</title>
+<desc id="desc">Six dated luna_pinyin browser metrics plot Yune divided by My RIME on a logarithmic axis. Values left of 1.000 mean Yune is lower; values right mean My RIME is lower. Jyutping is excluded because its dictionaries differ.</desc>
+<rect width="760" height="640" fill="#fbfcfe"/>
+<text x="24.0" y="46.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="30" font-weight="700" fill="#17202a">Fair browser peer ratios</text>
+<text x="24.0" y="78.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="17" font-weight="400" fill="#52616f">2026-06-28 luna_pinyin · Yune value / My RIME value</text>
+<text x="205.0" y="118.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#2463d4">← Yune lower</text>
+<text x="555.0" y="118.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#c45a1b">My RIME lower →</text>
+<text x="730.0" y="160.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#52616f">Yune / peer</text>
+<line x1="205.0" y1="156.0" x2="205.0" y2="546.0" stroke="#d9e2ec" stroke-width="1" stroke-dasharray="3 5"/>
+<text x="205.0" y="578.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="16" font-weight="400" fill="#17202a">0.5x</text>
+<line x1="292.5" y1="156.0" x2="292.5" y2="546.0" stroke="#17202a" stroke-width="3"/>
+<text x="292.5" y="578.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="16" font-weight="800" fill="#17202a">1.0x</text>
+<text x="292.5" y="150.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="800" fill="#17202a">1.000x PARITY</text>
+<line x1="380.0" y1="156.0" x2="380.0" y2="546.0" stroke="#d9e2ec" stroke-width="1" stroke-dasharray="3 5"/>
+<text x="380.0" y="578.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="16" font-weight="400" fill="#17202a">2.0x</text>
+<line x1="467.5" y1="156.0" x2="467.5" y2="546.0" stroke="#d9e2ec" stroke-width="1" stroke-dasharray="3 5"/>
+<text x="467.5" y="578.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="16" font-weight="400" fill="#17202a">4.0x</text>
+<line x1="555.0" y1="156.0" x2="555.0" y2="546.0" stroke="#d9e2ec" stroke-width="1" stroke-dasharray="3 5"/>
+<text x="555.0" y="578.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="16" font-weight="400" fill="#17202a">8.0x</text>
+<rect x="12" y="171.0" width="724" height="54" rx="7" fill="#f3f6fa"/>
+<text x="190.0" y="204.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="19" font-weight="600" fill="#17202a"><tspan x="190.0" dy="0.0">Ready to input</tspan></text>
+<rect x="292.5" y="188.0" width="57.5" height="20" rx="5" fill="#f8dfcf" stroke="#c45a1b" stroke-width="1.5"/>
+<circle cx="350.0" cy="198.0" r="7" fill="#c45a1b" stroke="#17202a" stroke-width="1"/>
+<text x="730.0" y="205.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#c45a1b">1.577x</text>
+<text x="190.0" y="268.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="19" font-weight="600" fill="#17202a"><tspan x="190.0" dy="0.0">Input to candidate</tspan></text>
+<rect x="261.0" y="252.0" width="31.5" height="20" rx="5" fill="#d9e7ff" stroke="#2463d4" stroke-width="1.5"/>
+<circle cx="261.0" cy="262.0" r="7" fill="#2463d4" stroke="#17202a" stroke-width="1"/>
+<text x="730.0" y="269.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#2463d4">0.779x</text>
+<rect x="12" y="299.0" width="724" height="54" rx="7" fill="#f3f6fa"/>
+<text x="190.0" y="332.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="19" font-weight="600" fill="#17202a"><tspan x="190.0" dy="0.0">Commit</tspan></text>
+<rect x="279.1" y="316.0" width="13.4" height="20" rx="5" fill="#d9e7ff" stroke="#2463d4" stroke-width="1.5"/>
+<circle cx="279.1" cy="326.0" r="7" fill="#2463d4" stroke="#17202a" stroke-width="1"/>
+<text x="730.0" y="333.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#2463d4">0.899x</text>
+<text x="190.0" y="396.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="19" font-weight="600" fill="#17202a"><tspan x="190.0" dy="0.0">WASM ready</tspan></text>
+<rect x="292.5" y="380.0" width="175.0" height="20" rx="5" fill="#f8dfcf" stroke="#c45a1b" stroke-width="1.5"/>
+<circle cx="467.5" cy="390.0" r="7" fill="#c45a1b" stroke="#17202a" stroke-width="1"/>
+<text x="730.0" y="397.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#c45a1b">4.000x</text>
+<rect x="12" y="427.0" width="724" height="54" rx="7" fill="#f3f6fa"/>
+<text x="190.0" y="460.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="19" font-weight="600" fill="#17202a"><tspan x="190.0" dy="0.0">WASM peak</tspan></text>
+<rect x="292.5" y="444.0" width="175.0" height="20" rx="5" fill="#f8dfcf" stroke="#c45a1b" stroke-width="1.5"/>
+<circle cx="467.5" cy="454.0" r="7" fill="#c45a1b" stroke="#17202a" stroke-width="1"/>
+<text x="730.0" y="461.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#c45a1b">4.000x</text>
+<text x="190.0" y="513.5" text-anchor="end" font-family="system-ui, sans-serif" font-size="19" font-weight="600" fill="#17202a"><tspan x="190.0" dy="0.0">Unique encoded</tspan><tspan x="190.0" dy="20.9">resources</tspan></text>
+<rect x="292.5" y="508.0" width="157.1" height="20" rx="5" fill="#f8dfcf" stroke="#c45a1b" stroke-width="1.5"/>
+<circle cx="449.6" cy="518.0" r="7" fill="#c45a1b" stroke="#17202a" stroke-width="1"/>
+<text x="730.0" y="525.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#c45a1b">3.471x</text>
+<text x="24.0" y="616.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="17" font-weight="400" fill="#52616f">Same luna_pinyin family · Jyutping excluded · log axis</text>
+</svg>

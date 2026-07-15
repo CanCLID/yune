@@ -6,7 +6,6 @@ optimization.
 Primary reports:
 
 - [`../../yune-vs-librime-performance.md`](../../yune-vs-librime-performance.md)
-- [`../../yune-vs-librime-root-cause-analysis.md`](../../yune-vs-librime-root-cause-analysis.md)
 
 Raw native in-process benchmark runs:
 

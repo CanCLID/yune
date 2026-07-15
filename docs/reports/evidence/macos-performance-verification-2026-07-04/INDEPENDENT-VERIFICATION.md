@@ -2,13 +2,14 @@
 
 Date: 2026-07-04 · Verifier: independent session (this machine)
 
-This is an independent re-check of the two Windows-authored performance reports
-— [`yune-vs-librime-performance.md`](../../yune-vs-librime-performance.md) and
-[`yune-vs-librime-root-cause-analysis.md`](../../yune-vs-librime-root-cause-analysis.md)
-— on macOS / Apple Silicon, against a locally built upstream librime oracle. It
-re-runs the benchmark (a third run, alongside the two prior runs in this
-bundle), re-derives every claim from the raw CSVs, profiles the hot path, and
-adversarially checks the conclusions.
+This is an independent macOS / Apple Silicon evidence run against a locally
+built upstream librime oracle. It later informed the consolidated
+[`performance dashboard`](../../yune-vs-librime-performance.md) and the
+[`archived root-cause analysis`](../../history/2026-07-14-yune-vs-librime-root-cause-analysis-pre-consolidation.md);
+it does not claim that the 2026-07-04 session verified those later documents.
+The run repeats the benchmark (a third run alongside the two prior runs in this
+bundle), re-derives the contemporaneous claims from raw CSVs, profiles the hot
+path, and adversarially checks the conclusions.
 
 ## Machine and build provenance
 

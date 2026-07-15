@@ -7,7 +7,7 @@
 
 > 把你打的拼音变成汉字。
 > 输入 `nihao`，得到 你好。输入 `nei5 hou2`，得到粤拼的 你好。
-> 用 Rust 重写——桌面、浏览器、任何地方都能跑。
+> 使用 Rust 构建——提供原生 ABI、浏览器 WASM 和 CLI 路径。
 
 ## 目录
 
@@ -29,9 +29,9 @@
 
 你在键盘上打拼音（普通话）或粤拼（粤语），Yune 实时把它转成正确的中文字。
 
-Yune 读取和 [RIME](https://rime.im) 相同的字典和配置文件——RIME 是开源中文输入法
-领域最广泛使用的引擎。这意味着 Yune 兼容社区多年来积累的数千种 RIME 输入方案和
-词库。
+Yune 可以读取 [RIME](https://rime.im) 风格的字典和配置文件。对于有 oracle 证据的
+命名目标和已支持的 common-schema 行为，Yune 追求可预期的兼容性；这并不表示社区
+所有 RIME 输入方案和词库都已经受支持。
 
 **[yune-web.pages.dev](https://yune-web.pages.dev)** ——在浏览器里试试。
 
@@ -60,14 +60,13 @@ RIME 作为开源中文输入法的基石已经超过十年，它很好用。但
 
 Yune 从零开始，用 Rust 重写整个引擎，为了三个目标：
 
-**到处能跑。** 同一份核心引擎可以编译成原生共享库（给 Squirrel、Weasel、
-ibus-rime 这类桌面输入法用），可以编译成 WebAssembly（在浏览器里跑），也可以
-编译成命令行工具（用来测试和性能分析）。
+**跨平台形态。** 同一份核心引擎可以暴露为 librime-shaped 原生共享库，用于桌面
+host 实验，也可以编译成 WebAssembly 或命令行工具。现有桌面证据不表示 Squirrel、
+Weasel 或 ibus-rime 已经可以无缝替换。
 
-**可以验证。** 每一个行为都跟真实的 RIME 引擎逐字节比对。Yune 不抄 C++ 源码——
-抄源码等于抄 bug 和抄旧架构。Yune 的做法是把 RIME 当成"行为参考"：喂同样的输入，
-抓 RIME 的输出，然后确保 Yune 的输出一模一样。这样既保证了兼容性，又不用继承一套
-十五年前的 C++ 架构。
+**可以验证。** 已覆盖的行为会和相关 RIME-family oracle 逐字节比对。Yune 不照搬
+C++ 源码，而是针对命名输入捕获 oracle 输出，再断言 Yune 产生相同结果。这些证据只
+覆盖已捕获的目标，不表示“每一个 RIME 行为”都已经完全一致。
 
 **为 AI 原生输入做准备。** 引擎内置了一个默认关闭的 AI 层。将来可以在设备本地跑
 一个小语言模型，在传统字典候选项旁边给出智能补全或纠错建议——不影响传统路径的
@@ -84,20 +83,28 @@ ibus-rime 这类桌面输入法用），可以编译成 WebAssembly（在浏览�
 庞大的类继承体系。想接入自定义排序模型？实现一个 trait。想换一种字典格式？换一个
 translator。
 
-全部代码是 safe Rust，workspace 强制 `unsafe_code = "forbid"`。
+deterministic core 使用 safe Rust。workspace 默认禁止 unsafe code，但
+`yune-rime-api` 和 `yune-cli` 有明确的 ABI/FFI 例外。
 
 ## 当前状态
 
 Yune 是一个活跃的引擎项目。
 
-- **兼容性基线：** Phase 1 已完成。在普通话（`luna_pinyin`）和广东话（`jyut6ping3`，
-  通过 TypeDuck profile）方案下，Yune 输出与 RIME 1.17.0 完全一致。已在真实前端
-  （TypeDuck-Web、TypeDuck-Windows）中验证过可以无缝替换。
-- **当前工作：** 里程碑 M38-M42 均已完成。native 长 full-pinyin 行已经达到
-  librime parity 或更快；M42 修复了命名 abbreviation 行的候选输出差异。剩下的
-  性能工作已经明确：短键固定开销、abbreviation 延迟、以及整体内存。
-- **公开 demo：** `yune-web` 部署在 <https://yune-web.pages.dev>。它是 Yune 引擎
-  demo，不表示浏览器层性能已经解决。
+- **兼容性基线：** Phase 1 已为捕获的命名目标完成。M59 进一步关闭了命名的
+  Lane A、Lane B、Cangjie 和 37/59 页面形状；这是目标驱动的捕获范围，不是所有
+  RIME 方案的通用一致性声明。`yune-web` 有真实浏览器验证；TypeDuck-Windows
+  已验证 backend/profile/IPC smoke，但不等于完整前端可无缝替换。
+- **当前工作：** 里程碑 M38-M59 均已完成。最终 M59 Windows 行为源
+  `443cc636` 通过已签名的 consolidated threshold registry（`32/32` aggregate、
+  `160/160` individual）。较新的 `0111cf47` Mac 五轮诊断中，17 条 Track A
+  中位数和 pooled worst 均低于 `1.0x`，完整输入页面为 `16/17` exact，包括
+  37/59；但它与 Windows `443cc636` 不是同一源，因此不声称当前平台速度差异。
+  已签名的 Windows 基线和 ceilings 未变；native/browser 内存与更细粒度的
+  跨平台归因仍是独立问题。
+- **公开 demo：** `yune-web` 部署在 <https://yune-web.pages.dev>。最新测量的
+  pre-hardening `0111cf47` 47 键正常输入 canary 以 `51 ms` p95 / `55 ms`
+  最大值、零 worker 排队通过；`68df2d16` hardening 后的 current-main web
+  performance 尚未测量，浏览器启动和 footprint 也仍是独立差距。
 - **AI 姿态：** AI 层已经存在，但在 web harness 中默认关闭、仅本地运行，并且不进入
   classic deterministic input path。
 
@@ -111,13 +118,17 @@ Yune 的兼容性是目标驱动的，而非清单驱动的。
 
 - 默认 core oracle：上游 `rime/librime 1.17.0`
   (`33e78140250125871856cdc5b42ddc6a5fcd3cd4`)。
+- Canonical 粤拼候选 oracle：上游 `rime/librime 1.17.0` 加固定版本的
+  `rime/rime-cantonese`。
 - TypeDuck profile oracle：TypeDuck-HK/librime `v1.1.2`
-  (`74cb52b78fb2411137a7643f6c8bc6517acfde69`)。
+  (`74cb52b78fb2411137a7643f6c8bc6517acfde69`)，仅用于 profile/display/comment、
+  multilingual payload、fork-only ABI 和历史 fixture-backed profile guard。
 
 **规则：**
 
 - 保留命名目标的上游可观察行为。
-- 把 TypeDuck fork 的行为隔离在 TypeDuck profile 接口后面。
+- 把 TypeDuck fork 的行为隔离在 TypeDuck profile 接口后面；不得用 fork v1.1.2
+  的排序定义 canonical `jyut6ping3` 候选。
 - 仅在命名目标需要时才添加对应的 librime 功能。
 - 期望字节不得自行推导：必须从相关 oracle 捕获，不能从 Yune 自身推出。
 
@@ -126,29 +137,17 @@ Yune 的兼容性是目标驱动的，而非清单驱动的。
 
 ## 性能
 
-当前 native 对比是分层结论，并且只对照上游 `rime/librime 1.17.0`。Yune 在
-startup/session、`zhongguo`、以及两条长 full-pinyin 压力行上已经更快或接近
-parity；但 `hao`、`ni`、以及两条 M42 abbreviation 行仍然比 librime 慢，虽然
-abbreviation 行的候选输出现在已经匹配 librime。
+性能结论必须按平台和证据链分别阅读。最终 M59 Windows `443cc636` 与最新
+Mac `0111cf47` 的五轮 Track A 中，17 条延迟中位数和最差值均低于 `1.0x`；
+但两边的 Yune 源不同，因此不能据此推断平台速度差异。Windows 签名阈值完全
+不变。Track A 内存仍是明显差距：Windows 约为同轮 librime 的 `8.9x`，Mac
+RSS 约为 `11.8x`。最新公平浏览器对照中，WASM 内存为 `4.000x`，payload 为
+`3.471x`；pre-hardening `0111cf47` 线上 47 键正常输入以 `51 ms` p95 /
+`55 ms` 最大值、零 worker 排队通过，current-main 尚未重跑。
 
-![M42 native Yune vs librime performance comparison](docs/reports/evidence/m42-abbreviation-sentence-parity/visuals/m42-readme-librime-comparison.svg)
+当前单一仪表盘：
 
-当前 native Track A 同机比值如下，越低越好：
-
-- 更快或接近 parity：startup `0.759x`、session `0.856x`、`zhongguo`
-  `0.363x`、37 字 full pinyin `0.957x`、59 字 full pinyin `0.721x`。
-- 仍较慢但在 guard 内：`hao` `3.424x`、`ni` `4.082x`。
-- 行为已修复但仍是延迟 blocker：`cszysmsrsd` `3.469x`、`zybfshmsru`
-  `5.069x`。
-- 内存还不是 parity：Track A peak 是 `119,775,232 B`；同机 librime 行大约
-  `13-17 MB`。
-- Track B TypeDuck profile 行和浏览器启动是单独证据链，不是上游 librime native
-  对比。
-
-当前报告：
-
-- [docs/reports/yune-vs-librime-performance.md](docs/reports/yune-vs-librime-performance.md)
-- [docs/reports/yune-vs-librime-root-cause-analysis.md](docs/reports/yune-vs-librime-root-cause-analysis.md)
+- [所有平台结果、可视化和瓶颈分析](docs/reports/yune-vs-librime-performance.md)
 
 ## 快速开始
 

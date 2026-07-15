@@ -1,0 +1,16 @@
+Hardware:
+
+    Hardware Overview:
+
+      Model Name: MacBook Air
+      Model Identifier: Mac17,3
+      Model Number: MDH74LL/A
+      Chip: Apple M5
+      Total Number of Cores: 10 (4 Super and 6 Efficiency)
+      Memory: 16 GB
+      System Firmware Version: 18000.121.3
+      OS Loader Version: 18000.121.3
+      Serial Number (system): [redacted stable device identifier]
+      Hardware UUID: [redacted stable device identifier]
+      Provisioning UDID: [redacted stable device identifier]
+      Activation Lock Status: Enabled

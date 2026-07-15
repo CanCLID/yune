@@ -57,7 +57,7 @@ Evidence and reports:
 
 - [`../../reports/evidence/m33-2026-06-23/`](../../reports/evidence/m33-2026-06-23)
 - [`../../reports/yune-vs-librime-performance.md`](../../reports/yune-vs-librime-performance.md)
-- [`../../reports/yune-vs-librime-root-cause-analysis.md`](../../reports/yune-vs-librime-root-cause-analysis.md)
+- [`archived root-cause report`](../../reports/history/2026-07-14-yune-vs-librime-root-cause-analysis-pre-consolidation.md)
 
 Public claim status: safe to show as an honest cold/warm startup and session
 improvement with caveats; unsafe to claim typing-speed, memory-footprint,
@@ -67,7 +67,7 @@ browser-startup, browser-typing, or overall "faster than librime" wins.
 
 ## Background and root cause
 
-Full diagnosis: [`docs/reports/yune-vs-librime-root-cause-analysis.md`](../../reports/yune-vs-librime-root-cause-analysis.md).
+Full diagnosis: [`archived root-cause report`](../../reports/history/2026-07-14-yune-vs-librime-root-cause-analysis-pre-consolidation.md).
 Measurement: [`docs/reports/yune-vs-librime-performance.md`](../../reports/yune-vs-librime-performance.md).
 
 Current 2026-06-23 medians on `luna_pinyin` through the librime-shaped C ABI:

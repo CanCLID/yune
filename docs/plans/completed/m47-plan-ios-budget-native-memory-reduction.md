@@ -29,7 +29,7 @@ Phase 0 attribution and the RED-01…RED-08 reductions are landed, parity-clean,
 
 ## Measured baseline (the starting point this plan attacks)
 
-Source: lean native probe `crates/yune-rime-api/tests/native_memory_probe.rs` (real `RimeApi`, mmap path, `prebuilt_data_dir` set so deploy reuses+mmaps instead of rebuilding, one schema per fresh process, own `WorkingSet64`). Full write-up: [`docs/reports/ios-memory-budget.md`](../../reports/ios-memory-budget.md). Adversarially verified 2026-06-28 (workflow: 4 refute agents + synthesis).
+Source: lean native probe `crates/yune-rime-api/tests/native_memory_probe.rs` (real `RimeApi`, mmap path, `prebuilt_data_dir` set so deploy reuses+mmaps instead of rebuilding, one schema per fresh process, own `WorkingSet64`). Full write-up: [`archived iOS-budget proxy report`](../../reports/history/2026-06-29-ios-memory-budget-pre-consolidation.md). Adversarially verified 2026-06-28 (workflow: 4 refute agents + synthesis).
 
 - **The cost lands at `create_session()`, not `deploy()`.** jyut6ping3_mobile: baseline 5.2 MB → deploy **10.8 MB** → `create_session` **293 MB** (+283 MB) → select/typing flat → steady **298 MB**, peak **482 MB**. `create_session` eagerly loads the workspace **default** schema's dictionary and materializes heap structures. (Code-traced: `session.rs` → `apply_initial_schema_to_session` → `install_schema_translator_chain` → `CompactTableStore::from_table_bin_byte_source` + `read_yune_table_advanced_payload` + `StaticTableTranslator::from_compact_table_store`.)
 - **Per-default-schema steady (lean probe):** luna_pinyin **62.6 MB** (peak 294), cangjie5 **94.9 MB** (peak 102), jyut6ping3_mobile **~298 MB** (peak 482). Only jyut shows a large steady↔peak gap (~184 MB transient that frees back).

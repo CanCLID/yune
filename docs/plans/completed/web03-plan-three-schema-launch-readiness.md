@@ -192,7 +192,7 @@ Updated:
 - [`../../decisions.md`](../../decisions.md)
 - [`../../ledgers/milestone-history.md`](../../ledgers/milestone-history.md)
 - [`../../reports/yune-vs-librime-performance.md`](../../reports/yune-vs-librime-performance.md)
-- [`../../reports/yune-vs-librime-root-cause-analysis.md`](../../reports/yune-vs-librime-root-cause-analysis.md)
+- [`archived root-cause report`](../../reports/history/2026-07-14-yune-vs-librime-root-cause-analysis-pre-consolidation.md)
 - [`../../reports/evidence/web02-jyutping-wasm-memory-attribution/README.md`](../../reports/evidence/web02-jyutping-wasm-memory-attribution/README.md)
 - [`../../reports/evidence/web03-three-schema-launch-readiness/README.md`](../../reports/evidence/web03-three-schema-launch-readiness/README.md)
 - [`../../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/)

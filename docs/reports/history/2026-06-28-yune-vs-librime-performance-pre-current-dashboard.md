@@ -15,7 +15,7 @@ are made only where real-browser evidence is linked below.
 
 Browser startup remains tracked separately. M41 closed the `apps/yune-web`
 startup-harness milestone with production-browser evidence under
-[`../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/`](../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/).
+[`../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/`](../../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/).
 WEB-01 closed as a measured browser-harness no-go. M46 closed the
 TypeDuck/Jyutping native Track B and browser WASM memory handoff as a useful
 partial result: schema-switch correctness is fixed, but memory remains a
@@ -30,7 +30,7 @@ Three lanes, only two of which are fair cross-engine comparisons:
 | Lane | Comparison | Schema | Fair? |
 | --- | --- | --- | --- |
 | **Track A** | Yune vs upstream **librime 1.17.0**, native | `luna_pinyin` | Yes — same schema/dictionary, same-run |
-| **Track B** | Yune-web vs **My RIME**, browser | `luna_pinyin` | Yes — same schema (see [browser report](./yune-web-vs-my-rime-browser-baseline.md)) |
+| **Track B** | Yune-web vs **My RIME**, browser | `luna_pinyin` | Yes — same schema (see [browser report](./2026-06-28-yune-web-vs-my-rime-browser-baseline-pre-current-dashboard.md)) |
 | **Jyutping guard** | Yune only, native + browser | `jyut6ping3_mobile` | No — TypeDuck multilingual dictionary; no librime/My-RIME equivalent |
 
 The Jyutping path is a Yune-only integration / correctness / performance guard,
@@ -47,7 +47,7 @@ versus My RIME's `16 MiB`, both on `luna_pinyin` (~10x).
 ## Latest Review Snapshot
 
 The run-labeled review snapshot under
-[`./evidence/reframed-comparison-review-2026-06-27/`](./evidence/reframed-comparison-review-2026-06-27/)
+[`./evidence/reframed-comparison-review-2026-06-27/`](../evidence/reframed-comparison-review-2026-06-27/)
 confirms the same current Track A shape while showing normal short-key
 run-to-run noise. Fresh Track A ratios are `hao 2.199x`, `n 3.534x`, and
 `ni 3.698x`; the public README and README SVG intentionally summarize those as
@@ -62,7 +62,7 @@ source-YAML fallback `translator.entries_by_code` BTreeMap and peak near
 `1.05 GB`; they must not replace M46's valid byte-backed Track B result below.
 
 A clean follow-up Track B rerun under
-[`./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/`](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/)
+[`./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/`](../evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/)
 uses `-DeployProductBeforeBenchmark` and is valid product evidence:
 `compiled_ready=true`, `selected_storage=byte_backed`, table/prism `mmap`, and
 `source_fallback=false`. It confirms the M46 memory result with peak working set
@@ -123,9 +123,9 @@ native Track B remains `504,627,200 B` peak, and browser Jyutping remains
 `schema-switch-correctness-fixed-memory-unchanged` with
 `measured-no-go-owner-unclassified`; no Track B memory optimization branch is
 claimed. The evidence root is
-[`./evidence/m46-jyutping-native-wasm-memory-attribution/`](./evidence/m46-jyutping-native-wasm-memory-attribution/).
+[`./evidence/m46-jyutping-native-wasm-memory-attribution/`](../evidence/m46-jyutping-native-wasm-memory-attribution/).
 
-![M46 Branch A browser memory and correctness](./evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
+![M46 Branch A browser memory and correctness](../evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
 
 WEB-02 follow-up classifies the public-demo Jyutping browser owner that M46
 left unclassified. The measured web ABI path now reports
@@ -138,9 +138,9 @@ are `Rime::Prism/3.0`, while the compact byte-backed path uses current
 (`529,602,374 B` total, `505.1 MiB`). This is not a memory reduction and does
 not change the `893.1 MiB` browser high-water; it names the first reduction
 target as the web/public-demo compiled-asset contract. Evidence:
-[`./evidence/web02-jyutping-wasm-memory-attribution/`](./evidence/web02-jyutping-wasm-memory-attribution/).
+[`./evidence/web02-jyutping-wasm-memory-attribution/`](../evidence/web02-jyutping-wasm-memory-attribution/).
 
-![WEB-02 public-demo Jyutping storage owner scale](./evidence/web02-jyutping-wasm-memory-attribution/visuals/web02-public-demo-storage-owner.svg)
+![WEB-02 public-demo Jyutping storage owner scale](../evidence/web02-jyutping-wasm-memory-attribution/visuals/web02-public-demo-storage-owner.svg)
 
 WEB-03 closes the launch compiled-asset contract follow-up. After the engine
 deploy fix in `3ffd4b21` and the regenerated public-demo assets in `ef37bfe9`,
@@ -160,7 +160,7 @@ prism alias lookups for sentence substrings and prefix fallback. Full native
 `cantonese_parity` passes 37/0, the WEB-03 byte-backed guard asserts
 `ngogokdak -> 我覺得`, and a rebuilt public-demo browser smoke proves both
 `ngogokdak -> 我覺得` and the `zouhapci` visible lookup rows. Evidence:
-[`./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md`](./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md).
+[`./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md`](../evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md).
 
 Additional 2026-06-28 latency correction: the earlier WEB-03 report did not
 update all short/long browser input-latency dimensions. A live deployed probe
@@ -206,7 +206,7 @@ byte-backed prefix/sentence expansion counters so the latency fix cannot be
 kept by silently dropping candidate quality.
 
 Evidence:
-[`../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/).
+[`../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/).
 
 This is a browser-harness/public-demo compiled-asset fix, not a native-engine
 memory win and not a broad product speed claim. The synthetic `extras` row in
@@ -215,24 +215,24 @@ withholds the launch compiled assets; it is retained as a negative control, not
 the shipped path. The fair browser comparison lane also remains unchanged:
 `luna_pinyin` is still `160.0 MiB` for Yune versus My RIME's `16.0 MiB`.
 Evidence:
-[`./evidence/web03-three-schema-launch-readiness/`](./evidence/web03-three-schema-launch-readiness/).
+[`./evidence/web03-three-schema-launch-readiness/`](../evidence/web03-three-schema-launch-readiness/).
 
-![WEB-03 browser WASM memory closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-wasm-memory.svg)
+![WEB-03 browser WASM memory closeout](../evidence/web03-three-schema-launch-readiness/visuals/web03-browser-wasm-memory.svg)
 
-![WEB-03 browser timing closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-timing.svg)
+![WEB-03 browser timing closeout](../evidence/web03-three-schema-launch-readiness/visuals/web03-browser-timing.svg)
 
-![WEB-03 Jyutping latency regression fix](./evidence/web03-three-schema-launch-readiness/visuals/web03-jyutping-latency-regression-fix.svg)
+![WEB-03 Jyutping latency regression fix](../evidence/web03-three-schema-launch-readiness/visuals/web03-jyutping-latency-regression-fix.svg)
 
 ## M45 Visual Dashboard
 
 The checked-in M45 visuals summarize the final native evidence under
-[`./evidence/m45-native-short-key-memory-attribution/`](./evidence/m45-native-short-key-memory-attribution/).
+[`./evidence/m45-native-short-key-memory-attribution/`](../evidence/m45-native-short-key-memory-attribution/).
 
-![M45 short-key same-run ratio gates](./evidence/m45-native-short-key-memory-attribution/visuals/m45-short-key-ratios.svg)
+![M45 short-key same-run ratio gates](../evidence/m45-native-short-key-memory-attribution/visuals/m45-short-key-ratios.svg)
 
-![M45 steady resident and peak memory bands](./evidence/m45-native-short-key-memory-attribution/visuals/m45-memory-bands.svg)
+![M45 steady resident and peak memory bands](../evidence/m45-native-short-key-memory-attribution/visuals/m45-memory-bands.svg)
 
-![M45 retained owner attribution](./evidence/m45-native-short-key-memory-attribution/visuals/m45-owner-attribution.svg)
+![M45 retained owner attribution](../evidence/m45-native-short-key-memory-attribution/visuals/m45-owner-attribution.svg)
 
 ## M45 Final Native Dashboard
 
@@ -308,33 +308,33 @@ than optimization progress.
 ## Evidence Bundle
 
 Primary evidence root:
-[`./evidence/m45-native-short-key-memory-attribution/`](./evidence/m45-native-short-key-memory-attribution/)
+[`./evidence/m45-native-short-key-memory-attribution/`](../evidence/m45-native-short-key-memory-attribution/)
 
 Key artifacts:
 
 - Phase 0 benchmark:
-  [`phase-0-native-baseline/`](./evidence/m45-native-short-key-memory-attribution/phase-0-native-baseline/)
+  [`phase-0-native-baseline/`](../evidence/m45-native-short-key-memory-attribution/phase-0-native-baseline/)
 - Phase 0 short-key oracle:
-  [`phase-0-short-key-oracle/`](./evidence/m45-native-short-key-memory-attribution/phase-0-short-key-oracle/)
+  [`phase-0-short-key-oracle/`](../evidence/m45-native-short-key-memory-attribution/phase-0-short-key-oracle/)
 - Phase 0 verdict:
-  [`phase-0-verdict.md`](./evidence/m45-native-short-key-memory-attribution/phase-0-verdict.md)
+  [`phase-0-verdict.md`](../evidence/m45-native-short-key-memory-attribution/phase-0-verdict.md)
 - Final benchmark bundle:
-  [`final-native-benchmark/`](./evidence/m45-native-short-key-memory-attribution/final-native-benchmark/)
+  [`final-native-benchmark/`](../evidence/m45-native-short-key-memory-attribution/final-native-benchmark/)
 - Final candidate-output comparison:
-  [`final-candidate-comparison/oracle-vs-yune-candidate-output.md`](./evidence/m45-native-short-key-memory-attribution/final-candidate-comparison/oracle-vs-yune-candidate-output.md)
+  [`final-candidate-comparison/oracle-vs-yune-candidate-output.md`](../evidence/m45-native-short-key-memory-attribution/final-candidate-comparison/oracle-vs-yune-candidate-output.md)
 - Final memory attribution:
-  [`final-memory-attribution.md`](./evidence/m45-native-short-key-memory-attribution/final-memory-attribution.md)
+  [`final-memory-attribution.md`](../evidence/m45-native-short-key-memory-attribution/final-memory-attribution.md)
 - Final visual evidence:
-  [`visuals/`](./evidence/m45-native-short-key-memory-attribution/visuals/)
+  [`visuals/`](../evidence/m45-native-short-key-memory-attribution/visuals/)
 - Final gates:
-  [`final-native-benchmark/final-gates.md`](./evidence/m45-native-short-key-memory-attribution/final-native-benchmark/final-gates.md)
+  [`final-native-benchmark/final-gates.md`](../evidence/m45-native-short-key-memory-attribution/final-native-benchmark/final-gates.md)
 
 ## Prior Native Context
 
 M44 remains the predecessor native/profile closeout. It passed `hao`, both
 abbreviation rows, and the selected Track B short-row lookup targets, while
 recording `ni` and peak memory as measured blockers. Its evidence remains under
-[`./evidence/m44-native-performance-owner-reduction/`](./evidence/m44-native-performance-owner-reduction/).
+[`./evidence/m44-native-performance-owner-reduction/`](../evidence/m44-native-performance-owner-reduction/).
 
 ## Remaining Gaps
 

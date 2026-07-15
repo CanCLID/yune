@@ -1,0 +1,17 @@
+capture_context: post-measurement read-only packet packaging check on 2026-07-13
+
+$ xcode-select -p
+/Library/Developer/CommandLineTools
+
+$ pkgutil --pkg-info=com.apple.pkg.CLTools_Executables
+package-id: com.apple.pkg.CLTools_Executables
+version: 26.6.0.0.1781586589
+volume: /
+location: /
+
+$ xcodebuild -version
+xcode-select: error: tool 'xcodebuild' requires Xcode, but active developer directory '/Library/Developer/CommandLineTools' is a command line tools instance
+
+$ clang --version
+Apple clang version 21.0.0 (clang-2100.1.1.101)
+Target: arm64-apple-darwin25.5.0

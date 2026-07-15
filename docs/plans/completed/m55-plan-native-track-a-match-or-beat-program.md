@@ -292,7 +292,7 @@ Existing machinery this plan builds on (do not reinvent):
   `byte_class` distinguishing `heap_owned_*` from `mmap_file_backed`.
 - Byte-backing precedent: M47 plan and evidence
   (`docs/plans/completed/m47-plan-ios-budget-native-memory-reduction.md`,
-  `docs/reports/ios-memory-budget.md`).
+  `docs/reports/history/2026-06-29-ios-memory-budget-pre-consolidation.md`).
 - Raw-lookup diagnostics: `raw_lookup_microbench.csv` in the M52 final
   evidence (`ni`: raw table lookup `18.0 us` of `41.6 us` translator median;
   37-char: raw lookup `28.9 us` of `891.0 us` — the poet graph owns ~96% of

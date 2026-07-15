@@ -1,0 +1,11 @@
+{
+  "validation_type": "artifact",
+  "surface": "report",
+  "ok": true,
+  "message": "Artifact payload is valid. Follow the selected delivery surface for rendering or export.",
+  "manifest_title": "M59 Increment-4e macOS Yune vs librime performance verification",
+  "dataset_count": 9,
+  "source_count": 9,
+  "snapshot_status": "ready",
+  "artifact_sha256": "65f645e6570189a5b1afce9d777c95ab61b13026511d5f6e580d3a919a1dc9a5"
+}

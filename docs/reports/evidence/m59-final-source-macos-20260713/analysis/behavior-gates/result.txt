@@ -1,0 +1,34 @@
+Yune commit: 5879405c7b0f76af4dca7382f00b3e0605386f2c
+Worktree state before: clean detached HEAD
+Worktree state after: clean detached HEAD
+
+Gate 1:
+- start_utc: 2026-07-13T21:04:37Z
+- end_utc: 2026-07-13T21:04:55Z
+- exit_code: 0
+- result: ok; 1 passed, 0 failed, 0 ignored, 0 measured, 52 filtered out
+- test: m59_reachability::m59_lane_b_product_matches_complete_pinned_librime_order
+- elapsed reported by test harness: 9.09s
+- log_sha256: a8ab9dc1644dd0446473cd61d1c78e8b7063fd18cac2320e702ac8080f55aeac
+
+Gate 2:
+- start_utc: 2026-07-13T21:05:01Z
+- end_utc: 2026-07-13T21:05:17Z
+- exit_code: 0
+- result: ok; 1 passed, 0 failed, 0 ignored, 0 measured, 52 filtered out
+- test: m59_luna_long_sentence_page_order_matches_pinned_oracle_on_byte_backed_product
+- elapsed reported by test harness: 15.52s
+- log_sha256: 23b66bc24f306f1eeff9e454488be4c8aa6cb86169f7514d763506a5af33bce8
+
+Fixture context:
+- Gate 1 runs the deployed byte-backed luna_pinyin product path over seven captured inputs and compares every captured page/candidate text/order/position.
+- Gate 1 fixture: crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json
+- Gate 1 fixture SHA-256: 8ff369e1a78d0865055003433a258dcf4407136609d4ab8ab5a029c29b989273
+- Gate 1 fixture shape: 7 inputs, 430 pages, 2,135 candidates, page size 5, all pages captured.
+- Gate 1 oracle: rime/librime 1.17.0 at 33e78140250125871856cdc5b42ddc6a5fcd3cd4; luna_pinyin source commit 18a80335c37522311f7cff02886cd81cec3b460a.
+- Gate 2 runs the deployed byte-backed luna_pinyin path for the 37- and 59-character benchmark inputs, checks the exact first page against the pinned oracle, and exercises partial selection/recomposition.
+- Gate 2 fixture: crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-sentence-expanded.json
+- Gate 2 fixture SHA-256: cb0ae9ab7a5bac8396a60818ed6f58d9a92a2dafcc1333254c7212abb3174fce
+- Gate 2 fixture explicitly pins rime/librime 1.17.0 commit 33e78140250125871856cdc5b42ddc6a5fcd3cd4.
+
+No repository files were edited. Cargo outputs were directed to the external target path above.

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 470" role="img" aria-labelledby="title desc" style="max-width:100%;height:auto;background:#fbfcfe">
+<title id="title">Historical long-input behavior normalization crosses parity</title>
+<desc id="desc">For both 37- and 59-character inputs, the all-prefix Yune/librime latency ratio is below parity, but candidate-text-matched and final-key ratios are above parity. Ratio is Yune latency divided by librime latency.</desc>
+<rect width="1320" height="470" fill="#fbfcfe"/>
+<text x="48.0" y="48.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="27" font-weight="700" fill="#17202a">Historical long-input timing flips after behavior normalization</text>
+<text x="48.0" y="78.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="16" font-weight="400" fill="#52616f">afb7079b behavior-strata control · Yune latency / librime latency</text>
+<text x="250.0" y="118.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="15" font-weight="600" fill="#2463d4">← Yune lower latency</text>
+<text x="1080.0" y="118.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="15" font-weight="600" fill="#c45a1b">librime lower latency →</text>
+<line x1="250.0" y1="138.0" x2="250.0" y2="360.0" stroke="#d9e2ec" stroke-width="1" stroke-dasharray="3 5"/>
+<text x="250.0" y="387.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" font-weight="400" fill="#17202a">0.125x</text>
+<line x1="457.5" y1="138.0" x2="457.5" y2="360.0" stroke="#d9e2ec" stroke-width="1" stroke-dasharray="3 5"/>
+<text x="457.5" y="387.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" font-weight="400" fill="#17202a">0.250x</text>
+<line x1="665.0" y1="138.0" x2="665.0" y2="360.0" stroke="#d9e2ec" stroke-width="1" stroke-dasharray="3 5"/>
+<text x="665.0" y="387.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" font-weight="400" fill="#17202a">0.500x</text>
+<line x1="872.5" y1="138.0" x2="872.5" y2="360.0" stroke="#17202a" stroke-width="3"/>
+<text x="872.5" y="387.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" font-weight="800" fill="#17202a">1.0x</text>
+<text x="872.5" y="132.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="#17202a">1.000x PARITY</text>
+<line x1="1080.0" y1="138.0" x2="1080.0" y2="360.0" stroke="#d9e2ec" stroke-width="1" stroke-dasharray="3 5"/>
+<text x="1080.0" y="387.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" font-weight="400" fill="#17202a">2.0x</text>
+<text x="225.0" y="210.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#17202a">37-character</text>
+<circle cx="629.4" cy="192.0" r="6" fill="#2463d4" stroke="#17202a" stroke-width="1"/>
+<text x="639.4" y="197.0" text-anchor="start" font-family="ui-monospace, monospace" font-size="13" font-weight="700" fill="#2463d4">0.444x</text>
+<polygon points="977.5,198.0 984.5,205.0 977.5,212.0 970.5,205.0" fill="#fbfcfe" stroke="#b7791f" stroke-width="2.5"/>
+<text x="967.5" y="210.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="13" font-weight="700" fill="#b7791f">1.420x</text>
+<rect x="1027.6" y="212.0" width="12.0" height="12.0" fill="#c45a1b" stroke="#17202a" stroke-width="1"/>
+<text x="1023.6" y="223.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="13" font-weight="700" fill="#c45a1b">1.713x</text>
+<line x1="629.4" y1="192.0" x2="977.5" y2="205.0" stroke="#d9e2ec" stroke-width="2"/>
+<line x1="977.5" y1="205.0" x2="1033.6" y2="218.0" stroke="#d9e2ec" stroke-width="2"/>
+<text x="225.0" y="310.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#17202a">59-character</text>
+<circle cx="436.4" cy="292.0" r="6" fill="#2463d4" stroke="#17202a" stroke-width="1"/>
+<text x="446.4" y="297.0" text-anchor="start" font-family="ui-monospace, monospace" font-size="13" font-weight="700" fill="#2463d4">0.233x</text>
+<polygon points="928.1,298.0 935.1,305.0 928.1,312.0 921.1,305.0" fill="#fbfcfe" stroke="#b7791f" stroke-width="2.5"/>
+<text x="918.1" y="310.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="13" font-weight="700" fill="#b7791f">1.204x</text>
+<rect x="905.5" y="312.0" width="12.0" height="12.0" fill="#c45a1b" stroke="#17202a" stroke-width="1"/>
+<text x="901.5" y="323.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="13" font-weight="700" fill="#c45a1b">1.139x</text>
+<line x1="436.4" y1="292.0" x2="928.1" y2="305.0" stroke="#d9e2ec" stroke-width="2"/>
+<line x1="928.1" y1="305.0" x2="911.5" y2="318.0" stroke="#d9e2ec" stroke-width="2"/>
+<circle cx="48.0" cy="430.0" r="6" fill="#2463d4" stroke="#17202a" stroke-width="1"/>
+<text x="63.0" y="435.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="13" font-weight="400" fill="#52616f">All-prefix sum</text>
+<polygon points="278.0,423.0 285.0,430.0 278.0,437.0 271.0,430.0" fill="#fbfcfe" stroke="#b7791f" stroke-width="2.5"/>
+<text x="293.0" y="435.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="13" font-weight="400" fill="#52616f">Candidate-text-matched</text>
+<rect x="502.0" y="424.0" width="12.0" height="12.0" fill="#c45a1b" stroke="#17202a" stroke-width="1"/>
+<text x="523.0" y="435.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="13" font-weight="400" fill="#52616f">Final key</text>
+<text x="1275.0" y="435.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="12" font-weight="400" fill="#52616f">Logarithmic ratio axis</text>
+</svg>

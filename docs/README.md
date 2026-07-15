@@ -25,6 +25,20 @@ Start with [`conventions.md`](./conventions.md) for repository conventions, then
 - [`references/`](./references) - stable non-plan reference material, such as frontend/backend contracts.
 - [`provenance/`](./provenance) - source/fork provenance records.
 - [`reports/`](./reports) - performance reports and evidence indexes.
+- [`reports/yune-vs-librime-performance.md`](./reports/yune-vs-librime-performance.md)
+  - single current dashboard for all-platform benchmark results,
+    visualizations, evidence boundaries, and bottleneck analysis.
+- [`reports/history/README.md`](./reports/history/README.md)
+  - superseded performance reports and source-bound analysis retained for
+    audit history.
+- [`reports/evidence/m59-current-source-macos-20260714/`](./reports/evidence/m59-current-source-macos-20260714/)
+  - reviewed five-round `0111cf47` Mac diagnostic with the complete 17-row and
+    Track B tables, fixed-binary/provenance audit, portable report, Fable review
+    resolution, and normalized manifest for the full external raw packet.
+- [`reports/evidence/m59-final-source-macos-20260713/`](./reports/evidence/m59-final-source-macos-20260713/)
+  - historical source-matched five-round `5879405c` Mac diagnostic with a disclosed
+    transient-output deviation, fixed-binary audit, behavior gates, and
+    validated source-bound report; no `443cc636` or current-main Mac rerun.
 
 ## Placement Rules
 

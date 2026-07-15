@@ -1,8 +1,7 @@
 # Cross-platform dashboard visuals (2026-07-05)
 
-Windows standing gate vs the macOS post-M57 verification lane, for the reports
-[`yune-vs-librime-performance.md`](../../yune-vs-librime-performance.md) and
-[`yune-vs-librime-root-cause-analysis.md`](../../yune-vs-librime-root-cause-analysis.md).
+Windows standing gate vs the macOS post-M57 verification lane, preserved for
+the consolidated [`performance dashboard`](../../yune-vs-librime-performance.md).
 
 ## Files
 

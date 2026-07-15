@@ -34,8 +34,8 @@ number against My RIME.
 
 The closeout plans are:
 
-- [`docs/plans/completed/web01-plan-yune-web-wasm-heap-payload-optimization.md`](../plans/completed/web01-plan-yune-web-wasm-heap-payload-optimization.md)
-- [`docs/plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md`](../plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md)
+- [`docs/plans/completed/web01-plan-yune-web-wasm-heap-payload-optimization.md`](../../plans/completed/web01-plan-yune-web-wasm-heap-payload-optimization.md)
+- [`docs/plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md`](../../plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md)
 
 ## Evidence
 
@@ -157,11 +157,11 @@ Final attribution:
 
 ## Visual Dashboard
 
-![Observed WASM linear memory](./evidence/yune-web-vs-my-rime-baseline/visuals/web01-wasm-heap.svg)
+![Observed WASM linear memory](../evidence/yune-web-vs-my-rime-baseline/visuals/web01-wasm-heap.svg)
 
-![Ready-to-input startup](./evidence/yune-web-vs-my-rime-baseline/visuals/web01-ready-to-input.svg)
+![Ready-to-input startup](../evidence/yune-web-vs-my-rime-baseline/visuals/web01-ready-to-input.svg)
 
-![Unique encoded browser resources](./evidence/yune-web-vs-my-rime-baseline/visuals/web01-resource-payload.svg)
+![Unique encoded browser resources](../evidence/yune-web-vs-my-rime-baseline/visuals/web01-resource-payload.svg)
 
 ## Findings
 
@@ -206,9 +206,9 @@ the schema-switch row. It does not claim a browser memory win.
 
 Branch A post-fix evidence:
 
-- [`../../apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/branch-a-final-after-reverse-assets/`](../../apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/branch-a-final-after-reverse-assets/)
-- [`../../apps/yune-web/e2e/results/m46-branch-a-behavior-gates-final/`](../../apps/yune-web/e2e/results/m46-branch-a-behavior-gates-final/)
-- [`../../apps/yune-web/e2e/results/m46-branch-a-m22-reverse-after-schema-fix/`](../../apps/yune-web/e2e/results/m46-branch-a-m22-reverse-after-schema-fix/)
+- [`../../apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/branch-a-final-after-reverse-assets/`](../../../apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/branch-a-final-after-reverse-assets/)
+- [`../../apps/yune-web/e2e/results/m46-branch-a-behavior-gates-final/`](../../../apps/yune-web/e2e/results/m46-branch-a-behavior-gates-final/)
+- [`../../apps/yune-web/e2e/results/m46-branch-a-m22-reverse-after-schema-fix/`](../../../apps/yune-web/e2e/results/m46-branch-a-m22-reverse-after-schema-fix/)
 
 | Scenario | Final Jyutping result | Candidate count | Worker action errors | WASM high-water |
 | --- | --- | ---: | ---: | ---: |
@@ -216,7 +216,7 @@ Branch A post-fix evidence:
 | Cangjie -> Luna -> Jyutping | `nei -> 你` | 6 | 0 | `893.1 MiB` |
 | Jyutping -> Luna -> Jyutping | `nei -> 你` | 6 | 0 | `893.1 MiB` |
 
-![M46 Branch A browser memory and correctness](./evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
+![M46 Branch A browser memory and correctness](../evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
 
 The old WEB-01 `~1.9 GiB` schema-switch high-water did not reproduce in the
 structured M46 captures. The current post-fix high-water remains

@@ -1,0 +1,13 @@
+{
+  "initial_render_ok": true,
+  "widget_type": "artifact",
+  "surface": "report",
+  "initial_render_title": "Final M59 macOS Yune vs librime performance verification",
+  "canonical_title": "M59 Increment-4e macOS Yune vs librime performance verification",
+  "initial_render_artifact_sha256": "054c6c6c679485dfd436d2d5c945f3956206ba5495bb01c94b0c06ecc76550f3",
+  "previous_canonical_artifact_sha256": "8becb1a939a5ad5cd8e405281c5654ed90b9340c252f4ebda4daff06c34ae17e",
+  "canonical_artifact_sha256": "65f645e6570189a5b1afce9d777c95ab61b13026511d5f6e580d3a919a1dc9a5",
+  "canonical_artifact_validated": true,
+  "canonical_artifact_rendered": false,
+  "note": "The initial artifact was rendered once. The canonical artifact was corrected after final-M59 supersession review and revalidated, but was not rendered again to avoid creating a duplicate visible report. No HTML fallback was generated."
+}

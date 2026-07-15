@@ -38,7 +38,7 @@ Current dashboard:
 [`docs/reports/yune-vs-librime-performance.md`](../../reports/yune-vs-librime-performance.md).
 
 Root-cause dashboard:
-[`docs/reports/yune-vs-librime-root-cause-analysis.md`](../../reports/yune-vs-librime-root-cause-analysis.md).
+[`archived root-cause report`](../../reports/history/2026-07-14-yune-vs-librime-root-cause-analysis-pre-consolidation.md).
 
 Post-M38 long-input evidence:
 

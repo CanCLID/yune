@@ -1,0 +1,20 @@
+--- /Users/laufei/yune-m59-current-macos-0111cf47/scripts/benchmark-native-rime-inprocess-macos.sh	2026-07-14 14:33:38
++++ /Users/laufei/yune-m59-current-macos-20260714/driver/benchmark-native-rime-inprocess-macos.external-output-adapter.sh	2026-07-14 14:33:38
+@@ -1,7 +1,7 @@
+ #!/usr/bin/env bash
+ set -euo pipefail
+ 
+-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++repo_root="/Users/laufei/yune-m59-current-macos-0111cf47"
+ 
+ output_root=""
+ librime_source="/Users/laufei/Documents/GitHub/librime"
+@@ -140,7 +140,7 @@
+ 
+ output_root="$(abs_path "$output_root")"
+ librime_source="$(abs_path "$librime_source")"
+-evidence_root="$repo_root/docs/reports/evidence"
++evidence_root="/Users/laufei/yune-m59-current-macos-20260714/accepted"
+ work_base="$repo_root/target/macos-performance-verification"
+ tool_root="$work_base/tools"
+ oracle_root="$work_base/oracle-1.17.0"

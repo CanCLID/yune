@@ -1,334 +1,336 @@
 # Yune Performance Dashboard
 
-Date: 2026-07-13 (M59 final acceptance plus historical diagnostics)
+Updated: 2026-07-14
 
-> **M59 supersession:** final Windows behavior source `443cc636` preserves the
-> named `/3` behavior, matches the accepted Lane A/Lane B/Cangjie and deployed
-> 37/59 surfaces, and passes the unchanged signed ratchet at `32/32` aggregate
-> rows and `160/160` individual observations in the source-current follow-up
-> packet. `5fa986d8` records the accepted 60-asset REACH-03 registry and
-> `07845e02` makes full-tree reconciliation bidirectional. Every `afb7079b`
-> macOS table, `6/17` read, `n`/`zh` diagnosis, and `/3` zero-candidate statement
-> below is a historical, source-bound diagnostic—not current-main acceptance or
-> a current optimization claim. No exact-current cross-platform rerun has
-> replaced it. Final evidence:
-> [`evidence/m59-canonical-jyutping-reachability-parity/`](./evidence/m59-canonical-jyutping-reachability-parity/).
+This is the single current performance report for Yune. It covers native
+Windows, native macOS, the Track B product guard, the browser peer lane, the
+web interaction status, and the bottleneck disposition. Superseded
+measurements and longer source-bound investigations are kept in
+[`history/`](./history/), not mixed into the live scorecard.
 
-This dashboard preserves the standing gate and historical diagnostic context.
-Older milestone closeout narrative and superseded benchmark rows remain in
-[`history/2026-06-28-yune-vs-librime-performance-pre-current-dashboard.md`](./history/2026-06-28-yune-vs-librime-performance-pre-current-dashboard.md).
+## Technical summary
 
-**Measurement note (load-bearing):** as of the 2026-07-04 corrective series the
-native benchmark reads the context after **every keypress** inside the timed
-loop, for Yune and librime alike — the shape every real frontend has. All
-earlier `key_sequence_process_with_context` numbers (M52, the pre-corrective
-M55 rows) were batch-shaped (one context read per sequence) and are **not
-comparable** to the rows below. The pre-corrective M55 closeout numbers
-(`0.237x`/`0.086x` long rows, `0.286x` startup) were artifacts of a since-
-reverted key deferral and config cache measured under that batch shape; see
-[`evidence/m55-native-match-or-beat/corrective-2026-07-04/`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/).
+- **Native Track A latency is currently below librime parity.** All 17 Windows
+  medians and worst observations are below `1.000x`; all 17 macOS medians and
+  pooled worsts are also below `1.000x`.
+- **Native memory is still the clearest native deficit.** Track A peak working
+  set is about `8.9x` same-run librime on Windows and `11.8x` same-run librime
+  RSS on macOS. The platform counters are not interchangeable.
+- **The iOS-budget lane remains a Windows proxy, not an iOS result.** The
+  comments-intact keyboard profile is `67.4 MB` steady / `80.1 MB` peak with
+  `22.5 MB` private; on-device `phys_footprint` is still unmeasured.
+- **The latest measured web build passed, but current-main web performance is
+  unmeasured.** Pre-hardening source `0111cf47` passed the deployed 47-key
+  canary at `51 ms` p95 / `55 ms` max with zero worker queue buildup and the
+  local 8-scenario / 186-key stress gate. Fail-closed receipt hardening at
+  `68df2d16` changes the validated UI path and has not been rerun.
+- **Browser startup and footprint remain the clearest peer deficits.** In the
+  latest fair same-schema peer run, Yune is `1.577x` on ready time, `4.000x` on
+  WASM memory, and `3.471x` on unique encoded resources. First-input and commit
+  latency are below peer parity at `0.779x` and `0.899x`.
+- **One deterministic behavior difference remains in this 17-input diagnostic.**
+  `zhongdengchangdu` differs at candidate positions 2–4 on both Windows and
+  macOS, with all 15 cited Windows 4c/4d/4e observations preserved in the
+  [cross-platform evidence table](./evidence/m59-current-source-macos-20260714/aggregate/windows-zhongdengchangdu-evidence.csv).
+  Both 37- and 59-character pages are exact. The mismatch is not a demonstrated
+  latency cause or a macOS-only defect.
+- **No current platform-speed attribution is valid.** Windows measures Yune
+  `443cc636`; macOS measures Yune `0111cf47`. The same pinned librime is used,
+  but the Yune sources are not matched and the Mac run contains material UI
+  noise.
 
-**macOS verification note:** M57 fixed a macOS-only Yune sentence-model
-construction defect in the Track A verification bundle. The macOS
-`rime_deployer`-compiled upstream Luna MARISA table uses checksum pair
-`0xb3d4e98e` / `0x29d56c89`; after M57, Yune accepts that target-scoped pair,
-keeps compact storage active, and restores the expected model shape
-(`332,604` compact codes, `513,353` expanded sentence entries, 11-row
-abbreviation vocabulary). Evidence:
-[`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
+## How to read the dashboard
 
-> **Historical macOS diagnostic:** the M57 cross-platform table formerly
-> carried by this dashboard is historical. The five-round `afb7079b` packet
-> supersedes its performance interpretation. Current Mac Yune is 37-53% slower
-> than near-code Windows on `n`/`ni`/`hao`, while current long aggregate wins
-> are dominated by intermediate prefixes with different candidate text. Final
-> 37/59 page text/order is repaired, but no complete long-prefix snapshot is
-> oracle-exact. See
-> [`evidence/m59-post-fix-root-cause-20260711/`](./evidence/m59-post-fix-root-cause-20260711/).
-> This is diagnostic only and changes no signed Windows gate.
+For directly comparable peer rows:
 
-**M58 Jyutping/profile note:** M58 completed the upstream Jyutping oracle
-rebase at `f780410c`. Canonical `jyut6ping3` candidate behavior now uses
-upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; the
-user-specified `zijiguk` / `諮議局` capture returns `諮議局` first, so no
-canonical candidate bug was reproduced and no canonical fix was derived. The
-shipped `yune-web` TypeDuck/profile lane had separate reachability bugs:
-`beingo` / `畀` at TypeDuck/profile index 6 and `zi` / `諮` at index 27. Those
-were fixed by restoring `畀	bei2	200000`, retaining one TypeDuck/profile page
-for short `jyut6ping3_mobile` reported/profile inputs, and widening prefix
-fallback only on that short-input path, without first-page promotion. No schema
-id split, profile predicate change, userdb migration, or ABI widening landed;
-`jyut6ping3_typeduck` remains the preferred future TypeDuck profile id pending
-explicit sign-off.
+`ratio = Yune metric / peer metric`
 
-## Technical Summary
+- below `1.000x`: Yune used less time, memory, or payload;
+- exactly `1.000x`: parity;
+- above `1.000x`: the peer used less.
 
-- **Historical Mac diagnostic (`afb7079b`)**: Yune wins 6/17 aggregate Track A rows and
-  loses 11. The 37/59 aggregate ratios (`0.399x`/`0.205x`) are not behavior-
-  normalized; text-matched prefix sensitivity is `1.420x`/`1.204x`. `n`/`zh`
-  use `8.682x`/`4.092x` librime's instructions. Allocator/platform effects are
-  partial rather than a complete explanation.
+A latency ratio of `0.250x` means Yune used 25% of the peer latency; it does
+not mean “0.25x faster.” Track B has no librime peer and therefore reports
+absolute values only. Windows working-set/private counters, macOS RSS, and
+browser WASM heap are separate measurement systems and must not be combined.
 
-- **Signed Windows Track A (`luna_pinyin`)**: M55 closes with real, honestly
-  measured improvements and corrected claims. Versus the pre-M55 record the long
-  sentence rows improved ~35% (37-char `3.05x -> 1.91x`, 59-char
-  `2.25x -> 1.53x`), `ni`/`hao` improved (`3.14x -> 2.43x`,
-  `2.15x -> 1.57x`), startup and session lifecycle are measured **faster than
-  librime** (`0.90x`/`0.86x`, run-noisy), and the three win rows are kept and
-  guarded `<1.00x`. Yune remains slower than librime on the short keys and
-  both sentence rows.
-- **Standing guardrail**: the corrective per-key
-  [`m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
-  is the standing native gate (all dimensions ceilinged, wins locked
-  `<1.00x`, Track B absolutes included), green twice consecutively
-  (`gate-run-d/`, `gate-run-e/`) and re-run green at M56 closeout under
-  [`m56-productization-hardening/final/ratchet-run/`](./evidence/m56-productization-hardening/final/ratchet-run/)
-  and again at M58 closeout under
-  [`m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/`](./evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/).
-  The M56 and M58 runs are guard proofs, not performance rebaselines: some
-  short-key and sentence-row ratios drift upward but remain inside the
-  committed ceilings.
-  The M52 artifact and the pre-corrective M55 artifact are batch-shaped
-  history.
-- **macOS verification repair**: M57 repaired the macOS Track A bundle so it is
-  no longer a false contradiction of the M55 corrective record. The two full
-  macOS passes now keep Luna on `rsmarisa_byte_backed` storage, report
-  `compact_all_codes_count=332604` and
-  `compact_expanded_table_entries=513353`, and match local librime first-page
-  candidates for `cszysmsrsd` and `zybfshmsru`. This is a comparability repair,
-  not a new cross-platform performance headline.
-- **Native memory disposition**: the signed Windows gate retains the
-  `185.7 MB` default / `113.2 MB` historical `/2` opt-in record. Current Mac
-  max RSS is `11.5-18.3x` and peak footprint `23.5-26.4x` librime in the
-  high-iteration controls. The deployed `/3` byte-backed lane emits zero
-  candidates on all 99 prefixes, so it carries no speed or memory claim.
-- **Candidate-output disclosure**: current reconciled evidence preserves the
-  repaired final 37/59 text/order, but intermediate prefixes and preedit/
-  comments still differ. Final-page text/order matches on 9/17 Track A rows;
-  only two complete captured snapshots are exact. `n` and `zh` remain visibly
-  different beyond their first candidates.
-- **Browser fair lane (`luna_pinyin`, carried 2026-06-28)**: Yune public demo
-  uses `64.0 MiB` WASM peak versus My RIME `16.0 MiB` (`4.0x`). Yune is slower
-  to ready (`1000 ms` vs `634 ms`), but faster on first input (`74 ms` vs
-  `95 ms`).
+The signed M59 Windows ceiling registry remains the acceptance authority. This
+dashboard reports current observations without changing, re-baselining, or
+reinterpreting those ceilings.
 
-## Evidence Bundles
+## Current evidence map
 
-Corrective evidence root (decision runs, gate runs, README):
-[`evidence/m55-native-match-or-beat/corrective-2026-07-04/`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/).
+| Lane | Measured Yune source | Peer / source | Run shape | Current role |
+| --- | --- | --- | --- | --- |
+| Windows native | `443cc636862806e4f0dd1e12ab2e2e45f4189154` | librime `33e78140250125871856cdc5b42ddc6a5fcd3cd4` | 5 rounds; `9/60/80`; product deployment | final-M59 source-current guard; `32/32` aggregate and `160/160` individual observations pass |
+| macOS native | `0111cf47c09bfe7a4a3d55a1832f35a55bc59435` | librime `33e78140250125871856cdc5b42ddc6a5fcd3cd4` | 5 fixed-binary rounds; `9/60/80`; product deployment | artifact/identity/completeness checks pass; quiet-machine condition was not continuous |
+| Windows iOS-budget proxy | M47 RED-08, measured 2026-06-29 | no peer; 48/64 MB product targets | fresh-process native probe | portable optimization scope complete; on-device validation pending |
+| Web interaction | `0111cf47c09bfe7a4a3d55a1832f35a55bc59435` | no peer | local full release-stress gate plus deployed normal-typing canary | pre-hardening source-bound pass; current-main validator not rerun |
+| Browser peer | measured 2026-06-28 | My RIME | same-schema `luna_pinyin` comparison | latest fair browser peer snapshot; Jyutping peer rows excluded as dictionary-confounded |
+| Linux native | — | — | no current packet | unmeasured; no Linux performance claim |
+| iOS device | — | — | no on-device packet | unmeasured; no Apple `phys_footprint` claim |
 
-M57 macOS verification repair evidence:
-[`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
+The measured Windows DLL hash is
+`f829a14033c4cad5e594e50349ee40f104686159404628343bd7673a9467f49b`;
+its librime DLL is
+`86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b`.
+The measured Mac dylib hashes are
+`f3365aae19d15b9d7b57dcccd30ce1c77347b8ee96a20f09ab001468074b226c`
+for Yune and
+`1973349f4da44c5b71765f8d064ec30428a0fd42d66c9ae95bdb6dc27cd4eecc`
+for librime. The recorded native source checkouts were clean, and the binary
+hashes stayed fixed across all five Mac rounds.
 
-M58 Jyutping/profile corrective closeout evidence:
-[`evidence/m58-jyutping-exact-before-fuzzy/`](./evidence/m58-jyutping-exact-before-fuzzy/).
+The reviewed current-source Mac packet, complete 17-row table, fixed-binary
+audit, portable HTML report, and Fable review resolution are tracked at
+[`m59-current-source-macos-20260714/`](./evidence/m59-current-source-macos-20260714/).
 
-Historical source-bound post-fix macOS diagnostic:
-[`evidence/m59-post-fix-root-cause-20260711/`](./evidence/m59-post-fix-root-cause-20260711/).
+## Native Track A latency
 
-Standing gate artifact:
-[`evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv).
+All four native panels use the same logarithmic ratio axis and print exact
+three-decimal median/worst values beside the `1.000x` parity line. Each
+platform is split 9/8 so the labels remain readable in narrow views. The
+platforms intentionally remain separate because the measured Yune source
+commits differ.
 
-Consecutive green gate runs: `gate-run-d/` and `gate-run-e/` under the
-corrective root. Latest closeout proof:
-[`evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/threshold-check.csv`](./evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/threshold-check.csv).
-Browser rows are carried from
-[`evidence/current-performance-dashboard-2026-06-29/`](./evidence/current-performance-dashboard-2026-06-29/).
+### Windows final-M59 source
 
-## Native Track A — signed Windows standing gate
+![Final-M59 Windows Track A inputs 1 through 9 relative to 1.000x librime parity](./evidence/current-ratio-visuals-2026-07-14/visuals/current-windows-track-a-parity-1-of-2.svg)
 
-Corrective gate run D, same-run against upstream librime 1.17.0, context read
-after every keypress:
+![Final-M59 Windows Track A inputs 10 through 17 relative to 1.000x librime parity](./evidence/current-ratio-visuals-2026-07-14/visuals/current-windows-track-a-parity-2-of-2.svg)
 
-| Dimension | Yune median | librime median | Yune / librime | Current read |
-| --- | ---: | ---: | ---: | --- |
-| startup | `22,428.100 us` | `25,061.500 us` | `0.895x` | faster; run-noisy, guarded at `1.091x` |
-| session | `22,468.400 us` | `26,019.700 us` | `0.864x` | faster; guarded by absolute ceiling |
-| `n` | `55.100 us` | `20.900 us` | `2.636x` | slower; +34 us absolute |
-| `ni` | `42.450 us` | `17.450 us` | `2.433x` | slower; +25 us absolute |
-| `hao` | `24.233 us` | `15.400 us` | `1.574x` | slower; +9 us absolute |
-| 37-char pinyin | `571.684 us` | `298.859 us` | `1.913x` | slower; improved from `3.05x` pre-M55 |
-| 59-char pinyin | `1,017.522 us` | `665.727 us` | `1.528x` | slower; improved from `2.25x` pre-M55 |
-| `zhongguo` (common word) | `44.300 us` | `173.762 us` | `0.255x` | faster; win row, guarded `<1.00x` |
-| `cszysmsrsd` (10-char abbr) | `454.040 us` | `1,190.230 us` | `0.381x` | faster; win row, guarded `<1.00x` |
-| `zybfshmsru` (8-char abbr) | `469.340 us` | `832.090 us` | `0.564x` | faster; win row, guarded `<1.00x` |
+### Latest measured macOS source
 
-The visualization below is regenerated from the corrective gate run D:
+![Latest measured macOS Track A inputs 1 through 9 relative to 1.000x librime parity](./evidence/current-ratio-visuals-2026-07-14/visuals/current-macos-track-a-parity-1-of-2.svg)
 
-![Native Track A latency across all input dimensions, Yune vs librime 1.17.0](./evidence/dashboard-visuals-2026-07-04/native-track-a-latency-ratios.svg)
+![Latest measured macOS Track A inputs 10 through 17 relative to 1.000x librime parity](./evidence/current-ratio-visuals-2026-07-14/visuals/current-macos-track-a-parity-2-of-2.svg)
 
-## Native Track A — historical Mac vs near-code Windows
+### Complete 17-input scorecard
 
-The historical diagnostic compares Mac `afb7079b` with Windows Increment 4a at
-`ca52ec42`. This is a machine/source/compiler comparison, not an OS-only
-experiment: CPU, compiler, linker, allocator, OS, payload metadata, background
-load, and the commits differ.
+| Input | Windows Yune/librime median | Windows Yune/librime worst | macOS Yune/librime median | macOS Yune/librime pooled worst | Complete-input page |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `n` | `0.212x` | `0.215x` | `0.140x` | `0.183x` | exact |
+| `ni` | `0.254x` | `0.256x` | `0.175x` | `0.216x` | exact |
+| `hao` | `0.289x` | `0.294x` | `0.215x` | `0.287x` | exact |
+| `zhongguo` | `0.038x` | `0.039x` | `0.030x` | `0.034x` | exact |
+| `ceshiyixiachangjushuruxingnengzenyang` (37) | `0.022x` | `0.023x` | `0.019x` | `0.022x` | exact |
+| `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` (59) | `0.010x` | `0.010x` | `0.008x` | `0.009x` | exact |
+| `cszysmsrsd` | `0.005x` | `0.005x` | `0.004x` | `0.004x` | exact |
+| `zybfshmsru` | `0.008x` | `0.008x` | `0.006x` | `0.008x` | exact |
+| `zh` | `0.097x` | `0.098x` | `0.101x` | `0.133x` | exact |
+| `j` | `0.406x` | `0.411x` | `0.423x` | `0.553x` | exact |
+| `yi` | `0.433x` | `0.441x` | `0.425x` | `0.576x` | exact |
+| `che` | `0.132x` | `0.134x` | `0.110x` | `0.146x` | exact |
+| `chuang` | `0.172x` | `0.173x` | `0.130x` | `0.184x` | exact |
+| `b` | `0.375x` | `0.385x` | `0.349x` | `0.495x` | exact |
+| `ceshi` | `0.142x` | `0.143x` | `0.103x` | `0.144x` | exact |
+| `zhongdengchangdu` | `0.018x` | `0.019x` | `0.015x` | `0.018x` | differs at positions 2–4 on both platforms |
+| `dazisudu` | `0.141x` | `0.144x` | `0.117x` | `0.150x` | exact |
 
-| Input | Mac Yune | Win 4a Yune | Mac vs Win Yune | Mac librime | Win 4a librime | Mac vs Win librime | Mac ratio | Win ratio |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `n` | `90.333 us` | `59.100 us` | `+52.8%` | `22.375 us` | `21.000 us` | `+6.5%` | `4.123x` | `2.804x` |
-| `ni` | `50.041 us` | `34.800 us` | `+43.8%` | `16.916 us` | `17.450 us` | `-3.1%` | `2.978x` | `2.000x` |
-| `hao` | `27.722 us` | `20.267 us` | `+36.8%` | `13.958 us` | `15.333 us` | `-9.0%` | `2.019x` | `1.328x` |
-| 37-char | `66.940 us` | `68.062 us` | `-1.6%` | `166.470 us` | `298.692 us` | `-44.3%` | `0.399x` | `0.229x` |
-| 59-char | `80.233 us` | `85.341 us` | `-6.0%` | `391.385 us` | `673.254 us` | `-41.9%` | `0.205x` | `0.126x` |
+The 37-character Mac medians are `3.118 µs/key` for Yune and
+`167.895 µs/key` for librime. The 59-character medians are `3.208 µs/key` and
+`392.011 µs/key`. These absolute values are same-Mac diagnostics, not portable
+Windows comparisons.
 
-The short and long directions differ. On long rows, Yune's absolute cost is
-close while librime is about 42-44% faster on the Mac. On `n`/`ni`/`hao`,
-librime is similar while Yune is 37-53% slower on the Mac. Therefore a blanket
-“Yune is not slower on macOS” or “only librime speeds up” conclusion is false.
+## Native startup, session, and memory
 
-The long aggregate ratios are also not same-behavior comparisons. Candidate
-text matches librime on only 19/37 and 30/59 prefixes; text-different prefixes
-consume 82.0%/90.1% of librime's reconstructed time. On text-matched prefixes,
-Yune is `1.420x`/`1.204x`; final-key ratios are `1.713x`/`1.139x`. Comments and
-preedit still differ, so even those are diagnostic sensitivity results.
-
-Allocator controls identify one partial Mac component: Nano-off slows librime
-more on stable medium/long rows and lowers the ratio around 6-14%. Hardware
-counters identify a separate engine-path component: Yune executes 4-9x the
-instructions on `n`/`zh` and has 1.24-1.41x worse CPI in the four inspected
-lanes. Thermal/noise affects precision but cannot explain the stable work-
-volume direction. Exact platform attribution remains open until the same
-current commit and payload run on both systems.
-
-**Memory is diagnostic only across platforms.** Current Mac high-iteration
-controls report Yune max RSS `11.5-18.3x` and peak footprint `23.5-26.4x`
-librime. These are whole-process peaks and are not interchangeable with the
-signed Windows working-set/private counters.
-
-**Track B remains a product guard, not a peer lane.** Its current candidate
-page/comments/page state and checksums are byte-identical to M57. Median is
-`264.941 us/key`, run-median spread 1.8%; internal materialization and bounded
-selection increased, so exact behavior does not imply unchanged work shape.
-
-## Native Track A Guardrails
-
-Corrective gate run D against the standing artifact (run E and the M56
-closeout ratchet repeat green):
-
-| Guard | Observed | Ceiling | Status |
+| Platform / metric | Median | Worst | Interpretation |
 | --- | ---: | ---: | --- |
-| `n` latency ratio | `2.636x` | `2.890x` | pass |
-| `ni` latency ratio | `2.433x` | `2.666x` | pass |
-| `hao` latency ratio | `1.574x` | `1.731x` | pass |
-| 37-char latency ratio | `1.913x` | `2.094x` | pass |
-| 59-char latency ratio | `1.528x` | `1.625x` | pass |
-| `zhongguo` win row | `0.255x` | `0.323x` (`<1.00x` locked) | pass |
-| `cszysmsrsd` win row | `0.381x` | `0.474x` (`<1.00x` locked) | pass |
-| `zybfshmsru` win row | `0.564x` | `0.695x` (`<1.00x` locked) | pass |
-| startup ratio | `0.895x` | `1.091x` | pass |
-| session median | `22,468.400 us` | `25,470.280 us` | pass |
-| Track A peak working set | `185,749,504 B` | `195,028,378 B` | pass |
-| Track B product long-row latency | `315.356 us` | `347.975 us` | pass |
+| Windows startup Yune/librime ratio | `0.983x` | `1.009x` | near parity; one run slightly above parity |
+| Windows session Yune/librime ratio | `0.984x` | `1.087x` | near parity and run-sensitive |
+| Windows Yune session latency | `23,144.9 µs` | `23,659.6 µs` | absolute Yune observation |
+| Windows Track A peak working set | `153,899,008 B` | `153,956,352 B` | about `8.9x` same-run librime lane peak; signed ceiling still passes |
+| macOS startup Yune/librime ratio | `0.569x` | `0.750x` | same-Mac ratio; round 4 carries visible UI noise |
+| macOS session Yune/librime ratio | `0.614x` | `0.772x` | same-Mac ratio; round 4 carries visible UI noise |
+| macOS Track A peak RSS | `190,578,688 B` | `193,019,904 B` | about `11.8x` same-run librime lane peak |
 
-Latest M58 closeout ratchet read: all `23` rows pass, but the short-key rows
-and sentence rows still have limited headroom (`n` `2.770x` / `2.890x`, `ni`
-`2.494x` / `2.666x`, `hao` `1.654x` / `1.731x`, 37-char `2.022x` / `2.094x`,
-59-char `1.567x` / `1.625x`, Track B long row `335.823 us` / `347.975 us`).
-This is guard proof, not a new performance headline; do not summarize it as
-"no measurable performance cost."
+The macOS counter is process RSS, not Apple `phys_footprint`; no iOS-memory
+claim follows from it. The Windows and macOS memory ratios may identify the
+same broad footprint problem, but their absolute byte counters are not a valid
+cross-platform comparison.
 
-Manual standing gate command shape:
+## Track B product guard
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 `
-  -OutputRoot docs\reports\evidence\<new-run> `
-  -Iterations 9 -SessionIterations 60 -KeyIterations 80 `
-  -TrackAInputs n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru `
-  -TrackBInputs neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung `
-  -DeployProductBeforeBenchmark `
-  -TrackAThresholds docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv `
-  -FailOnRegression
+Track B uses
+`neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung` and has no
+librime peer. Do not turn these observations into a Yune/librime or
+Windows/macOS speed ratio.
+
+| Platform / metric | Five-run observations or median | Worst |
+| --- | ---: | ---: |
+| Windows key latency | median `16.900 µs/key` | `16.952 µs/key` |
+| Windows peak working set | median `253,415,424 B` | `254,001,152 B` |
+| Windows private bytes | median `29,999,104 B` | `30,195,712 B` |
+| macOS key latency | `5.483`, `5.253`, `5.607`, `5.663`, `6.445 µs/key`; median `5.607` | worst run median `6.445`; pooled sample `7.520 µs/key` |
+| macOS peak RSS | median `490,782,720 B` | `494,501,888 B` |
+
+The current Mac Track B candidate page is an exact M57 match. Its checksums,
+compiled-ready status, byte-backed storage, and mmap table/prism modes remain
+stable; only `byte_source_len` differs. Across the broader Mac owner comparison,
+48 of 73 normalized owner shapes are exact, 23 are current-only, and 2 are
+M57-only. Twenty-one additions are cache/provenance owners; the two mapping
+replacements use smaller lookup indexes. This is shape evidence, not portable
+absolute-memory evidence.
+
+## iOS-budget product-memory proxy
+
+M47's final portable measurements use a fresh Windows native process with one
+active `jyut6ping3_mobile` schema. They are product-budget observations, not
+librime ratios and not iOS measurements.
+
+| Profile | Steady working set | Peak working set | Private bytes | Boundary |
+| --- | ---: | ---: | ---: | --- |
+| lean lower bound | `56.9 MB` | `61.3 MB` | `23.3 MB` | omits rich comments and reverse UI |
+| comments-intact keyboard | `67.4 MB` | `80.1 MB` | `22.5 MB` | product-honest keyboard proxy; reverse UI omitted |
+| full mobile | `78.8 MB` | `89.9 MB` | `28.1 MB` | includes grave-prefix reverse UI |
+
+The comments-intact private counter is below the 48 MB target, but Windows
+private bytes are only a dirty-memory proxy. The lean lower-bound peak is below
+the 64 MB peak target while its steady value remains above 48 MB; the two
+product-honest profiles exceed both working-set targets. Much of the remaining
+resident bulk is clean/file-backed or shared/overlapping compiled data, and no
+claim of an iOS budget pass is made. The load-bearing next measurement is
+on-device Apple `phys_footprint`.
+
+## Browser peer comparison
+
+This is the latest fair browser peer snapshot. It compares `luna_pinyin` with
+the same schema/dictionary family. Jyutping peer rows are omitted because the
+dictionary sets differ.
+
+![Browser luna_pinyin peer ratios relative to 1.000x parity](./evidence/current-ratio-visuals-2026-07-14/visuals/browser-luna-peer-parity.svg)
+
+| Metric | Yune | My RIME | Yune / peer | Reading |
+| --- | ---: | ---: | ---: | --- |
+| ready to input | `1,000 ms` | `634 ms` | `1.577x` | peer lower |
+| input to candidate | `74 ms` | `95 ms` | `0.779x` | Yune lower |
+| commit | `107 ms` | `119 ms` | `0.899x` | Yune lower |
+| WASM ready | `64 MiB` | `16 MiB` | `4.000x` | peer lower |
+| WASM peak | `64 MiB` | `16 MiB` | `4.000x` | peer lower |
+| unique encoded resources | `29.5 MiB` | `8.5 MiB` | `3.471x` | peer lower |
+
+This peer result was measured on 2026-06-28. It remains the latest direct peer
+comparison, but it is not a source-current remeasurement of the later web
+build. The `0111cf47` web receipts observe a `128 MiB` Yune WASM heap;
+without a same-run My RIME result, no refreshed peer ratio is formed.
+
+## Latest pre-hardening web interaction receipts
+
+The measured `0111cf47` web build directly addresses normal typing rather than
+native engine microbenchmarks alone. These receipts pass at that source, but
+they predate fail-closed receipt hardening at `68df2d16` and do not satisfy a
+current-main validation claim.
+
+### Normal 47-key Jyutping input
+
+Input:
+`ngodeigungsijigaahaidoumaaigangeihaaijansougeoi`
+
+| Surface | Keys | Median | p95 | Max | Worker queue max | Verdict |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| deployed `yune-web.pages.dev` | `47/47` | `49 ms` | `51 ms` | `55 ms` | `0 ms` | pass |
+| local release preview | `47/47` | `37 ms` | `39 ms` | `51 ms` | `0 ms` | pass |
+
+The deployed canary used a normal 100 ms typing cadence. The local receipt used
+the same exact input and release build. Neither shows the earlier multi-second
+queue amplification.
+
+### Full local release-stress gate
+
+This gate applies the release-grade `4x` stress profile and preserves every
+scenario. Ceilings are `750 ms` p95 and `1,000 ms` max.
+
+| Scenario | Schema | Keys | p95 | Max | Verdict |
+| --- | --- | ---: | ---: | ---: | --- |
+| `jyutping-short` | `jyut6ping3` | 3 | `76 ms` | `76 ms` | pass |
+| `jyutping-historical-long-1` | `jyut6ping3` | 28 | `70 ms` | `105 ms` | pass |
+| `jyutping-historical-long-2` | `jyut6ping3` | 52 | `50 ms` | `51 ms` | pass |
+| `typeduck-learned-userdb-prefix` | `jyut6ping3` | 3 | `60 ms` | `60 ms` | pass |
+| `luna-short` | `luna_pinyin` | 3 | `51 ms` | `51 ms` | pass |
+| `luna-37` | `luna_pinyin` | 37 | `101 ms` | `118 ms` | pass |
+| `luna-59` | `luna_pinyin` | 59 | `141 ms` | `158 ms` | pass |
+| `cangjie-short` | `cangjie5` | 1 | `42 ms` | `42 ms` | pass |
+
+Result: 8/8 scenarios and 186/186 keys recorded, threshold verdict pass,
+release-grade verdict pass. This is a local loopback release-stress receipt,
+not the still-missing durable full Cloudflare build-gate receipt.
+
+## Current bottleneck analysis
+
+| Area | Current signal | Disposition | Next load-bearing measurement |
+| --- | --- | --- | --- |
+| Native Track A key latency | all Windows and Mac median/worst ratios below `1.000x` | not the current performance bottleneck | preserve the unchanged ratchet; investigate only if a real red appears |
+| Native startup/session | Windows is around parity and run-sensitive; Mac is below parity but noisy | monitor; no platform conclusion | source-matched quiet-machine Windows/Mac run |
+| Native memory | about `8.9x` peer on Windows and `11.8x` peer RSS on Mac | current native bottleneck; no memory-win claim | owner-level retained/mapped attribution plus Apple `phys_footprint` where relevant |
+| iOS-budget product proxy | comments-intact `67.4 MB` steady / `80.1 MB` peak / `22.5 MB` private on Windows | portable scope complete; iOS budget unproven | on-device `phys_footprint` |
+| Browser interaction | pre-hardening local/deployed exact-input and full local stress receipts pass at `0111cf47` | source-bound pass only; current-main performance unmeasured | rerun the hardened local full gate and deployed canary; then capture the durable Cloudflare full-gate receipt |
+| Browser startup | latest fair peer ratio `1.577x` | current peer deficit | refreshed same-run same-schema browser peer capture |
+| Browser WASM/payload | latest fair peer ratios `4.000x` / `3.471x`; `0111cf47` Yune heap observed at `128 MiB` | clearest browser bottleneck | refreshed peer run plus resource/heap owner attribution |
+| Candidate behavior | 16/17 exact; deterministic `zhongdengchangdu` difference | correctness discrepancy, not established performance cause | fix only under explicit behavior scope, then rerun the owning guard |
+| Platform attribution | current native sources do not match; Mac includes UI noise | unproven | exact-source paired run on quiet machines |
+
+The evidence does not support a new engine performance fix merely because a
+ratio differs by platform. The current priorities are browser footprint and
+startup, native memory ownership, the durable Cloudflare receipt, and a
+source-matched platform run if causal attribution becomes necessary.
+
+## Evidence and reproducibility
+
+- Windows current packet:
+  [`source-current-performance-revalidation-2026-07-13/`](./evidence/m59-canonical-jyutping-reachability-parity/source-current-performance-revalidation-2026-07-13/)
+- Standing signed Windows ceiling registry:
+  [`m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
+- Reviewed current-source Mac packet and portable report:
+  [`m59-current-source-macos-20260714/`](./evidence/m59-current-source-macos-20260714/)
+- Latest measured Mac derived rows and reproducible chart source:
+  [`current-ratio-visuals-2026-07-14/`](./evidence/current-ratio-visuals-2026-07-14/)
+- External Mac/web receipt hashes and retry disposition:
+  [`external-evidence-manifest.csv`](./evidence/current-ratio-visuals-2026-07-14/external-evidence-manifest.csv)
+- Complete measured Mac raw packet (external; the curated tracked packet above
+  contains its normalized 409-file manifest):
+  `$HOME/yune-m59-current-macos-20260714/`
+- M47 final portable product-memory proxy:
+  [`m47-ios-budget-native-memory-reduction-red08-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red08-2026-06-29/)
+- Latest fair browser peer normalized rows:
+  [`current-browser-peer-comparator.csv`](./evidence/current-performance-dashboard-2026-06-28/current-browser-peer-comparator.csv)
+- Latest measured web release receipts (external):
+  `$HOME/yune-cloudflare-gate-evidence-0111cf47/` and
+  `$HOME/yune-web-deployed-0111cf47/setup-retry-1/evidence/`
+
+The visualization bundle contains the exact CSV inputs and the deterministic
+SVG generator. Regenerate with:
+
+```text
+python3 docs/reports/evidence/current-ratio-visuals-2026-07-14/build_visuals.py
 ```
 
-## Native Track A Memory
+## Limitations
 
-The table below is the signed historical Windows `/2` gate context. Current
-`YUNE-POET/3` does not inherit the opt-in claim: its deployed byte-backed
-control emits zero candidates on all 99 prefixes and is rejected for behavior.
-The behavior-valid fixture multiplies table, graph, and DP work, so future work
-must recover behavior plus incremental/lazy indexing before re-deciding the
-default.
-
-| Measurement | Current value | Current read |
-| --- | ---: | --- |
-| Track A peak working set (shipping default, owned poet) | `185.7 MB` | latency ceilings bind; guarded at `195.0 MB` |
-| Track A peak working set (`YUNE_POET_BYTE_BACKED=1` opt-in) | `113.2 MB` | real, parity-preserving, but fails the long-row latency ceilings (scratch not yet byte-backed) |
-| librime max peer peak (same run) | `13.5 MB` | peer scale |
-| `poet.vocabulary` / `poet.entries_by_code` (opt-in mode) | `25.5 MB` / `3.0 MB` | `mmap_file_backed` in the `YUNE-POET/2` artifact |
-
-Native Track A `luna_pinyin` is kept as the upstream comparison lane. The
-current native product target remains the TypeDuck/Jyutping profile lane, where
-M47's lean probe reports the comments-intact keyboard profile at about `67 MB`
-working set / `22 MB` private. These are separate lanes and are not
-interchangeable memory claims.
-
-![Native Track A memory peak and named owners](./evidence/dashboard-visuals-2026-07-04/native-track-a-memory.svg)
-
-## Native Track B (TypeDuck Profile Product Path)
-
-Track B is the native TypeDuck/Jyutping profile product path and regression
-guard lane (no librime peer). Current evidence uses historical
-`jyut6ping3_mobile` asset names; it should be read as TypeDuck profile evidence
-and future schema-split work should present that lane as
-`jyut6ping3_typeduck` only after explicit sign-off. M58 completed the
-blast-radius audit and did not implement the split.
-It is mode-independent for the poet default (sentence is off in the mobile
-profile). Standing Windows M58 final-pass ratchet:
-
-| Dimension | Observed | Ceiling | Status |
-| --- | ---: | ---: | --- |
-| 50+ key-sequence latency | `335.823 us` | `347.975 us` | pass (pre-M55 source baseline `341.139 us`) |
-| key-sequence median working set | `79,511,552 B` | `88,012,390 B` | pass |
-| key-sequence max peak working set | `510,885,888 B` | `562,033,050 B` | pass (deploy/compile transient) |
-| key-sequence median private bytes | `35,426,304 B` | `39,460,045 B` | pass |
-| session create/select/destroy | `36,098.200 us` | `39,289.800 us` | pass (~3x better than the Phase 0-era `99.8 ms` source baseline) |
-| startup warm runtime-ready | `35,459.000 us` | `38,825.050 us` | pass (~3x better than the Phase 0-era `97.4 ms` source baseline) |
-
-The visualizations below are carried from the 2026-07-04 standing-gate
-dashboard and remain directional; the M58 table above is the current Track B
-ratchet read.
-
-![Native Track B memory, TypeDuck profile product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-memory.svg)
-
-![Native Track B lifecycle latency, TypeDuck profile product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-latency.svg)
-
-## Browser Peer Dashboard
-
-Carried forward from the 2026-06-28 Playwright run.
-
-| Scenario | Schema | Ready | Input -> candidate | Commit | WASM peak | Unique encoded resources | Validity |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| Yune public demo | `luna_pinyin` | `1000 ms` | `74 ms` | `107 ms` | `64.0 MiB` | `29.5 MiB` | fair |
-| My RIME live | `luna_pinyin` | `634 ms` | `95 ms` | `119 ms` | `16.0 MiB` | `8.5 MiB` | fair |
-| Yune public demo | Jyutping | `1347 ms` | `103 ms` | `108 ms` | `160.0 MiB` | `72.2 MiB` | guard only |
-| My RIME live | Jyutping | `998 ms` | `99 ms` | `114 ms` | `68.0 MiB` | `24.9 MiB` | guard only |
-
-Browser visuals are carried unchanged from the 2026-06-28 Playwright run under
-[`current-performance-dashboard-2026-06-29/visuals/`](./evidence/current-performance-dashboard-2026-06-29/visuals/).
-
-## Remaining Current Gaps
-
-| Rank | Gap | Current value | Next diagnostic target |
-| ---: | --- | --- | --- |
-| 1 | Incremental native behavior comparability | No complete 37/59 prefix snapshot is exact; `n`/`zh` pages differ | lock candidate/order/comments/preedit/pagination/selection to the governing oracle |
-| 2 | Native translator residual | Translation is ~90-99% of inspected Track A time; producer/direct-family work is incompletely attributed | lower-perturbation producer and translator-residual attribution |
-| 3 | Native eager page work | Yune owns/filters/sorts surplus candidates while librime drains lazy streams | behavior-locked, filter-aware, resumable page-fill prototype |
-| 4 | Native short-key work | `n`/`zh` use `8.682x`/`4.092x` librime's instructions | remove duplicate MARISA/abbreviation work after behavior lock |
-| 5 | Native Track A memory | Mac max RSS `11.5-18.3x`; deployed `/3` byte-backed lane is behavior-invalid | recover correct byte-backed behavior, then measure memory and CPU separately |
-| 6 | Exact-current cross-platform attribution | Mac/Windows source, build, CPU, OS, and allocator remain confounded | same commit, payload, iterations, hashes, and allocator declarations on both systems |
-| 7 | Track B overfetch | Exact M57 behavior, but materialization +95.2% and bounded selection +110.9% | preserve product page/comments/checksums while reducing work |
-| 8 | Browser `luna_pinyin` memory/startup | `64.0 MiB` vs `16.0 MiB`; `1000 ms` vs `634 ms` (carried) | separate browser runtime-floor/startup plan |
+- Windows and macOS current Yune sources differ, so this dashboard does not
+  calculate or classify current platform deltas.
+- macOS rounds were not continuously quiet; round 4 shows material UI noise.
+- macOS RSS is not Apple `phys_footprint`, and Windows process counters are not
+  portable to macOS.
+- Track B is a Yune-only product guard with no librime peer.
+- The browser peer snapshot is dated 2026-06-28 and needs a current refresh.
+- No current Linux-native or on-device iOS performance packet exists.
+- The full release-stress web receipt is local loopback; the durable Cloudflare
+  full-gate artifact remains pending.
+- Web interaction receipts bind to pre-hardening source `0111cf47`.
+  `68df2d16` changes the fail-closed receipt contract and measured UI path; it
+  requires a fresh local full gate and deployed canary before any current-main
+  web result is claimed.
+- Candidate equality is complete-input page-zero evidence for these 17 inputs,
+  not universal all-prefix or all-schema equivalence.
 
 ## History
 
-Older milestone closeout detail remains in:
+The consolidated dashboard supersedes these specialized live reports:
 
-- [`history/2026-06-28-yune-vs-librime-performance-pre-current-dashboard.md`](./history/2026-06-28-yune-vs-librime-performance-pre-current-dashboard.md)
-- [`plans/completed/`](../plans/completed/)
-- [`ledgers/milestone-history.md`](../ledgers/milestone-history.md)
-- The pre-corrective 2026-07-04 dashboard state (batch-shaped M55 closeout
-  numbers) is preserved in git history at commit `531dbcf2` and analyzed in
-  [`evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md).
-- M57 macOS Track A verification repair:
-  [`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
+- [`macOS detail before consolidation`](./history/2026-07-14-yune-vs-librime-macos-performance-pre-consolidation.md)
+- [`root-cause detail before consolidation`](./history/2026-07-14-yune-vs-librime-root-cause-analysis-pre-consolidation.md)
+- [`browser detail before consolidation`](./history/2026-06-28-yune-web-vs-my-rime-browser-baseline-pre-consolidation.md)
+- [`iOS-budget proxy detail before consolidation`](./history/2026-06-29-ios-memory-budget-pre-consolidation.md)
+
+Those files preserve prior source-bound analysis. They are not part of the
+current scorecard and do not override the evidence boundaries above.

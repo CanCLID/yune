@@ -1,0 +1,7 @@
+^D    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests/yune_web.rs (<external-evidence-root>/behavior-target/debug/deps/yune_web-9572b6e45b451c85)
+
+running 1 test
+test m59_luna_long_sentence_page_order_matches_pinned_oracle_on_byte_backed_product ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 52 filtered out; finished in 15.52s

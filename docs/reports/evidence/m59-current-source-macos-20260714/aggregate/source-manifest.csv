@@ -1,0 +1,9 @@
+role,path,sha256,note
+mac_rounds,/Users/laufei/yune-m59-current-macos-20260714/accepted/run-{1..5},see artifact-hash-audit.csv,Yune 0111cf47c09bfe7a4a3d55a1832f35a55bc59435; librime 33e78140250125871856cdc5b42ddc6a5fcd3cd4
+external_output_adapter,/Users/laufei/yune-m59-current-macos-20260714/driver/external-output-adapter.diff,e0601614bec67fe080c32d2b399327d21603c01c06f8e35ad4bb9b4c726990c7,two path-only changes; measured source clean
+final_m59_windows_443,/Users/laufei/Documents/GitHub/yune/docs/reports/evidence/m59-canonical-jyutping-reachability-parity/source-current-performance-revalidation-2026-07-13/gate-verdict.csv,10fdb83060db800e79ba2d59d4f027b3e9f21d17c65ff77af96761b152c5a1d5,diagnostic; source-mismatched
+signed_i0_windows,/Users/laufei/Documents/GitHub/yune/docs/reports/evidence/m59-closeout-baseline/gate-verdict.csv,55ca3e1781fea2bc90ba1802d151e2843d6aea0b5bf5b2396670fa1c58ba6959,signed historical diagnostic
+signed_thresholds,/Users/laufei/Documents/GitHub/yune/docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv,e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba,unchanged; diagnostic on macOS
+m57_candidate,/Users/laufei/Documents/GitHub/yune/docs/reports/evidence/m57-macos-track-a-sentence-model-parity/full-pass-1/candidate_snapshots.csv,405c58557ba3a5885678637d26632f26f641d405c9f98d355b7b0b09da8cc4d8,historical macOS behavior shape
+m57_owner,/Users/laufei/Documents/GitHub/yune/docs/reports/evidence/m57-macos-track-a-sentence-model-parity/full-pass-1/memory-owner-profile.csv,581f79d2ce9ab11b795ffb32ae14f37bf80011f5722dedb57b230e2da05d8962,normalized logical-owner shape
+m57_product,/Users/laufei/Documents/GitHub/yune/docs/reports/evidence/m57-macos-track-a-sentence-model-parity/full-pass-1/product_path_status.csv,2dc64a811966a7ed26b04fc6c197ffd8141f40c1c023a187ad4eaf6b273afe60,checksum/storage shape

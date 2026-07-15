@@ -1,0 +1,71 @@
+^D   Compiling libc v0.2.186
+   Compiling proc-macro2 v1.0.106
+   Compiling cfg-if v1.0.4
+   Compiling quote v1.0.45
+   Compiling unicode-ident v1.0.24
+   Compiling utf8parse v0.2.2
+   Compiling serde_core v1.0.228
+   Compiling anstyle v1.0.14
+   Compiling anstyle-query v1.1.5
+   Compiling getrandom v0.3.4
+   Compiling memchr v2.8.0
+   Compiling anstyle-parse v1.0.0
+   Compiling colorchoice v1.0.5
+   Compiling is_terminal_polyfill v1.70.2
+   Compiling clap_lex v1.1.0
+   Compiling heck v0.5.0
+   Compiling strsim v0.11.1
+   Compiling anstream v1.0.0
+   Compiling regex-syntax v0.8.10
+   Compiling rustix v1.1.4
+   Compiling clap_builder v4.6.0
+   Compiling aho-corasick v1.1.4
+   Compiling getrandom v0.4.3
+   Compiling serde v1.0.228
+   Compiling zerocopy v0.8.52
+   Compiling zmij v1.0.21
+   Compiling syn v2.0.117
+   Compiling regex-automata v0.4.14
+   Compiling rand_core v0.9.5
+   Compiling memmap2 v0.9.11
+   Compiling errno v0.3.14
+   Compiling serde_json v1.0.149
+   Compiling equivalent v1.0.2
+   Compiling autocfg v1.5.1
+   Compiling hashbrown v0.17.0
+   Compiling itoa v1.0.18
+   Compiling bitflags v2.13.0
+   Compiling num-traits v0.2.19
+   Compiling indexmap v2.14.0
+   Compiling regex v1.12.3
+   Compiling unsafe-libyaml v0.2.11
+   Compiling once_cell v1.21.4
+   Compiling ryu v1.0.23
+   Compiling fastrand v2.4.1
+   Compiling wait-timeout v0.2.1
+   Compiling serde_yaml v0.9.34+deprecated
+   Compiling quick-error v1.2.3
+   Compiling fnv v1.0.7
+   Compiling bit-vec v0.8.0
+   Compiling rand v0.9.4
+   Compiling bit-set v0.8.0
+   Compiling rand_xorshift v0.4.0
+   Compiling unarray v0.1.4
+   Compiling tempfile v3.27.0
+   Compiling libloading v0.8.9
+   Compiling clap_derive v4.6.1
+   Compiling rusty-fork v0.3.1
+   Compiling ppv-lite86 v0.2.21
+   Compiling clap v4.6.1
+   Compiling rand_chacha v0.9.0
+   Compiling proptest v1.11.0
+   Compiling rsmarisa v0.4.2
+   Compiling yune-core v0.1.0 (<detached-yune-worktree>/crates/yune-core)
+   Compiling yune-rime-api v0.1.0 (<detached-yune-worktree>/crates/yune-rime-api)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.01s
+     Running tests/yune_web.rs (<external-evidence-root>/behavior-target/debug/deps/yune_web-9572b6e45b451c85)
+
+running 1 test
+test m59_reachability::m59_lane_b_product_matches_complete_pinned_librime_order ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 52 filtered out; finished in 9.09s

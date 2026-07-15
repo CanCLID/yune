@@ -1,0 +1,2497 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "M59 Increment-4e macOS Yune vs librime performance verification",
+    "description": "Technical Increment-4e source-bound macOS cross-platform performance and behavior diagnostic.",
+    "generatedAt": "2026-07-13T21:13:22Z",
+    "blocks": [
+      {
+        "id": "title",
+        "type": "markdown",
+        "body": "# M59 Increment-4e macOS Yune vs librime performance verification"
+      },
+      {
+        "id": "technical_summary",
+        "type": "markdown",
+        "body": "## Technical Summary\n\nAt M59 Increment-4e engine source 5879405c7b0f76af4dca7382f00b3e0605386f2c, the old macOS performance deficit does not reproduce. Yune is faster than pinned librime on all 17 Track A median ratios, from 0.006× to 0.471×. The earlier afb7079b Mac packet, where Yune won only 6/17 aggregate rows and had behavior-confounded long-input timing, is historical and is superseded for performance at 5879405c. Final M59 behavior source 443cc636 postdates this Mac capture, and current main contains later WEB-03 engine changes through 7f758fba. No Mac rerun at either later source is claimed.\n\nAgainst the source-matched 587 Windows packet, the requested diagnostic labels are 7 close, 6 notable, and 4 material. The four material rows are n, ni, and hao in Mac's favor, plus the 37-character ratio in Windows' favor. These are ratio differences, not failures: every Mac median and pooled worst remains below 1.0× and below the signed Windows ceiling diagnostically.\n\nBehavior and logical model shape do not indicate a Mac-only engine defect. Parsed candidate evidence is identical to source-matched 587 Windows; 16/17 complete-input Track A page-zero snapshots match librime. The sole mismatch, zhongdengchangdu positions 2–4, is identical on Windows. Both focused commit-bound behavior gates pass, including all captured Lane-B pages and deployed 37/59 page order/recomposition.\n\nOne literal protocol requirement was not met: the unmodified benchmark script only accepts an output root under the repository, so each round first wrote an untracked transient evidence directory in the disposable worktree and was moved external after completion. Pre-run source cleanliness is directly captured; after-move cleanliness is inferred from the next preflight for runs 1–4 and the later behavior-gate preflight for run 5. Both dylibs stayed fixed, but this packet is diagnostic evidence with a disclosed output-location deviation, not a fully protocol-conforming acceptance packet.\n\nThe evidence therefore supports a real Increment-4e source-bound Yune advantage on macOS and does not identify a continuing macOS engine-path discrepancy. Residual cross-platform movement is consistent with combined platform/toolchain/allocator/scheduler component scaling plus measurement noise; the evidence does not isolate their shares. No performance fix is authorized or indicated by this diagnostic."
+      },
+      {
+        "id": "headline_metrics",
+        "type": "metric-strip",
+        "cardIds": [
+          "track_a_card",
+          "classification_card",
+          "long_37_card",
+          "long_59_card",
+          "track_b_card"
+        ]
+      },
+      {
+        "id": "key_findings",
+        "type": "markdown",
+        "body": "## Key Findings\n\nThe cross-platform ratios are not moving as one block. On n, ni, and hao, Yune's Mac absolute latency is about 31–34% lower than Windows while librime is roughly flat or slower, so the ratio materially favors Mac. On the 37/59 sequences both engines are faster on Mac, but librime scales more strongly, making the Mac ratio 31.8% and 20.0% higher than source-matched 587 Windows even though Yune remains about 34× and 83× faster in the measured driver.\n\nAcross all 17 inputs, the median absolute Mac-versus-Windows change is -30.9% for Yune and -31.2% for librime. That symmetry is evidence against a single librime-only explanation. The row-level shape instead points to workload-dependent native-library and platform scaling."
+      },
+      {
+        "id": "platform_delta_chart_block",
+        "type": "chart",
+        "chartId": "platform_delta_chart",
+        "layout": "full"
+      },
+      {
+        "id": "track_a_table_block",
+        "type": "table",
+        "tableId": "track_a_table",
+        "layout": "full"
+      },
+      {
+        "id": "long_findings",
+        "type": "markdown",
+        "body": "## 37/59 Findings\n\nThe 37-character ratios are 0.029, 0.029, 0.026, 0.029, and 0.029; median and worst are both 0.029×. The 59-character ratios are 0.013, 0.012, 0.012, 0.012, and 0.015; median 0.012× and worst 0.015×. Unlike the historical Mac packet, these values are no longer contradicted by the repaired final page: both page-zero snapshots exactly match librime's one-sentence-then-phrases shape, and the focused recomposition gate passes.\n\nThe benchmark still does not capture every prefix/page for all 17 inputs. The complete Lane-B fixture supplies all captured pages for its seven Luna inputs, while the 37/59 gate supplies deployed page-zero and partial-selection coverage. The result is strong evidence for the named M59 surfaces, not a universal every-prefix parity claim."
+      },
+      {
+        "id": "component_table_block",
+        "type": "table",
+        "tableId": "component_table",
+        "layout": "full"
+      },
+      {
+        "id": "track_b_findings",
+        "type": "markdown",
+        "body": "## Track B Product Input\n\nThe five Mac medians are 12.352, 12.491, 12.936, 12.811, and 14.480 µs/key. Median is 12.811, worst run median 14.480, pooled worst sample 16.296, and spread 17.2%. The source-matched 587 Windows median is 17.177 µs/key, so the Mac median is 25.4% lower; that absolute comparison is platform-specific and is not a portable threshold.\n\nCandidate text, comments, geometry, page state, checksums, and absent/shared-zero POET status match M57 and source-matched 587 Windows. The elevated fifth observation and larger Mac RSS reinforce the noise/allocator/counter boundary rather than a behavioral path split."
+      },
+      {
+        "id": "track_b_table_block",
+        "type": "table",
+        "tableId": "track_b_table",
+        "layout": "full"
+      },
+      {
+        "id": "candidate_model_findings",
+        "type": "markdown",
+        "body": "## Candidate and Model-Owner Differences\n\nAll five Mac candidate files are byte-identical, and their parsed rows are exactly identical to all five source-matched 587 Windows files. Track A page-zero behavior is exact on 16/17 inputs. The only mismatch is zhongdengchangdu positions 2–4: Yune emits 中的 / 種的 / 重的 while librime emits 中 / 種 / 重. Because source-matched 587 Windows has the same mismatch, it is a cross-platform engine behavior gap, not a Mac defect.\n\nThe accepted Mac Luna checksum pair remains 0xb3d4e98e / 0x29d56c89; Windows has its independently accepted 0x16ad0e3e / 0xb967cfef pair. Logical shape is otherwise exact: 513,353 sentence entries, 332,604 lookup-index rows, vocabulary 193, abbreviation vocabulary 11, and normal-character index 423. Excluding process counters and the tiny path/metadata-bearing schema.config row, Mac and Windows logical owner profiles are exact. Absolute RSS/private/pagefile counters are not interchangeable."
+      },
+      {
+        "id": "candidate_table_block",
+        "type": "table",
+        "tableId": "candidate_table",
+        "layout": "full"
+      },
+      {
+        "id": "model_table_block",
+        "type": "table",
+        "tableId": "model_table",
+        "layout": "full"
+      },
+      {
+        "id": "root_cause",
+        "type": "markdown",
+        "body": "## Why the Old macOS Deficit Does Not Reproduce\n\nThe strongest evidence points to source state rather than a mysterious post-M59 operating-system fix, but the measured commit range does not isolate a causal share. Increment 4e replaced the un-toned Luna path with the structure-driven UpstreamScript surface graph: one common-prefix prism walk per live vertex, pinned table-trunk/tail traversal, bounded sentence scratch reuse, and page-local position separated from outer merge quality. That measured mechanism coincides with Yune's Mac latency falling from tens or hundreds of microseconds per key in the historical packet to roughly 3–6 µs/key here. The commit range changes interacting owners, so the evidence does not assign the gain to one line or one optimization.\n\nlibrime remains valuable as a design oracle: demand-driven candidate streams, resumable state, and bounded page work are still useful patterns. But the Increment-4e source-bound measurement no longer presents a Mac latency deficit requiring a speculative fix. Memory ownership and any future Apple footprint work should remain separate diagnostics."
+      },
+      {
+        "id": "scope",
+        "type": "markdown",
+        "body": "## Scope, Data, and Definitions\n\nMeasured Yune tracked source was directly recorded clean and detached at 5879405c7b0f76af4dca7382f00b3e0605386f2c before every round; after-move cleanliness is inferred from subsequent clean preflights. Oracle was clean and detached at librime 33e78140250125871856cdc5b42ddc6a5fcd3cd4. During measurement, Git reported only the transient untracked evidence directory. All five runs use 9 startup iterations, 60 session iterations, 80 key iterations, product deployment, the exact 17 Track A inputs, and the exact Track B input. Ratio means Yune median µs/key divided by librime median µs/key; below 1 favors Yune. Median is the third sorted observation, worst is the largest, and spread is (max-min)/min.\n\nThe 587 Windows comparison uses the same Yune source, inputs, and benchmark shape. The signed Increment-0 packet and retained ceilings are historical diagnostics only. Close/notable/material labels describe absolute Mac-vs-Windows ratio difference of <=10%, >10–25%, and >25%. They are not acceptance thresholds."
+      },
+      {
+        "id": "run_audit_block",
+        "type": "table",
+        "tableId": "run_audit_table",
+        "layout": "full"
+      },
+      {
+        "id": "methodology",
+        "type": "markdown",
+        "body": "## Methodology\n\nThe Yune release dylib was built once before measurement. The official macOS in-process benchmark script was then invoked for five logical rounds. Its per-round `cargo build --release` check was a no-op for the prebuilt measured dylib (0.08–0.09 seconds), and every pre/post dylib hash was checked. The script's `cargo bench` calls did compile the Yune crate and benchmark harness for roughly 24–30 seconds before each deploy, Track A Yune, Track A librime, and Track B lane. Those builds were sequential rather than concurrent with the lane process; measurement loaded pre-copied, hash-fixed Yune/librime dylibs. Because the unmodified script enforces an output root under the repository, each run wrote first to an untracked transient directory in the disposable worktree and was moved outside only after completion. This violates the literal all-generated-output-external requirement even though it never changed tracked source. No measured red or noisy round was removed.\n\nAggregation joins rows by kind, workload, input, and metric rather than file order. It independently recomputes Windows gate formulas, validates all 17 ceiling joins and all nine expanded derivations, verifies the exact commits and measurement parameters, and fails closed on missing artifacts, unexpected measurement-time Git status, or variable binaries. Candidate rows are normalized before cross-platform comparison. Logical owner rows are compared separately from process-level counters."
+      },
+      {
+        "id": "behavior_table_block",
+        "type": "table",
+        "tableId": "behavior_table",
+        "layout": "full"
+      },
+      {
+        "id": "limitations",
+        "type": "markdown",
+        "body": "## Limitations and Robustness\n\nThe machine stayed on AC with Low Power Mode disabled and recorded no thermal or performance warning. A setup warmup was explicitly excluded before measured data. There was a long user pause between rounds 2 and 3, and transient Chrome, Claude, duetexpertd, CloudKit, and UI activity delayed later starts. Round 5 is visibly noisier; it is retained. Quiet-machine state was not continuously observed: the available point-in-time workload snapshots show these bursts, so thermal/noise attribution remains bounded. The script-owned sequential benchmark-harness compilations occurred immediately before their lanes with no separately recorded cooldown; although no compilation ran concurrently with a measured lane and the loaded dylibs stayed fixed, compilation heat and fixed lane order are additional noise/bias boundaries. All ratio rows exceed 10% relative spread because several ratios are very small and reported to 0.001 precision, while short rows also show scheduler sensitivity. This limits fine ranking but cannot erase the all-rows-below-1 result.\n\nNo setup failure invalidated a measured round. The efficient sequence intentionally skipped a new universal all-17/all-prefix/all-page capture, allocator toggles, and hardware-counter profiling because snapshots matched source-matched 587 Windows and both focused behavior gates passed. A strictly conforming rerun was not performed because the exact unmodified script cannot target an external output root; such a rerun first requires explicit external-output support in the harness. Mac RSS is not interchangeable with Windows working-set/private/pagefile counters, and no Apple phys_footprint claim is made."
+      },
+      {
+        "id": "recommendations",
+        "type": "markdown",
+        "body": "## Recommended Next Steps\n\n1. Treat the old Mac latency deficit as resolved for the 5879405c measured path; update canonical docs to make the afb7079b packet historical.\n2. Keep the signed Windows ceilings unchanged and keep this Mac comparison diagnostic.\n3. Do not implement a performance fix from this packet. If a product decision needs finer attribution, profile one short row and one long row with fixed binaries and low-perturbation instruction/cycle counters.\n4. Track the zhongdengchangdu candidate-shape mismatch as a cross-platform oracle gap, not a Mac performance issue.\n5. Before any strict future Mac packet, add explicit external-output-root support to the benchmark harness under separately authorized work; do not change the harness in this diagnostic.\n6. Investigate Apple memory with phys_footprint only in a separate platform-memory gate; do not reuse Windows counters."
+      },
+      {
+        "id": "further_questions",
+        "type": "markdown",
+        "body": "## Further Questions\n\n- Why does librime scale more strongly than Yune on the long rows but not on n/ni/hao across these two platforms?\n- How much of the fifth-round Track B elevation is scheduler/UI noise versus sustained thermal state?\n- Would an all-prefix/all-page macOS capture reveal any behavior outside the named M59 gates?\n- Can the remaining Track A memory gap be reduced without changing the accepted candidate graph or signed latency ratchet?"
+      },
+      {
+        "id": "sources",
+        "type": "markdown",
+        "body": "## Sources\n\nThe bounded report snapshot is built from the five Mac runs preserved externally after capture, the committed Increment-4e Windows performance packet, the signed Increment-0 packet and unchanged thresholds, M57 Mac model evidence, and the two focused commit-bound test logs. The Mac output-location deviation is recorded in the run audit. Every native chart, card, and table exposes its exact SQLite query and source-file list."
+      }
+    ],
+    "cards": [
+      {
+        "id": "track_a_card",
+        "description": "Increment-4e source-bound Mac median-of-five result for all Track A inputs.",
+        "dataset": "headline",
+        "sourceId": "headline_sql",
+        "metrics": [
+          {
+            "label": "Yune-faster rows",
+            "field": "yune_faster_rows",
+            "format": "number"
+          },
+          {
+            "label": "librime-faster rows",
+            "field": "librime_faster_rows",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "classification_card",
+        "description": "Requested diagnostic classes versus source-matched 587 Windows.",
+        "dataset": "headline",
+        "sourceId": "headline_sql",
+        "metrics": [
+          {
+            "label": "Material rows",
+            "field": "material_rows",
+            "format": "number"
+          },
+          {
+            "label": "Close",
+            "field": "close_rows",
+            "format": "number"
+          },
+          {
+            "label": "Notable",
+            "field": "notable_rows",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "long_37_card",
+        "description": "Increment-4e source-bound Mac ratio; lower than 1 favors Yune.",
+        "dataset": "headline",
+        "sourceId": "headline_sql",
+        "metrics": [
+          {
+            "label": "37-char Mac ratio",
+            "field": "ratio_37",
+            "format": "number"
+          },
+          {
+            "label": "vs source-matched 587 Windows, %",
+            "field": "delta_37_pct",
+            "format": "number",
+            "signed": true
+          }
+        ]
+      },
+      {
+        "id": "long_59_card",
+        "description": "Increment-4e source-bound Mac ratio; lower than 1 favors Yune.",
+        "dataset": "headline",
+        "sourceId": "headline_sql",
+        "metrics": [
+          {
+            "label": "59-char Mac ratio",
+            "field": "ratio_59",
+            "format": "number"
+          },
+          {
+            "label": "vs source-matched 587 Windows, %",
+            "field": "delta_59_pct",
+            "format": "number",
+            "signed": true
+          }
+        ]
+      },
+      {
+        "id": "track_b_card",
+        "description": "Absolute Mac product-guard value; not a Windows acceptance metric.",
+        "dataset": "headline",
+        "sourceId": "headline_sql",
+        "metrics": [
+          {
+            "label": "Track B median, µs/key",
+            "field": "track_b_median_us",
+            "format": "number"
+          },
+          {
+            "label": "vs source-matched 587 Windows, %",
+            "field": "track_b_delta_pct",
+            "format": "number",
+            "signed": true
+          }
+        ]
+      }
+    ],
+    "charts": [
+      {
+        "id": "platform_delta_chart",
+        "title": "macOS versus source-matched 587 Windows Yune/librime ratio difference",
+        "subtitle": "n, ni, and hao favor macOS; 37/59 show stronger librime scaling, while every Mac ratio remains below 1.0×.",
+        "intent": "comparison",
+        "question": "Which Increment-4e source-bound Yune/librime ratios differ most between macOS and Windows?",
+        "rationale": "A signed horizontal comparison preserves all 17 labels and makes the zero reference explicit.",
+        "comparisonContext": {
+          "baseline": "0% means equal Yune/librime ratios",
+          "denominator": "source-matched 587 Windows ratio",
+          "grain": "17 Track A inputs; median of five ratios per platform",
+          "unit": "percent difference"
+        },
+        "type": "horizontalBar",
+        "dataset": "platform_delta",
+        "sourceId": "platform_delta_sql",
+        "encodings": {
+          "x": {
+            "field": "input_label",
+            "type": "nominal",
+            "label": "Input"
+          },
+          "y": {
+            "field": "mac_vs_final_windows_pct",
+            "type": "quantitative",
+            "label": "Mac versus source-matched 587 Windows, %"
+          }
+        },
+        "palette": {
+          "kind": "sequential"
+        },
+        "labels": {
+          "values": "auto"
+        },
+        "referenceLines": [
+          {
+            "axis": "y",
+            "value": 0,
+            "color": "neutral",
+            "label": "Same ratio"
+          }
+        ],
+        "settings": {
+          "orientation": "horizontal",
+          "sort": "none",
+          "categoryLabelPolicy": "wrap"
+        },
+        "valueFormat": "number",
+        "layout": "full",
+        "maxRows": 17
+      }
+    ],
+    "tables": [
+      {
+        "id": "track_a_table",
+        "title": "Complete 17-row Increment-4e source-bound comparison",
+        "subtitle": "Five retained Mac ratios, source-matched 587 Windows, and historical signed-ceiling diagnostics",
+        "dataset": "track_a",
+        "sourceId": "track_a_sql",
+        "defaultSort": {
+          "field": "row_order",
+          "direction": "asc"
+        },
+        "density": "compact",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "row_order",
+            "label": "#",
+            "type": "number"
+          },
+          {
+            "field": "input_label",
+            "label": "Input",
+            "type": "text"
+          },
+          {
+            "field": "input",
+            "label": "Exact input",
+            "type": "text"
+          },
+          {
+            "field": "newly_signed",
+            "label": "New M59 row",
+            "type": "text"
+          },
+          {
+            "field": "run1_ratio",
+            "label": "Run 1",
+            "type": "number",
+            "unit": "×"
+          },
+          {
+            "field": "run2_ratio",
+            "label": "Run 2",
+            "type": "number",
+            "unit": "×"
+          },
+          {
+            "field": "run3_ratio",
+            "label": "Run 3",
+            "type": "number",
+            "unit": "×"
+          },
+          {
+            "field": "run4_ratio",
+            "label": "Run 4",
+            "type": "number",
+            "unit": "×"
+          },
+          {
+            "field": "run5_ratio",
+            "label": "Run 5",
+            "type": "number",
+            "unit": "×"
+          },
+          {
+            "field": "mac_median_ratio",
+            "label": "Mac median",
+            "type": "number",
+            "unit": "×"
+          },
+          {
+            "field": "mac_worst_ratio",
+            "label": "Mac worst",
+            "type": "number",
+            "unit": "×"
+          },
+          {
+            "field": "mac_spread_pct",
+            "label": "Spread",
+            "type": "number",
+            "unit": "%"
+          },
+          {
+            "field": "final_windows_median_ratio",
+            "label": "587 Win median",
+            "type": "number",
+            "unit": "×"
+          },
+          {
+            "field": "mac_vs_final_windows_pct",
+            "label": "Mac vs final Win",
+            "type": "number",
+            "unit": "%"
+          },
+          {
+            "field": "final_windows_class",
+            "label": "Class",
+            "type": "text"
+          },
+          {
+            "field": "signed_i0_windows_median_ratio",
+            "label": "Signed I0 median",
+            "type": "number",
+            "unit": "×"
+          },
+          {
+            "field": "signed_windows_ceiling",
+            "label": "Signed ceiling",
+            "type": "number",
+            "unit": "×"
+          },
+          {
+            "field": "mac_vs_signed_i0_pct",
+            "label": "Mac vs signed I0",
+            "type": "number",
+            "unit": "%"
+          },
+          {
+            "field": "signed_ceiling_diagnostic",
+            "label": "Ceiling diagnostic",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "id": "component_table",
+        "title": "Absolute component scaling on explicit rows",
+        "subtitle": "Both engines move across platforms; absolute microseconds are diagnostic only",
+        "dataset": "components",
+        "sourceId": "components_sql",
+        "defaultSort": {
+          "field": "input_order",
+          "direction": "asc"
+        },
+        "density": "compact",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "input_order",
+            "label": "#",
+            "type": "number"
+          },
+          {
+            "field": "input_label",
+            "label": "Input",
+            "type": "text"
+          },
+          {
+            "field": "engine",
+            "label": "Engine",
+            "type": "text"
+          },
+          {
+            "field": "mac_median_us",
+            "label": "Mac median",
+            "type": "number",
+            "unit": "µs/key"
+          },
+          {
+            "field": "final_windows_median_us",
+            "label": "587 Win median",
+            "type": "number",
+            "unit": "µs/key"
+          },
+          {
+            "field": "mac_vs_final_windows_pct",
+            "label": "Mac vs final Win",
+            "type": "number",
+            "unit": "%"
+          },
+          {
+            "field": "mac_spread_pct",
+            "label": "Mac spread",
+            "type": "number",
+            "unit": "%"
+          }
+        ]
+      },
+      {
+        "id": "track_b_table",
+        "title": "Track B product input: five Mac observations",
+        "subtitle": "Candidate page remains exact versus M57 and source-matched 587 Windows",
+        "dataset": "track_b",
+        "sourceId": "track_b_sql",
+        "defaultSort": {
+          "field": "run",
+          "direction": "asc"
+        },
+        "density": "compact",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "run",
+            "label": "Run",
+            "type": "number"
+          },
+          {
+            "field": "mac_median_us",
+            "label": "Mac median",
+            "type": "number",
+            "unit": "µs/key"
+          },
+          {
+            "field": "mac_p95_us",
+            "label": "Mac p95",
+            "type": "number",
+            "unit": "µs/key"
+          },
+          {
+            "field": "mac_max_us",
+            "label": "Mac max",
+            "type": "number",
+            "unit": "µs/key"
+          },
+          {
+            "field": "final_windows_median_us",
+            "label": "587 Win median",
+            "type": "number",
+            "unit": "µs/key"
+          },
+          {
+            "field": "run_delta_pct",
+            "label": "Mac vs final Win",
+            "type": "number",
+            "unit": "%"
+          },
+          {
+            "field": "mac_median_working_set_bytes",
+            "label": "Mac RSS",
+            "type": "number",
+            "unit": "B"
+          },
+          {
+            "field": "mac_peak_working_set_bytes",
+            "label": "Mac peak RSS",
+            "type": "number",
+            "unit": "B"
+          }
+        ]
+      },
+      {
+        "id": "candidate_table",
+        "title": "Complete-input page-zero candidate comparison",
+        "subtitle": "587 Mac parsed snapshots equal source-matched 587 Windows; 16/17 Track A pages equal librime",
+        "dataset": "candidate_summary",
+        "sourceId": "candidate_sql",
+        "defaultSort": {
+          "field": "row_order",
+          "direction": "asc"
+        },
+        "density": "compact",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "row_order",
+            "label": "#",
+            "type": "number"
+          },
+          {
+            "field": "input_label",
+            "label": "Input",
+            "type": "text"
+          },
+          {
+            "field": "yune_page",
+            "label": "Yune page",
+            "type": "text"
+          },
+          {
+            "field": "librime_page",
+            "label": "librime page",
+            "type": "text"
+          },
+          {
+            "field": "full_page0_exact",
+            "label": "Full page exact",
+            "type": "text"
+          },
+          {
+            "field": "mismatch",
+            "label": "Mismatch",
+            "type": "text"
+          },
+          {
+            "field": "mac_vs_final_windows",
+            "label": "Mac vs final Win",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "id": "model_table",
+        "title": "Candidate-model and logical-owner shape",
+        "subtitle": "Logical counts match source-matched 587 Windows; M57 is a source-state comparison",
+        "dataset": "model_owner",
+        "sourceId": "model_sql",
+        "defaultSort": {
+          "field": "row_order",
+          "direction": "asc"
+        },
+        "density": "compact",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "row_order",
+            "label": "#",
+            "type": "number"
+          },
+          {
+            "field": "measure",
+            "label": "Measure",
+            "type": "text"
+          },
+          {
+            "field": "current_mac",
+            "label": "Current Mac",
+            "type": "text"
+          },
+          {
+            "field": "final_windows",
+            "label": "587 Windows",
+            "type": "text"
+          },
+          {
+            "field": "m57_mac",
+            "label": "M57 Mac",
+            "type": "text"
+          },
+          {
+            "field": "current_mac_windows_exact",
+            "label": "Current cross-platform",
+            "type": "text"
+          },
+          {
+            "field": "interpretation",
+            "label": "Interpretation",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "id": "run_audit_table",
+        "title": "Five-run provenance and fixed-binary audit",
+        "subtitle": "Every complete logical round is retained",
+        "dataset": "run_audit",
+        "sourceId": "run_audit_sql",
+        "defaultSort": {
+          "field": "run",
+          "direction": "asc"
+        },
+        "density": "compact",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "run",
+            "label": "Run",
+            "type": "number"
+          },
+          {
+            "field": "path",
+            "label": "External path",
+            "type": "text"
+          },
+          {
+            "field": "start_utc",
+            "label": "Start UTC",
+            "type": "text"
+          },
+          {
+            "field": "end_utc",
+            "label": "End UTC",
+            "type": "text"
+          },
+          {
+            "field": "power",
+            "label": "Power",
+            "type": "text"
+          },
+          {
+            "field": "source_status",
+            "label": "Sources",
+            "type": "text"
+          },
+          {
+            "field": "output_protocol",
+            "label": "Output location",
+            "type": "text"
+          },
+          {
+            "field": "after_move_evidence",
+            "label": "After-move status basis",
+            "type": "text"
+          },
+          {
+            "field": "yune_hash_stable",
+            "label": "Yune hash",
+            "type": "text"
+          },
+          {
+            "field": "librime_hash_stable",
+            "label": "librime hash",
+            "type": "text"
+          },
+          {
+            "field": "candidate_rows",
+            "label": "Candidate rows",
+            "type": "number"
+          },
+          {
+            "field": "verdict",
+            "label": "Verdict",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "id": "behavior_table",
+        "title": "Commit-bound focused behavior gates",
+        "subtitle": "Both load-bearing checks pass at the measured Yune commit",
+        "dataset": "behavior_gates",
+        "sourceId": "behavior_sql",
+        "defaultSort": {
+          "field": "gate",
+          "direction": "asc"
+        },
+        "density": "compact",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "gate",
+            "label": "Gate",
+            "type": "text"
+          },
+          {
+            "field": "result",
+            "label": "Result",
+            "type": "text"
+          },
+          {
+            "field": "coverage",
+            "label": "Coverage",
+            "type": "text"
+          },
+          {
+            "field": "elapsed_seconds",
+            "label": "Elapsed",
+            "type": "number",
+            "unit": "s"
+          },
+          {
+            "field": "commit",
+            "label": "Commit",
+            "type": "text"
+          }
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "headline_sql",
+        "label": "Report headline metrics",
+        "path": "report/snapshot.sqlite"
+      },
+      {
+        "id": "track_a_sql",
+        "label": "Complete 17-row ratio comparison",
+        "path": "report/snapshot.sqlite"
+      },
+      {
+        "id": "platform_delta_sql",
+        "label": "Source-matched cross-platform ratio difference",
+        "path": "report/snapshot.sqlite"
+      },
+      {
+        "id": "components_sql",
+        "label": "Absolute component scaling for explicit rows",
+        "path": "report/snapshot.sqlite"
+      },
+      {
+        "id": "track_b_sql",
+        "label": "Track B product observations",
+        "path": "report/snapshot.sqlite"
+      },
+      {
+        "id": "candidate_sql",
+        "label": "Complete-input page-zero candidate comparison",
+        "path": "report/snapshot.sqlite"
+      },
+      {
+        "id": "model_sql",
+        "label": "Model-owner and checksum comparison",
+        "path": "report/snapshot.sqlite"
+      },
+      {
+        "id": "run_audit_sql",
+        "label": "Five-run provenance and hash audit",
+        "path": "report/snapshot.sqlite"
+      },
+      {
+        "id": "behavior_sql",
+        "label": "Focused behavior gate results",
+        "path": "report/snapshot.sqlite"
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "status": "ready",
+    "generatedAt": "2026-07-13T21:13:22Z",
+    "datasets": {
+      "headline": [
+        {
+          "track_a_rows": 17,
+          "yune_faster_rows": 17,
+          "librime_faster_rows": 0,
+          "close_rows": 7,
+          "notable_rows": 6,
+          "material_rows": 4,
+          "ratio_37": 0.029,
+          "delta_37_pct": 31.8,
+          "ratio_59": 0.012,
+          "delta_59_pct": 20,
+          "track_b_median_us": 12.811,
+          "track_b_delta_pct": -25.4,
+          "stable_binary_rounds": 5,
+          "candidate_exact_inputs": 16
+        }
+      ],
+      "track_a": [
+        {
+          "row_order": 1,
+          "input": "n",
+          "input_label": "n",
+          "special_rows": "short-explicit",
+          "newly_signed": "false",
+          "run1_ratio": 0.161,
+          "run2_ratio": 0.11,
+          "run3_ratio": 0.107,
+          "run4_ratio": 0.111,
+          "run5_ratio": 0.153,
+          "mac_median_ratio": 0.111,
+          "mac_worst_ratio": 0.161,
+          "mac_spread_pct": 50.5,
+          "final_windows_median_ratio": 0.208,
+          "mac_vs_final_windows_pct": -46.6,
+          "final_windows_class": "material",
+          "signed_i0_windows_median_ratio": 2.82,
+          "signed_windows_ceiling": 3.006,
+          "mac_vs_signed_i0_pct": -96.1,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 2,
+          "input": "ni",
+          "input_label": "ni",
+          "special_rows": "short-explicit",
+          "newly_signed": "false",
+          "run1_ratio": 0.183,
+          "run2_ratio": 0.155,
+          "run3_ratio": 0.139,
+          "run4_ratio": 0.129,
+          "run5_ratio": 0.212,
+          "mac_median_ratio": 0.155,
+          "mac_worst_ratio": 0.212,
+          "mac_spread_pct": 64.3,
+          "final_windows_median_ratio": 0.246,
+          "mac_vs_final_windows_pct": -37.0,
+          "final_windows_class": "material",
+          "signed_i0_windows_median_ratio": 2.599,
+          "signed_windows_ceiling": 2.666,
+          "mac_vs_signed_i0_pct": -94.0,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 3,
+          "input": "hao",
+          "input_label": "hao",
+          "special_rows": "short-explicit",
+          "newly_signed": "false",
+          "run1_ratio": 0.189,
+          "run2_ratio": 0.188,
+          "run3_ratio": 0.173,
+          "run4_ratio": 0.166,
+          "run5_ratio": 0.231,
+          "mac_median_ratio": 0.188,
+          "mac_worst_ratio": 0.231,
+          "mac_spread_pct": 39.2,
+          "final_windows_median_ratio": 0.284,
+          "mac_vs_final_windows_pct": -33.8,
+          "final_windows_class": "material",
+          "signed_i0_windows_median_ratio": 1.72,
+          "signed_windows_ceiling": 1.844,
+          "mac_vs_signed_i0_pct": -89.1,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 4,
+          "input": "zhongguo",
+          "input_label": "zhongguo",
+          "special_rows": "standard",
+          "newly_signed": "false",
+          "run1_ratio": 0.04,
+          "run2_ratio": 0.04,
+          "run3_ratio": 0.035,
+          "run4_ratio": 0.04,
+          "run5_ratio": 0.051,
+          "mac_median_ratio": 0.04,
+          "mac_worst_ratio": 0.051,
+          "mac_spread_pct": 45.7,
+          "final_windows_median_ratio": 0.038,
+          "mac_vs_final_windows_pct": 5.3,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 0.293,
+          "signed_windows_ceiling": 0.323,
+          "mac_vs_signed_i0_pct": -86.3,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 5,
+          "input": "ceshiyixiachangjushuruxingnengzenyang",
+          "input_label": "37-character",
+          "special_rows": "37-character",
+          "newly_signed": "false",
+          "run1_ratio": 0.029,
+          "run2_ratio": 0.029,
+          "run3_ratio": 0.026,
+          "run4_ratio": 0.029,
+          "run5_ratio": 0.029,
+          "mac_median_ratio": 0.029,
+          "mac_worst_ratio": 0.029,
+          "mac_spread_pct": 11.5,
+          "final_windows_median_ratio": 0.022,
+          "mac_vs_final_windows_pct": 31.8,
+          "final_windows_class": "material",
+          "signed_i0_windows_median_ratio": 2.132,
+          "signed_windows_ceiling": 2.339,
+          "mac_vs_signed_i0_pct": -98.6,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 6,
+          "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+          "input_label": "59-character",
+          "special_rows": "59-character",
+          "newly_signed": "false",
+          "run1_ratio": 0.013,
+          "run2_ratio": 0.012,
+          "run3_ratio": 0.012,
+          "run4_ratio": 0.012,
+          "run5_ratio": 0.015,
+          "mac_median_ratio": 0.012,
+          "mac_worst_ratio": 0.015,
+          "mac_spread_pct": 25,
+          "final_windows_median_ratio": 0.01,
+          "mac_vs_final_windows_pct": 20,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 1.681,
+          "signed_windows_ceiling": 1.748,
+          "mac_vs_signed_i0_pct": -99.3,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 7,
+          "input": "cszysmsrsd",
+          "input_label": "cszysmsrsd",
+          "special_rows": "standard",
+          "newly_signed": "false",
+          "run1_ratio": 0.006,
+          "run2_ratio": 0.006,
+          "run3_ratio": 0.005,
+          "run4_ratio": 0.006,
+          "run5_ratio": 0.007,
+          "mac_median_ratio": 0.006,
+          "mac_worst_ratio": 0.007,
+          "mac_spread_pct": 40,
+          "final_windows_median_ratio": 0.005,
+          "mac_vs_final_windows_pct": 20,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 0.396,
+          "signed_windows_ceiling": 0.474,
+          "mac_vs_signed_i0_pct": -98.5,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 8,
+          "input": "zybfshmsru",
+          "input_label": "zybfshmsru",
+          "special_rows": "standard",
+          "newly_signed": "false",
+          "run1_ratio": 0.009,
+          "run2_ratio": 0.008,
+          "run3_ratio": 0.007,
+          "run4_ratio": 0.008,
+          "run5_ratio": 0.008,
+          "mac_median_ratio": 0.008,
+          "mac_worst_ratio": 0.009,
+          "mac_spread_pct": 28.6,
+          "final_windows_median_ratio": 0.008,
+          "mac_vs_final_windows_pct": 0,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 0.569,
+          "signed_windows_ceiling": 0.695,
+          "mac_vs_signed_i0_pct": -98.6,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 9,
+          "input": "zh",
+          "input_label": "zh",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.107,
+          "run2_ratio": 0.1,
+          "run3_ratio": 0.077,
+          "run4_ratio": 0.1,
+          "run5_ratio": 0.108,
+          "mac_median_ratio": 0.1,
+          "mac_worst_ratio": 0.108,
+          "mac_spread_pct": 40.3,
+          "final_windows_median_ratio": 0.099,
+          "mac_vs_final_windows_pct": 1.0,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 0.986,
+          "signed_windows_ceiling": 1.047,
+          "mac_vs_signed_i0_pct": -89.9,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 10,
+          "input": "j",
+          "input_label": "j",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.419,
+          "run2_ratio": 0.41,
+          "run3_ratio": 0.371,
+          "run4_ratio": 0.421,
+          "run5_ratio": 0.426,
+          "mac_median_ratio": 0.419,
+          "mac_worst_ratio": 0.426,
+          "mac_spread_pct": 14.8,
+          "final_windows_median_ratio": 0.399,
+          "mac_vs_final_windows_pct": 5.0,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 4,
+          "signed_windows_ceiling": 4.372,
+          "mac_vs_signed_i0_pct": -89.5,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 11,
+          "input": "yi",
+          "input_label": "yi",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.453,
+          "run2_ratio": 0.42,
+          "run3_ratio": 0.484,
+          "run4_ratio": 0.492,
+          "run5_ratio": 0.471,
+          "mac_median_ratio": 0.471,
+          "mac_worst_ratio": 0.492,
+          "mac_spread_pct": 17.1,
+          "final_windows_median_ratio": 0.434,
+          "mac_vs_final_windows_pct": 8.5,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 5.777,
+          "signed_windows_ceiling": 6.098,
+          "mac_vs_signed_i0_pct": -91.8,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 12,
+          "input": "che",
+          "input_label": "che",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.118,
+          "run2_ratio": 0.119,
+          "run3_ratio": 0.099,
+          "run4_ratio": 0.126,
+          "run5_ratio": 0.137,
+          "mac_median_ratio": 0.119,
+          "mac_worst_ratio": 0.137,
+          "mac_spread_pct": 38.4,
+          "final_windows_median_ratio": 0.134,
+          "mac_vs_final_windows_pct": -11.2,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 1.081,
+          "signed_windows_ceiling": 1.16,
+          "mac_vs_signed_i0_pct": -89.0,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 13,
+          "input": "chuang",
+          "input_label": "chuang",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.539,
+          "run2_ratio": 0.158,
+          "run3_ratio": 0.171,
+          "run4_ratio": 0.17,
+          "run5_ratio": 0.175,
+          "mac_median_ratio": 0.171,
+          "mac_worst_ratio": 0.539,
+          "mac_spread_pct": 241.1,
+          "final_windows_median_ratio": 0.174,
+          "mac_vs_final_windows_pct": -1.7,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 1.266,
+          "signed_windows_ceiling": 1.357,
+          "mac_vs_signed_i0_pct": -86.5,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 14,
+          "input": "b",
+          "input_label": "b",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.498,
+          "run2_ratio": 0.337,
+          "run3_ratio": 0.276,
+          "run4_ratio": 0.337,
+          "run5_ratio": 0.396,
+          "mac_median_ratio": 0.337,
+          "mac_worst_ratio": 0.498,
+          "mac_spread_pct": 80.4,
+          "final_windows_median_ratio": 0.38,
+          "mac_vs_final_windows_pct": -11.3,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 3.439,
+          "signed_windows_ceiling": 3.775,
+          "mac_vs_signed_i0_pct": -90.2,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 15,
+          "input": "ceshi",
+          "input_label": "ceshi",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.131,
+          "run2_ratio": 0.12,
+          "run3_ratio": 0.101,
+          "run4_ratio": 0.131,
+          "run5_ratio": 0.132,
+          "mac_median_ratio": 0.131,
+          "mac_worst_ratio": 0.132,
+          "mac_spread_pct": 30.7,
+          "final_windows_median_ratio": 0.143,
+          "mac_vs_final_windows_pct": -8.4,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 0.895,
+          "signed_windows_ceiling": 0.966,
+          "mac_vs_signed_i0_pct": -85.4,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 16,
+          "input": "zhongdengchangdu",
+          "input_label": "zhongdengchangdu",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.022,
+          "run2_ratio": 0.022,
+          "run3_ratio": 0.02,
+          "run4_ratio": 0.022,
+          "run5_ratio": 0.023,
+          "mac_median_ratio": 0.022,
+          "mac_worst_ratio": 0.023,
+          "mac_spread_pct": 15,
+          "final_windows_median_ratio": 0.019,
+          "mac_vs_final_windows_pct": 15.8,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 0.322,
+          "signed_windows_ceiling": 0.342,
+          "mac_vs_signed_i0_pct": -93.2,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        },
+        {
+          "row_order": 17,
+          "input": "dazisudu",
+          "input_label": "dazisudu",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.16,
+          "run2_ratio": 0.157,
+          "run3_ratio": 0.146,
+          "run4_ratio": 0.162,
+          "run5_ratio": 0.187,
+          "mac_median_ratio": 0.16,
+          "mac_worst_ratio": 0.187,
+          "mac_spread_pct": 28.1,
+          "final_windows_median_ratio": 0.144,
+          "mac_vs_final_windows_pct": 11.1,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 1.034,
+          "signed_windows_ceiling": 1.098,
+          "mac_vs_signed_i0_pct": -84.5,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster"
+        }
+      ],
+      "platform_delta": [
+        {
+          "row_order": 1,
+          "input": "n",
+          "input_label": "n",
+          "special_rows": "short-explicit",
+          "newly_signed": "false",
+          "run1_ratio": 0.161,
+          "run2_ratio": 0.11,
+          "run3_ratio": 0.107,
+          "run4_ratio": 0.111,
+          "run5_ratio": 0.153,
+          "mac_median_ratio": 0.111,
+          "mac_worst_ratio": 0.161,
+          "mac_spread_pct": 50.5,
+          "final_windows_median_ratio": 0.208,
+          "mac_vs_final_windows_pct": -46.6,
+          "final_windows_class": "material",
+          "signed_i0_windows_median_ratio": 2.82,
+          "signed_windows_ceiling": 3.006,
+          "mac_vs_signed_i0_pct": -96.1,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 1
+        },
+        {
+          "row_order": 2,
+          "input": "ni",
+          "input_label": "ni",
+          "special_rows": "short-explicit",
+          "newly_signed": "false",
+          "run1_ratio": 0.183,
+          "run2_ratio": 0.155,
+          "run3_ratio": 0.139,
+          "run4_ratio": 0.129,
+          "run5_ratio": 0.212,
+          "mac_median_ratio": 0.155,
+          "mac_worst_ratio": 0.212,
+          "mac_spread_pct": 64.3,
+          "final_windows_median_ratio": 0.246,
+          "mac_vs_final_windows_pct": -37.0,
+          "final_windows_class": "material",
+          "signed_i0_windows_median_ratio": 2.599,
+          "signed_windows_ceiling": 2.666,
+          "mac_vs_signed_i0_pct": -94.0,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 2
+        },
+        {
+          "row_order": 3,
+          "input": "hao",
+          "input_label": "hao",
+          "special_rows": "short-explicit",
+          "newly_signed": "false",
+          "run1_ratio": 0.189,
+          "run2_ratio": 0.188,
+          "run3_ratio": 0.173,
+          "run4_ratio": 0.166,
+          "run5_ratio": 0.231,
+          "mac_median_ratio": 0.188,
+          "mac_worst_ratio": 0.231,
+          "mac_spread_pct": 39.2,
+          "final_windows_median_ratio": 0.284,
+          "mac_vs_final_windows_pct": -33.8,
+          "final_windows_class": "material",
+          "signed_i0_windows_median_ratio": 1.72,
+          "signed_windows_ceiling": 1.844,
+          "mac_vs_signed_i0_pct": -89.1,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 3
+        },
+        {
+          "row_order": 14,
+          "input": "b",
+          "input_label": "b",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.498,
+          "run2_ratio": 0.337,
+          "run3_ratio": 0.276,
+          "run4_ratio": 0.337,
+          "run5_ratio": 0.396,
+          "mac_median_ratio": 0.337,
+          "mac_worst_ratio": 0.498,
+          "mac_spread_pct": 80.4,
+          "final_windows_median_ratio": 0.38,
+          "mac_vs_final_windows_pct": -11.3,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 3.439,
+          "signed_windows_ceiling": 3.775,
+          "mac_vs_signed_i0_pct": -90.2,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 4
+        },
+        {
+          "row_order": 12,
+          "input": "che",
+          "input_label": "che",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.118,
+          "run2_ratio": 0.119,
+          "run3_ratio": 0.099,
+          "run4_ratio": 0.126,
+          "run5_ratio": 0.137,
+          "mac_median_ratio": 0.119,
+          "mac_worst_ratio": 0.137,
+          "mac_spread_pct": 38.4,
+          "final_windows_median_ratio": 0.134,
+          "mac_vs_final_windows_pct": -11.2,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 1.081,
+          "signed_windows_ceiling": 1.16,
+          "mac_vs_signed_i0_pct": -89.0,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 5
+        },
+        {
+          "row_order": 15,
+          "input": "ceshi",
+          "input_label": "ceshi",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.131,
+          "run2_ratio": 0.12,
+          "run3_ratio": 0.101,
+          "run4_ratio": 0.131,
+          "run5_ratio": 0.132,
+          "mac_median_ratio": 0.131,
+          "mac_worst_ratio": 0.132,
+          "mac_spread_pct": 30.7,
+          "final_windows_median_ratio": 0.143,
+          "mac_vs_final_windows_pct": -8.4,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 0.895,
+          "signed_windows_ceiling": 0.966,
+          "mac_vs_signed_i0_pct": -85.4,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 6
+        },
+        {
+          "row_order": 13,
+          "input": "chuang",
+          "input_label": "chuang",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.539,
+          "run2_ratio": 0.158,
+          "run3_ratio": 0.171,
+          "run4_ratio": 0.17,
+          "run5_ratio": 0.175,
+          "mac_median_ratio": 0.171,
+          "mac_worst_ratio": 0.539,
+          "mac_spread_pct": 241.1,
+          "final_windows_median_ratio": 0.174,
+          "mac_vs_final_windows_pct": -1.7,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 1.266,
+          "signed_windows_ceiling": 1.357,
+          "mac_vs_signed_i0_pct": -86.5,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 7
+        },
+        {
+          "row_order": 8,
+          "input": "zybfshmsru",
+          "input_label": "zybfshmsru",
+          "special_rows": "standard",
+          "newly_signed": "false",
+          "run1_ratio": 0.009,
+          "run2_ratio": 0.008,
+          "run3_ratio": 0.007,
+          "run4_ratio": 0.008,
+          "run5_ratio": 0.008,
+          "mac_median_ratio": 0.008,
+          "mac_worst_ratio": 0.009,
+          "mac_spread_pct": 28.6,
+          "final_windows_median_ratio": 0.008,
+          "mac_vs_final_windows_pct": 0,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 0.569,
+          "signed_windows_ceiling": 0.695,
+          "mac_vs_signed_i0_pct": -98.6,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 8
+        },
+        {
+          "row_order": 9,
+          "input": "zh",
+          "input_label": "zh",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.107,
+          "run2_ratio": 0.1,
+          "run3_ratio": 0.077,
+          "run4_ratio": 0.1,
+          "run5_ratio": 0.108,
+          "mac_median_ratio": 0.1,
+          "mac_worst_ratio": 0.108,
+          "mac_spread_pct": 40.3,
+          "final_windows_median_ratio": 0.099,
+          "mac_vs_final_windows_pct": 1.0,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 0.986,
+          "signed_windows_ceiling": 1.047,
+          "mac_vs_signed_i0_pct": -89.9,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 9
+        },
+        {
+          "row_order": 10,
+          "input": "j",
+          "input_label": "j",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.419,
+          "run2_ratio": 0.41,
+          "run3_ratio": 0.371,
+          "run4_ratio": 0.421,
+          "run5_ratio": 0.426,
+          "mac_median_ratio": 0.419,
+          "mac_worst_ratio": 0.426,
+          "mac_spread_pct": 14.8,
+          "final_windows_median_ratio": 0.399,
+          "mac_vs_final_windows_pct": 5.0,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 4,
+          "signed_windows_ceiling": 4.372,
+          "mac_vs_signed_i0_pct": -89.5,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 10
+        },
+        {
+          "row_order": 4,
+          "input": "zhongguo",
+          "input_label": "zhongguo",
+          "special_rows": "standard",
+          "newly_signed": "false",
+          "run1_ratio": 0.04,
+          "run2_ratio": 0.04,
+          "run3_ratio": 0.035,
+          "run4_ratio": 0.04,
+          "run5_ratio": 0.051,
+          "mac_median_ratio": 0.04,
+          "mac_worst_ratio": 0.051,
+          "mac_spread_pct": 45.7,
+          "final_windows_median_ratio": 0.038,
+          "mac_vs_final_windows_pct": 5.3,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 0.293,
+          "signed_windows_ceiling": 0.323,
+          "mac_vs_signed_i0_pct": -86.3,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 11
+        },
+        {
+          "row_order": 11,
+          "input": "yi",
+          "input_label": "yi",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.453,
+          "run2_ratio": 0.42,
+          "run3_ratio": 0.484,
+          "run4_ratio": 0.492,
+          "run5_ratio": 0.471,
+          "mac_median_ratio": 0.471,
+          "mac_worst_ratio": 0.492,
+          "mac_spread_pct": 17.1,
+          "final_windows_median_ratio": 0.434,
+          "mac_vs_final_windows_pct": 8.5,
+          "final_windows_class": "close",
+          "signed_i0_windows_median_ratio": 5.777,
+          "signed_windows_ceiling": 6.098,
+          "mac_vs_signed_i0_pct": -91.8,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 12
+        },
+        {
+          "row_order": 17,
+          "input": "dazisudu",
+          "input_label": "dazisudu",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.16,
+          "run2_ratio": 0.157,
+          "run3_ratio": 0.146,
+          "run4_ratio": 0.162,
+          "run5_ratio": 0.187,
+          "mac_median_ratio": 0.16,
+          "mac_worst_ratio": 0.187,
+          "mac_spread_pct": 28.1,
+          "final_windows_median_ratio": 0.144,
+          "mac_vs_final_windows_pct": 11.1,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 1.034,
+          "signed_windows_ceiling": 1.098,
+          "mac_vs_signed_i0_pct": -84.5,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 13
+        },
+        {
+          "row_order": 16,
+          "input": "zhongdengchangdu",
+          "input_label": "zhongdengchangdu",
+          "special_rows": "newly-signed",
+          "newly_signed": "true",
+          "run1_ratio": 0.022,
+          "run2_ratio": 0.022,
+          "run3_ratio": 0.02,
+          "run4_ratio": 0.022,
+          "run5_ratio": 0.023,
+          "mac_median_ratio": 0.022,
+          "mac_worst_ratio": 0.023,
+          "mac_spread_pct": 15,
+          "final_windows_median_ratio": 0.019,
+          "mac_vs_final_windows_pct": 15.8,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 0.322,
+          "signed_windows_ceiling": 0.342,
+          "mac_vs_signed_i0_pct": -93.2,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 14
+        },
+        {
+          "row_order": 6,
+          "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+          "input_label": "59-character",
+          "special_rows": "59-character",
+          "newly_signed": "false",
+          "run1_ratio": 0.013,
+          "run2_ratio": 0.012,
+          "run3_ratio": 0.012,
+          "run4_ratio": 0.012,
+          "run5_ratio": 0.015,
+          "mac_median_ratio": 0.012,
+          "mac_worst_ratio": 0.015,
+          "mac_spread_pct": 25,
+          "final_windows_median_ratio": 0.01,
+          "mac_vs_final_windows_pct": 20,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 1.681,
+          "signed_windows_ceiling": 1.748,
+          "mac_vs_signed_i0_pct": -99.3,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 15
+        },
+        {
+          "row_order": 7,
+          "input": "cszysmsrsd",
+          "input_label": "cszysmsrsd",
+          "special_rows": "standard",
+          "newly_signed": "false",
+          "run1_ratio": 0.006,
+          "run2_ratio": 0.006,
+          "run3_ratio": 0.005,
+          "run4_ratio": 0.006,
+          "run5_ratio": 0.007,
+          "mac_median_ratio": 0.006,
+          "mac_worst_ratio": 0.007,
+          "mac_spread_pct": 40,
+          "final_windows_median_ratio": 0.005,
+          "mac_vs_final_windows_pct": 20,
+          "final_windows_class": "notable",
+          "signed_i0_windows_median_ratio": 0.396,
+          "signed_windows_ceiling": 0.474,
+          "mac_vs_signed_i0_pct": -98.5,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 16
+        },
+        {
+          "row_order": 5,
+          "input": "ceshiyixiachangjushuruxingnengzenyang",
+          "input_label": "37-character",
+          "special_rows": "37-character",
+          "newly_signed": "false",
+          "run1_ratio": 0.029,
+          "run2_ratio": 0.029,
+          "run3_ratio": 0.026,
+          "run4_ratio": 0.029,
+          "run5_ratio": 0.029,
+          "mac_median_ratio": 0.029,
+          "mac_worst_ratio": 0.029,
+          "mac_spread_pct": 11.5,
+          "final_windows_median_ratio": 0.022,
+          "mac_vs_final_windows_pct": 31.8,
+          "final_windows_class": "material",
+          "signed_i0_windows_median_ratio": 2.132,
+          "signed_windows_ceiling": 2.339,
+          "mac_vs_signed_i0_pct": -98.6,
+          "signed_i0_class": "material",
+          "signed_ceiling_diagnostic": "at-or-below",
+          "result": "Yune faster",
+          "chart_order": 17
+        }
+      ],
+      "components": [
+        {
+          "input_order": 1,
+          "input": "n",
+          "input_label": "n",
+          "engine": "yune",
+          "mac_median_us": 3.041,
+          "mac_worst_run_median_us": 3.542,
+          "mac_spread_pct": 19.7,
+          "final_windows_median_us": 4.4,
+          "mac_vs_final_windows_pct": -30.9,
+          "boundary": "Absolute latency is platform-specific; diagnostic only."
+        },
+        {
+          "input_order": 1,
+          "input": "n",
+          "input_label": "n",
+          "engine": "librime-1.17.0",
+          "mac_median_us": 26.917,
+          "mac_worst_run_median_us": 28.041,
+          "mac_spread_pct": 48.2,
+          "final_windows_median_us": 21.2,
+          "mac_vs_final_windows_pct": 27.0,
+          "boundary": "Absolute latency is platform-specific; diagnostic only."
+        },
+        {
+          "input_order": 2,
+          "input": "ni",
+          "input_label": "ni",
+          "engine": "yune",
+          "mac_median_us": 2.917,
+          "mac_worst_run_median_us": 3.5,
+          "mac_spread_pct": 23.5,
+          "final_windows_median_us": 4.4,
+          "mac_vs_final_windows_pct": -33.7,
+          "boundary": "Absolute latency is platform-specific; diagnostic only."
+        },
+        {
+          "input_order": 2,
+          "input": "ni",
+          "input_label": "ni",
+          "engine": "librime-1.17.0",
+          "mac_median_us": 19.125,
+          "mac_worst_run_median_us": 22.584,
+          "mac_spread_pct": 44.9,
+          "final_windows_median_us": 17.75,
+          "mac_vs_final_windows_pct": 7.7,
+          "boundary": "Absolute latency is platform-specific; diagnostic only."
+        },
+        {
+          "input_order": 3,
+          "input": "hao",
+          "input_label": "hao",
+          "engine": "yune",
+          "mac_median_us": 2.917,
+          "mac_worst_run_median_us": 3.361,
+          "mac_spread_pct": 16.3,
+          "final_windows_median_us": 4.333,
+          "mac_vs_final_windows_pct": -32.7,
+          "boundary": "Absolute latency is platform-specific; diagnostic only."
+        },
+        {
+          "input_order": 3,
+          "input": "hao",
+          "input_label": "hao",
+          "engine": "librime-1.17.0",
+          "mac_median_us": 15.389,
+          "mac_worst_run_median_us": 17.583,
+          "mac_spread_pct": 20.8,
+          "final_windows_median_us": 15.433,
+          "mac_vs_final_windows_pct": -0.3,
+          "boundary": "Absolute latency is platform-specific; diagnostic only."
+        },
+        {
+          "input_order": 4,
+          "input": "ceshiyixiachangjushuruxingnengzenyang",
+          "input_label": "37-character",
+          "engine": "yune",
+          "mac_median_us": 4.735,
+          "mac_worst_run_median_us": 4.783,
+          "mac_spread_pct": 2.2,
+          "final_windows_median_us": 6.695,
+          "mac_vs_final_windows_pct": -29.3,
+          "boundary": "Absolute latency is platform-specific; diagnostic only."
+        },
+        {
+          "input_order": 4,
+          "input": "ceshiyixiachangjushuruxingnengzenyang",
+          "input_label": "37-character",
+          "engine": "librime-1.17.0",
+          "mac_median_us": 163.935,
+          "mac_worst_run_median_us": 180.577,
+          "mac_spread_pct": 12.0,
+          "final_windows_median_us": 298.757,
+          "mac_vs_final_windows_pct": -45.1,
+          "boundary": "Absolute latency is platform-specific; diagnostic only."
+        },
+        {
+          "input_order": 5,
+          "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+          "input_label": "59-character",
+          "engine": "yune",
+          "mac_median_us": 4.796,
+          "mac_worst_run_median_us": 5.685,
+          "mac_spread_pct": 19.0,
+          "final_windows_median_us": 6.759,
+          "mac_vs_final_windows_pct": -29.0,
+          "boundary": "Absolute latency is platform-specific; diagnostic only."
+        },
+        {
+          "input_order": 5,
+          "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+          "input_label": "59-character",
+          "engine": "librime-1.17.0",
+          "mac_median_us": 385.292,
+          "mac_worst_run_median_us": 404.846,
+          "mac_spread_pct": 6.4,
+          "final_windows_median_us": 679.192,
+          "mac_vs_final_windows_pct": -43.3,
+          "boundary": "Absolute latency is platform-specific; diagnostic only."
+        }
+      ],
+      "track_b": [
+        {
+          "run": 1,
+          "input": "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
+          "mac_median_us": 12.352,
+          "mac_p95_us": 12.973,
+          "mac_p99_us": 13.117,
+          "mac_max_us": 13.117,
+          "mac_median_working_set_bytes": 337543168,
+          "mac_peak_working_set_bytes": 431800320,
+          "final_windows_median_us": 17.003,
+          "run_delta_pct": -27.4,
+          "mac_five_run_median_us": 12.811,
+          "mac_worst_run_median_us": 14.48,
+          "mac_pooled_worst_us": 16.296,
+          "mac_spread_pct": 17.2,
+          "final_windows_five_run_median_us": 17.177,
+          "mac_vs_final_windows_pct": -25.4,
+          "candidate_shape": "Exact versus M57 Mac and source-matched 587 Windows",
+          "boundary": "Absolute latency and memory are platform-specific."
+        },
+        {
+          "run": 2,
+          "input": "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
+          "mac_median_us": 12.491,
+          "mac_p95_us": 13.077,
+          "mac_p99_us": 13.23,
+          "mac_max_us": 13.23,
+          "mac_median_working_set_bytes": 337985536,
+          "mac_peak_working_set_bytes": 499826688,
+          "final_windows_median_us": 17.81,
+          "run_delta_pct": -29.9,
+          "mac_five_run_median_us": 12.811,
+          "mac_worst_run_median_us": 14.48,
+          "mac_pooled_worst_us": 16.296,
+          "mac_spread_pct": 17.2,
+          "final_windows_five_run_median_us": 17.177,
+          "mac_vs_final_windows_pct": -25.4,
+          "candidate_shape": "Exact versus M57 Mac and source-matched 587 Windows",
+          "boundary": "Absolute latency and memory are platform-specific."
+        },
+        {
+          "run": 3,
+          "input": "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
+          "mac_median_us": 12.936,
+          "mac_p95_us": 14.068,
+          "mac_p99_us": 14.398,
+          "mac_max_us": 14.398,
+          "mac_median_working_set_bytes": 343736320,
+          "mac_peak_working_set_bytes": 448233472,
+          "final_windows_median_us": 17.177,
+          "run_delta_pct": -24.7,
+          "mac_five_run_median_us": 12.811,
+          "mac_worst_run_median_us": 14.48,
+          "mac_pooled_worst_us": 16.296,
+          "mac_spread_pct": 17.2,
+          "final_windows_five_run_median_us": 17.177,
+          "mac_vs_final_windows_pct": -25.4,
+          "candidate_shape": "Exact versus M57 Mac and source-matched 587 Windows",
+          "boundary": "Absolute latency and memory are platform-specific."
+        },
+        {
+          "run": 4,
+          "input": "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
+          "mac_median_us": 12.811,
+          "mac_p95_us": 13.199,
+          "mac_p99_us": 13.359,
+          "mac_max_us": 13.359,
+          "mac_median_working_set_bytes": 337428480,
+          "mac_peak_working_set_bytes": 457048064,
+          "final_windows_median_us": 18.025,
+          "run_delta_pct": -28.9,
+          "mac_five_run_median_us": 12.811,
+          "mac_worst_run_median_us": 14.48,
+          "mac_pooled_worst_us": 16.296,
+          "mac_spread_pct": 17.2,
+          "final_windows_five_run_median_us": 17.177,
+          "mac_vs_final_windows_pct": -25.4,
+          "candidate_shape": "Exact versus M57 Mac and source-matched 587 Windows",
+          "boundary": "Absolute latency and memory are platform-specific."
+        },
+        {
+          "run": 5,
+          "input": "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
+          "mac_median_us": 14.48,
+          "mac_p95_us": 15.924,
+          "mac_p99_us": 16.296,
+          "mac_max_us": 16.296,
+          "mac_median_working_set_bytes": 435290112,
+          "mac_peak_working_set_bytes": 435552256,
+          "final_windows_median_us": 17.036,
+          "run_delta_pct": -15.0,
+          "mac_five_run_median_us": 12.811,
+          "mac_worst_run_median_us": 14.48,
+          "mac_pooled_worst_us": 16.296,
+          "mac_spread_pct": 17.2,
+          "final_windows_five_run_median_us": 17.177,
+          "mac_vs_final_windows_pct": -25.4,
+          "candidate_shape": "Exact versus M57 Mac and source-matched 587 Windows",
+          "boundary": "Absolute latency and memory are platform-specific."
+        }
+      ],
+      "candidate_summary": [
+        {
+          "row_order": 1,
+          "input": "n",
+          "input_label": "n",
+          "yune_page": "你 | 那 | 呢 | 能 | 年",
+          "librime_page": "你 | 那 | 呢 | 能 | 年",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 2,
+          "input": "ni",
+          "input_label": "ni",
+          "yune_page": "你 | 擬 | 尼 | 泥 | 呢",
+          "librime_page": "你 | 擬 | 尼 | 泥 | 呢",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 3,
+          "input": "hao",
+          "input_label": "hao",
+          "yune_page": "好 | 號 | 浩 | 豪 | 耗",
+          "librime_page": "好 | 號 | 浩 | 豪 | 耗",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 4,
+          "input": "zhongguo",
+          "input_label": "zhongguo",
+          "yune_page": "中國 | 種過 | 種果 | 忠果 | 中古",
+          "librime_page": "中國 | 種過 | 種果 | 忠果 | 中古",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 5,
+          "input": "ceshiyixiachangjushuruxingnengzenyang",
+          "input_label": "37-character",
+          "yune_page": "測試一下長句輸入性能怎樣 | 測試一下 | 測試儀 | 測試 | 側室",
+          "librime_page": "測試一下長句輸入性能怎樣 | 測試一下 | 測試儀 | 測試 | 側室",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 6,
+          "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+          "input_label": "59-character",
+          "yune_page": "這個引擎其實應該支持超長句子輸入才能用 | 這個 | 這歌 | 這格 | 這",
+          "librime_page": "這個引擎其實應該支持超長句子輸入才能用 | 這個 | 這歌 | 這格 | 這",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 7,
+          "input": "cszysmsrsd",
+          "input_label": "cszysmsrsd",
+          "yune_page": "重商主義什麼是認識到 | 重商主義 | 催生作用 | 產生爭議 | 測試資源",
+          "librime_page": "重商主義什麼是認識到 | 重商主義 | 催生作用 | 產生爭議 | 測試資源",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 8,
+          "input": "zybfshmsru",
+          "input_label": "zybfshmsru",
+          "yune_page": "自有辦法什麼收入 | 自有辦法 | 重要部分 | 晝夜不分 | 主要部分",
+          "librime_page": "自有辦法什麼收入 | 自有辦法 | 重要部分 | 晝夜不分 | 主要部分",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 9,
+          "input": "zh",
+          "input_label": "zh",
+          "yune_page": "中 | 這 | 之後 | 最後 | 着",
+          "librime_page": "中 | 這 | 之後 | 最後 | 着",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 10,
+          "input": "j",
+          "input_label": "j",
+          "yune_page": "就 | 將 | 及 | 叫 | 家",
+          "librime_page": "就 | 將 | 及 | 叫 | 家",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 11,
+          "input": "yi",
+          "input_label": "yi",
+          "yune_page": "一 | 以 | 已 | 億 | 易",
+          "librime_page": "一 | 以 | 已 | 億 | 易",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 12,
+          "input": "che",
+          "input_label": "che",
+          "yune_page": "車 | 扯 | 撤 | 徹 | 澈",
+          "librime_page": "車 | 扯 | 撤 | 徹 | 澈",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 13,
+          "input": "chuang",
+          "input_label": "chuang",
+          "yune_page": "牀 | 創 | 撞 | 窗 | 闖",
+          "librime_page": "牀 | 創 | 撞 | 窗 | 闖",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 14,
+          "input": "b",
+          "input_label": "b",
+          "yune_page": "不 | 吧 | 把 | 被 | 比",
+          "librime_page": "不 | 吧 | 把 | 被 | 比",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 15,
+          "input": "ceshi",
+          "input_label": "ceshi",
+          "yune_page": "測試 | 側室 | 側視 | 測時 | 策士",
+          "librime_page": "測試 | 側室 | 側視 | 測時 | 策士",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 16,
+          "input": "zhongdengchangdu",
+          "input_label": "zhongdengchangdu",
+          "yune_page": "中等長度 | 中等 | 中的 | 種的 | 重的",
+          "librime_page": "中等長度 | 中等 | 中 | 種 | 重",
+          "full_page0_exact": "no",
+          "mismatch": "2: 中的 vs 中; 3: 種的 vs 種; 4: 重的 vs 重",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        },
+        {
+          "row_order": 17,
+          "input": "dazisudu",
+          "input_label": "dazisudu",
+          "yune_page": "打字速度 | 打字 | 大字 | 達孜 | 韃子",
+          "librime_page": "打字速度 | 打字 | 大字 | 達孜 | 韃子",
+          "full_page0_exact": "yes",
+          "mismatch": "none",
+          "mac_vs_final_windows": "exact",
+          "scope": "Complete-input page 0 snapshot"
+        }
+      ],
+      "model_owner": [
+        {
+          "row_order": 0,
+          "measure": "Luna source / table checksum",
+          "current_mac": "0xb3d4e98e / 0x29d56c89",
+          "final_windows": "0x16ad0e3e / 0xb967cfef",
+          "m57_mac": "0xb3d4e98e / 0x29d56c89",
+          "current_mac_windows_exact": "target-specific accepted pairs",
+          "interpretation": "Known platform build artifact; storage mode and logical counts match."
+        },
+        {
+          "row_order": 1,
+          "measure": "Luna sentence entries",
+          "current_mac": 513353,
+          "final_windows": 513353,
+          "m57_mac": 513353,
+          "current_mac_windows_exact": "yes",
+          "interpretation": "Source-state comparison; profile schema changed."
+        },
+        {
+          "row_order": 2,
+          "measure": "Luna lookup index",
+          "current_mac": 332604,
+          "final_windows": 332604,
+          "m57_mac": 332604,
+          "current_mac_windows_exact": "yes",
+          "interpretation": "Source-state comparison; profile schema changed."
+        },
+        {
+          "row_order": 3,
+          "measure": "Luna general vocabulary",
+          "current_mac": 193,
+          "final_windows": 193,
+          "m57_mac": 421966,
+          "current_mac_windows_exact": "yes",
+          "interpretation": "Source-state comparison; profile schema changed."
+        },
+        {
+          "row_order": 4,
+          "measure": "Luna abbreviation vocabulary",
+          "current_mac": 11,
+          "final_windows": 11,
+          "m57_mac": 11,
+          "current_mac_windows_exact": "yes",
+          "interpretation": "Source-state comparison; profile schema changed."
+        },
+        {
+          "row_order": 5,
+          "measure": "Luna normal-character index",
+          "current_mac": 423,
+          "final_windows": 423,
+          "m57_mac": 0,
+          "current_mac_windows_exact": "yes",
+          "interpretation": "M57 did not report this owner."
+        },
+        {
+          "row_order": 6,
+          "measure": "Track B POET entries",
+          "current_mac": 0,
+          "final_windows": 0,
+          "m57_mac": 0,
+          "current_mac_windows_exact": "yes",
+          "interpretation": "No upstream sentence model is configured for Track B."
+        }
+      ],
+      "run_audit": [
+        {
+          "run": 1,
+          "path": "accepted/run-1",
+          "start_utc": "2026-07-13T19:51:48Z",
+          "end_utc": "2026-07-13T19:54:48Z",
+          "power": "AC",
+          "yune_commit": "5879405c7b0f76af4dca7382f00b3e0605386f2c",
+          "librime_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+          "source_status": "pre-run clean; after-move inferred clean; transient output during",
+          "after_move_evidence": "inferred-clean-from-next-round-preflight",
+          "output_protocol": "transient-untracked-worktree-output-then-moved-external",
+          "yune_hash_stable": "true",
+          "librime_hash_stable": "true",
+          "candidate_rows": 175,
+          "track_a_rows": 17,
+          "verdict": "diagnostic-pass-with-disclosed-output-path-deviation"
+        },
+        {
+          "run": 2,
+          "path": "accepted/run-2",
+          "start_utc": "2026-07-13T19:56:17Z",
+          "end_utc": "2026-07-13T19:59:13Z",
+          "power": "AC",
+          "yune_commit": "5879405c7b0f76af4dca7382f00b3e0605386f2c",
+          "librime_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+          "source_status": "pre-run clean; after-move inferred clean; transient output during",
+          "after_move_evidence": "inferred-clean-from-next-round-preflight",
+          "output_protocol": "transient-untracked-worktree-output-then-moved-external",
+          "yune_hash_stable": "true",
+          "librime_hash_stable": "true",
+          "candidate_rows": 175,
+          "track_a_rows": 17,
+          "verdict": "diagnostic-pass-with-disclosed-output-path-deviation"
+        },
+        {
+          "run": 3,
+          "path": "accepted/run-3",
+          "start_utc": "2026-07-13T20:40:15Z",
+          "end_utc": "2026-07-13T20:43:14Z",
+          "power": "AC",
+          "yune_commit": "5879405c7b0f76af4dca7382f00b3e0605386f2c",
+          "librime_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+          "source_status": "pre-run clean; after-move inferred clean; transient output during",
+          "after_move_evidence": "inferred-clean-from-next-round-preflight",
+          "output_protocol": "transient-untracked-worktree-output-then-moved-external",
+          "yune_hash_stable": "true",
+          "librime_hash_stable": "true",
+          "candidate_rows": 175,
+          "track_a_rows": 17,
+          "verdict": "diagnostic-pass-with-disclosed-output-path-deviation"
+        },
+        {
+          "run": 4,
+          "path": "accepted/run-4",
+          "start_utc": "2026-07-13T20:52:36Z",
+          "end_utc": "2026-07-13T20:55:36Z",
+          "power": "AC",
+          "yune_commit": "5879405c7b0f76af4dca7382f00b3e0605386f2c",
+          "librime_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+          "source_status": "pre-run clean; after-move inferred clean; transient output during",
+          "after_move_evidence": "inferred-clean-from-next-round-preflight",
+          "output_protocol": "transient-untracked-worktree-output-then-moved-external",
+          "yune_hash_stable": "true",
+          "librime_hash_stable": "true",
+          "candidate_rows": 175,
+          "track_a_rows": 17,
+          "verdict": "diagnostic-pass-with-disclosed-output-path-deviation"
+        },
+        {
+          "run": 5,
+          "path": "accepted/run-5",
+          "start_utc": "2026-07-13T21:00:19Z",
+          "end_utc": "2026-07-13T21:03:23Z",
+          "power": "AC",
+          "yune_commit": "5879405c7b0f76af4dca7382f00b3e0605386f2c",
+          "librime_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+          "source_status": "pre-run clean; after-move inferred clean; transient output during",
+          "after_move_evidence": "inferred-clean-from-later-behavior-gate-preflight",
+          "output_protocol": "transient-untracked-worktree-output-then-moved-external",
+          "yune_hash_stable": "true",
+          "librime_hash_stable": "true",
+          "candidate_rows": 175,
+          "track_a_rows": 17,
+          "verdict": "diagnostic-pass-with-disclosed-output-path-deviation"
+        }
+      ],
+      "behavior_gates": [
+        {
+          "gate": "Complete Lane-B pinned order",
+          "test": "m59_lane_b_product_matches_complete_pinned_librime_order",
+          "result": "1 passed / 0 failed",
+          "coverage": "7 inputs; 430 pages; 2,135 candidates; every captured page",
+          "elapsed_seconds": 9.09,
+          "commit": "5879405c7b0f76af4dca7382f00b3e0605386f2c"
+        },
+        {
+          "gate": "37/59 page order and recomposition",
+          "test": "m59_luna_long_sentence_page_order_matches_pinned_oracle_on_byte_backed_product",
+          "result": "1 passed / 0 failed",
+          "coverage": "Deployed page 0 plus partial selection/recomposition",
+          "elapsed_seconds": 15.52,
+          "commit": "5879405c7b0f76af4dca7382f00b3e0605386f2c"
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "headline_sql",
+      "label": "Report headline metrics",
+      "path": "report/snapshot.sqlite",
+      "query": {
+        "engine": "sqlite",
+        "language": "sql",
+        "sql": "SELECT * FROM headline",
+        "description": "Report headline metrics",
+        "tables_used": [
+          "headline"
+        ],
+        "filters": [
+          "One derived row from the validated Increment-4e source-bound aggregation."
+        ],
+        "metric_definitions": [
+          "A Yune/librime ratio below 1 means Yune is faster.",
+          "Close means absolute Mac-vs-source-matched 587 Windows ratio difference <=10%; notable >10% and <=25%; material >25%."
+        ],
+        "source_files": [
+          "analysis/track-a-17-row-comparison.csv",
+          "analysis/track-b-five-observations.csv"
+        ],
+        "executed_at": "2026-07-13T21:13:22Z"
+      }
+    },
+    {
+      "id": "track_a_sql",
+      "label": "Complete 17-row ratio comparison",
+      "path": "report/snapshot.sqlite",
+      "query": {
+        "engine": "sqlite",
+        "language": "sql",
+        "sql": "SELECT * FROM track_a ORDER BY row_order",
+        "description": "Complete 17-row ratio comparison",
+        "tables_used": [
+          "track_a"
+        ],
+        "filters": [
+          "Exactly 17 Track A inputs; five complete Mac rounds; no measured round removed."
+        ],
+        "metric_definitions": [
+          "Mac median is the third sorted ratio; worst is max; spread is (max-min)/min.",
+          "Signed Windows ceilings are diagnostic only and are not portable Mac acceptance limits."
+        ],
+        "source_files": [
+          "analysis/track-a-17-row-comparison.csv"
+        ],
+        "executed_at": "2026-07-13T21:13:22Z"
+      }
+    },
+    {
+      "id": "platform_delta_sql",
+      "label": "Source-matched cross-platform ratio difference",
+      "path": "report/snapshot.sqlite",
+      "query": {
+        "engine": "sqlite",
+        "language": "sql",
+        "sql": "SELECT * FROM platform_delta ORDER BY mac_vs_final_windows_pct",
+        "description": "Source-matched cross-platform ratio difference",
+        "tables_used": [
+          "platform_delta"
+        ],
+        "filters": [
+          "Source commit, inputs, iteration counts, and product deployment match across platforms; the Mac output-location deviation is disclosed."
+        ],
+        "metric_definitions": [
+          "Difference is (Mac median ratio / source-matched 587 Windows median ratio - 1) * 100.",
+          "Negative means the Yune/librime ratio is lower on Mac; positive means it is higher."
+        ],
+        "source_files": [
+          "analysis/track-a-17-row-comparison.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/gate-verdict.csv"
+        ],
+        "executed_at": "2026-07-13T21:13:22Z"
+      }
+    },
+    {
+      "id": "components_sql",
+      "label": "Absolute component scaling for explicit rows",
+      "path": "report/snapshot.sqlite",
+      "query": {
+        "engine": "sqlite",
+        "language": "sql",
+        "sql": "SELECT * FROM components ORDER BY input_order, engine",
+        "description": "Absolute component scaling for explicit rows",
+        "tables_used": [
+          "components"
+        ],
+        "filters": [
+          "n, ni, hao, 37-character, and 59-character inputs; both engines."
+        ],
+        "metric_definitions": [
+          "Each platform value is the median of five run medians in microseconds per key.",
+          "Absolute cross-platform latency is diagnostic and platform-specific."
+        ],
+        "source_files": [
+          "analysis/track-a-component-absolute-latency.csv"
+        ],
+        "executed_at": "2026-07-13T21:13:22Z"
+      }
+    },
+    {
+      "id": "track_b_sql",
+      "label": "Track B product observations",
+      "path": "report/snapshot.sqlite",
+      "query": {
+        "engine": "sqlite",
+        "language": "sql",
+        "sql": "SELECT * FROM track_b ORDER BY run",
+        "description": "Track B product observations",
+        "tables_used": [
+          "track_b"
+        ],
+        "filters": [
+          "Five complete Mac observations for the exact product input."
+        ],
+        "metric_definitions": [
+          "Track B median is the third sorted run median.",
+          "Absolute Mac/Windows latency and memory counters are diagnostic only."
+        ],
+        "source_files": [
+          "analysis/track-b-five-observations.csv"
+        ],
+        "executed_at": "2026-07-13T21:13:22Z"
+      }
+    },
+    {
+      "id": "candidate_sql",
+      "label": "Complete-input page-zero candidate comparison",
+      "path": "report/snapshot.sqlite",
+      "query": {
+        "engine": "sqlite",
+        "language": "sql",
+        "sql": "SELECT * FROM candidate_summary ORDER BY row_order",
+        "description": "Complete-input page-zero candidate comparison",
+        "tables_used": [
+          "candidate_summary"
+        ],
+        "filters": [
+          "Track A complete-input page 0 only; not every prefix or later page."
+        ],
+        "metric_definitions": [
+          "Full exactness compares page geometry, preedit, candidate text, and comments.",
+          "Parsed Mac candidate evidence is identical to source-matched 587 Windows."
+        ],
+        "source_files": [
+          "accepted/run-1/candidate_snapshots.csv",
+          "accepted/run-2/candidate_snapshots.csv",
+          "accepted/run-3/candidate_snapshots.csv",
+          "accepted/run-4/candidate_snapshots.csv",
+          "accepted/run-5/candidate_snapshots.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run1/candidate_snapshots.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run2/candidate_snapshots.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run3/candidate_snapshots.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run4/candidate_snapshots.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run5/candidate_snapshots.csv",
+          "docs/reports/evidence/m57-macos-track-a-sentence-model-parity/full-pass-1/candidate_snapshots.csv"
+        ],
+        "executed_at": "2026-07-13T21:13:22Z"
+      }
+    },
+    {
+      "id": "model_sql",
+      "label": "Model-owner and checksum comparison",
+      "path": "report/snapshot.sqlite",
+      "query": {
+        "engine": "sqlite",
+        "language": "sql",
+        "sql": "SELECT * FROM model_owner ORDER BY row_order",
+        "description": "Model-owner and checksum comparison",
+        "tables_used": [
+          "model_owner"
+        ],
+        "filters": [
+          "Logical owners only; process.* and path/metadata-bearing schema.config rows are excluded, and session_id is removed."
+        ],
+        "metric_definitions": [
+          "All 99 remaining owner rows are exact across all five Mac and all five source-matched 587 Windows files; the table displays named decision-bearing owners.",
+          "Mac and Windows checksum pairs are target-specific accepted build artifacts.",
+          "Track B checksum/storage/mapping fields are exact across all five Mac files, all five source-matched 587 Windows files, and M57 full-pass-1."
+        ],
+        "source_files": [
+          "accepted/run-1/memory-owner-profile.csv",
+          "accepted/run-2/memory-owner-profile.csv",
+          "accepted/run-3/memory-owner-profile.csv",
+          "accepted/run-4/memory-owner-profile.csv",
+          "accepted/run-5/memory-owner-profile.csv",
+          "accepted/run-1/product_path_status.csv",
+          "accepted/run-2/product_path_status.csv",
+          "accepted/run-3/product_path_status.csv",
+          "accepted/run-4/product_path_status.csv",
+          "accepted/run-5/product_path_status.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run1/memory-owner-profile.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run2/memory-owner-profile.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run3/memory-owner-profile.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run4/memory-owner-profile.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run5/memory-owner-profile.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run1/product_path_status.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run2/product_path_status.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run3/product_path_status.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run4/product_path_status.csv",
+          "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4e-lane-b-exact-order/performance-ratchet/run5/product_path_status.csv",
+          "docs/reports/evidence/m57-macos-track-a-sentence-model-parity/full-pass-1/memory-owner-profile.csv",
+          "docs/reports/evidence/m57-macos-track-a-sentence-model-parity/full-pass-1/product_path_status.csv"
+        ],
+        "executed_at": "2026-07-13T21:13:22Z"
+      }
+    },
+    {
+      "id": "run_audit_sql",
+      "label": "Five-run provenance and hash audit",
+      "path": "report/snapshot.sqlite",
+      "query": {
+        "engine": "sqlite",
+        "language": "sql",
+        "sql": "SELECT * FROM run_audit ORDER BY run",
+        "description": "Five-run provenance and hash audit",
+        "tables_used": [
+          "run_audit"
+        ],
+        "filters": [
+          "Five measured logical rounds under AC power; all are retained."
+        ],
+        "metric_definitions": [
+          "Pre-run Yune source cleanliness is directly captured. After-move cleanliness is inferred from the next preflight for runs 1–4 and the later behavior-gate preflight for run 5. During measurement only the transient untracked evidence directory appeared. Each round has 17 Track A rows, 175 candidate rows, and identical pre/post binary hashes."
+        ],
+        "source_files": [
+          "analysis/artifact-hash-audit.csv"
+        ],
+        "executed_at": "2026-07-13T21:13:22Z"
+      }
+    },
+    {
+      "id": "behavior_sql",
+      "label": "Focused behavior gate results",
+      "path": "report/snapshot.sqlite",
+      "query": {
+        "engine": "sqlite",
+        "language": "sql",
+        "sql": "SELECT * FROM behavior_gates",
+        "description": "Focused behavior gate results",
+        "tables_used": [
+          "behavior_gates"
+        ],
+        "filters": [
+          "Two commit-bound focused gates selected by the efficient diagnostic sequence."
+        ],
+        "metric_definitions": [
+          "Pass counts are copied from complete cargo test logs and independently checked."
+        ],
+        "source_files": [
+          "analysis/behavior-gates/result.txt"
+        ],
+        "executed_at": "2026-07-13T21:13:22Z"
+      }
+    }
+  ]
+}

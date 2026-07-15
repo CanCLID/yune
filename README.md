@@ -145,8 +145,15 @@ Yune is an active engine project.
   bidirectional for the full tree, and `443cc636` fixes the shipping-source
   transformed-tie regression it exposed; the clean canonical recapture is
   again exact at 13/13 and all 5,705 positions without an exception.
-- **Public demo:** `yune-web` is deployed at <https://yune-web.pages.dev>. It's
-  a Yune engine demo, not a claim that browser-level performance is solved.
+  A later five-round Mac diagnostic at `0111cf47` has all 17 Track A medians
+  and pooled worsts below `1.0x`; complete-input pages are exact on `16/17`,
+  including 37/59. It is not source-matched to Windows `443cc636`, so no
+  current platform-speed delta is claimed. The signed Windows baseline and
+  ceilings remain unchanged.
+- **Public demo:** `yune-web` is deployed at <https://yune-web.pages.dev>. The
+  current exact 47-key normal-typing canary passes at `51 ms` p95 / `55 ms`
+  max with zero worker queue buildup; browser startup and footprint remain
+  separate open deficits.
 - **AI posture:** the AI layer exists but is default-off, local-only in the web
   harness, and outside the classic deterministic input path.
 
@@ -186,61 +193,42 @@ are exposed exclusively through `rime_get_typeduck_profile_api()`.
 
 ## Performance
 
-The standing native Windows gate is intentionally measured same-run against
-upstream `rime/librime 1.17.0`, with the context read after
-**every keypress** (the shape real frontends have; earlier batch-shaped
-numbers are not comparable and the pre-corrective M55 closeout numbers were
-measurement artifacts — see
-[the corrective record](docs/reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md)).
-This is not a claim that every benchmark row ranks identically to librime or
-that browser performance is solved.
+Performance is lane-specific. Native Track A compares Yune same-run with
+pinned upstream librime and reads context after **every keypress**. Earlier
+batch-shaped numbers are not comparable.
 
-![Yune vs librime native latency ratios across all input dimensions](docs/reports/evidence/dashboard-visuals-2026-07-04/native-track-a-latency-ratios.svg)
+- **Final-M59 Windows observation:** the five-round follow-up at `443cc636`
+  passes all `32/32` aggregate gate rows and `160/160` individual observations
+  under unchanged ceilings, with all 17 Track A medians below `1.0x`. It is not
+  a signed re-baseline. Current main contains later WEB-03 engine work through
+  `7f758fba`, so the final-M59 packet remains source-bound rather than a claim
+  about every later commit.
+- **Signed Windows authority:** the M59 Increment-0 packet at `45775182` and
+  the consolidated threshold registry are authoritative. The registry carries
+  retained M55 corrective rows, four M59 injection-on re-derivations, and nine
+  newly signed M59 rows. The final follow-up passes those already signed
+  ceilings; it does not loosen or replace them.
+- **Latest macOS diagnostic:** the five-round `0111cf47` run has every Track A
+  median and pooled worst below `1.0x`; complete-input pages are exact on
+  `16/17` rows, including 37/59. It is not source-matched to Windows
+  `443cc636`, so it does not prove a platform speed delta.
+- **Memory:** current Track A peaks are about `8.9x` same-run librime on
+  Windows and `11.8x` same-run librime RSS on macOS. Browser footprint remains
+  a separate deficit: the latest fair peer lane is `4.000x` on WASM memory and
+  `3.471x` on unique encoded resources.
+- **Web interaction:** the latest measured `0111cf47` normal typing passes the deployed
+  47-key canary at `51 ms` p95 / `55 ms` max with zero worker queue buildup;
+  the full local release-stress gate passes all 8 scenarios and 186 keys. These
+  receipts predate fail-closed hardening at `68df2d16`; current-main web
+  performance is unmeasured.
+- **Track B:** the current Windows product guard is `16.900 us/key` median and
+  the current Mac guard is `5.607 us/key` median, but the platform counters are
+  not directly interchangeable and the lane has
+  no directly interchangeable librime peer and supports no cross-engine claim.
 
-Signed Windows Track A same-run ratios (M55 corrective gate run D, 2026-07-04;
-lower is better) remain the gate:
+Current dashboard:
 
-- **Faster than librime:** startup `0.895x` and session `0.864x` (run-noisy),
-  `zhongguo` `0.255x`, `cszysmsrsd` `0.381x`, and `zybfshmsru` `0.564x` —
-  the three win rows are locked `<1.00x` in the standing gate.
-- **Slower than librime, bounded and guarded:** the short keys `hao` `1.574x`
-  (+9 us), `ni` `2.433x` (+25 us), `n` `2.636x` (+34 us) — tens of
-  microseconds, imperceptible while typing — and the sentence rows: 37-char
-  `1.913x` (+273 us) and 59-char `1.528x` (+352 us), both improved ~35% from
-  the pre-M55 `3.05x`/`2.25x` by real graph-work reductions.
-- **Memory:** the shipping default keeps the Luna poet payload on the heap
-  (Track A peak `185.7 MB` vs librime peer `13.5 MB`) because the latency
-  ceilings bind. M55's historical `YUNE-POET/2` byte-backed opt-in
-  (`YUNE_POET_BYTE_BACKED=1`) measured `113.2 MB` with identical candidates
-  but cost `4.6x`/`3.2x` on the sentence rows. M59's sentence/phrase index
-  extends the current artifact to `YUNE-POET/3`; `/2` is deliberately rejected
-  and rebuilt, so the M55 numbers remain historical rather than being silently
-  attributed to `/3`. M59's `/3` path now supplies the named exact Lane B and
-  37/59 page-shape behavior and passes the unchanged signed performance gate;
-  no new byte-backed poet memory win is claimed from that behavior result. The
-  browser `luna_pinyin` gap
-  (`64 MiB` vs My RIME `16 MiB`) is a separate lane. The Jyutping product path is **not** a like-for-like
-  comparison (TypeDuck multilingual dictionary); M47 byte-backed the shipping
-  keyboard profile to about `67 MB` working set / `22 MB` private.
-- Track B TypeDuck-profile rows and browser startup are separate evidence lanes,
-  not upstream-librime native comparisons. The M58 closeout Track B guard proof is
-  the final-pass ratchet (`335.823 us` on the 50+ key product row, ceiling
-  `347.975 us`), and it remains TypeDuck/profile product-path evidence rather
-  than canonical `rime-cantonese` candidate-oracle evidence.
-
-The historical source-bound Mac packet at `afb7079b` is diagnostic, not a new
-gate or current-main proof. At that source Yune wins 6/17 aggregate Track A rows
-and loses 11. Its 37/59 aggregate ratios are
-`0.399x`/`0.205x`, but candidate-text-different prefixes dominate those wins;
-the text-matched sensitivity is `1.420x`/`1.204x`. `n`/`zh` use
-`8.682x`/`4.092x` librime's instructions. Allocator and platform effects are
-partial, and exact cross-platform attribution remains open.
-
-Current reports:
-
-- [docs/reports/yune-vs-librime-performance.md](docs/reports/yune-vs-librime-performance.md)
-- [docs/reports/yune-vs-librime-root-cause-analysis.md](docs/reports/yune-vs-librime-root-cause-analysis.md)
-- [M59 post-fix macOS root-cause packet](docs/reports/evidence/m59-post-fix-root-cause-20260711/)
+- [All-platform performance results, visualizations, and bottleneck analysis](docs/reports/yune-vs-librime-performance.md)
 - [M59 final evidence ledger](docs/reports/evidence/m59-canonical-jyutping-reachability-parity/README.md)
 
 ## Quick Start

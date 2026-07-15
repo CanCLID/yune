@@ -1463,6 +1463,259 @@
 	line-height: 1.35;
 }
 
+/* --- Engine control cockpit (dev-only surface) --- */
+.yd-status-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 0.8rem;
+	font-weight: 600;
+	white-space: nowrap;
+	border: 1px solid color-mix(in srgb, var(--ink3) 32%, transparent);
+	background: color-mix(in srgb, var(--ink3) 12%, var(--paper));
+	color: var(--ink2);
+}
+
+.yd-status-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex: none;
+	background: var(--ink3);
+}
+
+.yd-status-pill[data-status="success"],
+.yd-status-pill[data-status="fresh"] {
+	border-color: color-mix(in srgb, #16a34a 45%, transparent);
+	background: color-mix(in srgb, #16a34a 14%, var(--paper));
+	color: color-mix(in srgb, #16a34a 70%, var(--ink));
+}
+
+.yd-status-pill[data-status="success"] .yd-status-dot,
+.yd-status-pill[data-status="fresh"] .yd-status-dot {
+	background: #16a34a;
+}
+
+.yd-status-pill[data-status="failure"],
+.yd-status-pill[data-status="stale"] {
+	border-color: color-mix(in srgb, #dc2626 45%, transparent);
+	background: color-mix(in srgb, #dc2626 14%, var(--paper));
+	color: color-mix(in srgb, #dc2626 72%, var(--ink));
+}
+
+.yd-status-pill[data-status="failure"] .yd-status-dot,
+.yd-status-pill[data-status="stale"] .yd-status-dot {
+	background: #dc2626;
+}
+
+.yd-status-pill[data-status="start"] {
+	border-color: color-mix(in srgb, #d97706 48%, transparent);
+	background: color-mix(in srgb, #d97706 14%, var(--paper));
+	color: color-mix(in srgb, #d97706 74%, var(--ink));
+}
+
+.yd-status-pill[data-status="start"] .yd-status-dot {
+	background: #d97706;
+	animation: yd-status-pulse 1s ease-in-out infinite;
+}
+
+@keyframes yd-status-pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.35; }
+}
+
+.yd-cockpit {
+	display: grid;
+	gap: 14px;
+}
+
+.yd-cockpit-actionbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px 20px;
+	padding: 12px 14px;
+	border-radius: 10px;
+	border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+	background: color-mix(in srgb, var(--accent) 8%, var(--paper));
+}
+
+.yd-actionbar-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.yd-actionbar-label {
+	font-size: 0.9rem;
+	font-weight: 700;
+}
+
+.yd-fact-strip {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 18px;
+	margin: 0;
+}
+
+.yd-fact-strip div {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+
+.yd-fact-strip dt {
+	font-size: 0.66rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: color-mix(in srgb, var(--ink2) 66%, var(--ink3));
+}
+
+.yd-fact-strip dd {
+	margin: 0;
+	font-size: 0.82rem;
+	font-variant-numeric: tabular-nums;
+	overflow-wrap: anywhere;
+}
+
+.yd-cockpit-body {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 14px;
+	align-items: start;
+}
+
+.yd-cockpit-col {
+	display: grid;
+	gap: 10px;
+	align-content: start;
+}
+
+.yd-cockpit-group-title {
+	margin: 2px 0 0;
+	font-size: 0.72rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: color-mix(in srgb, var(--ink2) 64%, var(--ink3));
+}
+
+.yd-panel {
+	border: 1px solid color-mix(in srgb, var(--ink3) 24%, transparent);
+	border-radius: 10px;
+	background: color-mix(in srgb, var(--paper) 90%, var(--ink3));
+	overflow: hidden;
+}
+
+.yd-panel-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-bottom: 1px solid color-mix(in srgb, var(--ink3) 18%, transparent);
+	background: color-mix(in srgb, var(--ink3) 9%, transparent);
+}
+
+.yd-panel-header h4 {
+	margin: 0;
+	font-size: 0.82rem;
+	font-weight: 700;
+}
+
+.yd-panel-body {
+	padding: 12px;
+	display: grid;
+	gap: 10px;
+}
+
+.yd-panel--danger .yd-panel-header {
+	background: color-mix(in srgb, #dc2626 9%, transparent);
+	border-bottom-color: color-mix(in srgb, #dc2626 26%, transparent);
+}
+
+.yd-count-badge {
+	margin-left: auto;
+	min-width: 20px;
+	padding: 1px 7px;
+	border-radius: 999px;
+	text-align: center;
+	font-size: 0.72rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	background: color-mix(in srgb, var(--accent) 20%, transparent);
+	color: color-mix(in srgb, var(--accent) 78%, var(--ink));
+}
+
+.yd-count-badge--danger {
+	background: color-mix(in srgb, #dc2626 16%, transparent);
+	color: color-mix(in srgb, #dc2626 74%, var(--ink));
+}
+
+.yd-inline-form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: end;
+	gap: 10px;
+}
+
+.yd-inline-form .yd-field {
+	flex: 1 1 120px;
+	gap: 4px;
+}
+
+.yd-inline-form-submit {
+	flex: none;
+}
+
+.yd-url-chips {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.yd-url-chips li {
+	margin: 0;
+}
+
+.yd-url-chips code {
+	display: inline-block;
+	padding: 3px 8px;
+	border-radius: 6px;
+	background: color-mix(in srgb, var(--ink) 7%, var(--paper));
+	font-size: 0.76rem;
+}
+
+.yd-panel .yd-diagnostic-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.yd-panel .yd-diagnostic-list li {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 2px 0;
+}
+
+.yd-panel .yd-diagnostic-list li + li {
+	border-top: 1px solid color-mix(in srgb, var(--ink3) 14%, transparent);
+}
+
+.yd-asset-bytes {
+	flex: none;
+	color: color-mix(in srgb, var(--ink2) 64%, var(--ink3));
+	font-variant-numeric: tabular-nums;
+}
+
 .yd-button-row {
 	display: flex;
 	gap: 8px;

@@ -79,6 +79,8 @@ export const uiText = {
     },
     controlSurface: {
       title: "引擎控制",
+      configGroup: "設定",
+      inspectorGroup: "診斷",
       deployTitle: "部署狀態",
       deployStatus: "部署",
       deployCache: "部署快取",
@@ -305,6 +307,8 @@ export const uiText = {
     },
     controlSurface: {
       title: "Engine Controls",
+      configGroup: "Configuration",
+      inspectorGroup: "Diagnostics",
       deployTitle: "Deploy state",
       deployStatus: "Deploy",
       deployCache: "Deploy cache",

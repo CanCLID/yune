@@ -20,20 +20,18 @@ prefixes.
 
 This is derived from the committed strict ratchet metrics:
 
-- `../phase-3r-sentence-path-cache/m55-ratchet/track-a-yune/m37_metrics.csv`
+- Raw per-key counters: archived by exact Git blob in the
+  [evidence-pruning ledger](../../../../ledgers/evidence-pruning/current-ledger.csv)
 - `../phase-3r-sentence-path-cache/m55-ratchet/summary-comparison.csv`
 
 No new benchmark run was used for this diagnostic. Values in
 `owner-summary.csv` are medians of each per-sample counter divided by
 `operation_count`, grouped by input.
 
-Reproduction shape:
-
-```powershell
-$rows = Import-Csv docs\reports\evidence\m55-native-match-or-beat\phase-3r-sentence-path-cache\m55-ratchet\track-a-yune\m37_metrics.csv |
-  Where-Object { $_.workload -eq 'key_sequence_process_with_context' }
-# For each input, group rows and compute median(counter / operation_count).
-```
+To recompute the owner table, recover the archived raw leaf using the generic
+`git show` recipe in the evidence-pruning ledger README, select workload
+`key_sequence_process_with_context`, then group by input and compute the median
+of each counter divided by `operation_count`.
 
 ## Key Rows
 

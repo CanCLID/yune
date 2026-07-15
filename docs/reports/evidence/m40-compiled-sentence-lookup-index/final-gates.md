@@ -18,8 +18,9 @@ speed.
   [`phase-4-final-native/commands.txt`](./phase-4-final-native/commands.txt)
 - Final storage status:
   [`phase-4-final-native/product_path_status.csv`](./phase-4-final-native/product_path_status.csv)
-- Final M40 counters:
-  [`phase-4-final-native/m37_metrics.csv`](./phase-4-final-native/m37_metrics.csv)
+- Final M40 counters: archived by exact Git blob in the
+  [evidence-pruning ledger](../../../ledgers/evidence-pruning/current-ledger.csv);
+  the binding rows and strategy aggregates are retained below.
 
 ## Final Native Rows
 
@@ -44,8 +45,9 @@ upstream librime:
 
 ## Four-Strategy Gate
 
-Per-key counter medians are calculated from
-[`phase-4-final-native/m37_metrics.csv`](./phase-4-final-native/m37_metrics.csv).
+Per-key counter medians were calculated from the archived raw counter leaf;
+the exact blob and recovery commit are recorded in the
+[evidence-pruning ledger](../../../ledgers/evidence-pruning/current-ledger.csv).
 
 | Strategy | 37-character row | 59-character row | Verdict |
 | --- | ---: | ---: | --- |

@@ -10,7 +10,8 @@ Source files:
 
 - `phase-3-final-native/track-b-yune-product/product_path_status.csv`
 - `phase-3-final-native/track-b-yune-product/summary.csv`
-- `phase-3-final-native/track-b-yune-product/m37_metrics.csv`
+- Raw per-key counters are archived by exact Git blob in the
+  [evidence-pruning ledger](../../../ledgers/evidence-pruning/current-ledger.csv).
 
 ## Selected Product Storage
 

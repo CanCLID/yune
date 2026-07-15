@@ -111,8 +111,8 @@ Memory:
 Evidence:
 
 - `final-native-benchmark/product_path_status.csv`
-- `final-native-benchmark/m37_metrics.csv`
-- `final-native-benchmark/startup_session_trace.csv`
+- Raw per-key counters and startup trace: archived by exact Git blob in the
+  [evidence-pruning ledger](../../../ledgers/evidence-pruning/current-ledger.csv)
 - `final-native-benchmark/track-a-yune/summary.csv`
 - `final-native-benchmark/track-b-yune-guard/summary.csv`
 

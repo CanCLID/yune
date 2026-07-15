@@ -60,7 +60,8 @@ $Wanted = @(
     'Select-NativeBenchmarkExecutable',
     'Assert-ExplicitRootOutsideRepo',
     'Clear-DirectoryUnder',
-    'Initialize-BenchmarkRoot'
+    'Initialize-BenchmarkRoot',
+    'Initialize-CreateNewOutputRoot'
 )
 $Functions = $Ast.FindAll({{
     param($Node)
@@ -137,6 +138,24 @@ if (Test-Path -LiteralPath {ps_quote(marker)}) {{ throw 'legacy child was not cl
             result = self.run_function_harness(body)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_output_evidence_is_always_create_new_and_never_cleared(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "output"
+            marker = output / "preserve.txt"
+            body = f"""
+Initialize-CreateNewOutputRoot {ps_quote(output)} 'OutputRoot'
+[System.IO.File]::WriteAllText({ps_quote(marker)}, 'preserve')
+$Rejected = $false
+try {{ Initialize-CreateNewOutputRoot {ps_quote(output)} 'OutputRoot' }}
+catch {{ $Rejected = $_.Exception.Message -like '*refusing to clear or reuse*' }}
+if (-not $Rejected) {{ throw 'existing output evidence was reused' }}
+if (-not (Test-Path -LiteralPath {ps_quote(marker)} -PathType Leaf)) {{
+    throw 'existing output evidence was cleared'
+}}
+"""
+            result = self.run_function_harness(body)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_explicit_roots_must_be_disjoint_from_repo(self) -> None:
         self.assertIn(
             'Assert-ExplicitRootOutsideRepo $OutputRoot $OutputRootWasProvided "OutputRoot"',
@@ -199,6 +218,7 @@ if (-not $Rejected) {{ throw 'junction ancestor was not rejected' }}
                 if link.exists():
                     link.rmdir()
 
+    @unittest.skipUnless(hasattr(ctypes, "windll"), "Windows path aliases are unavailable")
     def test_short_name_alias_canonicalizes_before_repo_disjointness(self) -> None:
         buffer = ctypes.create_unicode_buffer(32768)
         length = ctypes.windll.kernel32.GetShortPathNameW(
@@ -219,6 +239,7 @@ if (-not $Rejected) {{ throw '8.3 repo alias bypassed disjointness' }}
         result = self.run_function_harness(body)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    @unittest.skipUnless(shutil.which("subst"), "Windows SUBST is unavailable")
     def test_subst_volume_alias_canonicalizes_before_repo_disjointness(self) -> None:
         drive = next(
             (

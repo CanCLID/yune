@@ -30,7 +30,8 @@ usage() {
 Usage: scripts/benchmark-native-rime-inprocess-macos.sh [options]
 
 Options:
-  --output-root PATH       Evidence directory to create.
+  --output-root PATH       External evidence directory to create.
+                           Default: ~/.yune/evidence/native-rime-inprocess-macos/<UTC>.
   --librime-source PATH    Existing local rime/librime clone to copy from.
   --iterations N           Startup iterations. Default: 9.
   --session-iterations N   Session lifecycle iterations. Default: 60.
@@ -92,10 +93,28 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$output_root" ]]; then
-  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-  output_root="$repo_root/docs/reports/evidence/macos-performance-verification/$stamp"
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "python3 is required" >&2
+  exit 1
 fi
+if ! command -v git >/dev/null 2>&1; then
+  echo "git is required" >&2
+  exit 1
+fi
+
+evidence_path_tool="$repo_root/scripts/evidence-output-path.py"
+if [[ -z "$output_root" ]]; then
+  output_root="$(
+    python3 "$evidence_path_tool" default \
+      --repo-root "$repo_root" \
+      --kind native-rime-inprocess-macos
+  )"
+fi
+output_root="$(
+  python3 "$evidence_path_tool" validate \
+    --repo-root "$repo_root" \
+    --path "$output_root"
+)"
 
 abs_path() {
   python3 -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$1"
@@ -138,9 +157,7 @@ log() {
   printf '[macos-bench] %s\n' "$*"
 }
 
-output_root="$(abs_path "$output_root")"
 librime_source="$(abs_path "$librime_source")"
-evidence_root="$repo_root/docs/reports/evidence"
 work_base="$repo_root/target/macos-performance-verification"
 tool_root="$work_base/tools"
 oracle_root="$work_base/oracle-1.17.0"
@@ -151,18 +168,13 @@ shared_source="$oracle_root/rime-shared"
 user_source="$oracle_root/rime-user"
 build_source="$user_source/build"
 
-clear_dir_under "$evidence_root" "$output_root"
+if [[ -e "$output_root" ]]; then
+  echo "output root must be a new external path; refusing to clear or reuse: $output_root" >&2
+  exit 1
+fi
+mkdir -p "$output_root"
 clear_dir_under "$work_base/native-inprocess" "$run_work_root"
 mkdir -p "$tool_root" "$oracle_root" "$schema_root"
-
-if ! command -v python3 >/dev/null 2>&1; then
-  echo "python3 is required" >&2
-  exit 1
-fi
-if ! command -v git >/dev/null 2>&1; then
-  echo "git is required" >&2
-  exit 1
-fi
 
 if [[ -x "$tool_root/python/bin/cmake" ]]; then
   export PATH="$tool_root/python/bin:$PATH"

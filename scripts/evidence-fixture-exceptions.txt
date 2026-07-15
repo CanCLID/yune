@@ -1,0 +1,6 @@
+# Exact repository-relative paths for evidence files that must exceed 5 MiB
+# because production tests consume them as external oracle fixtures.
+#
+# Exceptions do not permit raw benchmark classes or packets over 10 MiB.
+# Keep this list empty unless the owning test and oracle provenance are named
+# in the same change.

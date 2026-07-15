@@ -13,7 +13,9 @@ Final evidence:
 - Final run: `docs/reports/evidence/m38-engine-performance-parity/phase-3-final-native/`
 - Status CSV: `phase-3-final-native/product_path_status.csv`
 - Raw lookup CSV: `phase-3-final-native/raw_lookup_microbench.csv`
-- Per-key counters: `phase-3-final-native/m37_metrics.csv`
+- Per-key counters: archived by exact Git blob in the
+  [evidence-pruning ledger](../../../../ledgers/evidence-pruning/current-ledger.csv),
+  with the selected fixture row retained below.
 
 Selected fixture row:
 

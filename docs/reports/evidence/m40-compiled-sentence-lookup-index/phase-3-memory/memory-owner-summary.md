@@ -13,10 +13,10 @@ product-delivery, packaging, or public-demo speed wins.
   [`../phase-0-baseline/`](../phase-0-baseline/)
 - Final storage status:
   [`../phase-4-final-native/product_path_status.csv`](../phase-4-final-native/product_path_status.csv)
-- Final startup/session trace:
-  [`../phase-4-final-native/startup_session_trace.csv`](../phase-4-final-native/startup_session_trace.csv)
-- Final M37/M40 counters:
-  [`../phase-4-final-native/m37_metrics.csv`](../phase-4-final-native/m37_metrics.csv)
+- Final startup/session trace and raw M37/M40 counters: archived by exact Git
+  blob in the
+  [evidence-pruning ledger](../../../../ledgers/evidence-pruning/current-ledger.csv);
+  their compact owner findings are retained below.
 
 ## Track A Peak Guard
 
@@ -53,9 +53,9 @@ large trie.
 | --- | ---: | --- |
 | Startup/runtime-ready median | `23,934.200 us` | Pass; faster than M39 `25,048.200 us` and `0.913x` same-run librime. |
 | Session create/select/destroy median | `23,994.000 us` | Pass; faster than M39 `25,255.500 us` and `0.934x` same-run librime. |
-| Cold startup sentence-index build | `1` call, `5,144,800 ns` on startup sample `0` | Accounted in `phase-4-final-native/m37_metrics.csv`; warm startup/session rows are `0`. |
+| Cold startup sentence-index build | `1` call, `5,144,800 ns` on startup sample `0` | Accounted in the archived raw counter leaf; warm startup/session rows are `0`. |
 | Per-key `upstream_sentence_model_index_build_calls` | `0` in final key metrics | Pass; index construction is not hidden inside the measured key rows. |
-| Startup trace owner | `translator_index_build` / `translator_install` events in `startup_session_trace.csv` | Accounted as startup/translator install work, then guarded by startup/session medians. |
+| Startup trace owner | `translator_index_build` / `translator_install` events in the archived startup trace | Accounted as startup/translator install work, then guarded by startup/session medians. |
 
 The benchmark now records M37/M40 metrics for startup/session rows as well as
 key rows. The cold index build appears in the first startup sample, warm reuse

@@ -18,8 +18,9 @@ Primary docs:
 Final native evidence:
 
 - `phase-3-final-native/track-b-yune-product/product_path_status.csv`
-- `phase-3-final-native/track-b-yune-product/rsmarisa-jyut6ping3-string-table.marisa`
-- `phase-3-final-native/track-b-yune-product/rsmarisa-jyut6ping3_scolar-string-table.marisa`
+- The two generated MARISA probe payloads are recoverable by exact blob from
+  the [evidence-pruning ledger](../../../ledgers/evidence-pruning/current-ledger.csv);
+  their retained status and measured shape are recorded below.
 
 | Dictionary | Probe payload | Status | Mapping mode | Tries | Keys | Sample key |
 | --- | ---: | --- | --- | ---: | ---: | --- |

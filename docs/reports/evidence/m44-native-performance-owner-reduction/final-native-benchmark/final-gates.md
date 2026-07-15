@@ -85,8 +85,9 @@ Two read-only review passes were run before final closeout.
   `docs/reports/evidence/m44-native-performance-owner-reduction/phase-0-native-benchmark/`
 - Final benchmark:
   `docs/reports/evidence/m44-native-performance-owner-reduction/final-native-benchmark/`
-- Final metrics:
-  `docs/reports/evidence/m44-native-performance-owner-reduction/final-native-benchmark/m37_metrics.csv`
+- Final raw metrics: archived by exact Git blob in the
+  [evidence-pruning ledger](../../../../ledgers/evidence-pruning/current-ledger.csv);
+  the binding aggregate findings remain in this report.
 - Storage/status:
   `docs/reports/evidence/m44-native-performance-owner-reduction/final-native-benchmark/product_path_status.csv`
 - Memory owner profile:

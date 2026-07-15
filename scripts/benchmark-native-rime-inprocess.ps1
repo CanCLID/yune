@@ -19,6 +19,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "evidence-output-path.ps1")
 
 function Assert-PlainFileSystemPath([string]$Path, [string]$Label) {
     if ([string]::IsNullOrWhiteSpace($Path)) {
@@ -187,7 +188,11 @@ if ($NativeBenchmarkExecutableWasProvided -ne $NativeBenchmarkReceiptWasProvided
     throw "PrebuiltNativeBenchmarkExecutable and PrebuiltNativeBenchmarkReceipt must be supplied together"
 }
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
-    $OutputRoot = Join-Path $RepoRoot "docs\reports\evidence\m36-product-path\phase-0-native-inprocess"
+    $OutputRoot = Invoke-YuneEvidenceOutputPathPolicy @(
+        "default",
+        "--repo-root", $RepoRoot,
+        "--kind", "native-rime-inprocess"
+    )
 }
 if ([string]::IsNullOrWhiteSpace($UpstreamOracleRoot)) {
     $UpstreamOracleRoot = Join-Path $RepoRoot "target\upstream-oracle\1.17.0"
@@ -199,8 +204,12 @@ if ([string]::IsNullOrWhiteSpace($ProductSchemaRoot)) {
     $ProductSchemaRoot = Join-Path $RepoRoot "apps\yune-web\public\schema"
 }
 
+$OutputRoot = Invoke-YuneEvidenceOutputPathPolicy @(
+    "validate",
+    "--repo-root", $RepoRoot,
+    "--path", $OutputRoot
+)
 $OutputRoot = Get-CanonicalSafePath $OutputRoot "OutputRoot"
-$EvidenceRoot = Get-CanonicalSafePath (Join-Path $RepoRoot "docs\reports\evidence") "legacy evidence root"
 $LegacyWorkRoot = Get-CanonicalSafePath (Join-Path $RepoRoot "target\native-inprocess") "legacy work root"
 if ([string]::IsNullOrWhiteSpace($WorkRoot)) {
     $WorkRoot = Join-Path $LegacyWorkRoot (Split-Path -Leaf $OutputRoot)
@@ -501,6 +510,18 @@ function Initialize-BenchmarkRoot([string]$Path, [string]$LegacyParent, [bool]$W
         return
     }
     Clear-DirectoryUnder $LegacyParent $ResolvedPath
+}
+
+function Initialize-CreateNewOutputRoot([string]$Path, [string]$Label) {
+    $ResolvedPath = [System.IO.Path]::GetFullPath($Path)
+    $FileSystemRoot = [System.IO.Path]::GetPathRoot($ResolvedPath).TrimEnd("\", "/")
+    if ($ResolvedPath.TrimEnd("\", "/").Equals($FileSystemRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to use a filesystem root as $Label`: $ResolvedPath"
+    }
+    if (Test-Path -LiteralPath $ResolvedPath) {
+        throw "$Label must be a new path; refusing to clear or reuse: $ResolvedPath"
+    }
+    New-Item -ItemType Directory -Path $ResolvedPath | Out-Null
 }
 
 # M59 provenance guard. Returns the schema-level `leading_syllable_reachability`
@@ -1049,7 +1070,7 @@ if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) {
     Assert-FileOutsideRoot $TrackAThresholds "TrackAThresholds" $WorkRoot "WorkRoot"
 }
 
-Initialize-BenchmarkRoot $OutputRoot $EvidenceRoot $OutputRootWasProvided "OutputRoot"
+Initialize-CreateNewOutputRoot $OutputRoot "OutputRoot"
 $OutputRootAfterCreate = Get-CanonicalSafePath $OutputRoot "created OutputRoot"
 if (-not $OutputRootAfterCreate.Equals($OutputRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw "OutputRoot physical path changed during creation: [$OutputRoot] -> [$OutputRootAfterCreate]"

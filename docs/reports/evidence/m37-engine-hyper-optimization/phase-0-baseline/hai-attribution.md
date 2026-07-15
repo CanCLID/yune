@@ -9,7 +9,9 @@ powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess
 Source files:
 
 - `track-b-yune-product/summary.csv`
-- `track-b-yune-product/m37_metrics.csv`
+- The raw owner-counter leaf is archived by exact Git blob in the
+  [evidence-pruning ledger](../../../../ledgers/evidence-pruning/current-ledger.csv);
+  the findings below are the retained compact summary.
 
 ## Track B Baseline
 

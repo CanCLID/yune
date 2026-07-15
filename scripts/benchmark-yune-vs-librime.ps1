@@ -8,10 +8,16 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "evidence-output-path.ps1")
 
 $RepoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
+$OutputRootWasProvided = -not [string]::IsNullOrWhiteSpace($OutputRoot)
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
-    $OutputRoot = Join-Path $RepoRoot "docs\reports\evidence\yune-vs-librime-2026-06-23"
+    $OutputRoot = Invoke-YuneEvidenceOutputPathPolicy @(
+        "default",
+        "--repo-root", $RepoRoot,
+        "--kind", "yune-vs-librime"
+    )
 }
 if ([string]::IsNullOrWhiteSpace($UpstreamOracleRoot)) {
     $UpstreamOracleRoot = Join-Path $RepoRoot "target\upstream-oracle\1.17.0"
@@ -20,10 +26,14 @@ if ([string]::IsNullOrWhiteSpace($YuneDll)) {
     $YuneDll = Join-Path $RepoRoot "target\release\yune_rime_api.dll"
 }
 
+$OutputRoot = Invoke-YuneEvidenceOutputPathPolicy @(
+    "validate",
+    "--repo-root", $RepoRoot,
+    "--path", $OutputRoot
+)
 $OutputRoot = [System.IO.Path]::GetFullPath($OutputRoot)
 $UpstreamOracleRoot = [System.IO.Path]::GetFullPath($UpstreamOracleRoot)
 $YuneDll = [System.IO.Path]::GetFullPath($YuneDll)
-$EvidenceRoot = [System.IO.Path]::GetFullPath((Join-Path $RepoRoot "docs\reports\evidence"))
 $WorkRoot = Join-Path $RepoRoot ("target\yune-vs-librime-benchmark\" + (Split-Path -Leaf $OutputRoot))
 $RunnerSource = Join-Path $RepoRoot "scripts\yune-vs-librime-benchmark.cs"
 $RunnerBuild = Join-Path $WorkRoot "runner"
@@ -143,7 +153,11 @@ function Run-EngineBenchmark($EngineName, $DllPath, $ExtraPath) {
     }
 }
 
-Clear-DirectoryUnder $EvidenceRoot $OutputRoot
+if (Test-Path -LiteralPath $OutputRoot) {
+    $Mode = if ($OutputRootWasProvided) { "Explicit" } else { "Default" }
+    throw "$Mode OutputRoot must be a new path; refusing to clear or reuse: $OutputRoot"
+}
+New-Item -ItemType Directory -Path $OutputRoot | Out-Null
 Clear-DirectoryUnder (Join-Path $RepoRoot "target\yune-vs-librime-benchmark") $WorkRoot
 Clear-DirectoryUnder $WorkRoot $RunnerBuild
 

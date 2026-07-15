@@ -1,0 +1,58 @@
+name: Evidence growth guard
+
+on:
+  pull_request:
+    paths:
+      - "docs/reports/evidence/**"
+      - "scripts/check-evidence-growth.py"
+      - "scripts/curate-compact-evidence.py"
+      - "scripts/evidence-fixture-exceptions.txt"
+      - "scripts/evidence_retention.py"
+      - "scripts/tests/test_evidence_retention_tools.py"
+      - ".github/workflows/evidence-growth.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/reports/evidence/**"
+      - "scripts/check-evidence-growth.py"
+      - "scripts/curate-compact-evidence.py"
+      - "scripts/evidence-fixture-exceptions.txt"
+      - "scripts/evidence_retention.py"
+      - "scripts/tests/test_evidence_retention_tools.py"
+      - ".github/workflows/evidence-growth.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  evidence-growth:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Resolve comparison base
+        id: base
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            base="$PR_BASE"
+          elif [ -n "$PUSH_BASE" ] && [ "$PUSH_BASE" != "0000000000000000000000000000000000000000" ]; then
+            base="$PUSH_BASE"
+          else
+            base="$(git rev-list --max-parents=0 HEAD)"
+          fi
+          printf 'sha=%s\n' "$base" >> "$GITHUB_OUTPUT"
+      - name: Run evidence policy tests
+        run: python3 -m unittest scripts.tests.test_evidence_retention_tools
+      - name: Reject raw or oversized evidence growth
+        run: >-
+          python3 scripts/check-evidence-growth.py
+          --repo-root .
+          --compare-base "${{ steps.base.outputs.sha }}"
+          --treeish HEAD

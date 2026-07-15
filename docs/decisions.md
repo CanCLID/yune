@@ -2,6 +2,13 @@
 
 This is the consolidated decision log for Yune. The GSD planning system that previously lived under `.planning/` has been **retired**; this file preserves the durable decisions and their rationale so that future work does not lose the reasoning behind the current architecture.
 
+Current sequencing and milestone outcomes do not belong here; use
+[`roadmap.md`](./roadmap.md) and
+[`ledgers/milestone-history.md`](./ledgers/milestone-history.md). Phase-local
+`D-P*` entries intentionally preserve historical surface names and paths. They
+are not current interface authority; the current contract is
+[`contracts/engine-support-contract.md`](./contracts/engine-support-contract.md).
+
 It harvests decisions from the retired `.planning/PROJECT.md` "Key Decisions" table and Context/Constraints prose, the `.planning/STATE.md` "Accumulated Context > Decisions" list, and the `decisions:` / `D-NN` entries in the phase `PLAN`/`SUMMARY`/`RESEARCH`/`CONTEXT` documents.
 
 A note on IDs: the per-phase `D-NN` identifiers used inside `.planning/phases/*` were **phase-local** (Phase 2, Phase 3, Phase 7, and Phase 10 each restarted at `D-01`). The numbered `D-12`..`D-23` IDs in this log are the **project-wide** IDs from `STATE.md` and are preserved verbatim. Earlier, unnumbered project-wide decisions are assigned `D-01`..`D-11` here in rough chronological order. Phase-local decisions are folded into the relevant project-wide entry or captured as the `D-P<phase>-<n>` entries below; they are not renumbered against the project-wide sequence.
@@ -24,7 +31,7 @@ Cross-cutting decisions that govern all current and future work:
 
 - **Upstream-first oracle sequencing.** Upstream `rime/librime 1.17.0` is the default core compatibility oracle. TypeDuck-HK/librime `v1.1.2` is retained as a TypeDuck-Web/Windows compatibility-profile oracle only. If upstream and TypeDuck behavior disagree, upstream wins for core Yune; TypeDuck behavior must stay behind a named profile test, fixture, adapter, or ABI note.
 
-- **Compatibility is target-driven, not feature-complete.** The oracle is a behavioral _floor_, not a feature checklist. "Done" is always relative to a _named_ set of target schemas and frontends that must behave correctly versus the oracle (near-term: the `luna_pinyin` core path and the TypeDuck `jyut6ping3` profile), broadening over time toward common RIME schemas and real frontends. Reproducing every librime gear, plugin, or code path is an explicit **non-goal**; a librime feature is implemented only when a named target needs it (see _Name the protected behavior_). The AI-native layer on top of this compatible base — not parity for its own sake — is the product goal. See D-25.
+- **Compatibility is target-driven, not feature-complete.** The oracle is a behavioral _floor_, not a feature checklist. "Done" is relative to named targets: upstream `luna_pinyin`, captured common-schema lanes, canonical Jyutping against upstream librime plus pinned `rime/rime-cantonese`, and TypeDuck multilingual/comment/profile behavior in its profile lane. Reproducing every librime gear, plugin, or code path is an explicit **non-goal**; a librime feature is implemented only when a named target needs it. The AI-native layer on top of this compatible base — not parity for its own sake — is the product goal. See D-25.
 
 ## Decision log
 
@@ -34,13 +41,13 @@ Cross-cutting decisions that govern all current and future work:
 
 **D-02 — Build compatibility fixtures and ABI tests before replacing deeper engine modules.** Behavior must be measurable before differences can be classified as improvements or regressions. _Outcome: Good._
 
-**D-03 — Keep AI ranking optional and local-first.** Classic input must remain predictable and low-latency without network access. _Outcome: Pending._
+**D-03 — Keep AI ranking optional and local-first.** Classic input must remain predictable and low-latency without network access. _Outcome: Adopted; M11/M13 preserve the default-off local-first boundary._
 
-**D-04 — Treat AI-native input as a separate product layer above compatibility.** librime cannot guide LLM-native behavior, so Yune needs explicit provider, context, memory, fallback, and privacy contracts. _Outcome: Pending._
+**D-04 — Treat AI-native input as a separate product layer above compatibility.** librime cannot guide LLM-native behavior, so Yune needs explicit provider, context, memory, fallback, and privacy contracts. _Outcome: Adopted as a standing architecture rule._
 
-**D-05 — Treat the module/test refactor as a structural rule for future feature work.** Large single-file accumulation slowed review, search, focused testing, and extraction; module/test ownership per slice with `lib.rs`/`main.rs` as facades is now the rule. _Outcome: Pending._
+**D-05 — Treat the module/test refactor as a structural rule for future feature work.** Large single-file accumulation slowed review, search, focused testing, and extraction; module/test ownership per slice with `lib.rs`/`main.rs` as facades is now the rule. _Outcome: Adopted as a standing ownership rule._
 
-**D-06 — Keep plugin ABI compatibility deferred.** Plugin compatibility is expensive and not yet required by a concrete frontend or schema-migration path. Native M54 octagram-compatible grammar support does not change this because it does not load librime C++ plugins. _Outcome: Pending._
+**D-06 — Keep plugin ABI compatibility deferred.** Plugin compatibility is expensive and not yet required by a concrete frontend or schema-migration path. Native M54 octagram-compatible grammar support does not change this because it does not load librime C++ plugins. _Outcome: Deferred by design until a named target requires it._
 
 **D-07 — Treat runtime resource identifiers as logical IDs, not arbitrary filesystem paths.** Schema-controlled dictionary/import/pack/vocabulary IDs are validated (rejecting drive prefixes, backslashes, traversal) before any runtime data path is constructed; explicit user-supplied import/export/restore file paths remain arbitrary paths, but the derived logical names joined into runtime roots are validated. Boundaries fail closed (FALSE, -1, None, Value::Null).
 
@@ -180,7 +187,7 @@ provider/ranking/privacy contracts are proven and explicitly enabled.
 
 **D-13 / TYPEDUCK-E2E-04 — Phase 10 ends with a NO-GO recommendation for AI-native frontend exposure** due to browser-validation blockers. Strict rubric: lack of browser evidence prevents GO / GO WITH CONDITIONS. Blockers are bounded (cargo/rustup/emcc have install paths), not a fundamental seam incompatibility; the seam patch is structurally sound and the adapter handles mismatches — environment setup is the gating requirement. Superseded by D-P10-13 after HR-5/HR-6 produced real-assets browser and oracle evidence.
 
-**D-14 — AI-native scope remains deferred.** AI-native provider calls, candidate generation, ranking, context, memory, privacy controls, and a new first-party Yune frontend remain out of scope.
+**D-14 — AI-native scope was deferred at this historical boundary.** Superseded for the engine/browser foundation by M11/M13; new product surfaces, remote providers, and richer context remain separately scoped.
 
 ### TypeDuck-Windows milestone (project-wide D-15..D-22; completed as profile by M10)
 
@@ -206,15 +213,22 @@ provider/ranking/privacy contracts are proven and explicitly enabled.
 
 ### Web-first re-sequencing (project-wide D-23)
 
-**D-23 / SEQUENCING — Re-sequence to web-first.** Validate Yune in a real web browser (reopened as Phase 17) before resuming TypeDuck-Windows platform work. Phase 10's NO-GO reflected absent browser evidence (the WASM artifact was never built), not a failed seam. HR-7 closes that browser gate as GO WITH CONDITIONS. Shared engine slices (comment shaping, Cantonese goldens, baseline fix) were reused by the web path. D-24 supersedes the post-M9 priority order by parking TypeDuck-Windows behind the upstream oracle refresh.
+**D-23 / SEQUENCING — Re-sequence to web-first.** Historical sequencing decision: validate Yune in a real web browser before resuming TypeDuck-Windows work. The browser gate later closed, D-24 superseded the post-M9 priority order, and D-49 now transfers Windows product execution to its dedicated repository.
 
 ### Upstream oracle refresh (project-wide D-24)
 
-**D-24 / ORACLE-PRECEDENCE - Upstream latest stable is Yune's default core oracle; TypeDuck v1.1.2 is a compatibility profile.** M12 targets upstream `rime/librime 1.17.0` at commit `33e78140250125871856cdc5b42ddc6a5fcd3cd4`. TypeDuck-HK/librime `v1.1.2` at `74cb52b78fb2411137a7643f6c8bc6517acfde69` remains the oracle only for TypeDuck-Web/Windows profile behavior such as fork-only ABI slots and dictionary-panel/Cantonese fork behavior. When upstream and TypeDuck disagree, core Yune follows upstream; TypeDuck differences must be isolated behind named profile fixtures, tests, adapters, or ABI notes. M12 pinned upstream fixture provenance, added the TypeDuck coverage audit, refreshed default `RimeApi` parity to the pinned `rime/librime 1.17.0` target, and expanded `luna_pinyin` behavioral parity fixtures captured from the official upstream release binary. Active upstream-core gates now cover curated single-code mechanics, full `ni` dictionary selection with essay weights, Engine paging/selection/commit, reverse lookup, punctuation/symbols, and supported option paths. Later M17/M18 milestones closed the `luna_pinyin` sentence/lattice, `ascii_punct` processor bypass, and punctuation immediate commit blockers with fresh upstream fixtures. `start_quick` remains absent from the default table. M12 removed the `config_list_append_*` fork-only slots from the default upstream table. M19 implemented the named TypeDuck profile ABI surface, and M10 later completed the TypeDuck-Windows package/build/frontend smoke through it. The default table remains upstream-shaped.
+**D-24 / ORACLE-PRECEDENCE - Pinned upstream librime 1.17.0 is Yune's default core oracle; TypeDuck v1.1.2 is a compatibility profile.** M12 targets upstream `rime/librime 1.17.0` at commit `33e78140250125871856cdc5b42ddc6a5fcd3cd4`. TypeDuck-HK/librime `v1.1.2` at `74cb52b78fb2411137a7643f6c8bc6517acfde69` remains the oracle only for TypeDuck-Web/Windows profile behavior such as fork-only ABI slots and dictionary-panel/Cantonese fork behavior. When upstream and TypeDuck disagree, core Yune follows upstream; TypeDuck differences must be isolated behind named profile fixtures, tests, adapters, or ABI notes. M12 pinned upstream fixture provenance, added the TypeDuck coverage audit, refreshed default `RimeApi` parity to the pinned `rime/librime 1.17.0` target, and expanded `luna_pinyin` behavioral parity fixtures captured from the official upstream release binary. Active upstream-core gates now cover curated single-code mechanics, full `ni` dictionary selection with essay weights, Engine paging/selection/commit, reverse lookup, punctuation/symbols, and supported option paths. Later M17/M18 milestones closed the `luna_pinyin` sentence/lattice, `ascii_punct` processor bypass, and punctuation immediate commit blockers with fresh upstream fixtures. `start_quick` remains absent from the default table. M12 removed the `config_list_append_*` fork-only slots from the default upstream table. M19 implemented the named TypeDuck profile ABI surface, and M10 later completed the TypeDuck-Windows package/build/frontend smoke through it. The default table remains upstream-shaped.
 
 ### Compatibility scope (project-wide D-25)
 
 **D-25 / COMPAT-SCOPE — Compatibility is target-driven, not 100% feature parity with librime.** Yune treats librime as a behavioral oracle (a floor), not a feature target to clone. Success is that a _named_ set of target schemas and frontends behaves correctly against the oracle, every difference measured and either fixed or documented: **(A)** a bounded near-term target set — the `luna_pinyin` core path vs upstream `1.17.0` and the TypeDuck `jyut6ping3` profile vs `v1.1.2` — as the working definition of "done"; and **(B)** a broader common-RIME-schema and real-frontend compatibility ambition, added incrementally through the same oracle-measured parity harness. Bit-for-bit parity with librime internals (every gear, plugin, and code path) is a non-goal; a librime feature is implemented only when a named (A)/(B) target requires it. "The engine is done" is therefore never absolute — it reads "the current target set is green against the oracle; everything else is deferred-and-documented." Extends D-01 (oracle, not template) and D-24 (oracle precedence) with an explicit scope boundary; mirrored in `roadmap.md` ("Scope Ledger"). _Outcome: Good._
+
+**2026-07-15 target-set amendment.** The same target-driven rule now applies to
+the completed broader set: upstream `luna_pinyin`, captured common-schema
+lanes, canonical Jyutping against upstream librime plus pinned
+`rime/rime-cantonese`, and TypeDuck multilingual/comment/profile behavior in
+its profile lane. This expands the named targets under the original `(B)`
+mechanism; it does not convert librime into a feature checklist.
 
 ### AI-native milestone (M11)
 
@@ -231,6 +245,10 @@ provider/ranking/privacy contracts are proven and explicitly enabled.
 ### AI-native frontend exposure (M13)
 
 **D-26 / M13-WEB-AI — Expose AI in TypeDuck-Web through a default-off, two-pass Rust sidecar, not through the classic key path.** M13 keeps `yune_typeduck_process_key` provider-free and classic-first. The browser worker renders that classic result first, then requests the new `yune_typeduck_stage_ai` sidecar action; the sidecar runs `LocalModelProvider` synchronously in Rust/WASM, stages an input-keyed result, and returns a second response. The JS side carries no provider logic. Source labels are attached from engine snapshot data aligned to the rendered page, not by widening `RimeCandidate` or altering the upstream `RimeApi` table. AI remains default-off, TypeDuck-Web-only, local-only, and toggle-controlled; disabling AI stages an `Off` result for the current input so stale AI rows disappear immediately and classic output is restored. The browser host supplies no app/field context, so the existing sensitive default applies: local providers are allowed, remote providers remain out of scope/blocked by policy, explicit AI commits do not touch librime userdb, and AI-memory learning is suppressed in the default browser context. Real-browser M13 evidence is required alongside native `typeduck_web` and TypeScript runtime gates. _Outcome: Good._
+
+_Current-surface note:_ the live browser contract is now the `yune_web_*`
+family and `@yune-ime/yune-web-runtime`. The historical M13 names above record
+the decision boundary; they are not current export or package names.
 
 ### TypeDuck-Web fork parity (project-wide D-27)
 
@@ -277,16 +295,15 @@ milestone, and does not claim that a combined/reconciled commit was measured.
 
 **2026-07-05 amendment - Canonical Jyutping versus TypeDuck multilingual profile.** TypeDuck-HK/schema and `rime/rime-cantonese` both use `schema_id: jyut6ping3`, so schema id alone is not enough provenance. New canonical Cantonese/Jyutping candidate ordering, segmentation, fallback, and completion claims must identify the schema source repository and source commit, and must be captured from upstream `rime/librime 1.17.0` running pinned `rime/rime-cantonese` unless a later explicit decision scopes the claim as TypeDuck-profile-only. TypeDuck-HK/librime v1.1.2 remains profile-only, but the historical M14-M28 TypeDuck fixtures are grandfathered as TypeDuck-profile regression guards, including fixture-backed candidate ordering, composition, prefix-fallback, prediction-count, and partial-selection behavior. In particular, M21-GAP-01 and M21-GAP-02 remain previously authorized TypeDuck-profile candidate claims until a later migration explicitly supersedes them.
 
-The future schema split must make the two schema sources distinguishable by
+M58 completed the schema/profile blast-radius inventory. The future schema
+split must make the two schema sources distinguishable by
 Yune-facing id, fixture provenance, compiled artifacts, docs, and product
 claims. The preferred direction is for the plain `jyut6ping3` id to resolve to
 canonical `rime/rime-cantonese` and for TypeDuck multilingual/profile behavior
 to use `jyut6ping3_typeduck`, but that id direction is not executable until the
-implementing milestone inventories the blast radius and receives explicit user
-sign-off. The inventory must cover current `jyut6ping3` / `jyut6ping3_mobile`
-product ids, Track B thresholds, WEB-03/public-demo manifests, persisted userdb
-dictionary keys, and schema-install profile predicates such as
-`is_typeduck_jyut6ping3_profile` and `is_yune_web_launch_byte_backed_profile`.
+owner gives explicit sign-off and an implementation milestone carries the
+recorded userdb/cache-key, product-id, compiled-asset, manifest, threshold, and
+profile-predicate migration evidence.
 
 ### M33 native lookup fairness and cache boundary (project-wide D-32)
 
@@ -764,7 +781,7 @@ historical source-scoped provenance for its exact 37/59 slice._
 
 ### Initialization notes (process decisions)
 
-**D-INIT-1 - Existing `docs/plans/completed/m00-analysis-founding.md`, `docs/roadmap.md`, and `docs/plans/completed/m05-m07-record-foundation-refactor.md` are the retained source context** for the now-retired GSD project. Historical `.planning/codebase/` notes were folded into the retained docs before `.planning/` was removed. External research was skipped at setup because scope was driven by existing docs and direct librime comparison.
+**D-INIT-1 - Existing founding and foundation records are retained historical source context** for the now-retired GSD project. Historical `.planning/codebase/` notes were folded into durable docs before `.planning/` was removed. The live `docs/roadmap.md` is current sequencing, not frozen founding context.
 
 **D-INIT-2 — Future compatibility slices must choose module ownership, test ownership, and the librime comparison target before implementation.** (Captured as a standing principle; see "Standing principles" and D-05.)
 
@@ -774,30 +791,15 @@ historical source-scoped provenance for its exact 37/59 slice._
 
 **D-DOC-2 — Browser-validation claims require committed real-browser, real-asset evidence.** An assertion without a committed artifact does not count as validation — this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1b committed the real-assets browser run rather than only describing it.
 
+**2026-07-15 evidence-retention amendment.** The durable validation rule is
+unchanged, while its storage form is refined: compact manifests, hashes,
+summaries, and required fixtures are committed; bulky raw receipts stay in a
+recoverable external evidence packet under the retention policy. A committed
+compact receipt must identify that source-bound packet. This amendment does not
+permit an assertion without recoverable real-browser, real-asset evidence.
+
 ---
 
-_Prior update: 2026-07-11 - D-30 and D-48 now record the supplemental, source-scoped macOS Luna 37/59 page-zero repair measured at `89875ee2`, including the compiled natural-log weight domain, inclusive 5% pronunciation boundary, bounded exact-user scope, and unchanged ABI/threshold posture. The authoritative Windows Increment 4a packet remains at `ca52ec42` plus review fix `2257fbbe`: its strict Lane A comparator is `2/5`, and on 2026-07-11 the owner renewed the narrowly scoped D-48 class-3 exception for all `6,086` captured equal-weight inversions (zero cross-weight inversions and no beyond-oracle-depth use) with the recorded cross-weight, provenance, and common-input page-1 revisit triggers, permitting 4b to start. The macOS evidence did not cause or supersede that disposition, and no combined/reconciled commit is claimed measured. A post-WEB-03 correctness follow-up fixed a `DartsDoubleArray` prism construction bug that corrupted the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words (`litbiu -> 列表` etc.); the four affected prisms were regenerated and the user-visible words are now locked by trie-level and committed-asset regression tests (`a76fcd59`, `d1c0171a`). D-46 records WEB-03 complete after the phrase-composition follow-up: regenerated launch compiled assets and native byte-backed storage are now a delivery contract, fresh Emscripten/Playwright evidence shows the shipping public-demo `full-jyutping` browser row at `160.0 MiB` ready/peak/steady, and follow-up gates restore byte-backed `ngogokdak -> 我覺得` plus `zouhapci` visible lookup rows. The old `893.1 MiB` value remains only as a synthetic no-launch-assets negative control. D-45 records WEB-02 complete as the historical public-demo Jyutping source-fallback owner classification: shipped `Rime::Prism/3.0` assets forced `owned_heap` and retained `translator.entries_by_code` rows totaling `529,602,374 B`; WEB-03 fixed that launch path. D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and the pre-WEB-03 browser Jyutping row remained `893.1 MiB`, so M46 closed as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` did not reduce settled linear memory, 48 MiB worsened Luna, and pre-WEB-03 Jyutping remained `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._
-
-_Prior update: 2026-07-13 - M59 is complete. D-47 records the four adjusted
-rows, final `443cc636` performance acceptance (`32/32` aggregate, `160/160`
-individual), and REACH-03's fail-closed 60-asset/10-schema-asset/three-carrier/
-nine-validation-row registry. D-48 records all three required lanes complete:
-Lane A strict `13/13`, Cangjie marked strict `12/12` with 3 passed / 0 ignored
-and unmarked exact `12/12`, and Lane B exact across all seven captured inputs.
-The renewed 4a class-3 exception remains recorded exactly and unused by final
-Lane A. WEB-04 Playwright, native recovery, fail-closed WASM, and
-tracked-app/public-package builds remain bound to closeout source `5fa986d8`;
-no browser rerun is claimed for `443cc636`. Final evidence reconciliation is
-complete without rebaselining the unrelated WEB-05 same-WASM history._
-
-_Current update: 2026-07-14 - D-49 transfers P2-WIN-01 Windows TSF and
-product/frontend execution to `CanCLID/yune-windows`. This repository retains
-the engine/package/profile-API contract and the superseded handoff record; the
-completed P2-WIN-02 boundary fix remains closed._
-WEB03-11 maintenance closeout: clean source `ef485b10` removes hidden
-development-diagnostics polling from the public typing path while preserving
-the public status header and development cockpit. The exact Cloudflare
-entrypoint passed the unchanged binding 4x/4x profile over 8 scenarios and 186
-keys; Pages deployment `e4ad5c7b-4084-47f7-abe7-e2a034c443ef` succeeded; and
-the source-pinned deployed canary passed. This closes the latency hard stop as
-maintenance without changing the engine, ABI, cadence policy, or ceilings.
+_Last reviewed: 2026-07-15. Rolling milestone summaries were removed from this
+log; final outcomes belong to the milestone history and performance dashboard.
+No decision ID or binding D-47/D-48 owner disposition was removed._

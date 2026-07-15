@@ -4,6 +4,8 @@
 
 > **Note (2026-06-17):** The GSD `.planning/` system has been retired. This requirement list and its statuses are preserved here; the **Phase** references (e.g. in the Traceability table) are historical GSD labels — now only in git history — kept for context. The live roadmap is [`roadmap.md`](./roadmap.md); historical milestone context is in [`ledgers/milestone-history.md`](./ledgers/milestone-history.md); decisions are in [`decisions.md`](./decisions.md); conventions in [`conventions.md`](./conventions.md).
 
+> **Registry contract (2026-07-15):** Completed requirement definitions and final dispositions are historical traceability, not current roadmap scope. The only planned milestone rows are M60; non-milestone deferred and transferred rows remain explicitly outside the current sequence. A future structural split may move completed rows to a requirement-history ledger, but it must preserve every ID, terminal disposition, and the trace-only M19/M31/M33–M36 records.
+
 ## v1 Requirements
 
 Requirements for the compatibility milestone (historically GSD phases 1–5).
@@ -198,9 +200,9 @@ browser owner left unclassified by M46. Evidence:
 - [x] **P2-WIN02-BOUNDARY-05**: The rebuilt TypeDuck Windows package passes the packaged DLL smoke, direct `RimeCandidate.comment` byte probe, TypeDuck-Web regression gate, and stock TypeDuck-Windows IPC smoke with rich comments.
 - [x] **P2-WIN02-BOUNDARY-06**: Interactive Notepad TSF smoke proves candidate commit, produces a newly classified non-Yune blocker with committed evidence, or the user explicitly accepts IPC-only closure. The approved reruns produced the newly classified non-Yune blocker path: session-scoped TypeDuck activation succeeded and the Yune-backed server stayed alive, but Notepad still received raw ASCII, so the remaining issue belongs to TSF input-delivery/frontend-shell work.
 
-## Future Requirements
+## Deferred, Transferred, And AI-Foundation Requirements
 
-Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not in the current roadmap.
+This section deliberately mixes non-milestone deferred work, transferred product ownership, and the completed M11 AI foundation. None of its deferred or transferred rows allocates a current milestone; current sequencing remains in [`roadmap.md`](./roadmap.md).
 
 ### Plugin Compatibility
 
@@ -219,7 +221,7 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 - **IOS-DEV-03**: Swift/Obj-C integration defines keyboard-extension lifecycle, memory, persistence, and privacy constraints before TypeDuck iOS exposure is claimed.
 - **IOS-DEV-04**: Mobile-specific behavior such as near-key correction maps or keyboard-layout differences is data/config-driven or UI-owned, not hardcoded as desktop-vs-mobile engine branches.
 
-### AI Extension Layer
+### AI Extension Foundation (complete)
 
 - [x] **AI-01**: Engine exposes an `AiCandidateProvider` interface and staged, input-keyed AI results without replacing classic translators. S1 implements this for the direct CLI mock path.
 - [x] **AI-02**: Candidate ranking supports local model and rule-backed implementations with deterministic timeout/fallback behavior. S2 covers the background worker, input-keyed fallback, fixed-point confidence metadata, and confidence-ordered AI merge; S5 adds the local rule-backed provider.
@@ -1814,7 +1816,7 @@ Explicitly excluded from the current milestone.
 | --- | --- |
 | Full librime C++ plugin ABI compatibility | Expensive and not yet required by a concrete frontend or distribution migration path |
 | Cloud inference as a required dependency | Classic input behavior must remain local-first and predictable |
-| New GUI frontend | Native frontend integration should validate the ABI first; `yune-cli` is only a frontend surrogate |
+| New repo-local GUI product | Windows product/frontend work has transferred to `CanCLID/yune-windows`; `yune-web` remains this repository's harness/public demo, and any other product surface requires its own approved track |
 | Behavior changes during mechanical refactors | Compatibility work needs measurable, reviewable behavior slices |
 | 100% feature parity with librime internals | The oracle is a behavioral floor, not a feature target; a librime feature is implemented only when a named target schema/frontend needs it (see roadmap "Scope Ledger" and `decisions.md` D-25) |
 
@@ -2334,9 +2336,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
 - Mapped to phases: 453
 - Unmapped current checklist requirements: 0 (the eight non-checklist
-  `Future Requirements` entries — six repo-deferred and two transferred
+  `Deferred, Transferred, And AI-Foundation Requirements` entries — six repo-deferred and two transferred
   frontend entries — are excluded from the current mapping denominator)
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-15 - M59 remains complete under full Path A at 11/11 requirements. WEB03-11 is complete at clean source `ef485b10` after its binding local gate, Cloudflare deployment, and source-pinned production canary passed; this browser evidence is not projected onto the `5fa986d8` M59 receipt boundary. The three WEB-02 and eleven WEB-03 current-checklist rows are now explicitly present in traceability. M60 is review-corrected with six planned formalism-only requirements, a production-semantic Rust audit tool, and no runtime behavior, C ABI, threshold, Windows-product, or M61 expansion. The historical 4a class-3 disposition remains unchanged and unused by final Lane A. D-49 transfers Windows TSF and product/frontend requirements to `CanCLID/yune-windows` while retaining Yune's engine/package/profile-API contract here._
+_Requirements defined: 2026-04-28. Last reviewed: 2026-07-15. M60 has the only six planned milestone requirements; completed outcomes remain in this registry unless a separate future requirement-history split is approved. Current sequencing and evidence boundaries live in the roadmap, support contract, and milestone history._

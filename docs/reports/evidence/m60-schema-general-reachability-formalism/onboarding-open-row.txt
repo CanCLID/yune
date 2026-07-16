@@ -1,0 +1,5 @@
+Source: c1f1f941e4777b9c14bc84494fdaf13a63759113
+Owner: apps/yune-web/scripts/update-schema-asset-manifest.test.mjs
+Result: PASS.
+
+A new product schema asset receives status `open`; the updater does not mark it unsupported/N/A and does not synthesize, approve, suggest, or imply an opt-out. Existing coverage version `m59-reach03-v1`, formalism version `m60-reachability-v1`, root inventory, mechanism contract, and opt-out collection survive reconciliation.

@@ -1,0 +1,4 @@
+Command: python3 scripts/verify-packet-manifest.py docs/reports/evidence/m60-schema-general-reachability-formalism/packet-manifest.csv
+Validator source: c9b34774c82c6b1a3c252c90f95aba6c24bc3183
+Pre-review output: Packet manifest verified from working tree: 17 files, 17126 bytes
+Final worktree and committed-tree reruns are preserved externally because this receipt is outside the allowed post-review delta.

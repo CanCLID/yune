@@ -1,0 +1,5 @@
+Source: c1f1f941e4777b9c14bc84494fdaf13a63759113
+Command: cargo test -p yune-rime-api --test yune_web m60_namespaced_reachability_audit_matches_real_deploy
+Result: PASS; named test 1 passed, 0 failed, 0 ignored; 54 filtered out; 0.09 seconds.
+
+The authored fixture emits five tuples across primary and mirror schemas, including three effective-false tuples and one shared carrier reconciled to both schema assets. Runtime deployment agrees, and an unresolved relevant reference fails closed.

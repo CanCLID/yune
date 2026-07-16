@@ -1,6 +1,6 @@
 # M60 Schema-General Reachability Capability Formalism
 
-> **Milestone:** M60. **Status:** Finalized — ready for execution; not started.
+> **Milestone:** M60. **Status:** Complete (2026-07-15).
 > **Track:** documentation and fail-closed static governance. **Created:**
 > 2026-07-06; **rescoped:** 2026-07-07; **finalized:** 2026-07-15;
 > **review-corrected:** 2026-07-15.
@@ -27,6 +27,44 @@ M60 closes when all six conditions hold:
    acceptance; and
 6. compact, source-bound evidence and two independent reviews close the
    milestone without reopening M59 or WEB03-11.
+
+## Completion Record
+
+M60 began from `b8cd897f9d6c3158d864bac9d2629482c45c7427` and was delivered
+through the forward-only implementation sequence `9b55b9ba`, `c1f1f941`,
+`78a9e38a`, and review fixes `e352fba4` and `c9b34774`. A concurrent writer
+committed and pushed `9b55b9ba` before the
+prescribed isolated pre-commit implementation tree was recorded. That proof
+does not exist and was not backfilled. The user authorized forward-only
+completion after disclosure. External incident and recovery receipts preserve
+the deviation; all later commits have isolated-tree proofs, and the combined
+implementation range remains exactly within the frozen 34-path M60 envelope.
+
+The eight named gates passed. Two checker-launch setup failures and one
+unsupported `git ls-files` preflight were preserved and retried narrowly. The
+utility gate first completed red because Windows 8.3 and long user-profile paths
+were compared lexically; `78a9e38a` fixed that packet-verifier defect, and only
+the utility slice was rerun. The first isolation review then rejected preserved
+tree `057656af` because the Python validators did not separately detect Windows
+directory junctions. That tree and both discarded review results remain
+external. `e352fba4` added junction checks plus both owning cases; the exact
+utility slice then ran 16 tests with `OK`, both junction cases passed, and the
+same two privilege-gated symbolic-link cases were skipped. A repeated isolation
+review rejected tree `75ab7b95` because that implementation silently weakened
+on Python before 3.12. `c9b34774` replaced the API dependency with Windows
+reparse-tag detection that fails closed when metadata is unavailable and removed
+the older-Python test skip. The same 16-test utility slice passed again with only
+the two privilege-gated symbolic-link skips. The candidate was rebuilt and both
+reviews were repeated. No M59 or
+WEB03 evidence, runtime engine behavior, C ABI/API table/export, schema/profile
+id or payload, browser UI, Windows product, ranking, selection, recomposition,
+schema installation, performance threshold, benchmark, memory, or M61 behavior
+changed.
+
+The preserved pre-review tree, two independent reviews, exact three-path
+post-review delta, final candidate tree, and closeout commit-tree equality are
+the binding final proofs. The containing closeout SHA is recorded only in the
+external post-push receipt to avoid self-reference.
 
 ## Authority And Boundaries
 
@@ -116,42 +154,42 @@ M60-AUDIT-01, M60-ONBOARD-01, M60-BOUNDARY-01, and M60-EVIDENCE-01.
 
 ### 1. Canonical capability contract
 
-- [ ] Add `docs/contracts/schema-general-reachability.md` as the single
+- [x] Add `docs/contracts/schema-general-reachability.md` as the single
       normative description of the translator-level default, explicit-false
       semantics, selection/recomposition scope, and per-input TypeDuck
       precedence.
-- [ ] Link it from the engine support contract and the relevant onboarding and
+- [x] Link it from the engine support contract and the relevant onboarding and
       parity documentation rather than duplicating its rules.
-- [ ] State that schema-id branches, input allowlists, promotion tables, baked
+- [x] State that schema-id branches, input allowlists, promotion tables, baked
       oracle output, circular fixtures, per-schema `true` flags, and silent
       unsupported/N/A onboarding are prohibited.
-- [ ] Include an authority table that keeps final M59 native behavior and
+- [x] Include an authority table that keeps final M59 native behavior and
       performance at `443cc636`, shipped registry/browser/package evidence at
       `5fa986d8` plus `07845e02`, and WEB03-11 measurement at `ef485b10`
       source-bound rather than projecting any lane onto M60.
-- [ ] State the exact covered translator arms and add a narrow regression for a
+- [x] State the exact covered translator arms and add a narrow regression for a
       prefix-fallback-enabled request that owns no proper prefix, so the
       corrected per-input prose is pinned to the real leading-single path. The
       upstream-table lazy bounded arm at `translator/mod.rs:5094` must be
       classified explicitly rather than silently generalized.
-- [ ] Correct the stale schema-wide precedence wording in
+- [x] Correct the stale schema-wide precedence wording in
       `docs/ledgers/fork-parity-ledger.md` and add a dated correction to the
       completed M59 plan and D-47 while preserving their historical evidence
       claims.
 
 ### 2. Live registry and empty opt-out collection
 
-- [ ] Treat `apps/yune-web/schema-acceptance-coverage.json` as the live
+- [x] Treat `apps/yune-web/schema-acceptance-coverage.json` as the live
       successor seeded by M59. Retain `version: m59-reach03-v1` because the M59
       checker, updater, and load-bearing Rust gate bind that coverage format;
       add and validate a separate
       `reachabilityFormalismVersion: m60-reachability-v1`. Leave the historical
       M59 packet unchanged.
-- [ ] Add the exact-root inventory and tracked-schema discovery contract above;
+- [x] Add the exact-root inventory and tracked-schema discovery contract above;
       no tracked schema YAML may sit outside one classified root.
-- [ ] Add `reachabilityOptOuts: []`. No current shipped schema has an approved
+- [x] Add `reachabilityOptOuts: []`. No current shipped schema has an approved
       opt-out, so no placeholder or synthetic production row is permitted.
-- [ ] Update `mechanismContract` to state the per-input precedence rule and link
+- [x] Update `mechanismContract` to state the per-input precedence rule and link
       the canonical contract.
 
 A future opt-out row has this exact logical shape. Any later schema-format
@@ -254,26 +292,26 @@ derived from the registered roots, carriers, and resolved traces.
 
 ### 3. Mandatory fail-closed checker
 
-- [ ] Extend `apps/yune-web/scripts/check-schema-asset-manifest.mjs`; the static
+- [x] Extend `apps/yune-web/scripts/check-schema-asset-manifest.mjs`; the static
       audit is mandatory, not optional. Refactor the current import-side-effect
       script into an exported validator plus a thin production entry point; the
       entry point must always run the Rust extractor and the validator.
-- [ ] Consume every Rust-derived deployed dictionary-translator namespace from
+- [x] Consume every Rust-derived deployed dictionary-translator namespace from
       the shipped schema tree and declared configuration carriers, then scan its
       effective namespaced `leading_syllable_reachability` setting.
-- [ ] Require exactly one complete opt-out row for each affected shipped
+- [x] Require exactly one complete opt-out row for each affected shipped
       (`settingAsset`, `configPath`, `schemaAsset`) false-setting tuple and
       exactly one tracked false tuple for each opt-out row.
-- [ ] Resolve `schemaAsset`, `settingAsset`, `schemaId`, `acceptanceId`, evidence
+- [x] Resolve `schemaAsset`, `settingAsset`, `schemaId`, `acceptanceId`, evidence
       path, and approval decision against tracked current files and an accepted
       real-path row.
-- [ ] Reject duplicate ids or exact reconciliation-key triplets, missing or
+- [x] Reject duplicate ids or exact reconciliation-key triplets, missing or
       malformed fields, unknown or unmanifested assets, open/unresolved
       acceptance rows, orphaned records, stale records after asset removal,
       non-40-hex commits, unsafe or missing repo-relative paths, empty
       surfaces/triggers, invalid dates, and expired `reviewBy` dates.
-- [ ] Keep the current `reachabilityOptOuts` collection empty and green.
-- [ ] Extend `check-schema-asset-manifest.test.mjs` with one fully synthetic
+- [x] Keep the current `reachabilityOptOuts` collection empty and green.
+- [x] Extend `check-schema-asset-manifest.test.mjs` with one fully synthetic
       valid future opt-out and negative cases for every rejection class above.
       Synthetic fixtures prove the format without creating a current opt-out.
       They must call the exported production validator with temporary roots, an
@@ -287,7 +325,7 @@ derived from the registered roots, carriers, and resolved traces.
 
 ### 4. Fail-closed onboarding and updater
 
-- [ ] Add the normative `## Schema onboarding` procedure to
+- [x] Add the normative `## Schema onboarding` procedure to
       `docs/contracts/schema-general-reachability.md` and link it from
       `docs/conventions.md`. Document this sequence: add the schema asset;
       regenerate the manifest;
@@ -295,11 +333,11 @@ derived from the registered roots, carriers, and resolved traces.
       resolve the automatically created blocking `status: open` row; attach
       D-24/D-31-correct oracle or owner-spec provenance; add the narrow deploy-
       path test; then mark the row accepted and run the checker.
-- [ ] Preserve the updater's automatic open-row behavior for every new schema
+- [x] Preserve the updater's automatic open-row behavior for every new schema
       asset. It must preserve the M59 coverage version, M60 formalism version,
       root inventory, and opt-out collection, and never synthesize, approve, or
       suggest an opt-out.
-- [ ] Extract an injectable reconciliation helper from the production updater
+- [x] Extract an injectable reconciliation helper from the production updater
       and require the production updater entry point to call it. Exercise that
       exact helper and the end-to-end production entry point from
       `apps/yune-web/scripts/update-schema-asset-manifest.test.mjs`. Prove with
@@ -307,24 +345,24 @@ derived from the registered roots, carriers, and resolved traces.
       and cannot pass as unsupported/N/A, while an existing formalism/root/
       opt-out block survives byte-for-byte except for deliberate canonical JSON
       formatting.
-- [ ] Keep shipped schemas, dependency-only assets, runtime mirrors, canonical
+- [x] Keep shipped schemas, dependency-only assets, runtime mirrors, canonical
       `rime-cantonese` validation, and mandatory nonshipped validation rows
       explicitly distinct.
 
 ### 5. Documentation and closeout
 
-- [ ] Update the support contract, requirements, decisions, roadmap, top-level
+- [x] Update the support contract, requirements, decisions, roadmap, top-level
       README, milestone history, and parity ledger only for the formalism
       actually delivered.
-- [ ] Add `scripts/check-current-doc-links.py` and
+- [x] Add `scripts/check-current-doc-links.py` and
       `scripts/tests/test_current_doc_links.py`; the production utility must
       reject missing, escaping, or symbolic-link local targets and consume an
       explicit touched-current-doc list.
-- [ ] Add `scripts/verify-packet-manifest.py` and
+- [x] Add `scripts/verify-packet-manifest.py` and
       `scripts/tests/test_packet_manifest.py`; enforce exact bidirectional
       packet membership, byte sizes, SHA-256 values, safe paths, and no
       symbolic links.
-- [ ] Move this plan to `docs/plans/completed/` only in the final closeout
+- [x] Move this plan to `docs/plans/completed/` only in the final closeout
       commit after implementation, gates, reviews, and compact evidence pass.
 
 This planning-finalization series separately corrected the pre-existing WEB03
@@ -392,10 +430,10 @@ cargo test -p yune-core prefix_fallback_without_owned_prefix_keeps_leading_sylla
 python3 -m unittest scripts/tests/test_current_doc_links.py scripts/tests/test_packet_manifest.py
 ```
 
-The utility tests reject missing/unsafe/traversing/symbolic-link local Markdown
+The utility tests reject missing/unsafe/traversing/symbolic-link-or-junction local Markdown
 targets and missing touched-path inputs. Packet tests enforce exact
 bidirectional membership and reject duplicate/missing rows, traversal or
-symbolic links, and byte-size or SHA-256 mismatches.
+symbolic links or junctions, and byte-size or SHA-256 mismatches.
 
 Before implementation, create and retain these newline-delimited external
 lists in `LC_ALL=C` sorted, unique order; empty, duplicate, absolute, escaping,

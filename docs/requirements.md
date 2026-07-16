@@ -4,7 +4,7 @@
 
 > **Note (2026-06-17):** The GSD `.planning/` system has been retired. This requirement list and its statuses are preserved here; the **Phase** references (e.g. in the Traceability table) are historical GSD labels — now only in git history — kept for context. The live roadmap is [`roadmap.md`](./roadmap.md); historical milestone context is in [`ledgers/milestone-history.md`](./ledgers/milestone-history.md); decisions are in [`decisions.md`](./decisions.md); conventions in [`conventions.md`](./conventions.md).
 
-> **Registry contract (2026-07-15):** Completed requirement definitions and final dispositions are historical traceability, not current roadmap scope. The only planned milestone rows are M60; non-milestone deferred and transferred rows remain explicitly outside the current sequence. A future structural split may move completed rows to a requirement-history ledger, but it must preserve every ID, terminal disposition, and the trace-only M19/M31/M33–M36 records.
+> **Registry contract (2026-07-15):** Completed requirement definitions and final dispositions are historical traceability, not current roadmap scope. M60 is complete; no later milestone requirements are authorized yet, and M61's provisional IDs remain draft-only. Non-milestone deferred and transferred rows remain explicitly outside the current sequence. A future structural split may move completed rows to a requirement-history ledger, but it must preserve every ID, terminal disposition, and the trace-only M19/M31/M33–M36 records.
 
 ## v1 Requirements
 
@@ -1789,42 +1789,42 @@ oracle candidates, and circular oracle-derived fixtures are prohibited.
 
 ### M60 Schema-General Reachability Capability Formalism
 
-**Status: finalized and ready; not started.** M60 formalizes the default-on
+**Status: complete.** M60 formalizes the default-on
 capability M59 already shipped. It adds fail-closed opt-out and onboarding
 governance without changing reachability, ranking, schema installation, ABI,
 browser behavior, or any signed performance threshold. The finalized plan is
-[`plans/active/m60-plan-schema-general-single-character-reachability.md`](./plans/active/m60-plan-schema-general-single-character-reachability.md).
+[`plans/completed/m60-plan-schema-general-single-character-reachability.md`](./plans/completed/m60-plan-schema-general-single-character-reachability.md).
 
-- [ ] **M60-CONTRACT-01**: One canonical contract records the default-on
+- [x] **M60-CONTRACT-01**: One canonical contract records the default-on
   invariant, explicit-false semantics, selection/recomposition scope,
   anti-gaming prohibitions, exact M59/WEB03 evidence boundaries, covered
   translator arms, and the actual per-input `prefix_fallback_owned` precedence
   rule.
-- [ ] **M60-OPTOUT-01**: The live M59-seeded acceptance registry retains its
+- [x] **M60-OPTOUT-01**: The live M59-seeded acceptance registry retains its
   `m59-reach03-v1` coverage-format version, adds a separate M60 reachability-
   formalism version, and contains an exactly empty current
   `reachabilityOptOuts` array plus a complete, owner-approved future row schema
   keyed by exact schema asset, setting asset, and deployed translator namespace;
   no placeholder/current opt-out is added.
-- [ ] **M60-AUDIT-01**: A tooling-only Rust extractor reuses production
+- [x] **M60-AUDIT-01**: A tooling-only Rust extractor reuses production
   configuration/deployment semantics and source tracing; the mandatory checker
   and synthetic tests use its output to enforce a classified-root disposition
   for every Git-tracked schema YAML plus a bijection between every affected
   shipped namespaced explicit-false tuple and valid opt-out rows, rejecting
   duplicate, incomplete, expired, unsafe, unknown, unregistered, overlapping,
   open, orphaned, stale, or unresolved records.
-- [ ] **M60-ONBOARD-01**: The updater and onboarding contract keep every new
+- [x] **M60-ONBOARD-01**: The updater and onboarding contract keep every new
   schema in the registered repository-owned product roots blocking-open until
   classification, correct oracle/owner provenance, and a narrow real-path
   acceptance test are supplied; unsupported/N/A and an auto-created opt-out
   cannot close it, a future product root must register with the checker, and
   the production updater must exercise the same tested reconciliation helper.
-- [ ] **M60-BOUNDARY-01**: M59 and WEB03-11 evidence stays source-bound and
+- [x] **M60-BOUNDARY-01**: M59 and WEB03-11 evidence stays source-bound and
   immutable; M60 permits only a read-only Rust audit tool and focused tests and
   changes no runtime behavior, C ABI/API table/export, schema/profile id,
   browser or Windows product surface, performance threshold, oracle fixture, or
   M61 scope.
-- [ ] **M60-EVIDENCE-01**: Exact-source text-only evidence records the checker,
+- [x] **M60-EVIDENCE-01**: Exact-source text-only evidence records the checker,
   negative tests, four narrow Rust tests, onboarding test, link audit,
   evidence-growth guard, separate pre-review/final tree hashes, an exact
   review-receipt delta, diff check, and two independent reviews; the plan moves
@@ -2027,12 +2027,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M59-EVIDENCE-01 | M59 | Complete - `final-closeout/` reconciles the accepted Lane A, Lane B, Cangjie, 37/59, REACH-03, performance, native recovery, fail-closed WASM, package, and browser receipts with hashes and no generated binaries |
 | M59-DEPLOY-01 | M59 | Complete - `2ee0805f` matches pinned librime missing/malformed top-level schema and dependency semantics with real-path regression coverage |
 | M59-GATES-01 | M59 | Complete - retained native prefix plus nonduplicative serial recovery, release build, fail-closed Emscripten, typecheck, tracked/public builds, WEB-04 3/3, M58 1/1, and all unique functional Playwright rows pass; startup benchmark and cross-binary WEB-05 baseline are explicitly excluded |
-| M60-CONTRACT-01 | M60 | Planned - canonical default-on/explicit-false, source-bound authority, covered-arm, and per-input dual-mechanism capability contract |
-| M60-OPTOUT-01 | M60 | Planned - retained M59 coverage version plus separate M60 formalism version, exact empty current opt-out collection, and namespaced future row schema |
-| M60-AUDIT-01 | M60 | Planned - Rust production-semantic audit output, fail-closed Git-tracked schema-root inventory, affected-schema/namespaced-explicit-false opt-out bijection, and production-validator negatives |
-| M60-ONBOARD-01 | M60 | Planned - schemas in registered product roots remain blocking-open until classified and real-path accepted; new product roots must register and the production updater must use the tested helper |
-| M60-BOUNDARY-01 | M60 | Planned - tooling-only Rust audit/test changes with no runtime behavior, C ABI/API-table/export, profile/schema-id, browser, performance, Windows product, or M61 expansion |
-| M60-EVIDENCE-01 | M60 | Planned - compact exact-source evidence, four narrow Rust gates, links, growth guard, two tree hashes, exact receipt delta, and two reviews |
+| M60-CONTRACT-01 | M60 | Complete - canonical default-on/explicit-false, source-bound authority, covered-arm, and per-input dual-mechanism capability contract |
+| M60-OPTOUT-01 | M60 | Complete - retained M59 coverage version plus separate M60 formalism version, exact empty current opt-out collection, and namespaced future row schema |
+| M60-AUDIT-01 | M60 | Complete - Rust production-semantic audit output, fail-closed Git-tracked schema-root inventory, affected-schema/namespaced-explicit-false opt-out bijection, and production-validator negatives |
+| M60-ONBOARD-01 | M60 | Complete - schemas in registered product roots remain blocking-open until classified and real-path accepted; new product roots must register and the production updater uses the tested helper |
+| M60-BOUNDARY-01 | M60 | Complete - tooling-only Rust audit/test changes with no runtime behavior, C ABI/API-table/export, profile/schema-id, browser, performance, Windows product, or M61 expansion |
+| M60-EVIDENCE-01 | M60 | Complete - compact exact-source evidence, four narrow Rust gates, links, growth guard, preserved pre-review/final trees, exact three-path receipt delta, commit-tree equality, and two reviews |
 | WEB02-ATTR-01 | WEB-02 | Complete - existing inspector JSON exposes selected storage, mapping, byte-source length, fallback deferrals, and owner rows without a new export |
 | WEB02-ATTR-02 | WEB-02 | Complete - public-demo Jyutping assets are reconciled to the live web ABI path and the owned-heap fallback owner is measured |
 | WEB02-ATTR-03 | WEB-02 | Complete - WEB-02 records attribution only and retains the measured memory blocker without a reduction claim |
@@ -2354,7 +2354,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
 - M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
 - M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 11 complete, 0 active
-- M60 schema-general reachability capability-formalism requirements: 6 total, 0 complete, 6 planned
+- M60 schema-general reachability capability-formalism requirements: 6 total, 6 complete, 0 active
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
 - Mapped to phases: 453
 - Unmapped current checklist requirements: 0 (the eight non-checklist
@@ -2363,4 +2363,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28. Last reviewed: 2026-07-15. M60 has the only six planned milestone requirements; completed outcomes remain in this registry unless a separate future requirement-history split is approved. Current sequencing and evidence boundaries live in the roadmap, support contract, and milestone history._
+_Requirements defined: 2026-04-28. Last reviewed: 2026-07-15. No milestone requirements are currently planned or active; M61's provisional IDs remain outside this registry until its draft is independently reviewed and finalized. Completed outcomes remain in this registry unless a separate future requirement-history split is approved. Current sequencing and evidence boundaries live in the roadmap, support contract, and milestone history._

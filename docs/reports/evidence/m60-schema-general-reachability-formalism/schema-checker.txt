@@ -1,0 +1,7 @@
+Source: c1f1f941e4777b9c14bc84494fdaf13a63759113
+Command: npm --prefix apps/yune-web run check:schema-manifest
+Result: PASS.
+
+Schema asset manifests verified: 60 assets across the public and public-demo manifests. M59 coverage and M60 reachability formalism accepted: 19 tracked schema YAML files across four classified roots, 10 product schema assets, 17 Rust-derived audit tuples, and 0 opt-outs.
+
+Setup history: PowerShell policy blocked `npm.ps1`; a five-second wrapper timeout then ended before the real release audit returned. The inherited child was allowed to finish, and only this gate was retried with a proper timeout through `npm.cmd`. The first policy-failure transcript is missing; an external correction receipt preserves that fact instead of fabricating output.

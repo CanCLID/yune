@@ -1,0 +1,3 @@
+Command: python3 scripts/check-evidence-growth.py --repo-root . --paths-from <external evidence path list>
+Pre-review output: evidence growth guard passed: 18 changed files
+The final 20-file candidate rerun is preserved externally because this receipt is outside the allowed post-review delta.

@@ -1,0 +1,5 @@
+Source: c1f1f941e4777b9c14bc84494fdaf13a63759113
+Command: cargo test -p yune-core prefix_fallback_without_owned_prefix_keeps_leading_syllable_reachability
+Result: PASS; the named unit test passed, 0 failed; 551 sibling unit tests filtered out.
+
+The bounded compact correction fixture enables both mechanisms. Its correction-only request leaves prefix fallback non-owning while the independent leading path emits the partial single with consumed/recomposition state. The explicit-false control retains the correction row but not the leading single.

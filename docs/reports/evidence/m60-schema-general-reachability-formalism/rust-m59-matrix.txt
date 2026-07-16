@@ -1,0 +1,5 @@
+Source: c1f1f941e4777b9c14bc84494fdaf13a63759113
+Command: cargo test -p yune-rime-api --test yune_web m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false
+Result: PASS; named test 1 passed, 0 failed, 0 ignored; 54 filtered out; 561.09 seconds.
+
+This is the unchanged M59 real deployment matrix for default-on and explicit-false behavior. Its long Windows run remained CPU-active and was not retried.

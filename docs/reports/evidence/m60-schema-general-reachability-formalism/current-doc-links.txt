@@ -1,0 +1,4 @@
+Command: python3 scripts/check-current-doc-links.py --paths-from <external touched-current-docs.txt>
+Validator source: c9b34774c82c6b1a3c252c90f95aba6c24bc3183
+Pre-review output: Current-document links verified: 9 documents, 210 local targets
+Final-candidate rerun is preserved externally because changing this receipt after review would violate the exact three-path delta.

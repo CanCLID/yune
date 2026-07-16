@@ -1,0 +1,9 @@
+Source: c1f1f941e4777b9c14bc84494fdaf13a63759113
+Path: crates/yune-rime-api/src/bin/yune-schema-reachability-audit.rs
+Version: m60-reachability-v1
+Standalone extractor gate added: no.
+Production checker result: 10 governed product schema assets produced 17 deployed dictionary-translator tuples; no unresolved directives; zero effective-false tuples and zero opt-outs.
+
+The checker invokes the real tooling binary. The extractor reuses production configuration compilation, include/patch/custom-overlay precedence, deployment paths, translator namespace resolution, and source tracing. It writes only an isolated temporary probe tree. Normal deployment passes no trace sink and creates no audit events or vector.
+
+Synthetic parity is owned by `m60_namespaced_reachability_audit_matches_real_deploy` and the Node checker suite; no JavaScript-authored merge result certifies Rust equivalence.

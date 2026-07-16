@@ -1,0 +1,5 @@
+Source: c1f1f941e4777b9c14bc84494fdaf13a63759113
+Command: node --test apps/yune-web/scripts/update-schema-asset-manifest.test.mjs
+Result: PASS; 2 tests, 2 passed, 0 failed, 0 skipped.
+
+The injectable production reconciliation helper preserves the formalism/root/opt-out blocks and creates a blocking open row for a newly manifested schema. The production entry point uses that helper in a temporary app tree.

@@ -1,0 +1,5 @@
+Source: c1f1f941e4777b9c14bc84494fdaf13a63759113
+Command: node --test apps/yune-web/scripts/check-schema-asset-manifest.test.mjs
+Result: PASS; 52 tests, 52 passed, 0 failed, 0 skipped.
+
+Coverage includes the real Rust extractor, namespaced and shared-carrier false tuples, includes and patches, multiple sources, mixed-case quoted false, unresolved merges, exact false/opt-out bijection, malformed future rows, root classification, tracked-path and symlink safety, approval/expiry, malformed HTTPS provenance, duplicate audit tuples, and source hashes.

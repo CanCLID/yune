@@ -1,0 +1,19 @@
+Command: python3 -m unittest scripts/tests/test_current_doc_links.py scripts/tests/test_packet_manifest.py
+
+Initial source: c1f1f941e4777b9c14bc84494fdaf13a63759113
+Measured red: 14 tests run; 6 failures; 2 skipped. Every failure came from the packet verifier comparing a Windows 8.3-short temporary root with the expanded long repository root before reaching the intended assertions.
+
+Fix source: 78a9e38a98e79af98fe0f0c3c9ab9ab350252f28
+Owning-slice retry: PASS; 14 tests run, OK, 2 skipped; 1.742 seconds.
+
+The first isolation review rejected pre-review tree `057656af0aa319ccf42881381406264ccd19ed61`: Python 3.13 detects directory junctions separately from symbolic links, and neither Python validator called `Path.is_junction()`.
+
+Review-fix source: e352fba451eeb32c13861cb3cbe9e38ea97eba45
+Owning-slice review retry: PASS; 16 tests run, OK, 2 skipped; 1.995 seconds.
+
+The repeated isolation review rejected pre-review tree `75ab7b955c893cf856a267ceab73e4c531ddb11f`: `Path.is_junction()` does not exist before Python 3.12, and the first fix and tests silently fell back to symbolic-link checks alone.
+
+Older-Python review-fix source: c9b34774c82c6b1a3c252c90f95aba6c24bc3183
+Owning-slice review retry: PASS; 16 tests run, OK, 2 skipped; 1.921 seconds.
+
+The final utilities accept Windows short-name aliases by filesystem identity and detect junctions directly from `st_reparse_tag` plus `IO_REPARSE_TAG_MOUNT_POINT`; missing Windows reparse metadata is a hard error. The junction tests no longer depend on `Path.is_junction()` and both ran and passed. The two skipped tests remain `CurrentDocumentLinkTests.test_rejects_symbolic_link_target` and `PacketManifestTests.test_rejects_symbolic_links`; this host cannot create symbolic links without the missing privilege. All other utility cases passed, including committed-tree gitlink rejection. Both failed review attempts and their discarded candidates are preserved externally, and both independent reviews were restarted from a rebuilt tree.

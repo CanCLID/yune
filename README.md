@@ -123,7 +123,7 @@ Yune is an active engine project.
   real-server IPC compatibility smoke through the named profile accessor,
   while the dedicated Windows Yune repository owns interactive TSF typing and
   visible candidate UI product work.
-- **Current work:** milestones M38-M59 are complete, with M55 closed under a
+- **Current work:** milestones M38-M60 are complete, with M55 closed under a
   2026-07-04 corrective re-baseline: the benchmark now reads context after
   every keypress (the interactive shape), three pre-corrective closeout
   mechanisms were identified as measurement artifacts and reverted, and the
@@ -145,6 +145,13 @@ Yune is an active engine project.
   bidirectional for the full tree, and `443cc636` fixes the shipping-source
   transformed-tie regression it exposed; the clean canonical recapture is
   again exact at 13/13 and all 5,705 positions without an exception.
+  M60 formalizes that already-shipped reachability capability without changing
+  engine behavior: the live registry retains `m59-reach03-v1`, declares
+  `m60-reachability-v1`, contains exactly `reachabilityOptOuts: []`, and is
+  checked against 17 production-derived translator tuples plus classified
+  tracked schema roots. New product schemas remain blocking-open until their
+  real deploy path is accepted. See the
+  [M60 evidence packet](docs/reports/evidence/m60-schema-general-reachability-formalism/README.md).
   A later five-round Mac diagnostic at `0111cf47` has all 17 Track A medians
   and pooled worsts below `1.0x`; complete-input pages are exact on `16/17`,
   including 37/59. It is not source-matched to Windows `443cc636`, so no
@@ -229,6 +236,7 @@ Current dashboard:
 
 - [All-platform performance results, visualizations, and bottleneck analysis](docs/reports/yune-vs-librime-performance.md)
 - [M59 final evidence ledger](docs/reports/evidence/m59-canonical-jyutping-reachability-parity/README.md)
+- [M60 reachability-formalism evidence](docs/reports/evidence/m60-schema-general-reachability-formalism/README.md)
 
 ## Quick Start
 

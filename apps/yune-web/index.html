@@ -24,9 +24,348 @@
             content="Public browser demo for the Yune input-method engine."
         />
         <meta name="twitter:card" content="summary_large_image" />
+        <!-- Apply the stored/system theme before first paint: React sets
+             data-theme in a useEffect, which is too late for the photographic
+             backdrop — dark-theme users would flash the undimmed light photo
+             on every load. Key/values mirror src/ThemeSwitcher.tsx. -->
+        <script>
+            try {
+                var t = localStorage.getItem("theme");
+                if (t !== "dark" && t !== "light") {
+                    t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+                }
+                document.documentElement.dataset.theme = t;
+            } catch (e) {}
+        </script>
     </head>
     <body>
         <div id="root"></div>
+        <!-- Liquid Glass lens host: per-element <filter>s are injected into this
+             <defs> by the lens-manager script below. -->
+        <svg width="0" height="0" style="position: absolute; pointer-events: none" aria-hidden="true" focusable="false">
+            <defs id="lg-defs"></defs>
+        </svg>
         <script type="module" src="./src/index.tsx"></script>
+        <!-- Liquid Glass lens manager (Chromium only). Recipe + displacement map
+             from liquid-glass-react (MIT, (c) 2025 Max Rovensky; "standard" mode
+             defaults: displacementScale 70, aberrationIntensity 2, backdrop
+             blur 6px + saturate 140%), itself derived from shuding/liquid-glass.
+             Each outermost glass element gets its OWN pixel-sized filter
+             (filterUnits=userSpaceOnUse): a shared filter with percentage-sized
+             feImage resolves to an EMPTY map inside CSS reference filters, which
+             silently disables the effect. Non-Chromium engines never get url()
+             here and keep the plain blur/saturate fallback from index.css —
+             WebKit discards the entire backdrop-filter list when it contains
+             url() (WebKit bug 245510) and @supports cannot detect that, so we
+             gate by UA instead. -->
+        <script>
+            (function () {
+                var MAP =
+                    "data:image/jpeg;base64,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cUAUAkEkziomgGgkoxZGgxZFQFQlYnQHRdPfj/10KCSCKESCNiVkViPSLpD0h6I0Q0I0A2IoBWBIJIBKBIJoJIJ2R2J0JWBUJ0JUB0XTv479dFZDYiglYigkhEgjZFQjRFQjRFQjQigFYigHYigmgEgmglYlYnQlQlYlQHQlQnQ9P/kf1yVkNiNCNkNiVENiNiViNEViNkVCVgKCViViViSCViSCVgdCViVCViVCdgVCVCdD1D+U/XBWQ2I0I2Q2JUQ2I0JWQ0I2JUQ2JUI2JUI2J0JWJWJWA2R0BWJ0I2JUJ2BUJUJ0P//EABkQAQEBAQEBAAAAAAAAAAAAAAECABEDEP/aAAgBAQABAgB1atWrVq1atWrVq1atWrVq1atWrVq1atWrVq+OrVq1atWrVq1atWrVq1atWrVq1atWrVq1atXxVppppppdWrVq1atWrVq1NNNNNNNNNNNPVWmmmmms6tWrVq1atWpppppppppppppp6q0000uc51atWrVq1ammmmmmmmmmmmmt1Vpppc5znVq1atWrVqaaaaaaaaaaaaaeqtNLnOc51atWrVq1ammmmmmmmmmmmmnqrS5znOc6tWrVq16222mmmmmmlVppp6tKuc5znOrVq1a9TbbbbTTTTTSq000qtLnOc5zq1atWrW0222200000qqqtKqrnOc5zq1atTbbbbbbbbTTTSqqqqqq5znOc6tTTTbbbbbbbbTTTSqqqqrlVznOctNNNtttttttttNNNNKqqqrqznKqrTTTTbbbbbbbbbTTTSqqqqrqznOc5aaaabbbbbbbbbaaaaVVVVVdWc5znVq1NNttttttttttNNKqqqqudWc5znVq16tbbbbbbbbbbTTSqqqq5XVnOc6tWrVrb1tttttttttNNKqqqqrWrK5VWmmm2230bbbbbbaaaXOc5zlVa1KuVVppptttt9G22222mmlzlVznK6tWVVWmmmm2222222222mlznOc5znLWppVVWmmm22222229bTWrOc5znOcq1qaaVpWmm222222229erVqznOc5znKtatStK0rTbTTbbbberXr1as5znOc5aVpppppWlabaabbbb1ta9WrVnOc5znU0rTTTTTTTTTbTTbbbTWvVq1as5znOdTTStNNNNNNNNNtNNtttN6tWvVq1ZznOrU00rTTTTTTTTTTTTTbTWvVq1atWrOc6tTTTStNNNNNNNNNNtNNtNa9WrVq1Z1Z1NNNNNK1q1NNNNNNNNNNNtNatWrVq1atWrU00000rWrVq1atWrVq1alaaa1atWrVq1NNNammmmla1atWrVq1aterVq16tWrVnVqa1NK1qaaaVX/xAAWEAADAAAAAAAAAAAAAAAAAAAhgJD/2gAIAQEAAz8AaExf/8QAGhEBAQEBAQEBAAAAAAAAAAAAAQISEQADEP/aAAgBAgEBAgDx48ePHjx48ePHjx48ePHjx48ePHjx48ePHj86IiIiIiInjx48ePHjx48IiIiIj0oooooooooRERER73ve60UUUUUUVrWiiiiiihERERER73ve97ooooorRWiiiiihKERERER73ve973RRRRWtFFFFFFCIiIiIiPe973ve60UUVrRRRRRRQiIlCIiI973ve973pRRWiiiiiiiiiiiiiiihEe973ve973RRWtFFFFFFFFFFFFFFFFFFa13ve973WitaKKKKKKKKKKKKKKKKKK1rWtd1rutFa1oooooooooooosssooorWta1rWta1rRRRRRRRRRRZZZZZZZZZWta1rWta1rRRRRRRRRZZZZZZZZZZZZe9a1rWta1rWitaKLLLLLLLLLLLLLLLLL3rWta1rWtFbLLLLLLLLLLLLLLLLLLLL3vWta1rWita1ssssssss+hZZZZZZZZe961rWta0Vre97LLLLLLLLLLLPoWWWWWXrWta1oorWta3ssss+hZZZZ9Cyyyyyyyyiita1orWta1ve9llllllllllllllllFFa0VorWta1ve9llllllllllllllllllFFFaK1rWta1rWiyyyyyyyyyyyyiiiiiiitFFa1rWta1oosoosssssoooosoooorRRRWta1rWta0UUUUUWUUUUUUUUUUUVoooorWta1rWtaKKKKKKmiiiiiiiiiiiiiiitd73ve61oSiiipoqaKKKKKKKKKK0UUUVrve973vREREZoSihEooooorRRRRWtd73ve9EREREREoSiiiiitFllllla73ve9ERERERESiiiiiitH0PoWWWWVrXe96IiIiMoiJRRRRRRWjwlFFllllFFd6IiIiIlCUUUUUUUUUePHjx48ePCIiIiIiIiUUUUUUUUUUUePHjx48ePHjx48ePHjx48IiUUUUUUJRRRX//xAAWEQADAAAAAAAAAAAAAAAAAAABYJD/2gAIAQIBAz8AtEV7/8QAFxEBAQEBAAAAAAAAAAAAAAAAAAECEP/aAAgBAwEBAgCtNNNNNNNNNNNNNNNNNNNNNNNNNNNNNcrTTTTTTTTTTTTTTTTTTTTTTTTTTTTTXKrTTTTTTTU000000000000000000001FVpppppqampqaaaaaaaaaaaaaaaaaaaa5Vaaaaampqampqammmmmmmmmmmlaaaaaaiq0001NTU1NTU1NTTTTTTTTTTSqqtNNNcqtNNSyzU1LNTU1NTTTTTTTTTSqqq001ytNLLLLNTU1NTU1NTbbbTTTTTSqqq001ytNLLLLLNTU1NTU3NttttNNNNNKqq001KrSyyyyyzU1NTU3Nzc02220000qqqqrSqqyyyyyzU1NTU3Nzc3NttttNNNKqqqqqqssssss1NTU3Nzc3NzbbbbTTTSqqqqqqrLLLLLNTU1Nzc3Nzc22220000qqqqqqqqssss1NTU3Nzc3NzbbbbbTTSqqqqqqqqqqzU1NTc3Nzc3Nzbc22000qqqqqqqqqqqtTU3Nzc3Nzc3NtzbTTSqqqqrKqqqqqtNNzc23Nzc3Nzc3NTU1KqqqrKqqqqqtNNNNttzc3Nzc3NzU1NLLLLLKqqqqqqqq0022223Nzc3NzU1NSyyyyyyqqqqqqqrTTbbbbc3Nzc3NTU1LLLLLLKsqqqqqqrTTTTbbbc3Nzc1NTUsssssssqqqqqqrTTTTTbbbTc3NTU1NTUsssssqqqqqqqq0000222023NTU1NTUsssssqqqqqqqq000000003NTU1NTU1LLLLLNKrTSqqqqtNNNNNNtNNTU1NSzUssss00qq0qqqqrTTTTTTTTTU1NTUs1LLLNNNKrTTTSqqq00000000001NTU1LNTU0000qtNNNKqqqtNNNNNNNNTU1NTUs1NNNNNKss1NNNK00qtK0000001NNTU0s000000qq000001NKrStNNNNK1NNNNStNNNNNKqtNNNNNNNK0000000rU0000rTTTTTSq00000rTTTTTTTTTTTTTTTTStNNNNKr/xAAUEQEAAAAAAAAAAAAAAAAAAACg/9oACAEDAQM/AAAf/9k=";
+                // Leaf glass surfaces only — layout wrappers (.yd-control-surface,
+                // .yd-cockpit, .yd-cockpit-col, .yd-inspector-gate) are
+                // structural, not glass. (.dictionary-panel lives INSIDE the
+                // candidate popup, so it is never outermost and keeps the CSS
+                // frost — deliberately not listed.)
+                var SEL =
+                    ".yd-panel,.yd-userdb-panel,.yd-inspector-panel,.yd-section,.candidate-panel,.yd-app-header,.yd-input-area";
+                // Text-heavy floating overlays get rdev's "overLight" tuning:
+                // more blur, half displacement.
+                var OVERLIGHT = ".candidate-panel,.yd-app-header";
+                var SCALE = 70; // rdev displacementScale default
+                var ABERRATION = 2; // rdev aberrationIntensity default
+                var PAD = 48; // filter-region margin (px) > max displacement
+                var ua = navigator.userAgent;
+                if (!/Chrome\//.test(ua) || !(window.CSS && CSS.supports("backdrop-filter", "url(#x)"))) return;
+                var defs = document.getElementById("lg-defs");
+                var seq = 0;
+                var tracked = new Map(); // el -> {id, filter, w, h}
+
+                function filterMarkup(id, w, h, scale) {
+                    var r = -scale;
+                    var g = -(scale * (1 + ABERRATION * 0.05));
+                    var b = -(scale * (1 + ABERRATION * 0.1));
+                    return (
+                        '<filter id="' + id + '" x="' + -PAD + '" y="' + -PAD + '" width="' + (w + 2 * PAD) + '" height="' + (h + 2 * PAD) +
+                        '" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">' +
+                        '<feImage x="0" y="0" width="' + w + '" height="' + h + '" result="MAP" preserveAspectRatio="xMidYMid slice" href="' + MAP + '"/>' +
+                        '<feColorMatrix in="MAP" type="matrix" values="0.3 0.3 0.3 0 0  0.3 0.3 0.3 0 0  0.3 0.3 0.3 0 0  0 0 0 1 0" result="EDGE_INTENSITY"/>' +
+                        '<feComponentTransfer in="EDGE_INTENSITY" result="EDGE_MASK"><feFuncA type="discrete" tableValues="0 ' + ABERRATION * 0.05 + ' 1"/></feComponentTransfer>' +
+                        '<feOffset in="SourceGraphic" dx="0" dy="0" result="CENTER"/>' +
+                        '<feDisplacementMap in="SourceGraphic" in2="MAP" scale="' + r + '" xChannelSelector="R" yChannelSelector="B" result="RED_D"/>' +
+                        '<feColorMatrix in="RED_D" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="RED_C"/>' +
+                        '<feDisplacementMap in="SourceGraphic" in2="MAP" scale="' + g + '" xChannelSelector="R" yChannelSelector="B" result="GREEN_D"/>' +
+                        '<feColorMatrix in="GREEN_D" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="GREEN_C"/>' +
+                        '<feDisplacementMap in="SourceGraphic" in2="MAP" scale="' + b + '" xChannelSelector="R" yChannelSelector="B" result="BLUE_D"/>' +
+                        '<feColorMatrix in="BLUE_D" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="BLUE_C"/>' +
+                        '<feBlend in="GREEN_C" in2="BLUE_C" mode="screen" result="GB"/>' +
+                        '<feBlend in="RED_C" in2="GB" mode="screen" result="RGB"/>' +
+                        '<feGaussianBlur in="RGB" stdDeviation="0.3" result="ABERRATED"/>' +
+                        '<feComposite in="ABERRATED" in2="EDGE_MASK" operator="in" result="EDGE_AB"/>' +
+                        '<feComponentTransfer in="EDGE_MASK" result="INVERTED"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>' +
+                        '<feComposite in="CENTER" in2="INVERTED" operator="in" result="CENTER_CLEAN"/>' +
+                        '<feComposite in="EDGE_AB" in2="CENTER_CLEAN" operator="over"/>' +
+                        "</filter>"
+                    );
+                }
+
+                function isOverlight(el) {
+                    return el.matches(OVERLIGHT);
+                }
+
+                // Only outermost glass surfaces are lensed: a nested lensed
+                // backdrop-filter would re-displace the parent's already
+                // displaced output. Inner glass keeps the CSS frost fallback.
+                function isOutermost(el) {
+                    return !(el.parentElement && el.parentElement.closest(SEL));
+                }
+
+                function update(el) {
+                    var t = tracked.get(el);
+                    if (!t) return;
+                    var rect = el.getBoundingClientRect();
+                    var w = Math.round(rect.width);
+                    var h = Math.round(rect.height);
+                    if (!w || !h || (w === t.w && h === t.h)) return;
+                    t.w = w;
+                    t.h = h;
+                    var scale = isOverlight(el) ? SCALE * 0.5 : SCALE;
+                    var host = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+                    host.innerHTML = filterMarkup(t.id, w, h, scale);
+                    var fresh = host.firstChild;
+                    if (t.filter) {
+                        t.filter.replaceWith(fresh);
+                    } else {
+                        defs.appendChild(fresh);
+                    }
+                    t.filter = fresh;
+                    var blur = isOverlight(el) ? 14 : 6; // rdev: (overLight ? 12 : 4) + 0.0625 * 32
+                    el.style.setProperty("backdrop-filter", "blur(" + blur + "px) saturate(140%) url(\"#" + t.id + "\")");
+                }
+
+                var ro = new ResizeObserver(function (entries) {
+                    for (var i = 0; i < entries.length; i++) update(entries[i].target);
+                });
+
+                function attach(el) {
+                    if (tracked.has(el)) return;
+                    tracked.set(el, { id: "lg-" + seq++, filter: null, w: 0, h: 0 });
+                    ro.observe(el);
+                    update(el);
+                }
+
+                function detach(el) {
+                    var t = tracked.get(el);
+                    if (!t) return;
+                    ro.unobserve(el);
+                    if (t.filter) t.filter.remove();
+                    tracked.delete(el);
+                    // A still-connected element demoted from outermost must not
+                    // keep a dangling inline url() (Chromium skips it but the
+                    // weaker inline blur would override the CSS frost fallback).
+                    if (el.isConnected) el.style.removeProperty("backdrop-filter");
+                }
+
+                var scanScheduled = 0;
+                function scan() {
+                    scanScheduled = 0;
+                    tracked.forEach(function (t, el) {
+                        if (!el.isConnected || !isOutermost(el)) detach(el);
+                    });
+                    var els = document.querySelectorAll(SEL);
+                    for (var i = 0; i < els.length; i++) {
+                        if (isOutermost(els[i])) attach(els[i]);
+                    }
+                }
+
+                function scheduleScan() {
+                    if (scanScheduled) return;
+                    scanScheduled = 1;
+                    // rAF is suspended in hidden/occluded tabs — fall back to a
+                    // timer there so glass attaches even in background loads.
+                    if (document.visibilityState === "hidden") setTimeout(scan, 64);
+                    else requestAnimationFrame(scan);
+                }
+
+                new MutationObserver(scheduleScan).observe(document.body, { childList: true, subtree: true });
+                scheduleScan();
+            })();
+        </script>
+        <!-- Glass motion controller (adapted from liquid-glass-react, MIT,
+             (c) 2025 Max Rovensky):
+             1. Specular rim tracking — sets --mx/--my (cursor vs element
+                centre, in %) on EVERY glass surface under the cursor, not just
+                the innermost, so a panel's rim keeps responding while the
+                cursor crosses a button inside it.
+             2. rdev elasticity for pill controls — translation toward the
+                cursor ((mouse - centre) * elasticity * 0.1 * fade), directional
+                scaleX/scaleY stretch inside a 200px edge-activation zone, and
+                scale(0.96) while pressed, all via one inline transform per
+                element with a 0.2s ease-out transition (index.css).
+             Cleared when the pointer leaves the window. Under
+             prefers-reduced-motion (tracked live) BOTH effects are skipped —
+             the rim rests at its symmetric default. -->
+        <script>
+            (function () {
+                var RIM_SEL =
+                    ".yd-panel,.yd-section,.yd-inspector-panel,.yd-userdb-panel,.candidate-panel,.yd-button,.yd-theme-button,.yd-small-button,.yd-mode-button,.page-nav";
+                var ELASTIC_SEL = ".yd-button,.yd-theme-button,.yd-small-button,.yd-mode-button,.page-nav";
+                var ELASTICITY = 0.15; // rdev default
+                var ZONE = 200; // rdev activation zone (px from element edge)
+                var motionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+                var reduceMotion = !!(motionQuery && motionQuery.matches);
+                if (motionQuery && motionQuery.addEventListener) {
+                    motionQuery.addEventListener("change", function (e) {
+                        reduceMotion = e.matches;
+                        if (reduceMotion) clearAll();
+                    });
+                }
+                var raf = 0,
+                    cx = -1e4,
+                    cy = -1e4;
+                var rimActive = new Set();
+                var stretched = new Set();
+                var pressed = null;
+
+                function clearRim(el) {
+                    el.style.removeProperty("--mx");
+                    el.style.removeProperty("--my");
+                }
+
+                function rimChain(target) {
+                    var chain = [];
+                    var el = target && target.closest ? target.closest(RIM_SEL) : null;
+                    while (el) {
+                        chain.push(el);
+                        el = el.parentElement ? el.parentElement.closest(RIM_SEL) : null;
+                    }
+                    return chain;
+                }
+
+                function applyRim(target) {
+                    var chain = rimChain(target);
+                    rimActive.forEach(function (el) {
+                        if (chain.indexOf(el) === -1) {
+                            if (el.isConnected) clearRim(el);
+                            rimActive.delete(el);
+                        }
+                    });
+                    for (var i = 0; i < chain.length; i++) {
+                        var el = chain[i];
+                        var r = el.getBoundingClientRect();
+                        if (!r.width || !r.height) continue;
+                        el.style.setProperty("--mx", (((cx - (r.left + r.width / 2)) / r.width) * 100).toFixed(1));
+                        el.style.setProperty("--my", (((cy - (r.top + r.height / 2)) / r.height) * 100).toFixed(1));
+                        rimActive.add(el);
+                    }
+                }
+
+                // rdev's directional stretch + elastic translation, one inline
+                // transform per pill within the activation zone. All layout
+                // reads happen before any style write to avoid interleaved
+                // forced reflows.
+                function applyElastic() {
+                    var els = document.querySelectorAll(ELASTIC_SEL);
+                    var rects = [];
+                    var i;
+                    for (i = 0; i < els.length; i++) rects.push(els[i].getBoundingClientRect());
+                    var seen = new Set();
+                    for (i = 0; i < els.length; i++) {
+                        var el = els[i];
+                        if (el.disabled || el.getAttribute("aria-disabled") === "true") continue;
+                        var r = rects[i];
+                        if (!r.width || !r.height) continue;
+                        var centerX = r.left + r.width / 2;
+                        var centerY = r.top + r.height / 2;
+                        var dx = cx - centerX;
+                        var dy = cy - centerY;
+                        var edgeX = Math.max(0, Math.abs(dx) - r.width / 2);
+                        var edgeY = Math.max(0, Math.abs(dy) - r.height / 2);
+                        var edgeDist = Math.sqrt(edgeX * edgeX + edgeY * edgeY);
+                        if (edgeDist > ZONE) continue;
+                        seen.add(el);
+                        var fade = 1 - edgeDist / ZONE;
+                        var tx = dx * ELASTICITY * 0.1 * fade;
+                        var ty = dy * ELASTICITY * 0.1 * fade;
+                        var scale = "";
+                        if (el === pressed) {
+                            scale = " scale(0.96)";
+                        } else {
+                            var centerDist = Math.sqrt(dx * dx + dy * dy);
+                            if (centerDist > 0) {
+                                var nx = Math.abs(dx / centerDist);
+                                var ny = Math.abs(dy / centerDist);
+                                var intensity = Math.min(centerDist / 300, 1) * ELASTICITY * fade;
+                                var sx = Math.max(0.8, 1 + nx * intensity * 0.3 - ny * intensity * 0.15);
+                                var sy = Math.max(0.8, 1 + ny * intensity * 0.3 - nx * intensity * 0.15);
+                                scale = " scaleX(" + sx.toFixed(3) + ") scaleY(" + sy.toFixed(3) + ")";
+                            }
+                        }
+                        el.style.transform = "translate(" + tx.toFixed(1) + "px, " + ty.toFixed(1) + "px)" + scale;
+                        stretched.add(el);
+                    }
+                    stretched.forEach(function (el) {
+                        if (!seen.has(el)) {
+                            if (el.isConnected) el.style.removeProperty("transform");
+                            stretched.delete(el);
+                        }
+                    });
+                }
+
+                var lastTarget = null;
+                function tick() {
+                    raf = 0;
+                    if (reduceMotion) return; // rim sweep + elastic are both motion
+                    applyRim(lastTarget);
+                    applyElastic();
+                }
+
+                function clearAll() {
+                    cx = -1e4;
+                    cy = -1e4;
+                    lastTarget = null;
+                    rimActive.forEach(function (el) {
+                        if (el.isConnected) clearRim(el);
+                    });
+                    rimActive.clear();
+                    stretched.forEach(function (el) {
+                        if (el.isConnected) el.style.removeProperty("transform");
+                    });
+                    stretched.clear();
+                    pressed = null;
+                }
+
+                document.addEventListener(
+                    "pointermove",
+                    function (e) {
+                        cx = e.clientX;
+                        cy = e.clientY;
+                        lastTarget = e.target;
+                        if (!raf) raf = requestAnimationFrame(tick);
+                    },
+                    { passive: true }
+                );
+                document.addEventListener(
+                    "pointerdown",
+                    function (e) {
+                        pressed = e.target && e.target.closest ? e.target.closest(ELASTIC_SEL) : null;
+                        if (pressed && !raf) raf = requestAnimationFrame(tick);
+                    },
+                    { passive: true }
+                );
+                document.addEventListener(
+                    "pointerup",
+                    function () {
+                        pressed = null;
+                        if (!raf) raf = requestAnimationFrame(tick);
+                    },
+                    { passive: true }
+                );
+                document.addEventListener("pointerout", function (e) {
+                    if (!e.relatedTarget) clearAll();
+                });
+                window.addEventListener("blur", clearAll);
+            })();
+        </script>
     </body>
 </html>

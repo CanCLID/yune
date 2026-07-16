@@ -2101,3 +2101,655 @@
 		display: none;
 	}
 }
+
+/* ============================================================================
+   LIQUID GLASS THEME v4  —  appended override layer (liquid-glass-react port)
+   What makes it read as GLASS, not glassmorphism:
+     1. photographic backdrop behind everything (something to refract)
+     2. genuinely see-through panels: faint flat tint, NO baked sheen/border
+     3. real edge REFRACTION via per-element SVG displacement filters,
+        injected by the lens manager in index.html (Chromium; frost fallback
+        elsewhere)
+     4. the rim is LIGHT, not a line: rdev's two masked gradient rings
+        (screen @ 0.2 + overlay @ 1)
+     5. rdev's single soft cast shadow (0 12px 40px)
+   Self-contained; delete this block (and the <svg> + scripts in index.html)
+   to revert.
+   ============================================================================ */
+
+:root,
+:root[data-theme="light"] {
+	--radius: 22px;
+	--radius-md: 16px;
+	--radius-sm: 11px;
+	/* rdev glass has NO background fill — all tint comes from the refracted
+	   backdrop. We keep a faint flat tint so dark ink stays legible over the
+	   photo; set to transparent for the pure liquid-glass-react look. */
+	--glass-bg: rgba(255, 255, 255, 0.2);
+	/* FALLBACK frost only (Safari/Firefox). On Chromium the lens manager in
+	   index.html overrides this inline per element with
+	   blur(6px) saturate(140%) url(#lg-N) — a per-element pixel-sized
+	   displacement filter (rdev standard-mode recipe). Never put url() here:
+	   WebKit drops the whole declaration when the list contains url(). */
+	--glass-lens: blur(14px) saturate(160%) brightness(1.06);
+	--glass-blur: blur(14px) saturate(160%) brightness(1.04);
+	/* rdev has no drawn border — the rim is the two gradient rings below */
+	--glass-edge: transparent;
+	--glass-inset: inset 0 0 0 0 rgba(0, 0, 0, 0);
+	/* rdev container shadow (standard mode) */
+	--glass-drop: 0 12px 40px rgba(0, 0, 0, 0.25);
+	/* accent sampled from the bougainvillea in the tiramisu backdrop */
+	--accent: #c9327f;
+	--accent-soft: #fbe4f0;
+	--accent-dim: #f6cce2;
+	--accent-glass: rgba(201, 50, 127, 0.22);
+	--line: rgba(17, 24, 39, 0.1);
+	--line2: rgba(17, 24, 39, 0.07);
+	--surface2: rgba(255, 255, 255, 0.42);
+	--card-tint: rgba(255, 255, 255, 0.16);
+	--card-edge: rgba(255, 255, 255, 0.44);
+	/* muted ink was #a3a3a3 — tuned for flat paper, drowns on the photo */
+	--ink3: #5c6470;
+	/* Apple-leaning UI chrome font; Chinese candidate fonts are untouched */
+	--font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, "Noto Sans TC", sans-serif;
+}
+
+:root[data-theme="dark"] {
+	--glass-bg: rgba(10, 13, 18, 0.22);
+	--glass-lens: blur(14px) saturate(150%) brightness(1.1);
+	--glass-blur: blur(14px) saturate(150%) brightness(1.08);
+	--glass-edge: transparent;
+	--glass-inset: inset 0 0 0 0 rgba(0, 0, 0, 0);
+	--glass-drop: 0 12px 40px rgba(0, 0, 0, 0.45);
+	--accent: #f06fae;
+	--accent-soft: rgba(240, 111, 174, 0.16);
+	--accent-dim: #fbd3e7;
+	--accent-glass: rgba(240, 111, 174, 0.34);
+	--line: rgba(255, 255, 255, 0.12);
+	--line2: rgba(255, 255, 255, 0.07);
+	--surface2: rgba(255, 255, 255, 0.05);
+	--card-tint: rgba(255, 255, 255, 0.035);
+	--card-edge: rgba(255, 255, 255, 0.09);
+	--ink3: #aab1bd;
+}
+
+/* --- Ambient field: photographic backdrop the glass blurs/refracts
+       (packages/yune-web-runtime/tiramisu.jpg, served at ORIGINAL resolution
+       as apps/yune-web/public/bg-glass.jpg — kept full-size on purpose so it
+       stays sharp on 4K displays; do not recompress).
+       The photo lives on a position:fixed body::before layer, NOT on
+       background-attachment: fixed — a fixed-position element is one
+       composited GPU layer, while fixed attachment repaints the full-res
+       image on every scroll frame, which stalls the renderer under the
+       per-panel backdrop lenses. --- */
+/* Fallback color lives on html, NOT body: a z-index:-1 pseudo paints behind
+   its parent's own background, so body must stay transparent for the photo
+   layer to show. */
+html {
+	background: #d7e3ec;
+}
+
+body {
+	background: transparent;
+}
+
+body::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	background: url("/bg-glass.jpg") center / cover no-repeat;
+	pointer-events: none;
+}
+
+/* Scroll parallax (Chromium): the photo layer is 180vh tall and a
+   scroll-driven animation translates it up by 80vh across the full scroll
+   range, so the backdrop pans slower than the content and its bottom edge
+   lands exactly at page end. transform animates on the compositor; browsers
+   without scroll-driven animations keep the static fixed layer above.
+   (Do NOT add a time-based fallback animation here: without a timeline the
+   0s animation would jump straight to the end state.) */
+@supports (animation-timeline: scroll()) {
+	@keyframes lg-bg-parallax {
+		to {
+			transform: translateY(-80vh);
+		}
+	}
+
+	body::before {
+		bottom: auto;
+		height: 180vh;
+		animation: lg-bg-parallax linear both;
+		animation-timeline: scroll(root);
+	}
+}
+
+.yd-app-shell {
+	background: transparent;
+}
+
+:root[data-theme="dark"] {
+	background: #0d1115;
+}
+
+:root[data-theme="dark"] body {
+	background: transparent;
+}
+
+:root[data-theme="dark"] body::before {
+	/* same photo, dimmed hard — it is high-key, so light glass text needs a
+	   deeper scrim than a dark photo would */
+	background: linear-gradient(rgba(6, 8, 12, 0.62), rgba(6, 8, 12, 0.62)), url("/bg-glass.jpg") center / cover no-repeat;
+}
+
+/* Bare-on-photo labels (.yd-top-label, gate/surface headings) get real ink
+   contrast plus a soft theme-matched halo — the baseline mid-gray (#a3a3a3)
+   was tuned for a flat near-white background and drowns in the photo. The
+   section titles/descriptions sit on faint glass tint, where the same
+   treatment also helps and the halo is invisible against the tint. */
+.yd-top-label,
+.yd-section-title,
+.yd-section-description,
+.yd-field-row--split .yd-field-label,
+.yd-control-surface-header h3,
+.yd-inspector-gate-header,
+.yd-inspector-enable {
+	color: #3d434d;
+	text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85), 0 0 10px rgba(255, 255, 255, 0.7);
+}
+
+:root[data-theme="dark"] .yd-top-label,
+:root[data-theme="dark"] .yd-section-title,
+:root[data-theme="dark"] .yd-section-description,
+:root[data-theme="dark"] .yd-field-row--split .yd-field-label,
+:root[data-theme="dark"] .yd-control-surface-header h3,
+:root[data-theme="dark"] .yd-inspector-gate-header,
+:root[data-theme="dark"] .yd-inspector-enable {
+	color: #dde2ea;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.55);
+}
+
+/* --- Big glass panels: full material + real edge refraction (lens).
+       ONE layer of glass only: the leaf panels are the material, so the
+       layout wrappers (.yd-control-surface, .yd-cockpit, .yd-cockpit-col,
+       .yd-inspector-gate) are structural — no fill, no filter, no rim —
+       and the lens manager treats the panels as outermost. --- */
+.yd-panel,
+.yd-userdb-panel,
+.yd-inspector-panel,
+.yd-section,
+.candidate-panel {
+	background: var(--glass-bg);
+	backdrop-filter: var(--glass-lens);
+	-webkit-backdrop-filter: var(--glass-lens);
+	border: 1px solid var(--glass-edge);
+	border-radius: var(--radius);
+	box-shadow: var(--glass-drop), var(--glass-inset);
+}
+
+.yd-control-surface,
+.yd-cockpit,
+.yd-cockpit-col,
+.yd-inspector-gate {
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+
+/* Baseline overflow: hidden clipped the inner inspector panel's cast shadow;
+   the gate is structural now, so nothing needs clipping. */
+.yd-inspector-gate {
+	overflow: visible;
+}
+
+/* --- Nested sub-cards / strips inside sections: light tint, no extra blur --- */
+.yd-panel-body,
+.yd-fact-strip,
+.yd-inline-form,
+.yd-inspector-column,
+.yd-table-wrap,
+.yd-status-strip,
+.yd-meta-strip,
+.yd-empty-panel,
+.yd-url-chips {
+	background: var(--card-tint);
+	border: 1px solid var(--card-edge);
+	border-radius: var(--radius-md);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Baseline leak: the cockpit action bar still painted opaque var(--bg) (solid
+   white) under the glass theme — give it the same card tint as its siblings. */
+.yd-cockpit-actionbar {
+	background: var(--card-tint);
+	border-color: var(--card-edge);
+}
+
+/* Baseline leak: per-status pill rules (specificity 0,2,0) painted opaque
+   var(--bg); match their specificity and tint them — the colored status dots
+   carry the semantics. */
+.yd-status-pill[data-status] {
+	background: var(--card-tint);
+	border-color: var(--card-edge);
+}
+
+/* Baseline sticky table headers relied on --surface2 being opaque paper; with
+   translucent glass they let rows ghost through while scrolling. Give them
+   their own frosted, near-opaque backing. */
+.yd-userdb-table th,
+.yd-inspector-table th {
+	background: rgba(255, 255, 255, 0.84);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+}
+
+:root[data-theme="dark"] .yd-userdb-table th,
+:root[data-theme="dark"] .yd-inspector-table th {
+	background: rgba(16, 20, 27, 0.85);
+}
+
+/* Rounded material language for the small form controls: the baseline knobs
+   are hard squares inside now-pill tracks. */
+.yd-toggle::after,
+.yd-toggle:checked::after {
+	border-radius: 50%;
+}
+
+.yd-check:checked::after {
+	border-radius: 50%;
+}
+
+.yd-choice {
+	border-radius: 50%;
+}
+
+.yd-slider::-webkit-slider-thumb {
+	width: 14px;
+	height: 14px;
+	border-radius: 999px;
+}
+
+/* --- Small controls / chips / badges: rounded + hairline --- */
+.yd-square-chip,
+.yd-status-pill,
+.yd-count-badge,
+.yd-check,
+.yd-url-chips code {
+	border-radius: 999px;
+	border: 1px solid var(--card-edge);
+	background: var(--card-tint);
+}
+
+.yd-slider {
+	border-radius: 999px;
+}
+
+/* --- Frosted sticky header. Lens applied by the manager (overLight tier:
+       blur 14, half displacement); this is the non-Chromium fallback. The
+       header is the one glass surface without gradient rings (full-width,
+       square), so it gets a single specular bottom hairline instead. --- */
+.yd-app-header {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	background: rgba(255, 255, 255, 0.26);
+	backdrop-filter: blur(12px) saturate(160%);
+	-webkit-backdrop-filter: blur(12px) saturate(160%);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+	box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.25);
+}
+
+:root[data-theme="dark"] .yd-app-header {
+	background: rgba(12, 15, 22, 0.35);
+	border-bottom-color: rgba(255, 255, 255, 0.14);
+	box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.55);
+}
+
+.yd-brand-mark {
+	border-radius: 15px;
+	box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 6px 18px var(--accent-glass);
+}
+
+/* --- Glass pill buttons (plain blur, no lens on small elements) --- */
+.yd-theme-button,
+.yd-small-button,
+.yd-button {
+	background: var(--glass-bg);
+	backdrop-filter: var(--glass-blur);
+	-webkit-backdrop-filter: var(--glass-blur);
+	border: 1px solid var(--glass-edge);
+	border-radius: 999px;
+	box-shadow: var(--glass-inset), 0 4px 12px -4px rgba(28, 30, 74, 0.25);
+	/* transform is owned by the elastic controller in index.html; the 0.2s
+	   ease-out is what turns its per-frame updates into the rdev gel feel */
+	transition: transform 0.2s ease-out, box-shadow 0.2s ease;
+}
+
+.yd-button:hover,
+.yd-theme-button:hover,
+.yd-small-button:hover:not(:disabled):not([aria-disabled="true"]) {
+	box-shadow: var(--glass-inset), 0 10px 22px -6px rgba(28, 30, 74, 0.3);
+}
+
+/* --- Rounded glass chips / selectors --- */
+.yd-mode-button,
+.yd-schema-select,
+.yd-text-input,
+.yd-textarea {
+	border-radius: var(--radius-md);
+	border: 1px solid var(--glass-edge);
+	background: var(--glass-bg);
+	backdrop-filter: var(--glass-blur);
+	-webkit-backdrop-filter: var(--glass-blur);
+	box-shadow: var(--glass-inset);
+}
+
+.yd-segment-group {
+	border-radius: 999px;
+}
+
+.yd-segment {
+	border-radius: 999px;
+}
+
+.yd-status-dot {
+	border-radius: 50%;
+}
+
+.yd-toggle {
+	border-radius: 999px;
+}
+
+/* --- See-through input surface with accent focus glow --- */
+.yd-input-area {
+	background: var(--glass-bg);
+	backdrop-filter: var(--glass-lens);
+	-webkit-backdrop-filter: var(--glass-lens);
+	border: 1px solid var(--glass-edge);
+	border-radius: var(--radius-md);
+	box-shadow: var(--glass-inset);
+}
+
+.yd-input-area:focus,
+.yd-input-frame[aria-busy="true"] .yd-input-area {
+	border-color: color-mix(in srgb, var(--accent) 60%, var(--glass-edge));
+	box-shadow: var(--glass-inset), 0 0 0 4px var(--accent-glass);
+}
+
+/* --- Hero: floating frosted candidate window (uses the panel lens above) --- */
+.candidate-panel {
+	border-radius: var(--radius-md);
+}
+
+.candidate-panel-header {
+	background: transparent;
+	border-bottom: 1px solid var(--line2);
+}
+
+.candidate-row.highlighted tr {
+	background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 78%, transparent), color-mix(in srgb, var(--accent) 52%, transparent));
+	border-radius: var(--radius-sm);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 6px 18px var(--accent-glass);
+}
+
+.page-nav {
+	border-radius: 999px;
+	border: 1px solid var(--glass-edge);
+	background: var(--glass-bg);
+	backdrop-filter: var(--glass-blur);
+	-webkit-backdrop-filter: var(--glass-blur);
+	box-shadow: var(--glass-inset);
+}
+
+/* Baseline .page-nav:disabled (0,2,0) out-specifies the transparent border
+   above — keep disabled pagers borderless too (rim-is-light design). */
+.page-nav:disabled {
+	border-color: transparent;
+}
+
+/* Dictionary detail pane: accent-tinted glass instead of a solid block.
+   Tint stays strong (55%) because its baseline text colors are white /
+   pale-indigo, tuned for a solid accent fill. --- */
+.dictionary-panel {
+	background: color-mix(in srgb, var(--accent) 55%, transparent);
+	backdrop-filter: blur(12px) saturate(160%);
+	-webkit-backdrop-filter: blur(12px) saturate(160%);
+	box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.25);
+}
+
+/* ============================================================================
+   SPECULAR RIM — rdev's two stacked gradient rings (liquid-glass-react, MIT,
+   (c) 2025 Max Rovensky, src/index.tsx "Border layer 1/2"): the same 1.5px
+   padding + mask ring drawn twice, once with mix-blend-mode: screen at
+   opacity 0.2 (soft light catch) and once with mix-blend-mode: overlay at full
+   opacity (the wet, high-contrast rim — overlay both lightens AND darkens
+   against the backdrop, which a single screen ring cannot). There is no drawn
+   border anywhere; this rim IS the edge. The --mx/--my custom properties are
+   set per hovered element by the pointermove handler in index.html (range
+   ~-50..50); default 0 = calm, symmetric rim.
+   ============================================================================ */
+/* NOTE: .candidate-panel is deliberately absent — position: relative would
+   break the caret-following popup (baseline position: absolute). Its ring
+   pseudos still anchor correctly in BOTH modes because a non-none
+   backdrop-filter itself creates a containing block for absolute descendants
+   (Filter Effects L2) — this covers the position: static --fixed variant. */
+.yd-panel,
+.yd-section,
+.yd-inspector-panel,
+.yd-userdb-panel,
+.yd-button,
+.yd-theme-button,
+.yd-small-button,
+.yd-mode-button,
+.page-nav {
+	position: relative;
+}
+
+/* Ring layer 1 — screen @ 0.2 (rdev whites 0.12 / 0.4) */
+.yd-panel::before,
+.yd-section::before,
+.yd-inspector-panel::before,
+.yd-userdb-panel::before,
+.candidate-panel::before,
+.yd-button::before,
+.yd-theme-button::before,
+.yd-small-button::before,
+.yd-mode-button::before,
+.page-nav::before,
+/* Ring layer 2 — overlay @ 1 (rdev whites 0.32 / 0.6) */
+.yd-panel::after,
+.yd-section::after,
+.yd-inspector-panel::after,
+.yd-userdb-panel::after,
+.candidate-panel::after,
+.yd-button::after,
+.yd-theme-button::after,
+.yd-small-button::after,
+.yd-mode-button::after,
+.page-nav::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1.5px;
+	pointer-events: none;
+	-webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	/* rdev also declares an outset 0 1px 4px shadow here, but the ring mask
+	   clips it away entirely (in rdev too) — omitted as dead weight. */
+	box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.5), inset 0 1px 3px rgba(255, 255, 255, 0.25);
+}
+
+.yd-panel::before,
+.yd-section::before,
+.yd-inspector-panel::before,
+.yd-userdb-panel::before,
+.candidate-panel::before,
+.yd-button::before,
+.yd-theme-button::before,
+.yd-small-button::before,
+.yd-mode-button::before,
+.page-nav::before {
+	mix-blend-mode: screen;
+	opacity: 0.2;
+	background: linear-gradient(
+		calc(135deg + var(--mx, 0) * 1.2deg),
+		rgba(255, 255, 255, 0) 0%,
+		rgba(255, 255, 255, 0.12) calc(33% + var(--my, 0) * 0.3%),
+		rgba(255, 255, 255, 0.4) calc(66% + var(--my, 0) * 0.4%),
+		rgba(255, 255, 255, 0) 100%
+	);
+}
+
+.yd-panel::after,
+.yd-section::after,
+.yd-inspector-panel::after,
+.yd-userdb-panel::after,
+.candidate-panel::after,
+.yd-button::after,
+.yd-theme-button::after,
+.yd-small-button::after,
+.yd-mode-button::after,
+.page-nav::after {
+	mix-blend-mode: overlay;
+	background: linear-gradient(
+		calc(135deg + var(--mx, 0) * 1.2deg),
+		rgba(255, 255, 255, 0) 0%,
+		rgba(255, 255, 255, 0.32) calc(33% + var(--my, 0) * 0.3%),
+		rgba(255, 255, 255, 0.6) calc(66% + var(--my, 0) * 0.4%),
+		rgba(255, 255, 255, 0) 100%
+	);
+}
+
+/* ============================================================================
+   OVERLAY SURFACES — the candidate popup and header float over live content.
+   rdev never makes glass opaque; these keep a modest tint (its "overLight"
+   idea) for legibility while staying genuinely see-through. The lens manager
+   gives the popup and header the overLight lens (blur 14, half displacement);
+   the dictionary pane sits INSIDE the popup so it keeps the CSS frost
+   fallback (inner glass is never lensed).
+   ============================================================================ */
+.candidate-panel {
+	background: rgba(255, 255, 255, 0.3);
+}
+
+:root[data-theme="dark"] .candidate-panel {
+	background: rgba(15, 18, 26, 0.4);
+}
+
+/* ============================================================================
+   MOTION — rdev hover/press highlight. The elastic translation/stretch and
+   press scale live in the index.html motion controller (inline transform);
+   here is the top-centre radial glow that brightens on hover and press
+   (rdev's "Hover effects" layers, collapsed into a --press-glow-driven
+   background-image so it needs no extra DOM). Placed late in the file so the
+   background-image longhand beats the earlier background shorthands.
+   ============================================================================ */
+.yd-button,
+.yd-theme-button,
+.yd-small-button,
+.yd-mode-button,
+.page-nav {
+	background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, var(--press-glow, 0)) 0%, rgba(255, 255, 255, 0) 65%);
+	transition: transform 0.2s ease-out, box-shadow 0.2s ease;
+}
+
+.yd-button:hover,
+.yd-theme-button:hover,
+.yd-small-button:hover:not(:disabled):not([aria-disabled="true"]),
+.yd-mode-button:hover,
+.page-nav:hover:not(:disabled) {
+	--press-glow: 0.28;
+}
+
+.yd-button:active,
+.yd-theme-button:active,
+.yd-small-button:active:not(:disabled):not([aria-disabled="true"]),
+.yd-mode-button:active,
+.page-nav:active:not(:disabled) {
+	--press-glow: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.yd-button,
+	.yd-theme-button,
+	.yd-small-button,
+	.yd-mode-button,
+	.page-nav {
+		transition: none;
+	}
+}
+
+/* ============================================================================
+   CONTROL POLISH — small-control states were tuned for flat paper and wash
+   out over the photo: off-state toggle tracks, unchecked boxes/radios, and
+   unselected segment tabs all get a real translucent body + visible edge.
+   ============================================================================ */
+
+/* Baseline .yd-control-surface descendant rules (0,2,0) out-specify the glass
+   input rule — without this the cockpit's four text inputs stay opaque paper
+   squares with invisible borders. */
+.yd-control-surface .yd-text-input,
+.yd-control-surface .yd-textarea {
+	background: var(--glass-bg);
+	border-color: var(--card-edge);
+	border-radius: var(--radius-md);
+}
+
+/* Baseline danger affordances lost their red borders to the transparent
+   --glass-edge override — restore them on top of the glass material. */
+.yd-button-danger {
+	border-color: rgba(185, 28, 28, 0.6);
+}
+
+.yd-count-badge--danger {
+	border-color: rgba(185, 28, 28, 0.6);
+}
+
+/* Opaque var(--bg) leaks inside glass panels missed by the first sweep. */
+.yd-raw-inline,
+.yd-reverse-lookup-item code {
+	background: var(--card-tint);
+}
+
+/* Kill the flat baseline divider between the now-rounded inspector columns
+   (baseline 0,2,0 out-specifies the card-tint border shorthand). */
+.yd-inspector-column:first-child {
+	border-right: none;
+}
+.yd-check {
+	background: rgba(255, 255, 255, 0.35);
+	border-color: rgba(17, 24, 39, 0.28);
+}
+
+.yd-choice {
+	background: rgba(255, 255, 255, 0.3);
+	border-color: rgba(17, 24, 39, 0.35);
+}
+
+.yd-segment-group {
+	background: rgba(255, 255, 255, 0.3);
+	border-color: rgba(17, 24, 39, 0.2);
+}
+
+.yd-segment {
+	color: var(--ink2);
+}
+
+:root[data-theme="dark"] .yd-check {
+	background: rgba(8, 10, 14, 0.4);
+	border-color: rgba(255, 255, 255, 0.28);
+}
+
+:root[data-theme="dark"] .yd-choice {
+	background: rgba(8, 10, 14, 0.35);
+	border-color: rgba(255, 255, 255, 0.35);
+}
+
+:root[data-theme="dark"] .yd-segment-group {
+	background: rgba(8, 10, 14, 0.35);
+	border-color: rgba(255, 255, 255, 0.18);
+}

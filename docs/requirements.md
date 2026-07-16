@@ -4,7 +4,15 @@
 
 > **Note (2026-06-17):** The GSD `.planning/` system has been retired. This requirement list and its statuses are preserved here; the **Phase** references (e.g. in the Traceability table) are historical GSD labels — now only in git history — kept for context. The live roadmap is [`roadmap.md`](./roadmap.md); historical milestone context is in [`ledgers/milestone-history.md`](./ledgers/milestone-history.md); decisions are in [`decisions.md`](./decisions.md); conventions in [`conventions.md`](./conventions.md).
 
-> **Registry contract (2026-07-15):** Completed requirement definitions and final dispositions are historical traceability, not current roadmap scope. M60 is complete; no later milestone requirements are authorized yet, and M61's provisional IDs remain draft-only. Non-milestone deferred and transferred rows remain explicitly outside the current sequence. A future structural split may move completed rows to a requirement-history ledger, but it must preserve every ID, terminal disposition, and the trace-only M19/M31/M33–M36 records.
+> **Registry contract (2026-07-16):** Completed requirement definitions and
+> final dispositions are historical traceability, not current roadmap scope.
+> M60 is complete. M61 is the sole planned milestone and is authorized for
+> attribution-first Windows measurement; any production change remains
+> conditional on its frozen owner, compatibility, and ratchet gates.
+> Non-milestone deferred and transferred rows remain explicitly outside the
+> current sequence. A future structural split may move completed rows to a
+> requirement-history ledger, but it must preserve every ID, terminal
+> disposition, and the trace-only M19/M31/M33–M36 records.
 
 ## v1 Requirements
 
@@ -1830,6 +1838,43 @@ browser behavior, or any signed performance threshold. The finalized plan is
   review-receipt delta, diff check, and two independent reviews; the plan moves
   to completed only in the final closeout commit.
 
+### M61 Native Track A Memory-Owner Reduction
+
+**Status: planned and authorized for measurement.** M61 is bound to formal M60
+closeout `0eff06a088992f417602a71300c447cdfa525255` and the actual
+post-correction kickoff base
+`bc0df36a6eee3ad63319d8c29336542082559c94`. A production change is
+conditional on fresh Windows owner reconciliation and every frozen acceptance
+gate. An evidence-backed partial/no-go is a valid terminal milestone
+disposition. The finalized plan is
+[`plans/active/m61-plan-native-track-a-memory-owner-reduction.md`](./plans/active/m61-plan-native-track-a-memory-owner-reduction.md).
+
+- [ ] **M61-BASELINE-01**: Reproduce an exact-source five-round fixed-binary
+  owned baseline plus, after one green exploratory round, the five-round
+  byte-backed diagnostic. Preserve every setup failure and measured red; a
+  plan-prescribed diagnostic stop may close this requirement as complete with
+  measured no-go.
+- [ ] **M61-ATTR-01**: Reconcile same-process Windows private bytes and stable,
+  non-overlapping named owners, naming at least `10,000,000 B` of reducible
+  memory before any production implementation or closing with measured no-go.
+- [ ] **M61-BRANCH-01**: Preserve the diagnostic verdict and authorize at most
+  one measured owner branch, or select explicit disposition D with no
+  production change.
+- [ ] **M61-REDUCE-01**: For an accepted branch, make the native reduction
+  production-default without an environment opt-in, behavior omission,
+  reduced candidate page, hidden cache, or browser payload change; otherwise
+  close this requirement by no-go.
+- [ ] **M61-COMPAT-01**: Preserve oracle candidates/order/reachability, model
+  checksums, ABI shape, lifecycle, corruption/cache behavior, Track B guards,
+  and the no-POET browser-payload boundary.
+- [ ] **M61-RATCHET-01**: Pass the unchanged M55/M59 signed native registry plus
+  the frozen `125,000,000 B` supplemental Track A ratchet across five final
+  rounds, or close the supplemental row unclaimed by measured no-go without
+  changing the historical registry.
+- [ ] **M61-EVIDENCE-01**: Publish a compact source-bound packet with privacy,
+  link, growth, manifest, and diff checks, retain raw output externally, and
+  obtain independent requirement/evidence and change-isolation reviews.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -2033,6 +2078,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M60-ONBOARD-01 | M60 | Complete - schemas in registered product roots remain blocking-open until classified and real-path accepted; new product roots must register and the production updater uses the tested helper |
 | M60-BOUNDARY-01 | M60 | Complete - tooling-only Rust audit/test changes with no runtime behavior, C ABI/API-table/export, profile/schema-id, browser, performance, Windows product, or M61 expansion |
 | M60-EVIDENCE-01 | M60 | Complete - compact exact-source evidence, four narrow Rust gates, links, growth guard, preserved pre-review/final trees, exact three-path receipt delta, commit-tree equality, and two reviews |
+| M61-BASELINE-01 | M61 | Planned - exact-source five-round fixed-binary owned baseline plus gated five-round byte-backed diagnostic with complete receipts or a preserved measured-red no-go stop |
+| M61-ATTR-01 | M61 | Planned - same-process private-byte and non-overlapping named-owner reconciliation names at least 10 MB of reducible memory before implementation |
+| M61-BRANCH-01 | M61 | Planned - preserve the diagnostic verdict and authorize at most one measured owner branch or explicit no-go |
+| M61-REDUCE-01 | M61 | Planned - accepted native reduction is production-default without environment opt-in, behavior omission, or browser payload change |
+| M61-COMPAT-01 | M61 | Planned - preserve oracle candidates/order/reachability, checksums, ABI/lifecycle/corruption/cache behavior, Track B, and web-payload boundaries |
+| M61-RATCHET-01 | M61 | Planned - unchanged signed registry plus frozen 125,000,000 B supplemental ratchet pass across five final rounds or close unclaimed by no-go |
+| M61-EVIDENCE-01 | M61 | Planned - compact source-bound packet, privacy/link/growth/manifest gates, external raw retention, and two reviews |
 | WEB02-ATTR-01 | WEB-02 | Complete - existing inspector JSON exposes selected storage, mapping, byte-source length, fallback deferrals, and owner rows without a new export |
 | WEB02-ATTR-02 | WEB-02 | Complete - public-demo Jyutping assets are reconciled to the live web ABI path and the owned-heap fallback owner is measured |
 | WEB02-ATTR-03 | WEB-02 | Complete - WEB-02 records attribution only and retains the measured memory blocker without a reduction claim |
@@ -2355,12 +2407,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
 - M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 11 complete, 0 active
 - M60 schema-general reachability capability-formalism requirements: 6 total, 6 complete, 0 active
+- M61 native Track A memory-owner reduction requirements: 7 total, 0 complete, 7 planned
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
-- Mapped to phases: 453
+- Mapped to phases: 460
 - Unmapped current checklist requirements: 0 (the eight non-checklist
   `Deferred, Transferred, And AI-Foundation Requirements` entries — six repo-deferred and two transferred
   frontend entries — are excluded from the current mapping denominator)
 
 ---
 
-_Requirements defined: 2026-04-28. Last reviewed: 2026-07-15. No milestone requirements are currently planned or active; M61's provisional IDs remain outside this registry until its draft is independently reviewed and finalized. Completed outcomes remain in this registry unless a separate future requirement-history split is approved. Current sequencing and evidence boundaries live in the roadmap, support contract, and milestone history._
+_Requirements defined: 2026-04-28. Last reviewed: 2026-07-16. M61 has seven planned requirements and is the sole active milestone; its terminal disposition may be an accepted reduction or an evidence-backed partial/no-go. Completed outcomes remain in this registry unless a separate future requirement-history split is approved. Current sequencing and evidence boundaries live in the roadmap, support contract, and milestone history._

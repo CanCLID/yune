@@ -1,13 +1,15 @@
 # M61 Native Track A Memory-Owner Reduction
 
-> **Milestone:** M61. **Status:** Draft for review — queued after M60; not
-> authorized for execution. **Track:** native engine performance, Windows Track
-> A `luna_pinyin` acceptance lane. **Created:** 2026-07-15. **Type:**
-> attribution-first measurement and conditional reduction plan.
+> **Milestone:** M61. **Status:** Finalized and authorized for execution
+> (2026-07-16). **Track:** native engine performance, Windows Track A
+> `luna_pinyin` acceptance lane. **Created:** 2026-07-15; **independently
+> reviewed and corrected:** 2026-07-15; **source-bound finalization:**
+> 2026-07-16. **Type:** attribution-first measurement and conditional reduction
+> plan.
 
 ## Outcome
 
-M61 proposes one narrow performance milestone: reduce the retained native
+M61 is one narrow performance milestone: reduce the retained native
 Track A `luna_pinyin` memory owner while preserving every signed M59 latency,
 behavior, product-guard, and ABI boundary.
 
@@ -21,10 +23,11 @@ not a default flip.
 
 M61 closes successfully only if all of these conditions hold:
 
-1. one exact clean M61 measurement-tooling commit, descended from the pushed
-   M60 closeout through recorded plan-only commits and containing no production
-   behavior change, is reproduced in five fixed-binary Windows owned-mode
-   rounds and five fixed-binary byte-backed diagnostic rounds;
+1. one exact clean M61 measurement-tooling commit, descended from the
+   source-current post-M60 kickoff base through the recorded plan-finalization
+   commit and containing no production behavior change, is reproduced in five
+   fixed-binary Windows owned-mode rounds and five fixed-binary byte-backed
+   diagnostic rounds;
 2. current process counters and non-overlapping owner rows name a reducible
    owner and reconcile the observed movement rather than relying on M47/M55
    historical bytes;
@@ -45,13 +48,18 @@ partial/no-go without a production change. That is a valid outcome.
 
 ## Authority And Boundaries
 
-M60's plan is finalized but the milestone is not yet complete. M60 remains the
-sole authorized execution milestone. M61 may be finalized only after M60 closes
-and pushes; kickoff must replace `<M60_CLOSEOUT_SHA>` below with the actual
-commit and record its exact tree.
+M60 is complete and pushed. Its formal closeout commit is
+`0eff06a088992f417602a71300c447cdfa525255`, with tree
+`cbffa328e9ca7a1ea04187a67349d977bc731b62`. The current post-closeout
+formalism correction and M61 kickoff base is
+`bc0df36a6eee3ad63319d8c29336542082559c94`, with tree
+`523ab0e5f3a8aa67f807a07586591c92f9ef1ead`. The latter changes M60
+documentation, registry wording, and focused tests only; it does not change
+production runtime behavior. M61 is the sole authorized execution milestone
+after that boundary.
 
-The separate owner request that created this draft satisfies M60's statement
-that M61 cannot be inferred from M60. Nothing in this plan changes M60's scope,
+The separate owner request that authorized M61 satisfies M60's statement that
+M61 cannot be inferred from M60. Nothing in this plan changes M60's scope,
 requirements, or evidence.
 
 Binding references:
@@ -62,8 +70,13 @@ Binding references:
   `docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`;
 - final M59 Windows performance source: `443cc636862806e4f0dd1e12ab2e2e45f4189154`;
 - final M59 five-round aggregate: `32/32` rows and `160/160` individual
-  observations green; and
-- planned M61 base: `<M60_CLOSEOUT_SHA>` after M60 is complete and pushed.
+  observations green;
+- formal M60 closeout:
+  `0eff06a088992f417602a71300c447cdfa525255`, tree
+  `cbffa328e9ca7a1ea04187a67349d977bc731b62`; and
+- source-current M61 kickoff base:
+  `bc0df36a6eee3ad63319d8c29336542082559c94`, tree
+  `523ab0e5f3a8aa67f807a07586591c92f9ef1ead`.
 
 The M59 packet records a five-run Track A peak working-set median of
 `153,899,008 B`, a worst of `153,956,352 B`, and about `8.9x` the same-run
@@ -88,6 +101,12 @@ also context rather than inherited measurements.
 - **Out of lane:** browser WASM/encoded-resource memory and Apple
   `phys_footprint`. Neither is inferred from Windows counters.
 
+A macOS-only execution can implement and review the portable tooling, but it
+cannot close M61. The binding baseline, diagnostic, owner reconciliation, and
+final acceptance require the Windows lane above. If that machine is unavailable,
+stop with M61 still planned rather than substituting macOS RSS or historical
+Windows evidence.
+
 M61 makes no public C ABI/API-table/export change, schema/profile-id change,
 oracle rebase, browser payload change, product/frontend change, Windows TSF/UI
 change, Cloudflare change, or iOS-device claim. D-24, D-25, D-31, D-47, D-48,
@@ -98,14 +117,16 @@ from every M61 commit and measurement source claim. Phase 0 must inventory and
 fingerprint the actual dirty state at kickoff; it must not assume
 `.codex/config.toml` is staged or hard-code any current unrelated path.
 
-## Proposed Requirements
+## Planned Requirements
 
-These IDs are provisional while this plan is a draft. Add them to
-`requirements.md` and traceability only when M61 is independently reviewed and
-finalized after M60:
+These IDs are planned in `requirements.md` and traceability. They remain open
+until M61 closes with either an accepted reduction or an evidence-backed
+partial/no-go disposition:
 
-- **M61-BASELINE-01:** reproduce an exact-source five-round owned baseline and
-  five-round byte-backed diagnostic A/B with fixed binaries and full receipts;
+- **M61-BASELINE-01:** reproduce an exact-source five-round owned baseline and,
+  after one green exploratory round, a five-round byte-backed diagnostic A/B
+  with fixed binaries and full receipts; a preserved exploratory measured red
+  may terminate this requirement as complete with measured no-go;
 - **M61-ATTR-01:** reconcile current whole-process and named-owner memory and
   select one structural owner before implementation;
 - **M61-BRANCH-01:** preserve the diagnostic verdict and authorize at most one
@@ -119,13 +140,29 @@ finalized after M60:
 - **M61-EVIDENCE-01:** publish compact source-bound evidence, two reviews, and a
   fail-closed packet manifest while retaining raw output externally.
 
+### Terminal requirement dispositions
+
+M61 has two valid terminal shapes. A setup block before usable measurement does
+not close the milestone and leaves the requirements planned.
+
+| Requirement | Accepted disposition A/B/C | Disposition D — measured partial/no-go |
+| --- | --- | --- |
+| `M61-BASELINE-01` | Complete | Complete with measured no-go after a green five-round owned set and the plan-prescribed diagnostic stopping point |
+| `M61-ATTR-01` | Complete | Complete with measured no-go: the evidence proves that no owner/reconciliation eligible for implementation exists |
+| `M61-BRANCH-01` | Complete | Complete: disposition D is selected and no production branch follows |
+| `M61-REDUCE-01` | Complete | Closed by no-go; no production reduction is claimed |
+| `M61-COMPAT-01` | Complete | Complete: the green owned baseline and unchanged production source preserve the compatibility boundary |
+| `M61-RATCHET-01` | Complete | Closed by no-go; the frozen supplemental ratchet remains unclaimed and the historical registry remains unchanged |
+| `M61-EVIDENCE-01` | Complete | Complete, including the measured-red/no-owner disposition and both reviews |
+
 ## Acceptance Contract
 
 ### Fixed measurement shape
 
 All baseline, diagnostic, and final acceptance rounds use:
 
-- the exact same 17 Track A inputs already bound by M59;
+- the exact Track A input string
+  `n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu`;
 - Track B input
   `neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung`;
 - `--iterations 9`, `--session-iterations 60`, and `--key-iterations 80`
@@ -144,17 +181,24 @@ All baseline, diagnostic, and final acceptance rounds use:
   behind those isolated copies remain byte-identical.
 
 The owned/byte-backed A/B source is the exact pushed M61 measurement-tooling
-commit created after Phase 0, not the untouched M60 closeout commit. Its parent
-boundary is the recorded M60 closeout SHA. Record every intervening plan-only
-commit; after excluding those documentation/requirements changes, the
-non-documentation implementation diff from M60 may contain only the diagnostic
-selector, missing attribution, supplemental-ratchet evaluator, and
-public-evidence privacy checker required below. The final production candidate
-receives its own exact-source five-round set.
+commit created after Phase 0, not either M60 boundary. Its implementation parent
+boundary is the source-current kickoff base `bc0df36a`; record the formal M60
+closeout, the post-closeout correction, and the plan-finalization commit
+separately. After excluding the plan/requirements/review changes, the
+non-documentation implementation diff from `bc0df36a` may contain only the
+diagnostic selector, missing attribution, fixed-binary aggregator provenance
+support, supplemental-ratchet evaluator, and public-evidence privacy checker
+required below. The final production candidate receives its own exact-source
+five-round set.
 
-The Windows machine must be on AC power, quiet, thermally stable, and free of
-concurrent compilation, indexing, backup, export, or other CPU/memory-heavy
-work. Record start/end timestamps and significant workloads.
+All binding owned, byte-backed, and final sets must run on the same physical
+Windows machine with the same OS build, power policy, and materially equivalent
+Rust/Cargo/Visual Studio toolchain. The machine must be on AC power, quiet,
+thermally stable, and free of concurrent compilation, indexing, backup, export,
+or other CPU/memory-heavy work. Record start/end timestamps and significant
+workloads. If the machine or environment changes materially, preserve the old
+evidence and run a new complete owned baseline before making the relative
+comparison.
 
 ### Memory win
 
@@ -205,11 +249,11 @@ The `20%` relative bar is a deliberately material reduction, well above the
 historical five-round Track A spread, rather than a claim about an inherited
 baseline. The independent `125,000,000 B` cap is a conservative absolute bound
 informed by the byte-backed range already demonstrated in M55, not a reuse of
-M55 as current evidence. Both values are frozen when this plan is finalized,
-before the first accepted M61 baseline. They cannot be adjusted, rebaselined,
-or waived after measurement inside M61. The relative bar is stricter when the
-fresh baseline is below `156,250,000 B`; above that point the absolute cap is
-stricter. Both always apply.
+M55 as current evidence. Both values are frozen by this finalized plan, before
+the first accepted M61 baseline. They cannot be adjusted, rebaselined, or waived
+after measurement inside M61. The relative bar is stricter when the fresh
+baseline is below `156,250,000 B`; above that point the absolute cap is stricter.
+Both always apply.
 
 ### Regression and behavior bars
 
@@ -246,37 +290,74 @@ approval.
 The current aggregator cannot evaluate that file in a second ordinary
 `--thresholds` invocation: it derives the expected Track A input set and run
 ceiling identities from the primary registry. The measurement/tooling commit
-must therefore add and test an explicit supplemental-ratchet interface that
-reuses the same five loaded observations, requires a matching metric key/unit
-and a strictly tighter ceiling, leaves the primary expected-input set and
-verdict untouched, requires all five observations at or below the supplemental
-ceiling, requires `worst_observed <= 125000000` and
-`individual_failures == 0`, and emits a distinct M61 verdict/provenance CSV.
-The finalized plan must paste its exact invocation after the interface exists.
-Do not edit or replace the historical threshold path.
+must therefore add and test these paired, fail-closed arguments to
+`scripts/aggregate-native-ratchet.py`:
 
-## Phase 0 — Finalize After M60
+- `--supplemental-thresholds <path>`; and
+- `--supplemental-output <path>`.
 
-- [ ] Fetch the pushed M60 closeout and fill in `<M60_CLOSEOUT_SHA>`.
-- [ ] Re-audit the roadmap, performance dashboard, M60 closeout, current
+They must be supplied together and may appear only once. The interface reuses
+the same five loaded observations, requires a matching metric key/unit and a
+strictly tighter ceiling, leaves the primary expected-input set and verdict
+untouched, requires all five observations at or below the supplemental ceiling,
+requires `worst_observed <= 125000000` and `individual_failures == 0`, and emits
+the distinct supplemental CSV plus its own provenance sidecar. The primary
+verdict, primary sidecar, supplemental verdict, and supplemental sidecar form
+one atomic fail-closed output set: any validation or write failure removes or
+invalidates all four. Do not edit or replace the historical threshold path.
+
+The frozen supplemental file is UTF-8 without BOM, LF-terminated, and contains
+exactly:
+
+```csv
+"kind","workload","input","metric","ceiling","unit","source_value","spread_pct","notes"
+"memory_peak","","","track_a_peak_working_set_bytes","125000000","bytes","125000000","0","M61 predeclared supplemental Track A pooled-worst cap; frozen before accepted measurement; does not replace m55-thresholds.csv."
+```
+
+Its SHA-256 is
+`d52d064f410df36c1c22dd5523430062563a17bb9f2f63253b607d211badefd7`.
+The executing session must recreate and verify those exact bytes externally
+before the first accepted baseline, then copy that unchanged file into the
+closeout packet only after an accepted result.
+
+The owned baseline is evaluated only against the historical registry. The
+supplemental cap is expected to reject that baseline and therefore is not
+invoked there. It is applied to the five-round byte-backed diagnostic as a
+projection and to the final production-default set as a binding acceptance
+gate. The complete Windows blocks below recreate and hash-check the threshold,
+define every set path, invoke both aggregate forms, check the native process
+exit code, and preserve a nonzero result as a measured red. No abbreviated
+aggregate invocation is authoritative.
+
+## Phase 0 — Finalization And Execution Kickoff
+
+- [x] Bind the formal pushed M60 closeout and the source-current post-closeout
+      correction separately.
+- [x] Re-audit the roadmap, performance dashboard, M60 closeout, current
       `YUNE-POET/3` code, benchmark wrappers, and threshold registry.
-- [ ] Confirm no post-draft change already moved the owner or invalidated the
+- [x] Confirm no post-review change already moved the owner or invalidated the
       branch hypothesis.
-- [ ] Convert the proposed requirement IDs into planned rows only after review.
-- [ ] Record the final path allowlist, external evidence root, exact inputs,
-      toolchain, machine identity, pinned oracle/artifact hashes, and the exact
-      M60-to-measurement-tooling commit chain.
+- [x] Convert the proposed requirement IDs into planned rows after review.
+- [x] Freeze the benchmark selector names, supplemental-ratchet interface,
+      exact inputs, threshold bars, and literal command shape before
+      measurement.
+- [x] Run two finalization reviews: evidence/measurement validity, then
+      scope/isolation and threshold safety.
+- [ ] At execution kickoff, record the exact plan-finalization and
+      measurement-tooling commit chain, final path allowlist, external evidence
+      root, Windows toolchain/machine identity, power/thermal state, significant
+      workloads, and pinned oracle/artifact hashes.
 - [ ] Inventory and fingerprint every unrelated staged, unstaged, and untracked
       path at kickoff. Instantiate the corrected M60 isolated-index,
       pre-review-tree, exact-review-delta, path-limited-commit, commit-tree, and
       remote-equality procedure with M61 filenames; do not retain the old
       config-only staged-path assertion if the actual inventory differs.
-- [ ] Run two plan reviews: evidence/measurement validity, then scope/isolation
-      and threshold safety. Only then mark the plan finalized.
 
-If M60 is not pushed, the Phase 0 dirty-state inventory contains any unexplained
-or M61-overlapping path, the current benchmark no longer reads context per key,
-or the relevant owner cannot be measured, stop before M61 execution.
+If the pushed finalization source does not descend from the kickoff base, the
+Phase 0 dirty-state inventory contains any unexplained or M61-overlapping path,
+the current benchmark no longer reads context per key, the Windows acceptance
+machine is unavailable, or the relevant owner cannot be measured, stop before
+M61 measurement.
 
 ## Phase 1 — Fresh Baseline And Diagnostic A/B
 
@@ -286,9 +367,12 @@ The current wrappers intentionally require default-owned runtime measurement
 while using byte-backed mode only during deploy preparation. M61 may add one
 explicit diagnostic-only mode selector to both native wrappers:
 
+- PowerShell parameter: `-TrackAStorageMode`;
+- macOS option: `--track-a-storage-mode`;
 - default value: `production-default`;
 - diagnostic values: `owned` and `byte-backed`;
-- recorded in `environment.txt`, commands, and the owner profile;
+- recorded as `track_a_storage_mode` in `environment.txt`, commands, the owner
+  profile, and the aggregator's strict provenance identity;
 - rejected when combined with an ambiguous inherited environment variable;
 - no effect on the existing signed invocation when omitted; and
 - never accepted as proof of the final shipping default.
@@ -299,6 +383,25 @@ the omitted/default owner assertion at the current owned/no-`poet_bin` state;
 only a later accepted production-candidate commit may change the normal signed
 assertion to require validated `poet_bin` storage.
 
+For `byte-backed`, the wrapper may set `YUNE_POET_BYTE_BACKED=1` only around
+the Track A Yune timing subprocess. It must restore the prior environment before
+the same-run librime comparison and Track B product lane. The existing
+deploy-preparation scope remains separate and must continue rejecting an
+ambiguous inherited value. Unit tests must prove restoration on success and
+failure so the selector cannot contaminate another lane.
+
+The aggregator currently requires run 1 to build the benchmark and runs 2–5 to
+reuse it. M61 uses one executable across both diagnostic modes, so the tooling
+commit must accept exactly two fixed-binary set shapes:
+
+- run 1 builds once and runs 2–5 reuse its exact executable and receipt; or
+- all five runs reuse the exact same source-bound executable and receipt built
+  by the preceding accepted mode.
+
+Mixed reuse identities, more than one build, five runs without one identical
+receipt, or any DLL/executable hash drift remain hard errors. Mode provenance
+must be uniform within a set and must match the requested aggregate lane.
+
 Conditionalize, but never delete, the current post-aggregation Track A owner
 assertion in both `scripts/benchmark-native-rime-inprocess.ps1` and
 `scripts/benchmark-native-rime-inprocess-macos.sh`:
@@ -308,13 +411,352 @@ assertion in both `scripts/benchmark-native-rime-inprocess.ps1` and
 | `owned` | no `mapping_mode` beginning `poet_bin:`; owned POET owners remain visible |
 | `byte-backed` | `poet.entries_by_code`, `poet.prefix_index`, `poet.vocabulary`, and `poet.abbreviation_vocabulary` all report `poet_bin:byte_backed:mmap`; no retained owned `poet.lookup_index` |
 | `production-default` before the accepted flip | same as `owned` |
-| `production-default` in the accepted candidate | same as `byte-backed` |
+| `production-default` in accepted disposition A or B | same as `byte-backed` |
+| `production-default` in accepted disposition C | same as `owned`; the separately selected non-POET owner must show its own reduced, explicitly reviewed shape |
 
 For byte-backed mode, the `poet.*` owner-id set must be exactly those four rows,
 once each; reject duplicates, missing rows, or any fifth POET owner.
-Record the selector and asserted shape in every receipt. This tooling change is
-not a threshold waiver and remains separate from the Phase 3 shipping-default
+Record the selector and asserted shape in every wrapper receipt, and record the
+selected disposition in the aggregate and branch-disposition receipts.
+Disposition C cannot silently force or claim a POET default flip after fresh
+attribution disproves POET as the selected owner. This tooling change is not a
+threshold waiver and remains separate from the Phase 3 shipping-default
 transition.
+
+### Binding Windows command shape
+
+The executing Windows session must substitute only the source-bound absolute
+roots and SHAs below. The inputs, `9/60/80` settings, product deployment,
+historical threshold path, regression behavior, and selector values are frozen:
+
+```powershell
+$ErrorActionPreference = "Stop"
+$REPO = (Resolve-Path .).Path
+$EXPECTED_MEASUREMENT_SHA = "<pushed M61 measurement-tooling SHA>"
+$EXPECTED_MEASUREMENT_TREE = "<pushed M61 measurement-tooling tree>"
+$EXPECTED_LIBRIME_SHA = "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
+$MEASUREMENT_SHA = (& git -C $REPO rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $MEASUREMENT_SHA -ne $EXPECTED_MEASUREMENT_SHA) {
+    throw "measurement source mismatch: expected $EXPECTED_MEASUREMENT_SHA, got $MEASUREMENT_SHA"
+}
+$MEASUREMENT_TREE = (& git -C $REPO rev-parse "HEAD^{tree}").Trim()
+if ($LASTEXITCODE -ne 0 -or $MEASUREMENT_TREE -ne $EXPECTED_MEASUREMENT_TREE) {
+    throw "measurement tree mismatch: expected $EXPECTED_MEASUREMENT_TREE, got $MEASUREMENT_TREE"
+}
+$MEASUREMENT_STATUS = @(
+    & git -C $REPO status --porcelain=v1 --untracked-files=all
+)
+if ($LASTEXITCODE -ne 0 -or $MEASUREMENT_STATUS.Count -ne 0) {
+    throw "measurement-tooling clone must be clean"
+}
+if (Test-Path Env:YUNE_POET_BYTE_BACKED) {
+    throw "YUNE_POET_BYTE_BACKED must be absent before diagnostic selection"
+}
+$OUT = "C:\yune-m61\$MEASUREMENT_SHA"
+if (Test-Path -LiteralPath $OUT) {
+    throw "measurement output root already exists: $OUT"
+}
+$LIBRIME_SOURCE = "C:\absolute\path\to\pinned-librime-source"
+$LIBRIME = "C:\absolute\path\to\prepared-pinned-librime-oracle"
+$ACTUAL_LIBRIME_SHA = (& git -C $LIBRIME_SOURCE rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $ACTUAL_LIBRIME_SHA -ne $EXPECTED_LIBRIME_SHA) {
+    throw "librime source mismatch: expected $EXPECTED_LIBRIME_SHA, got $ACTUAL_LIBRIME_SHA"
+}
+$LIBRIME_STATUS = @(
+    & git -C $LIBRIME_SOURCE status --porcelain=v1 --untracked-files=all
+)
+if ($LASTEXITCODE -ne 0 -or $LIBRIME_STATUS.Count -ne 0) {
+    throw "pinned librime source must be clean"
+}
+$PRODUCT = Join-Path $REPO "apps\yune-web\public\schema"
+$YUNE_DLL = Join-Path $REPO "target\release\yune_rime_api.dll"
+$THRESHOLDS = Join-Path $REPO "docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv"
+$TRACK_A = "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu"
+$TRACK_B = "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung"
+$M61_THRESHOLD_SHA256 = "d52d064f410df36c1c22dd5523430062563a17bb9f2f63253b607d211badefd7"
+
+New-Item -ItemType Directory -Path $OUT | Out-Null
+$OWNED = Join-Path $OUT "owned"
+$BYTE_BACKED_EXPLORATORY = Join-Path $OUT "byte-backed-exploratory"
+$BYTE_BACKED = Join-Path $OUT "byte-backed"
+$WORK = Join-Path $OUT "work"
+New-Item -ItemType Directory -Path `
+    $OWNED, $BYTE_BACKED_EXPLORATORY, $BYTE_BACKED, $WORK | Out-Null
+$M61_THRESHOLD = Join-Path $OUT "m61-memory-threshold.csv"
+$M61_THRESHOLD_LINES = @(
+    '"kind","workload","input","metric","ceiling","unit","source_value","spread_pct","notes"',
+    '"memory_peak","","","track_a_peak_working_set_bytes","125000000","bytes","125000000","0","M61 predeclared supplemental Track A pooled-worst cap; frozen before accepted measurement; does not replace m55-thresholds.csv."'
+)
+$UTF8_NO_BOM = New-Object System.Text.UTF8Encoding -ArgumentList $false
+[System.IO.File]::WriteAllText(
+    $M61_THRESHOLD,
+    (($M61_THRESHOLD_LINES -join "`n") + "`n"),
+    $UTF8_NO_BOM
+)
+$ACTUAL_THRESHOLD_SHA256 = (
+    Get-FileHash -Algorithm SHA256 -LiteralPath $M61_THRESHOLD
+).Hash.ToLowerInvariant()
+if ($ACTUAL_THRESHOLD_SHA256 -ne $M61_THRESHOLD_SHA256) {
+    throw "M61 supplemental threshold hash mismatch: $ACTUAL_THRESHOLD_SHA256"
+}
+
+function Invoke-M61Round {
+    param(
+        [Parameter(Mandatory = $true)][string]$Mode,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [string]$BenchmarkExecutable = "",
+        [string]$BenchmarkReceipt = ""
+    )
+    $RoundOutput = Join-Path $OUT $Name
+    $RoundWork = Join-Path $OUT ("work\" + ($Name -replace "[\\/]", "-"))
+    $Args = @(
+        "-NoProfile", "-ExecutionPolicy", "Bypass",
+        "-File", (Join-Path $REPO "scripts\benchmark-native-rime-inprocess.ps1"),
+        "-OutputRoot", $RoundOutput,
+        "-WorkRoot", $RoundWork,
+        "-UpstreamOracleRoot", $LIBRIME,
+        "-ProductSchemaRoot", $PRODUCT,
+        "-YuneDll", $YUNE_DLL,
+        "-Iterations", "9",
+        "-SessionIterations", "60",
+        "-KeyIterations", "80",
+        "-TrackAInputs", $TRACK_A,
+        "-TrackBInputs", $TRACK_B,
+        "-DeployProductBeforeBenchmark",
+        "-TrackAThresholds", $THRESHOLDS,
+        "-FailOnRegression"
+    )
+    if ($Mode -ne "production-default") {
+        $Args += @("-TrackAStorageMode", $Mode)
+    }
+    if ($BenchmarkExecutable -or $BenchmarkReceipt) {
+        if (-not $BenchmarkExecutable -or -not $BenchmarkReceipt) {
+            throw "prebuilt benchmark executable and receipt must be supplied together"
+        }
+        $Args += @(
+            "-PrebuiltNativeBenchmarkExecutable", $BenchmarkExecutable,
+            "-PrebuiltNativeBenchmarkReceipt", $BenchmarkReceipt
+        )
+    }
+    & powershell @Args
+    if ($LASTEXITCODE -ne 0) {
+        throw "M61 round failed: $Name"
+    }
+}
+
+function Read-EnvironmentValue {
+    param([string]$Path, [string]$Key)
+    $Prefix = "$Key="
+    $Rows = @(Get-Content -LiteralPath $Path | Where-Object {
+        $_.StartsWith($Prefix, [System.StringComparison]::Ordinal)
+    })
+    if ($Rows.Count -ne 1) {
+        throw "$Path must contain exactly one $Key row"
+    }
+    return $Rows[0].Substring($Prefix.Length)
+}
+
+function Invoke-M61Aggregate {
+    param(
+        [Parameter(Mandatory = $true)][string]$SetRoot,
+        [switch]$Supplemental
+    )
+    $AggregateArgs = @(
+        "-B", (Join-Path $REPO "scripts\aggregate-native-ratchet.py"),
+        "--thresholds", $THRESHOLDS,
+        "--expected-runs", "5",
+        "--run", (Join-Path $SetRoot "run-1"),
+        "--run", (Join-Path $SetRoot "run-2"),
+        "--run", (Join-Path $SetRoot "run-3"),
+        "--run", (Join-Path $SetRoot "run-4"),
+        "--run", (Join-Path $SetRoot "run-5"),
+        "--output", (Join-Path $SetRoot "gate-verdict.csv")
+    )
+    if ($Supplemental) {
+        $AggregateArgs += @(
+            "--supplemental-thresholds", $M61_THRESHOLD,
+            "--supplemental-output",
+            (Join-Path $SetRoot "m61-memory-verdict.csv")
+        )
+    }
+    & python @AggregateArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "M61 aggregate failed and must be preserved: $SetRoot"
+    }
+}
+
+cargo build --release -p yune-rime-api
+if ($LASTEXITCODE -ne 0) { throw "Yune release build failed" }
+Get-FileHash -Algorithm SHA256 -LiteralPath $YUNE_DLL
+
+# The first owned round builds the benchmark once.
+Invoke-M61Round -Mode "owned" -Name "owned\run-1"
+$BENCH_EXE = Read-EnvironmentValue `
+    (Join-Path $OUT "owned\run-1\environment.txt") `
+    "native_benchmark_executable"
+$BENCH_RECEIPT = Join-Path $OUT "owned\run-1\native-benchmark-build-receipt.txt"
+2..5 | ForEach-Object {
+    Invoke-M61Round -Mode "owned" -Name "owned\run-$_" `
+        -BenchmarkExecutable $BENCH_EXE -BenchmarkReceipt $BENCH_RECEIPT
+}
+Invoke-M61Aggregate -SetRoot $OWNED
+
+# Preserve this exploratory measurement separately. Continue only if green.
+Invoke-M61Round -Mode "byte-backed" -Name "byte-backed-exploratory\run-1" `
+    -BenchmarkExecutable $BENCH_EXE -BenchmarkReceipt $BENCH_RECEIPT
+
+1..5 | ForEach-Object {
+    Invoke-M61Round -Mode "byte-backed" -Name "byte-backed\run-$_" `
+        -BenchmarkExecutable $BENCH_EXE -BenchmarkReceipt $BENCH_RECEIPT
+}
+Invoke-M61Aggregate -SetRoot $BYTE_BACKED -Supplemental
+```
+
+For a production candidate, start a fresh PowerShell process in a new clean
+detached clone and use this complete block. It deliberately rebinds every source
+and root, builds the candidate DLL and benchmark anew, rejects the diagnostic
+environment variable, and never supplies `-TrackAStorageMode`:
+
+```powershell
+$ErrorActionPreference = "Stop"
+$REPO = (Resolve-Path .).Path
+$EXPECTED_CANDIDATE_SHA = "<local M61 production-candidate SHA>"
+$EXPECTED_CANDIDATE_TREE = "<local M61 production-candidate tree>"
+$EXPECTED_LIBRIME_SHA = "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
+$CANDIDATE_SHA = (& git -C $REPO rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $CANDIDATE_SHA -ne $EXPECTED_CANDIDATE_SHA) {
+    throw "candidate source mismatch: expected $EXPECTED_CANDIDATE_SHA, got $CANDIDATE_SHA"
+}
+$CANDIDATE_TREE = (& git -C $REPO rev-parse "HEAD^{tree}").Trim()
+if ($LASTEXITCODE -ne 0 -or $CANDIDATE_TREE -ne $EXPECTED_CANDIDATE_TREE) {
+    throw "candidate tree mismatch: expected $EXPECTED_CANDIDATE_TREE, got $CANDIDATE_TREE"
+}
+$CANDIDATE_STATUS = @(& git -C $REPO status --porcelain=v1 --untracked-files=all)
+if ($LASTEXITCODE -ne 0 -or $CANDIDATE_STATUS.Count -ne 0) {
+    throw "production-candidate clone must be clean"
+}
+if (Test-Path Env:YUNE_POET_BYTE_BACKED) {
+    throw "YUNE_POET_BYTE_BACKED must be absent for production acceptance"
+}
+
+$OUT = "C:\yune-m61\$CANDIDATE_SHA-final"
+if (Test-Path -LiteralPath $OUT) {
+    throw "final output root already exists: $OUT"
+}
+New-Item -ItemType Directory -Path $OUT | Out-Null
+$FINAL = Join-Path $OUT "final"
+$WORK = Join-Path $OUT "work"
+New-Item -ItemType Directory -Path $FINAL, $WORK | Out-Null
+$LIBRIME_SOURCE = "C:\absolute\path\to\pinned-librime-source"
+$LIBRIME = "C:\absolute\path\to\prepared-pinned-librime-oracle"
+$ACTUAL_LIBRIME_SHA = (& git -C $LIBRIME_SOURCE rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $ACTUAL_LIBRIME_SHA -ne $EXPECTED_LIBRIME_SHA) {
+    throw "librime source mismatch: expected $EXPECTED_LIBRIME_SHA, got $ACTUAL_LIBRIME_SHA"
+}
+$LIBRIME_STATUS = @(
+    & git -C $LIBRIME_SOURCE status --porcelain=v1 --untracked-files=all
+)
+if ($LASTEXITCODE -ne 0 -or $LIBRIME_STATUS.Count -ne 0) {
+    throw "pinned librime source must be clean"
+}
+
+$PRODUCT = Join-Path $REPO "apps\yune-web\public\schema"
+$YUNE_DLL = Join-Path $REPO "target\release\yune_rime_api.dll"
+$THRESHOLDS = Join-Path $REPO "docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv"
+$TRACK_A = "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu"
+$TRACK_B = "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung"
+$M61_THRESHOLD = "C:\absolute\path\to\frozen-m61-memory-threshold.csv"
+$M61_THRESHOLD_SHA256 = "d52d064f410df36c1c22dd5523430062563a17bb9f2f63253b607d211badefd7"
+$ACTUAL_THRESHOLD_SHA256 = (
+    Get-FileHash -Algorithm SHA256 -LiteralPath $M61_THRESHOLD
+).Hash.ToLowerInvariant()
+if ($ACTUAL_THRESHOLD_SHA256 -ne $M61_THRESHOLD_SHA256) {
+    throw "M61 supplemental threshold hash mismatch: $ACTUAL_THRESHOLD_SHA256"
+}
+
+function Invoke-M61FinalRound {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [string]$BenchmarkExecutable = "",
+        [string]$BenchmarkReceipt = ""
+    )
+    $RoundOutput = Join-Path $OUT $Name
+    $RoundWork = Join-Path $OUT ("work\" + ($Name -replace "[\\/]", "-"))
+    $Args = @(
+        "-NoProfile", "-ExecutionPolicy", "Bypass",
+        "-File", (Join-Path $REPO "scripts\benchmark-native-rime-inprocess.ps1"),
+        "-OutputRoot", $RoundOutput,
+        "-WorkRoot", $RoundWork,
+        "-UpstreamOracleRoot", $LIBRIME,
+        "-ProductSchemaRoot", $PRODUCT,
+        "-YuneDll", $YUNE_DLL,
+        "-Iterations", "9",
+        "-SessionIterations", "60",
+        "-KeyIterations", "80",
+        "-TrackAInputs", $TRACK_A,
+        "-TrackBInputs", $TRACK_B,
+        "-DeployProductBeforeBenchmark",
+        "-TrackAThresholds", $THRESHOLDS,
+        "-FailOnRegression"
+    )
+    if ($BenchmarkExecutable -or $BenchmarkReceipt) {
+        if (-not $BenchmarkExecutable -or -not $BenchmarkReceipt) {
+            throw "prebuilt benchmark executable and receipt must be supplied together"
+        }
+        $Args += @(
+            "-PrebuiltNativeBenchmarkExecutable", $BenchmarkExecutable,
+            "-PrebuiltNativeBenchmarkReceipt", $BenchmarkReceipt
+        )
+    }
+    & powershell @Args
+    if ($LASTEXITCODE -ne 0) {
+        throw "M61 final round failed: $Name"
+    }
+}
+
+function Read-EnvironmentValue {
+    param([string]$Path, [string]$Key)
+    $Prefix = "$Key="
+    $Rows = @(Get-Content -LiteralPath $Path | Where-Object {
+        $_.StartsWith($Prefix, [System.StringComparison]::Ordinal)
+    })
+    if ($Rows.Count -ne 1) {
+        throw "$Path must contain exactly one $Key row"
+    }
+    return $Rows[0].Substring($Prefix.Length)
+}
+
+cargo build --release -p yune-rime-api
+if ($LASTEXITCODE -ne 0) { throw "candidate Yune release build failed" }
+Get-FileHash -Algorithm SHA256 -LiteralPath $YUNE_DLL
+
+Invoke-M61FinalRound -Name "final\run-1"
+$BENCH_EXE = Read-EnvironmentValue `
+    (Join-Path $OUT "final\run-1\environment.txt") `
+    "native_benchmark_executable"
+$BENCH_RECEIPT = Join-Path $OUT "final\run-1\native-benchmark-build-receipt.txt"
+2..5 | ForEach-Object {
+    Invoke-M61FinalRound -Name "final\run-$_" `
+        -BenchmarkExecutable $BENCH_EXE -BenchmarkReceipt $BENCH_RECEIPT
+}
+$FinalAggregateArgs = @(
+    "-B", (Join-Path $REPO "scripts\aggregate-native-ratchet.py"),
+    "--thresholds", $THRESHOLDS,
+    "--supplemental-thresholds", $M61_THRESHOLD,
+    "--expected-runs", "5",
+    "--run", (Join-Path $FINAL "run-1"),
+    "--run", (Join-Path $FINAL "run-2"),
+    "--run", (Join-Path $FINAL "run-3"),
+    "--run", (Join-Path $FINAL "run-4"),
+    "--run", (Join-Path $FINAL "run-5"),
+    "--output", (Join-Path $FINAL "gate-verdict.csv"),
+    "--supplemental-output", (Join-Path $FINAL "m61-memory-verdict.csv")
+)
+& python @FinalAggregateArgs
+if ($LASTEXITCODE -ne 0) {
+    throw "M61 final aggregate failed and must be preserved: $FINAL"
+}
+```
 
 ### Runs
 
@@ -428,7 +870,9 @@ Before changing runtime behavior:
   - **B — one bounded scratch/access correction:** memory wins but one measured
     byte-backed owner remains, with an exact repair and retry contract;
   - **C — another current Track A owner:** only if fresh attribution disproves
-    POET and names a higher-leverage non-overlapping owner; or
+    POET and names a higher-leverage non-overlapping owner; this selects an
+    owner but requires an exact owner-specific plan amendment and both reviews
+    before Phase 3 implementation; or
   - **D — measured partial/no-go:** no safe owner or win.
 
 Allocator work is not selectable from the optional cross-process diagnostic.
@@ -462,7 +906,7 @@ environment default:
 - the shipping native path requires no inherited environment variable. The
   diagnostic selector remains benchmark tooling rather than product policy.
 
-For the expected byte-backed branch:
+For expected byte-backed disposition A or B:
 
 - [ ] Preserve the current versioned `YUNE-POET/3` validation and loud rejection
       of present truncated, checksum-mismatched, invalid, wrong-version, or
@@ -510,18 +954,22 @@ amended before implementation. No hidden behavior tradeoff is authorized.
 
 ## Execution And Commit Sequence
 
-1. **Planning commit now.** Land only this draft and the roadmap update. Do not
-   touch M60, requirements, decisions, thresholds, or runtime code.
-2. **Finalize after M60.** Fetch the pushed M60 closeout, require local `main`
-   to fast-forward to or equal `origin/main`, fill the base SHA, add planned
-   requirements, record both plan reviews, and push the finalized plan before
-   measurement. Stop for manual reconciliation if the branches diverge; do not
-   rebase around unrelated user work.
+1. **Finalized plan boundary.** The source-bound finalization commit contains
+   only this plan, roadmap/requirements traceability, and the two planning
+   review receipts. It changes no runtime code, decision, threshold, M60
+   evidence, or signed registry. Push it and prove remote equality before
+   execution.
+2. **Execution kickoff.** Fetch the pushed finalization, require local `main`
+   to fast-forward to or equal `origin/main`, fingerprint the actual unrelated
+   dirty state, record the Windows environment and source chain, and stop for
+   manual reconciliation if branches diverge or any M61 path overlaps user
+   work.
 3. **Measurement/tooling commit.** Add only the explicit diagnostic selector,
-   missing attribution, supplemental-ratchet evaluator, and public-evidence
-   privacy checker needed for M61. The default signed invocation must remain
-   identical. Push this commit, prove remote `main` equals its SHA, and only
-   then create the exact detached measurement clone.
+   missing attribution, fixed-binary aggregator provenance support,
+   supplemental-ratchet evaluator, and public-evidence privacy checker needed
+   for M61. The default signed invocation must remain identical. Push this
+   commit, prove remote `main` equals its SHA, and only then create the exact
+   detached measurement clone.
 4. **External A/B and owner decision.** Preserve all raw results outside Git.
    No production code change follows a no-go.
 5. **Conditional implementation commit.** Commit directly to local `main` only
@@ -537,6 +985,99 @@ amended before implementation. No hidden behavior tradeoff is authorized.
 7. **Closeout commit and push.** Curate only compact receipts, update current
    docs, move the plan, verify exact committed tree and remote identity, and
    preserve the fingerprinted unrelated staged/unstaged/untracked state exactly.
+
+## Finalization Review Record
+
+The source-current planning candidate is reviewed twice before the finalization
+commit:
+
+- [`planning-review-measurement.md`](../../reports/evidence/m61-native-track-a-memory-owner-reduction/planning-review-measurement.md)
+  binds the measurement, oracle, owner-reconciliation, failure, and terminal
+  disposition contract; and
+- [`planning-review-isolation.md`](../../reports/evidence/m61-native-track-a-memory-owner-reduction/planning-review-isolation.md)
+  binds source ancestry, threshold safety, path isolation, and documentation
+  traceability.
+
+The receipts name the exact pre-review candidate tree. They are the only
+post-review additions to the finalized planning commit; any change to this
+plan, `requirements.md`, or `roadmap.md` after those reviews requires rebuilding
+the candidate tree and repeating both reviews.
+
+The planning finalization itself uses this literal five-path isolated-index
+procedure. The three-path pre-review list contains this plan,
+`docs/requirements.md`, and `docs/roadmap.md`. The two-path receipt list contains
+only the two files linked above. The complete list is their union, all lists are
+repository-relative and `LC_ALL=C` sorted, and the real index must be empty:
+
+```sh
+LC_ALL=C sort -u "$OUT/m61-plan-pre-review-paths.txt" \
+  > "$OUT/m61-plan-pre-review-paths.sorted"
+LC_ALL=C sort -u "$OUT/m61-plan-review-receipt-paths.txt" \
+  > "$OUT/m61-plan-review-receipt-paths.sorted"
+LC_ALL=C sort -u "$OUT/m61-plan-paths.txt" \
+  > "$OUT/m61-plan-paths.sorted"
+cmp "$OUT/m61-plan-pre-review-paths.txt" \
+  "$OUT/m61-plan-pre-review-paths.sorted"
+cmp "$OUT/m61-plan-review-receipt-paths.txt" \
+  "$OUT/m61-plan-review-receipt-paths.sorted"
+cmp "$OUT/m61-plan-paths.txt" "$OUT/m61-plan-paths.sorted"
+cat "$OUT/m61-plan-pre-review-paths.txt" \
+  "$OUT/m61-plan-review-receipt-paths.txt" \
+  | LC_ALL=C sort -u > "$OUT/m61-plan-path-union.txt"
+cmp "$OUT/m61-plan-paths.txt" "$OUT/m61-plan-path-union.txt"
+
+rm -f "$OUT/m61-plan.index"
+GIT_INDEX_FILE="$OUT/m61-plan.index" git read-tree HEAD
+GIT_INDEX_FILE="$OUT/m61-plan.index" git add -A \
+  --pathspec-from-file="$OUT/m61-plan-pre-review-paths.txt"
+GIT_INDEX_FILE="$OUT/m61-plan.index" git write-tree \
+  > "$OUT/m61-plan-pre-review-tree.txt"
+test -z "$(git diff --cached --name-only)"
+
+# Run both reviews against the preserved tree above. Then create only the two
+# review receipts, rebuild the isolated candidate, and prove the exact delta.
+rm -f "$OUT/m61-plan.index"
+GIT_INDEX_FILE="$OUT/m61-plan.index" git read-tree HEAD
+GIT_INDEX_FILE="$OUT/m61-plan.index" git add -A \
+  --pathspec-from-file="$OUT/m61-plan-paths.txt"
+GIT_INDEX_FILE="$OUT/m61-plan.index" git write-tree \
+  > "$OUT/m61-plan-final-tree.txt"
+git diff-tree --no-commit-id --name-only -r \
+  "$(cat "$OUT/m61-plan-pre-review-tree.txt")" \
+  "$(cat "$OUT/m61-plan-final-tree.txt")" \
+  | LC_ALL=C sort > "$OUT/m61-plan-post-review-actual.txt"
+LC_ALL=C sort "$OUT/m61-plan-review-receipt-paths.txt" \
+  > "$OUT/m61-plan-post-review-expected.txt"
+cmp "$OUT/m61-plan-post-review-expected.txt" \
+  "$OUT/m61-plan-post-review-actual.txt"
+GIT_INDEX_FILE="$OUT/m61-plan.index" git diff --cached --check
+test -z "$(git diff --cached --name-only)"
+
+test -z "$(git diff --name-only --diff-filter=A)"
+git add --intent-to-add \
+  --pathspec-from-file="$OUT/m61-plan-review-receipt-paths.txt"
+git diff --name-only --diff-filter=A | LC_ALL=C sort \
+  > "$OUT/m61-plan-intent-paths.actual"
+cmp "$OUT/m61-plan-review-receipt-paths.sorted" \
+  "$OUT/m61-plan-intent-paths.actual"
+git commit --only --pathspec-from-file="$OUT/m61-plan-paths.txt" \
+  -m "Finalize M61 native memory plan"
+test "$(git rev-parse HEAD^{tree})" = \
+  "$(cat "$OUT/m61-plan-final-tree.txt")"
+git diff-tree --no-commit-id --name-only -r HEAD^ HEAD \
+  | LC_ALL=C sort > "$OUT/m61-plan-commit-paths.actual"
+LC_ALL=C sort "$OUT/m61-plan-paths.txt" \
+  > "$OUT/m61-plan-commit-paths.expected"
+cmp "$OUT/m61-plan-commit-paths.expected" \
+  "$OUT/m61-plan-commit-paths.actual"
+test -z "$(git diff --cached --name-only)"
+test -z "$(git diff --name-only --diff-filter=A)"
+```
+
+Before and after this procedure, fingerprint the complete unrelated staged,
+unstaged, and untracked state using the inventory commands below and require
+byte equality after excluding the five M61 planning paths. In particular, no
+pre-existing image or other user path may enter the candidate or commit.
 
 ### Commit and review-tree isolation
 
@@ -568,6 +1109,147 @@ For every M61 implementation or closeout commit:
   closeout. The committed tree must equal it exactly, while every unrelated
   dirty-state fingerprint remains unchanged.
 
+Create and retain these newline-delimited external lists in `LC_ALL=C` sorted,
+unique order; reject empty, duplicate, absolute, escaping, unmatched, or stale
+entries:
+
+- `$OUT/m61-implementation-paths.txt`;
+- `$OUT/m61-implementation-new-paths.txt`;
+- `$OUT/m61-paths.txt`, including the two closeout review receipts;
+- `$OUT/m61-pre-review-paths.txt`, excluding only the two not-yet-created review
+  receipts while retaining the pre-review packet manifest;
+- `$OUT/m61-new-paths.txt`;
+- `$OUT/touched-current-docs.txt`;
+- `$OUT/m61-evidence-paths.txt`; and
+- `$OUT/post-review-allowed-paths.txt`, containing exactly the packet manifest,
+  `review-requirements.md`, and `review-isolation.md`.
+
+At each implementation or closeout boundary, capture the unrelated state before
+editing and compare it after committing:
+
+```sh
+git status --porcelain=v1 --untracked-files=all > "$OUT/unrelated-status.before"
+git diff --binary > "$OUT/unrelated-unstaged.before.patch"
+git diff --cached --binary > "$OUT/unrelated-staged.before.patch"
+git ls-files --others --exclude-standard -z |
+  while IFS= read -r -d '' file; do
+    shasum -a 256 "$file"
+  done | LC_ALL=C sort > "$OUT/unrelated-untracked.before.sha256"
+```
+
+Repeat with `.after` names and require byte equality for all four receipts
+after excluding the explicit M61 allowlist from both snapshots. Do not use a
+hard-coded filename assertion in place of this complete inventory.
+
+The isolated implementation commit procedure is literal:
+
+```sh
+rm -f "$OUT/m61-implementation.index"
+GIT_INDEX_FILE="$OUT/m61-implementation.index" git read-tree HEAD
+GIT_INDEX_FILE="$OUT/m61-implementation.index" git add -A \
+  --pathspec-from-file="$OUT/m61-implementation-paths.txt"
+GIT_INDEX_FILE="$OUT/m61-implementation.index" git write-tree \
+  > "$OUT/m61-implementation-tree.txt"
+test -z "$(git diff --cached --name-only)"
+LC_ALL=C sort -u "$OUT/m61-implementation-paths.txt" \
+  > "$OUT/m61-implementation-paths.sorted"
+LC_ALL=C sort -u "$OUT/m61-implementation-new-paths.txt" \
+  > "$OUT/m61-implementation-new-paths.sorted"
+cmp "$OUT/m61-implementation-paths.txt" \
+  "$OUT/m61-implementation-paths.sorted"
+cmp "$OUT/m61-implementation-new-paths.txt" \
+  "$OUT/m61-implementation-new-paths.sorted"
+comm -23 "$OUT/m61-implementation-new-paths.sorted" \
+  "$OUT/m61-implementation-paths.sorted" \
+  > "$OUT/m61-implementation-new-paths-not-allowed.txt"
+test ! -s "$OUT/m61-implementation-new-paths-not-allowed.txt"
+test -z "$(git diff --name-only --diff-filter=A)"
+git add --intent-to-add \
+  --pathspec-from-file="$OUT/m61-implementation-new-paths.txt"
+git diff --name-only --diff-filter=A | LC_ALL=C sort \
+  > "$OUT/m61-implementation-intent-actual.txt"
+cmp "$OUT/m61-implementation-new-paths.sorted" \
+  "$OUT/m61-implementation-intent-actual.txt"
+git commit --only \
+  --pathspec-from-file="$OUT/m61-implementation-paths.txt" \
+  -m "Implement M61 memory measurement tooling"
+test "$(git rev-parse HEAD^{tree})" = \
+  "$(cat "$OUT/m61-implementation-tree.txt")"
+git diff-tree --no-commit-id --name-only -r HEAD^ HEAD \
+  | LC_ALL=C sort > "$OUT/m61-implementation-commit-paths.actual"
+cmp "$OUT/m61-implementation-paths.sorted" \
+  "$OUT/m61-implementation-commit-paths.actual"
+test -z "$(git diff --cached --name-only)"
+test -z "$(git diff --name-only --diff-filter=A)"
+```
+
+Before both closeout reviews, preserve the proposed evidence/documentation tree:
+
+```sh
+rm -f "$OUT/m61.index"
+GIT_INDEX_FILE="$OUT/m61.index" git read-tree HEAD
+GIT_INDEX_FILE="$OUT/m61.index" git add -A \
+  --pathspec-from-file="$OUT/m61-pre-review-paths.txt"
+GIT_INDEX_FILE="$OUT/m61.index" git write-tree \
+  > "$OUT/m61-pre-review-tree.txt"
+```
+
+After the two review receipts are copied into the packet, regenerate the
+manifest, rebuild the isolated index, and prove the exact three-path delta:
+
+```sh
+rm -f "$OUT/m61.index"
+GIT_INDEX_FILE="$OUT/m61.index" git read-tree HEAD
+GIT_INDEX_FILE="$OUT/m61.index" git add -A \
+  --pathspec-from-file="$OUT/m61-paths.txt"
+GIT_INDEX_FILE="$OUT/m61.index" git write-tree \
+  > "$OUT/m61-final-candidate-tree.txt"
+git diff-tree --no-commit-id --name-only -r \
+  "$(cat "$OUT/m61-pre-review-tree.txt")" \
+  "$(cat "$OUT/m61-final-candidate-tree.txt")" \
+  | LC_ALL=C sort > "$OUT/post-review-actual-paths.txt"
+LC_ALL=C sort "$OUT/post-review-allowed-paths.txt" \
+  > "$OUT/post-review-expected-paths.txt"
+cmp "$OUT/post-review-expected-paths.txt" \
+  "$OUT/post-review-actual-paths.txt"
+```
+
+Run the final candidate checks against that isolated index, then perform only
+the path-limited closeout commit:
+
+```sh
+python3 -B scripts/check-current-doc-links.py \
+  --paths-from "$OUT/touched-current-docs.txt"
+python3 -B scripts/verify-packet-manifest.py \
+  docs/reports/evidence/m61-native-track-a-memory-owner-reduction/packet-manifest.csv
+python3 -B scripts/check-evidence-growth.py \
+  --repo-root . --paths-from "$OUT/m61-evidence-paths.txt"
+GIT_INDEX_FILE="$OUT/m61.index" git diff --cached --check
+
+test -z "$(git diff --cached --name-only)"
+LC_ALL=C sort -u "$OUT/m61-paths.txt" > "$OUT/m61-paths.sorted"
+LC_ALL=C sort -u "$OUT/m61-new-paths.txt" > "$OUT/m61-new-paths.sorted"
+cmp "$OUT/m61-paths.txt" "$OUT/m61-paths.sorted"
+cmp "$OUT/m61-new-paths.txt" "$OUT/m61-new-paths.sorted"
+comm -23 "$OUT/m61-new-paths.sorted" "$OUT/m61-paths.sorted" \
+  > "$OUT/m61-new-paths-not-allowed.txt"
+test ! -s "$OUT/m61-new-paths-not-allowed.txt"
+test -z "$(git diff --name-only --diff-filter=A)"
+git add --intent-to-add --pathspec-from-file="$OUT/m61-new-paths.txt"
+git diff --name-only --diff-filter=A | LC_ALL=C sort \
+  > "$OUT/m61-intent-actual.txt"
+cmp "$OUT/m61-new-paths.sorted" "$OUT/m61-intent-actual.txt"
+git commit --only --pathspec-from-file="$OUT/m61-paths.txt" \
+  -m "Close M61 memory owner reduction"
+test "$(git rev-parse HEAD^{tree})" = \
+  "$(cat "$OUT/m61-final-candidate-tree.txt")"
+git diff-tree --no-commit-id --name-only -r HEAD^ HEAD \
+  | LC_ALL=C sort > "$OUT/m61-closeout-commit-paths.actual"
+cmp "$OUT/m61-paths.sorted" "$OUT/m61-closeout-commit-paths.actual"
+test -z "$(git diff --cached --name-only)"
+test -z "$(git diff --name-only --diff-filter=A)"
+```
+
 After every push that binds measurement or closeout evidence, retain this
 literal remote-identity proof (with failure preserved):
 
@@ -586,8 +1268,9 @@ must label it unpushed. Push and run the remote proof only after acceptance.
 
 ## Load-Bearing Verification
 
-The exact test names may be corrected during post-M60 finalization, but the
-owning coverage cannot be reduced:
+These test names and owning coverage are binding. If a later source rename
+makes one filter empty or invalid, stop and amend/re-review the plan before
+measurement rather than silently substituting a narrower gate:
 
 ```sh
 cargo test -p yune-core --test upstream_luna_pinyin_parity
@@ -597,12 +1280,23 @@ cargo test -p yune-rime-api deployment
 cargo test -p yune-rime-api --test yune_web m59_luna_
 cargo test -p yune-rime-api --test yune_web m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false
 npm --prefix apps/yune-web run check:schema-manifest
-python3 -m unittest scripts/tests/test_m61_supplemental_ratchet.py
-python3 -m unittest scripts/tests/test_public_evidence_privacy.py
+python3 -B -m unittest scripts/tests/test_native_benchmark_script.py
+python3 -B -m unittest scripts/tests/test_m59_evidence_tools.py
+python3 -B -m unittest scripts/tests/test_m61_native_mode_contract.py
+python3 -B -m unittest scripts/tests/test_m61_supplemental_ratchet.py
+python3 -B -m unittest scripts/tests/test_public_evidence_privacy.py
 cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
+
+The measurement/tooling commit adds
+`scripts/tests/test_m61_native_mode_contract.py`. Together with the existing
+native-wrapper and M59 aggregator suites, it must cover PowerShell and macOS
+selector parsing/defaults, inherited-variable rejection, success/failure
+environment restoration before librime and Track B, disposition-specific owner
+assertions, uniform `track_a_storage_mode` provenance, the one-build-plus-four-
+reuse set, the five-all-prebuilt set, and every mixed/hash/receipt/mode rejection.
 
 The full workspace gate is load-bearing at closeout because a default storage
 change crosses deployment, cache lifecycle, compiled-artifact, and candidate
@@ -610,10 +1304,9 @@ behavior boundaries. Do not run browser latency, Cloudflare, package, Windows
 frontend, or iOS suites unless the implementation unexpectedly touches those
 surfaces; such a touch normally stops M61 for scope review.
 
-The final native performance command remains the current Windows benchmark with
-the exact 17+1 inputs and `9/60/80` settings. The finalized plan must paste the
-literal command after M60 so it cannot silently drift from the then-current
-wrapper interface.
+The final native performance command is the binding Windows command shape above
+with the exact 17+1 inputs and `9/60/80` settings. The final production set
+omits `-TrackAStorageMode` and requires `YUNE_POET_BYTE_BACKED` to be absent.
 
 The measurement/tooling commit also adds
 `scripts/check-public-evidence-privacy.py` with unit tests. It accepts the
@@ -628,6 +1321,12 @@ empty inputs and never echoes a forbidden literal into its verdict. Unit tests
 cover bare host/user strings, normalized forms, allowed hardware/OS fields, and
 verdict redaction. The closeout runs the tested tool against every curated
 packet path and records the exact command/verdict.
+
+```sh
+python3 -B scripts/check-public-evidence-privacy.py \
+  --paths-from "$OUT/m61-evidence-paths.txt" \
+  --forbid-literal-file "$OUT/private/forbidden-literals.txt"
+```
 
 ## Evidence Contract
 

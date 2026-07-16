@@ -708,6 +708,15 @@ prefix (`prefix_fallback_owned`); when it does not own the request,
 records this production-path rule without changing either mechanism or any
 candidate behavior.
 
+_Correction 2026-07-16 (post-M60 review):_ "does not own" above has two
+distinct causes. A correction-bearing expanded lookup bypasses the ownership
+probe; an eligible request reaches the probe and can return `NoPrefix`. The
+former may retain a separate normal leading edge on the common
+complete/compact-fallback collector, subject to existing path-local correction
+guards. The latter cannot itself yield a newly injected leading row because
+both mechanisms share deployed normal-prefix discovery. The canonical contract
+now records this eligibility boundary; no runtime behavior changed.
+
 _Addendum 2026-07-13 (independent closeout review):_ commit `07845e02` extends
 REACH-03's reconciliation from schema files plus manifest membership to exact
 bidirectional set equality for every regular asset and fails closed on symbolic

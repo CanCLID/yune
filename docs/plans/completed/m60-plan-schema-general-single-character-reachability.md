@@ -147,6 +147,17 @@ completed M59 plan. M60 may add a clearly dated documentation correction to
 those records, but it must not edit M59 evidence or present the correction as
 new behavior.
 
+**Post-closeout correction 2026-07-16:** the named M60 regression exercises a
+correction-bearing request that bypasses the ownership probe while retaining a
+separately deployed normal leading edge on the common compact-fallback
+collector. It does not exercise `PrefixFallbackProbe::NoPrefix`. Eligible
+prefix fallback and leading reachability share deployed normal-prefix
+discovery, so a true `NoPrefix` result cannot coexist with a newly injected
+leading row. The post-closeout follow-up clarifies the canonical three-case
+rule, makes the regression's correction-bypass proof explicit, and adds a
+private `NoPrefix` versus deployed-prefix truth table. It changes no runtime
+behavior and does not rewrite this plan's closeout evidence or reviewed trees.
+
 ## Requirements
 
 The matching planned requirement IDs are M60-CONTRACT-01, M60-OPTOUT-01,
@@ -168,8 +179,10 @@ M60-AUDIT-01, M60-ONBOARD-01, M60-BOUNDARY-01, and M60-EVIDENCE-01.
       `5fa986d8` plus `07845e02`, and WEB03-11 measurement at `ef485b10`
       source-bound rather than projecting any lane onto M60.
 - [x] State the exact covered translator arms and add a narrow regression for a
-      prefix-fallback-enabled request that owns no proper prefix, so the
-      corrected per-input prose is pinned to the real leading-single path. The
+      prefix-fallback-enabled request that has no request-local ownership, so
+      the corrected per-input prose is pinned to the real leading-single path.
+      The post-closeout correction above distinguishes its correction-bypass
+      fixture from the separately pinned `NoPrefix` truth table. The
       upstream-table lazy bounded arm at `translator/mod.rs:5094` must be
       classified explicitly rather than silently generalized.
 - [x] Correct the stale schema-wide precedence wording in

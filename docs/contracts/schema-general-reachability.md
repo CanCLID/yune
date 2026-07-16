@@ -19,7 +19,9 @@ schema deployment: `table_translator`, `script_translator`, and
 contract. The upstream-table lazy bounded arm is explicitly covered as a
 leading-single path, but it rejects `prefix_fallback` before entry; it therefore
 cannot establish or override TypeDuck prefix ownership. The ordinary bounded,
-complete, and byte-backed paths use the request-local ownership rule below.
+common complete/compact-fallback, and byte-backed paths use the request-local
+ownership rule below. Their existing correction-lookup eligibility gates remain
+path-local and are part of that rule.
 
 An effective explicit `false` disables only the supplemental leading-syllable
 family for that translator namespace. It does not disable exact dictionary
@@ -35,12 +37,27 @@ decide the consumed span and residual input.
 `prefix_fallback` is TypeDuck-profile compatibility machinery. It is not
 inherited by a new schema and is not the schema-general default.
 
-When both mechanisms are enabled, precedence is per input:
+When both mechanisms are enabled, precedence is per input and has three cases:
 
-1. a deployed proper prefix found for the current request sets
-   `prefix_fallback_owned`, and prefix fallback owns that request's reachability;
-2. when no deployed proper prefix exists, prefix fallback does not own the
-   request and the independent leading-syllable path remains available.
+1. a request whose expanded lookup set is correction-bearing does not enter
+   the prefix-fallback ownership probe, so `prefix_fallback_owned` remains
+   false; this correction-ineligible case is not `NoPrefix`;
+2. for an eligible request, an admitted deployed normal proper prefix sets
+   `prefix_fallback_owned`, and prefix fallback owns that request's
+   reachability; and
+3. for an eligible request with no admitted deployed normal proper prefix, the
+   probe returns `NoPrefix`, ownership remains false, and prefix ownership does
+   not suppress the independent leading-syllable path.
+
+The correction-ineligible case retains the runtime's existing path-local
+behavior: ordinary bounded collectors with correction guards suppress their
+leading path, while the common complete/compact-fallback collector may still
+use a separately deployed normal leading edge. A correction-only surface is a
+guard, never a leading-reachability injection edge. Because eligible prefix
+fallback and leading reachability discover normal proper-prefix edges from the
+same deployed prism/index/storage model, a true `NoPrefix` result cannot itself
+produce a newly injected leading row; a leading edge would also have made the
+ownership probe observe a prefix.
 
 Enabling `prefix_fallback` at schema level therefore never suppresses
 leading-syllable reachability for every input. This is the runtime rule already
@@ -120,7 +137,7 @@ hard checker failure, not implicit coverage.
 | Shipped registry, WASM, app, browser, and package closeout | M59 source `5fa986d8` |
 | Bidirectional 60-asset manifest/tree exactness | M59 follow-up `07845e02` |
 | WEB03-11 measured product behavior | measured product source `ef485b10` |
-| Capability formalism, static audit, and onboarding governance | M60 closeout tree; no new behavior or performance claim |
+| Capability formalism, static audit, and onboarding governance | M60 closeout tree plus behavior-neutral dated formalism corrections; no new behavior or performance claim |
 
 M60 does not recapture an oracle, rerun a benchmark, rewrite M59 or WEB03
 evidence, change candidate ordering, or project one evidence lane onto another.

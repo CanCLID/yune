@@ -29,7 +29,7 @@
   "mechanismContract": {
     "canonical": "docs/contracts/schema-general-reachability.md",
     "schemaGeneralDefault": "translator/leading_syllable_reachability defaults on for every schema and may be explicitly disabled only by a recorded schema setting",
-    "profilePrecedence": "prefix_fallback is authoritative only for a request with a deployed proper prefix (prefix_fallback_owned); otherwise leading-syllable reachability remains independently available"
+    "profilePrecedence": "prefix_fallback_owned is set only when an eligible request admits a deployed normal proper prefix; correction-bearing requests bypass the probe, while eligible NoPrefix requests remain unowned and path-local correction guards govern whether leading-syllable reachability can run"
   },
   "validationTestFile": "crates/yune-rime-api/tests/yune_web/m59_reachability.rs",
   "configurationCarriers": [

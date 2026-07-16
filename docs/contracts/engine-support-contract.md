@@ -75,9 +75,11 @@ alongside, but separately from, its seven-input Lane B complete-list contract.
 M59 makes `leading_syllable_reachability` default-on for every schema while
 retaining request-local TypeDuck-profile `prefix_fallback` precedence. The
 canonical [schema-general reachability contract](schema-general-reachability.md)
-defines that precedence: `prefix_fallback` owns only an input with a deployed
-proper prefix (`prefix_fallback_owned`); otherwise leading-syllable
-reachability remains independently available. Commit `5fa986d8`
+defines that precedence: correction-bearing requests bypass the ownership
+probe, while an eligible request sets `prefix_fallback_owned` only when it
+admits a deployed normal proper prefix; an eligible `NoPrefix` result remains
+unowned. Existing path-local correction guards then decide whether the
+independent leading-syllable path can run. Commit `5fa986d8`
 binds that contract to the shipped surface: both manifests cover the exact
 60-asset schema tree; the registry dispositions 10 schema assets and three
 configuration carriers; and nine executable validation rows link the fixed

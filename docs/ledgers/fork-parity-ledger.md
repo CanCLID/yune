@@ -216,6 +216,14 @@ records this production-path rule. Unification stays available as a D-28
 trigger-gated behavior-preserving refactor gated on the full jyutping pin suite,
 never a milestone blocker.
 
+_Correction 2026-07-16 (post-M60 review):_ the preceding "otherwise" is an
+ownership statement, not a claim that every non-owning request reached the
+`NoPrefix` probe. Correction-bearing requests bypass that probe; eligible
+requests return `NoPrefix` only when no deployed normal proper-prefix edge is
+admitted. Existing path-local correction gates govern the independent leading
+path, as specified by the canonical contract. No fork or runtime behavior was
+changed.
+
 M59-REACH-03 records this boundary in executable shipped-schema coverage at
 `5fa986d8`. The 60-asset manifest tree maps to 10 schema-asset dispositions,
 three configuration carriers, and nine executable validation rows. The direct

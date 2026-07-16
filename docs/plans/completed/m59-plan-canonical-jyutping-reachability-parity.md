@@ -397,6 +397,14 @@ Binding consequences (this section is the owner sign-off; also record in
    `docs/contracts/schema-general-reachability.md` without changing runtime
    behavior or rewriting M59 evidence.
 
+   **DATED CORRECTION 2026-07-16 (POST-M60 REVIEW):** "otherwise" above is an
+   ownership outcome, not a claim that every non-owning request reached the
+   `NoPrefix` probe. Correction-bearing requests bypass that probe; an eligible
+   request returns `NoPrefix` only when it admits no deployed normal proper
+   prefix. Existing path-local correction guards continue to govern the
+   independent leading path. The canonical contract and focused post-M60 tests
+   pin that distinction without changing M59 behavior or evidence.
+
 **Standing convention (discovered during the flip, applies beyond it):** per-schema
 acceptance/capability rows must run through the **deploy path** (`schema_install` →
 yune_web), NOT the direct-construction `upstream_*` parity harnesses — those build

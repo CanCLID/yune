@@ -2900,11 +2900,13 @@ fn transformed_correction_only_surface_is_not_a_default_reachability_edge() {
 
 #[test]
 fn prefix_fallback_without_owned_prefix_keeps_leading_syllable_reachability() {
-    // `hx` is a correction-only full-input spelling, so the bounded fallback
-    // arm must not let prefix_fallback claim this request. The independently
-    // deployed normal `h` -> `ha` edge still owns a leading-single family.
-    // `sentence_over_completion` deliberately selects the compact bounded
-    // fallback arm that carries the request-local `prefix_fallback_owned` gate.
+    // `hx` is a correction-bearing full-input spelling, so this request is not
+    // eligible for the prefix-fallback probe and `prefix_fallback_owned` stays
+    // false even though a separate normal `h` -> `ha` edge is deployed. The
+    // common compact-fallback collector may still use that normal edge for its
+    // independent leading-single family. This is distinct from the eligible
+    // `PrefixFallbackProbe::NoPrefix` case pinned inside `lookup_guard_tests`.
+    // `sentence_over_completion` deliberately selects this collector.
     let formulas = [
         "derive/^ha$/h/".to_owned(),
         "derive/^hao$/hx/correction".to_owned(),
@@ -2952,7 +2954,7 @@ fn prefix_fallback_without_owned_prefix_keeps_leading_syllable_reachability() {
             .candidates
             .iter()
             .all(|candidate| candidate.text != "H"),
-        "prefix_fallback must not invent ownership of the normal leading family"
+        "the default-off control must keep the normal leading family absent"
     );
 
     let _guard = super::m37_metrics_test_guard();
@@ -2980,8 +2982,12 @@ fn prefix_fallback_without_owned_prefix_keeps_leading_syllable_reachability() {
         }
     );
     assert_eq!(
+        metrics.prefix_fallback_calls, 0,
+        "a correction-bearing request must bypass the prefix-fallback probe"
+    );
+    assert_eq!(
         metrics.prefix_fallback_views_visited, 0,
-        "the correction-only request must skip prefix_fallback ownership"
+        "a bypassed prefix-fallback probe must visit no candidate views"
     );
 }
 

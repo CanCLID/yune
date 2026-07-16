@@ -9190,7 +9190,7 @@ fn has_proper_leading_prefix(lookup_code: &str) -> bool {
 
 #[cfg(test)]
 mod lookup_guard_tests {
-    use super::{has_proper_leading_prefix, StaticTableTranslator};
+    use super::{has_proper_leading_prefix, PrefixFallbackProbe, StaticTableTranslator};
     use crate::{
         CandidateRequest, CompactTableStore, Context, DartsDoubleArray, RimePrismBinPayload,
         RimePrismSpellingDescriptor, Status, TableDictionary, TableEntry, Translator,
@@ -9249,6 +9249,52 @@ mod lookup_guard_tests {
         assert!(has_proper_leading_prefix("ni"));
         assert!(has_proper_leading_prefix("你a"));
         assert!(has_proper_leading_prefix("e\u{301}"));
+    }
+
+    #[test]
+    fn no_prefix_probe_is_distinct_from_a_deployed_leading_edge() {
+        let dictionary = || TableDictionary::new([TableEntry::new("ha", "H", 100.0)]);
+        let no_deployed_prefix = StaticTableTranslator::from_dictionary(dictionary())
+            .with_prefix_fallback(true)
+            .with_leading_syllable_reachability(true)
+            .with_sentence(false);
+
+        assert_eq!(
+            no_deployed_prefix.prefix_fallback_has_unique_candidate(
+                "hx",
+                "hx",
+                false,
+                &[],
+                Some(2),
+            ),
+            PrefixFallbackProbe::NoPrefix
+        );
+        assert!(
+            no_deployed_prefix
+                .leading_single_syllable_prefix_candidates("hx", "hx", false, &[], Some(2))
+                .is_empty(),
+            "without a deployed normal proper-prefix edge, the shared discovery model has no leading row to inject"
+        );
+
+        let formulas = ["derive/^ha$/h/".to_owned()];
+        let deployed_prefix = StaticTableTranslator::from_dictionary(dictionary())
+            .with_spelling_algebra(&formulas)
+            .with_prefix_fallback(true)
+            .with_leading_syllable_reachability(true)
+            .with_sentence(false);
+
+        assert_eq!(
+            deployed_prefix.prefix_fallback_has_unique_candidate("hx", "hx", false, &[], Some(2),),
+            PrefixFallbackProbe::Found,
+            "a normal deployed leading edge must also be visible to prefix ownership"
+        );
+        assert!(
+            deployed_prefix
+                .leading_single_syllable_prefix_candidates("hx", "hx", false, &[], Some(2))
+                .iter()
+                .any(|candidate| candidate.text == "H"),
+            "the same deployed edge must remain visible to the leading-single collector"
+        );
     }
 
     #[test]

@@ -379,6 +379,8 @@ clear_dir_under "$work_base/native-inprocess" "$run_work_root"
 mkdir -p "$tool_root" "$oracle_root" "$schema_root"
 candidate_parity_tool="$repo_root/scripts/check-native-candidate-parity.py"
 require_path "$candidate_parity_tool" "native candidate parity tool"
+poet_rebind_tool="$repo_root/scripts/rebind-m61-luna-poet-checksum.py"
+require_path "$poet_rebind_tool" "M61 Luna POET checksum rebind tool"
 candidate_parity_inputs="$output_root/candidate-parity-inputs.csv"
 IFS=',' read -r -a candidate_parity_input_rows <<< "$track_a_inputs"
 {
@@ -386,6 +388,7 @@ IFS=',' read -r -a candidate_parity_input_rows <<< "$track_a_inputs"
   printf '%s\n' "${candidate_parity_input_rows[@]}"
 } > "$candidate_parity_inputs"
 candidate_parity_tool_sha256="$(sha256_file "$candidate_parity_tool")"
+poet_rebind_tool_sha256="$(sha256_file "$poet_rebind_tool")"
 candidate_parity_expected_inputs_sha256="$(sha256_file "$candidate_parity_inputs")"
 
 if [[ -x "$tool_root/python/bin/cmake" ]]; then
@@ -518,6 +521,7 @@ write_identity() {
     echo "track_a_inputs=$track_a_inputs"
     echo "track_a_storage_mode=$track_a_storage_mode"
     echo "track_a_storage_mode_explicit=$track_a_storage_mode_explicit"
+    echo "poet_rebind_tool_sha256=$poet_rebind_tool_sha256"
     echo "inherited_poet_byte_backed_present=$inherited_poet_byte_backed_present"
     echo "track_b_inputs=$track_b_inputs"
     echo "iterations=$iterations"
@@ -965,6 +969,7 @@ fi
   echo "librime_source_clean_at_build=true"
   echo "benchmark_script_sha256=$(sha256_file "${BASH_SOURCE[0]}")"
   echo "candidate_parity_tool_sha256=$candidate_parity_tool_sha256"
+  echo "poet_rebind_tool_sha256=$poet_rebind_tool_sha256"
   echo "candidate_parity_expected_inputs_sha256=$candidate_parity_expected_inputs_sha256"
   echo "source_yune_dylib_sha256=$source_yune_dylib_sha256"
   echo "measured_yune_dylib_sha256=$track_a_yune_dylib_sha256"
@@ -978,6 +983,8 @@ fi
 } > "$output_root/external-provenance.txt"
 track_a_original_build="$run_work_root/track-a-yune-original-build"
 track_a_generated_poet="$run_work_root/track-a-yune-luna_pinyin.poet.bin"
+track_a_poet_rebind_receipt="$output_root/track-a-yune-poet-rebind.txt"
+track_a_poet_rebind_log="$output_root/track-a-yune-poet-rebind.log"
 clear_dir_under "$run_work_root" "$track_a_original_build"
 copy_dir_contents "$track_a_yune_run/user/build" "$track_a_original_build"
 run_cargo_bench "track-a-yune-deploy-prep" "yune" "track-a-comparison" "luna_pinyin" \
@@ -987,7 +994,27 @@ require_path "$track_a_yune_run/user/build/luna_pinyin.poet.bin" "Track A Yune p
 cp "$track_a_yune_run/user/build/luna_pinyin.poet.bin" "$track_a_generated_poet"
 clear_dir_under "$run_work_root" "$track_a_yune_run/user/build"
 copy_dir_contents "$track_a_original_build" "$track_a_yune_run/user/build"
-cp "$track_a_generated_poet" "$track_a_yune_run/user/build/luna_pinyin.poet.bin"
+track_a_poet_output="$track_a_yune_run/user/build/luna_pinyin.poet.bin"
+{
+  printf 'python3 -B %q' "$poet_rebind_tool"
+  printf ' %q' \
+    --dictionary-source "$track_a_yune_run/shared/luna_pinyin.dict.yaml" \
+    --restored-table "$track_a_yune_run/user/build/luna_pinyin.table.bin" \
+    --generated-poet "$track_a_generated_poet" \
+    --output-poet "$track_a_poet_output"
+  printf '\n'
+} >> "$output_root/commands.txt"
+if python3 -B "$poet_rebind_tool" \
+  --dictionary-source "$track_a_yune_run/shared/luna_pinyin.dict.yaml" \
+  --restored-table "$track_a_yune_run/user/build/luna_pinyin.table.bin" \
+  --generated-poet "$track_a_generated_poet" \
+  --output-poet "$track_a_poet_output" \
+  > "$track_a_poet_rebind_log" 2>&1; then
+  cp "$track_a_poet_rebind_log" "$track_a_poet_rebind_receipt"
+else
+  poet_rebind_status=$?
+  die "M61 Luna POET checksum rebind failed with exit code $poet_rebind_status; diagnostics: $track_a_poet_rebind_log"
+fi
 {
   echo "track_a_deploy_prep=separate_process"
   echo "track_a_storage_mode=$track_a_storage_mode"
@@ -1000,8 +1027,13 @@ cp "$track_a_generated_poet" "$track_a_yune_run/user/build/luna_pinyin.poet.bin"
     echo "benchmark_poet_environment=absent"
   fi
   echo "restored_oracle_build_artifacts=true"
-  echo "poet_artifact=$track_a_yune_run/user/build/luna_pinyin.poet.bin"
-  stat -f "poet_bytes=%z" "$track_a_yune_run/user/build/luna_pinyin.poet.bin"
+  echo "poet_rebind_tool_sha256=$poet_rebind_tool_sha256"
+  echo "poet_rebind_receipt=$track_a_poet_rebind_receipt"
+  echo "poet_rebind_receipt_sha256=$(sha256_file "$track_a_poet_rebind_receipt")"
+  echo "poet_rebind_log=$track_a_poet_rebind_log"
+  echo "poet_rebind_log_sha256=$(sha256_file "$track_a_poet_rebind_log")"
+  echo "poet_artifact=$track_a_poet_output"
+  stat -f "poet_bytes=%z" "$track_a_poet_output"
   echo "table_artifact=$track_a_yune_run/user/build/luna_pinyin.table.bin"
   stat -f "table_bytes=%z" "$track_a_yune_run/user/build/luna_pinyin.table.bin"
 } > "$output_root/track-a-yune-deploy-prep-artifacts.txt"
@@ -1204,6 +1236,9 @@ if [[ "$yune_git_head_after" != "$yune_git_head" || "$yune_git_tree_after" != "$
 fi
 if [[ "$(sha256_file "$candidate_parity_tool")" != "$candidate_parity_tool_sha256" ]]; then
   die "native candidate parity tool changed during macOS measurement."
+fi
+if [[ "$(sha256_file "$poet_rebind_tool")" != "$poet_rebind_tool_sha256" ]]; then
+  die "M61 Luna POET checksum rebind tool changed during macOS measurement."
 fi
 if [[ "$(sha256_file "$candidate_parity_inputs")" != "$candidate_parity_expected_inputs_sha256" ]]; then
   die "native candidate parity expected inputs changed during macOS measurement."

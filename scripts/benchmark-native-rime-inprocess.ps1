@@ -317,6 +317,9 @@ $ProductSchemaRoot = Get-CanonicalSafePath $ProductSchemaRoot "ProductSchemaRoot
 $CandidateParityTool = Get-CanonicalSafePath `
     (Join-Path $RepoRoot "scripts\check-native-candidate-parity.py") `
     "native candidate parity tool"
+$PoetRebindTool = Get-CanonicalSafePath `
+    (Join-Path $RepoRoot "scripts\rebind-m61-luna-poet-checksum.py") `
+    "M61 Luna POET checksum rebind tool"
 if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) {
     $TrackAThresholds = Get-CanonicalSafePath $TrackAThresholds "TrackAThresholds"
 }
@@ -811,6 +814,67 @@ function Invoke-NativeBenchmarkLogged($Description, [string[]]$ArgumentList, $Lo
     finally {
         Remove-Item -LiteralPath $StdOut, $StdErr -Force -ErrorAction SilentlyContinue
         $env:PATH = $PreviousPath
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
+}
+
+function Invoke-PoetRebindLogged(
+    [string[]]$ArgumentList,
+    [string]$LogPath,
+    [string]$ReceiptPath
+) {
+    $LogDir = Split-Path -Parent $LogPath
+    New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+    $StdOut = Join-Path $LogDir "track-a-yune-poet-rebind.stdout.tmp"
+    $StdErr = Join-Path $LogDir "track-a-yune-poet-rebind.stderr.tmp"
+    Remove-Item -LiteralPath $StdOut, $StdErr -Force -ErrorAction SilentlyContinue
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    $ExitCode = $null
+    $InvocationError = $null
+    try {
+        try {
+            # Windows PowerShell 5.1 promotes redirected native stderr to an
+            # ErrorRecord under Stop.  Keep the native process non-terminating
+            # long enough to persist its round-owned diagnostics and exit code.
+            $ErrorActionPreference = "Continue"
+            & python @ArgumentList 1> $StdOut 2> $StdErr
+            $ExitCode = $LASTEXITCODE
+        }
+        catch {
+            $InvocationError = $_
+            $ExitCode = 1
+        }
+        finally {
+            $ErrorActionPreference = $PreviousErrorActionPreference
+        }
+
+        $Output = @()
+        if (Test-Path -LiteralPath $StdOut) { $Output += Get-Content -LiteralPath $StdOut }
+        if (Test-Path -LiteralPath $StdErr) { $Output += Get-Content -LiteralPath $StdErr }
+        if ($null -ne $InvocationError) {
+            $Output += "invocation_error=$($InvocationError.Exception.Message)"
+        }
+        $LogText = if ($Output.Count -eq 0) {
+            ""
+        } else {
+            (($Output | ForEach-Object { [string]$_ }) -join "`n") + "`n"
+        }
+        [System.IO.File]::WriteAllText(
+            $LogPath,
+            $LogText,
+            [System.Text.UTF8Encoding]::new($false)
+        )
+        if ($ExitCode -ne 0) {
+            throw "M61 Luna POET checksum rebind failed with exit code $ExitCode; diagnostics: $LogPath"
+        }
+        [System.IO.File]::WriteAllText(
+            $ReceiptPath,
+            $LogText,
+            [System.Text.UTF8Encoding]::new($false)
+        )
+    }
+    finally {
+        Remove-Item -LiteralPath $StdOut, $StdErr -Force -ErrorAction SilentlyContinue
         $ErrorActionPreference = $PreviousErrorActionPreference
     }
 }
@@ -1360,6 +1424,7 @@ try {
     $ProductSchemaTreeSha256 = Tree-Sha256 $ProductSchemaRoot
     $BenchmarkScriptSha256 = File-Sha256 $PSCommandPath
     $CandidateParityToolSha256 = File-Sha256 $CandidateParityTool
+    $PoetRebindToolSha256 = File-Sha256 $PoetRebindTool
     $BenchmarkRustSource = Get-CanonicalSafePath `
         (Join-Path $RepoRoot "crates\yune-rime-api\benches\native_inprocess_benchmark.rs") `
         "native benchmark Rust source"
@@ -1579,6 +1644,7 @@ $Identity = @(
     "native_benchmark_build_command=$BenchmarkBuildCommand",
     "benchmark_script_sha256=$BenchmarkScriptSha256",
     "candidate_parity_tool_sha256=$CandidateParityToolSha256",
+    "poet_rebind_tool_sha256=$PoetRebindToolSha256",
     "candidate_parity_expected_inputs_sha256=$CandidateParityExpectedInputsSha256",
     "track_a_thresholds_sha256=$TrackAThresholdsSha256",
     "actual_invocation=$ActualInvocation",
@@ -1614,6 +1680,7 @@ $Identity | Set-Content -LiteralPath (Join-Path $OutputRoot "environment.txt") -
     "native_benchmark_receipt_sha256=$NativeBenchmarkReceiptSha256",
     "benchmark_script_sha256=$BenchmarkScriptSha256",
     "candidate_parity_tool_sha256=$CandidateParityToolSha256",
+    "poet_rebind_tool_sha256=$PoetRebindToolSha256",
     "candidate_parity_expected_inputs_sha256=$CandidateParityExpectedInputsSha256",
     "track_a_storage_mode=$TrackAStorageMode",
     "track_a_storage_mode_explicit=$TrackAStorageModeWasProvided"
@@ -1622,6 +1689,8 @@ $Identity | Set-Content -LiteralPath (Join-Path $OutputRoot "environment.txt") -
 $TrackAYuneBuild = Join-Path $TrackAYuneRun "user\build"
 $TrackAOriginalBuild = Join-Path $WorkRoot "track-a-yune-original-build"
 $TrackAGeneratedPoet = Join-Path $WorkRoot "track-a-yune-luna_pinyin.poet.bin"
+$TrackAPoetRebindReceipt = Join-Path $OutputRoot "track-a-yune-poet-rebind.txt"
+$TrackAPoetRebindLog = Join-Path $OutputRoot "track-a-yune-poet-rebind.log"
 Clear-DirectoryUnder $WorkRoot $TrackAOriginalBuild
 Copy-DirectoryContents $TrackAYuneBuild $TrackAOriginalBuild
 Invoke-TrackAPoetDeployPrep $TrackAYuneRun $UpstreamDistLib
@@ -1629,16 +1698,33 @@ Assert-Path (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin") "Track A Yune po
 Copy-Item -LiteralPath (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin") -Destination $TrackAGeneratedPoet -Force
 Clear-DirectoryUnder $WorkRoot $TrackAYuneBuild
 Copy-DirectoryContents $TrackAOriginalBuild $TrackAYuneBuild
-Copy-Item -LiteralPath $TrackAGeneratedPoet -Destination (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin") -Force
+$TrackAPoetOutput = Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin"
+$PoetRebindArgs = @(
+    "-B", $PoetRebindTool,
+    "--dictionary-source", (Join-Path $TrackAYuneRun "shared\luna_pinyin.dict.yaml"),
+    "--restored-table", (Join-Path $TrackAYuneBuild "luna_pinyin.table.bin"),
+    "--generated-poet", $TrackAGeneratedPoet,
+    "--output-poet", $TrackAPoetOutput
+)
+$PoetRebindCommand = "python " + (($PoetRebindArgs | ForEach-Object {
+    Quote-CommandArg ([string]$_)
+}) -join " ")
+$PoetRebindCommand | Add-Content -LiteralPath (Join-Path $OutputRoot "commands.txt") -Encoding UTF8
+Invoke-PoetRebindLogged $PoetRebindArgs $TrackAPoetRebindLog $TrackAPoetRebindReceipt
 $TrackATable = Get-Item -LiteralPath (Join-Path $TrackAYuneBuild "luna_pinyin.table.bin")
-$TrackAPoet = Get-Item -LiteralPath (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin")
+$TrackAPoet = Get-Item -LiteralPath $TrackAPoetOutput
 @(
     "track_a_deploy_prep=separate_process",
     "poet_generation_environment=YUNE_POET_BYTE_BACKED=1 (deploy-prep invocation only)",
     "track_a_storage_mode=$TrackAStorageMode",
     "benchmark_poet_environment=$(if ($TrackAStorageMode -eq 'byte-backed') { 'YUNE_POET_BYTE_BACKED=1 (Track A Yune timing only)' } elseif (-not $InheritedPoetByteBackedPresent) { 'unset' } else { 'restored inherited non-activating value' })",
     "restored_oracle_build_artifacts=true",
-    "poet_artifact=$(Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin")",
+    "poet_rebind_tool_sha256=$PoetRebindToolSha256",
+    "poet_rebind_receipt=$TrackAPoetRebindReceipt",
+    "poet_rebind_receipt_sha256=$(File-Sha256 $TrackAPoetRebindReceipt)",
+    "poet_rebind_log=$TrackAPoetRebindLog",
+    "poet_rebind_log_sha256=$(File-Sha256 $TrackAPoetRebindLog)",
+    "poet_artifact=$TrackAPoetOutput",
     "poet_bytes=$($TrackAPoet.Length)",
     "table_artifact=$(Join-Path $TrackAYuneBuild "luna_pinyin.table.bin")",
     "table_bytes=$($TrackATable.Length)"
@@ -1866,6 +1952,9 @@ if ((File-Sha256 $PSCommandPath) -ne $BenchmarkScriptSha256) {
 }
 if ((File-Sha256 $CandidateParityTool) -ne $CandidateParityToolSha256) {
     $InputDrift += "candidate parity tool changed during the benchmark: $CandidateParityTool"
+}
+if ((File-Sha256 $PoetRebindTool) -ne $PoetRebindToolSha256) {
+    $InputDrift += "M61 Luna POET checksum rebind tool changed during the benchmark: $PoetRebindTool"
 }
 if ((File-Sha256 $CandidateParityInputsPath) -ne $CandidateParityExpectedInputsSha256) {
     $InputDrift += "candidate parity expected inputs changed during the benchmark: $CandidateParityInputsPath"

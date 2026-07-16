@@ -12,6 +12,8 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parents[1]
 REPO_ROOT = SCRIPTS.parent
 SCRIPT = SCRIPTS / "benchmark-native-rime-inprocess.ps1"
+MACOS_SCRIPT = SCRIPTS / "benchmark-native-rime-inprocess-macos.sh"
+POET_REBIND_TOOL = SCRIPTS / "rebind-m61-luna-poet-checksum.py"
 OUTPUT_POLICY = SCRIPTS / "evidence-output-path.ps1"
 OUTPUT_POLICY_TOOL = SCRIPTS / "evidence-output-path.py"
 RETENTION_TOOL = SCRIPTS / "evidence_retention.py"
@@ -25,6 +27,7 @@ class NativeBenchmarkScriptTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.source = SCRIPT.read_text(encoding="utf-8-sig")
+        cls.macos_source = MACOS_SCRIPT.read_text(encoding="utf-8")
 
     def run_function_harness(self, body: str) -> subprocess.CompletedProcess[str]:
         powershell = shutil.which("powershell")
@@ -61,6 +64,7 @@ $Wanted = @(
     'Read-NativeBenchmarkBuildReceipt',
     'Assert-NativeBenchmarkBuildReceipt',
     'Select-NativeBenchmarkExecutable',
+    'Invoke-PoetRebindLogged',
     'Assert-ExplicitRootOutsideRepo',
     'Clear-DirectoryUnder',
     'Initialize-BenchmarkRoot',
@@ -734,6 +738,130 @@ if ($DirectLog -notlike '*--engine yune*') {{ throw 'fixed benchmark executable 
         self.assertIn('Set-RunStatus "in-progress"', self.source)
         self.assertIn('Set-RunStatus "complete"', self.source)
         self.assertIn('Set-RunStatus "failed" $FailureMessage', self.source)
+
+    def test_poet_sidecar_is_rebound_only_after_restoring_pinned_build(self) -> None:
+        self.assertTrue(POET_REBIND_TOOL.is_file())
+        for source in (self.source, self.macos_source):
+            self.assertIn("rebind-m61-luna-poet-checksum.py", source)
+            self.assertIn("poet_rebind_tool_sha256", source)
+            self.assertIn("track-a-yune-poet-rebind.txt", source)
+            self.assertIn("--dictionary-source", source)
+            self.assertIn("--restored-table", source)
+            self.assertIn("--generated-poet", source)
+            self.assertIn("--output-poet", source)
+
+        windows_restore = self.source.index(
+            "Copy-DirectoryContents $TrackAOriginalBuild $TrackAYuneBuild"
+        )
+        windows_rebind = self.source.index(
+            "Invoke-PoetRebindLogged $PoetRebindArgs $TrackAPoetRebindLog"
+        )
+        windows_timing = self.source.index(
+            "Invoke-TrackAYuneBench $TrackAYuneRun $UpstreamDistLib",
+            windows_restore,
+        )
+        self.assertLess(windows_restore, windows_rebind)
+        self.assertLess(windows_rebind, windows_timing)
+        self.assertIn('"-B", $PoetRebindTool', self.source)
+        self.assertIn("track-a-yune-poet-rebind.log", self.source)
+        self.assertIn(
+            '"--dictionary-source", (Join-Path $TrackAYuneRun "shared\\luna_pinyin.dict.yaml")',
+            self.source,
+        )
+        self.assertIn(
+            '$InputDrift += "M61 Luna POET checksum rebind tool changed during the benchmark:',
+            self.source,
+        )
+
+        windows_capture_start = self.source.index("function Invoke-PoetRebindLogged")
+        windows_capture_end = self.source.index(
+            "function Prepare-UpstreamRun", windows_capture_start
+        )
+        windows_capture = self.source[windows_capture_start:windows_capture_end]
+        native_invoke = windows_capture.index(
+            "& python @ArgumentList 1> $StdOut 2> $StdErr"
+        )
+        eap_restore = windows_capture.index(
+            "$ErrorActionPreference = $PreviousErrorActionPreference", native_invoke
+        )
+        log_write = windows_capture.index("$LogPath,", eap_restore)
+        failure = windows_capture.index("if ($ExitCode -ne 0)", log_write)
+        self.assertLess(native_invoke, eap_restore)
+        self.assertLess(eap_restore, log_write)
+        self.assertLess(log_write, failure)
+        self.assertIn('$ErrorActionPreference = "Continue"', windows_capture)
+        self.assertIn("diagnostics: $LogPath", windows_capture)
+        self.assertIn(
+            "Remove-Item -LiteralPath $StdOut, $StdErr -Force -ErrorAction SilentlyContinue",
+            windows_capture,
+        )
+
+        macos_restore = self.macos_source.index(
+            'copy_dir_contents "$track_a_original_build" "$track_a_yune_run/user/build"'
+        )
+        macos_rebind = self.macos_source.index(
+            'if python3 -B "$poet_rebind_tool"', macos_restore
+        )
+        macos_log_redirect = self.macos_source.index(
+            '> "$track_a_poet_rebind_log" 2>&1', macos_rebind
+        )
+        macos_failure = self.macos_source.index(
+            'die "M61 Luna POET checksum rebind failed', macos_log_redirect
+        )
+        macos_timing = self.macos_source.index(
+            'run_cargo_bench "track-a-yune"', macos_restore
+        )
+        self.assertLess(macos_restore, macos_rebind)
+        self.assertLess(macos_rebind, macos_log_redirect)
+        self.assertLess(macos_log_redirect, macos_failure)
+        self.assertLess(macos_rebind, macos_timing)
+        self.assertIn(
+            'cp "$track_a_poet_rebind_log" "$track_a_poet_rebind_receipt"',
+            self.macos_source,
+        )
+        self.assertIn("diagnostics: $track_a_poet_rebind_log", self.macos_source)
+        self.assertIn(
+            'die "M61 Luna POET checksum rebind tool changed during macOS measurement."',
+            self.macos_source,
+        )
+
+    def test_poet_rebind_failure_is_logged_under_powershell_stop_preference(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            log = root / "poet-rebind.log"
+            receipt = root / "poet-rebind.txt"
+            stdout_tmp = root / "track-a-yune-poet-rebind.stdout.tmp"
+            stderr_tmp = root / "track-a-yune-poet-rebind.stderr.tmp"
+            failure_script = root / "reject-poet.py"
+            failure_script.write_text(
+                'import sys\nsys.stderr.write("owned rejection diagnostics\\n")\n'
+                "raise SystemExit(7)\n",
+                encoding="utf-8",
+            )
+            body = f"""
+$Before = $ErrorActionPreference
+$Arguments = @('-B', {ps_quote(failure_script)})
+$Caught = ''
+try {{
+    Invoke-PoetRebindLogged $Arguments {ps_quote(log)} {ps_quote(receipt)}
+    throw 'expected rebind failure was not raised'
+}}
+catch {{
+    $Caught = $_.Exception.Message
+}}
+if ($ErrorActionPreference -ne $Before) {{ throw 'ErrorActionPreference was not restored' }}
+if (-not (Test-Path -LiteralPath {ps_quote(log)} -PathType Leaf)) {{ throw 'durable log missing' }}
+$LogText = [System.IO.File]::ReadAllText({ps_quote(log)})
+if ($LogText -notlike '*owned rejection diagnostics*') {{ throw "diagnostic missing: $LogText" }}
+if ($Caught -notlike '*exit code 7*diagnostics:*') {{ throw "wrong failure: $Caught" }}
+if (Test-Path -LiteralPath {ps_quote(receipt)}) {{ throw 'failed run wrote success receipt' }}
+if (Test-Path -LiteralPath {ps_quote(stdout_tmp)}) {{ throw 'stdout temp survived' }}
+if (Test-Path -LiteralPath {ps_quote(stderr_tmp)}) {{ throw 'stderr temp survived' }}
+"""
+            result = self.run_function_harness(body)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("owned rejection diagnostics", log.read_text(encoding="utf-8-sig"))
+            self.assertFalse(receipt.exists())
 
     def test_replay_command_and_provenance_name_every_fixed_input(self) -> None:
         for flag in (

@@ -32,8 +32,10 @@ class PacketEntry:
 def _safe_relative_path(raw: str) -> str:
     if not raw or "\x00" in raw or "\\" in raw or raw.startswith("/") or WINDOWS_ABSOLUTE_RE.match(raw):
         raise PacketManifestError(f"unsafe packet path: {raw!r}")
+    if any(part in {"", ".", ".."} for part in raw.split("/")):
+        raise PacketManifestError(f"unsafe packet path: {raw!r}")
     parsed = PurePosixPath(raw)
-    if raw in {".", ".."} or any(part in {"", ".", ".."} for part in parsed.parts):
+    if raw in {".", ".."} or parsed.as_posix() != raw:
         raise PacketManifestError(f"unsafe packet path: {raw!r}")
     return parsed.as_posix()
 
@@ -128,7 +130,11 @@ def _tree_packet(manifest_relative: str, repo_root: Path, treeish: str) -> tuple
         path = raw_path.decode("utf-8")
         if mode == "120000":
             raise PacketManifestError(f"packet contains symbolic link in {treeish}: {path}")
-        if object_type != "blob" or path == manifest_relative:
+        if object_type != "blob":
+            raise PacketManifestError(
+                f"packet contains non-blob tree entry in {treeish}: {path} ({object_type})"
+            )
+        if path == manifest_relative:
             continue
         try:
             relative = PurePosixPath(path).relative_to(PurePosixPath(packet_prefix)).as_posix()

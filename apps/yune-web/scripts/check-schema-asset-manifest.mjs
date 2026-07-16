@@ -72,6 +72,21 @@ function assertStringArray(value, label) {
   }
 }
 
+function assertHttpsRepositoryUrl(value, label) {
+  assertNonEmptyString(value, label);
+  assert(/^https:\/\/[^/\s]/.test(value), `${label} must be an https URL with a host`);
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`${label} must be an https URL with a host`);
+  }
+  assert(
+    parsed.protocol === "https:" && parsed.hostname.length > 0 && parsed.username === "" && parsed.password === "",
+    `${label} must be an https URL with a host and no credentials`,
+  );
+}
+
 function parseIsoDate(value, label) {
   assert(typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value), `${label} must use YYYY-MM-DD`);
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -626,7 +641,7 @@ export async function validateReachabilityFormalism({
     assertRepoRelativePath(optOut.configPath, `${label}.configPath`);
     assert(optOut.configPath.endsWith("/leading_syllable_reachability"), `${label}.configPath is not reachability`);
     assertObject(optOut.source, `${label}.source`);
-    assert(/^https:\/\//.test(optOut.source.repository), `${label}.source.repository must be an https URL`);
+    assertHttpsRepositoryUrl(optOut.source.repository, `${label}.source.repository`);
     assert(/^[0-9a-fA-F]{40}$/.test(optOut.source.commit), `${label}.source.commit must be 40 hex`);
     assertNonEmptyString(optOut.owner, `${label}.owner`);
     assertNonEmptyString(optOut.reason, `${label}.reason`);

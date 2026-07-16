@@ -237,6 +237,9 @@ test("M60 production validator consumes the real Rust audit and fails closed", a
     await rejects("duplicate opt-out id", candidate => {
       candidate.coverage.reachabilityOptOuts.push(structuredClone(candidate.coverage.reachabilityOptOuts[0]));
     }, /duplicate opt-out id/);
+    await rejects("malformed opt-out id", candidate => {
+      candidate.coverage.reachabilityOptOuts[0].optOutId = "Malformed_ID";
+    }, /optOutId is malformed/);
     await rejects("duplicate reconciliation triplet", candidate => {
       const duplicate = structuredClone(candidate.coverage.reachabilityOptOuts[0]);
       duplicate.optOutId = "different-id-same-triplet";
@@ -248,9 +251,23 @@ test("M60 production validator consumes the real Rust audit and fails closed", a
     await rejects("malformed source repository", candidate => {
       candidate.coverage.reachabilityOptOuts[0].source.repository = "http://example.invalid/not-https";
     }, /must be an https URL/);
+    for (const malformed of ["https://", "https:///no-host", "https:// bad", "https://user@example.invalid/repo"]) {
+      await rejects(`malformed HTTPS repository ${JSON.stringify(malformed)}`, candidate => {
+        candidate.coverage.reachabilityOptOuts[0].source.repository = malformed;
+      }, /must be an https URL/);
+    }
+    await rejects("missing source block", candidate => {
+      delete candidate.coverage.reachabilityOptOuts[0].source;
+    }, /source must be an object/);
     await rejects("unknown schema asset", candidate => {
       candidate.coverage.reachabilityOptOuts[0].schemaAsset = "docs/owner-spec.md";
     }, /unknown or unmanifested schema asset/);
+    await rejects("wrong schema id", candidate => {
+      candidate.coverage.reachabilityOptOuts[0].schemaId = "wrong-schema";
+    }, /schemaId does not match accepted schema row/);
+    await rejects("wrong acceptance id", candidate => {
+      candidate.coverage.reachabilityOptOuts[0].acceptanceId = "wrong-acceptance";
+    }, /acceptanceId does not match accepted real-path row/);
     await rejects("open acceptance row", candidate => {
       candidate.coverage.schemaAssets[0].status = "open";
     }, /unresolved schema asset/);
@@ -276,6 +293,12 @@ test("M60 production validator consumes the real Rust audit and fails closed", a
     await rejects("missing tracked evidence path", candidate => {
       candidate.coverage.reachabilityOptOuts[0].evidence.path = "docs/missing.md";
     }, /is not tracked/);
+    await rejects("unsupported evidence kind", candidate => {
+      candidate.coverage.reachabilityOptOuts[0].evidence.kind = "self-certified";
+    }, /evidence.kind is unsupported/);
+    await rejects("missing evidence block", candidate => {
+      delete candidate.coverage.reachabilityOptOuts[0].evidence;
+    }, /evidence must be an object/);
     await rejects("intermediate symbolic-link path component", async candidate => {
       await symlink(
         path.join(root, "docs"),
@@ -285,18 +308,48 @@ test("M60 production validator consumes the real Rust audit and fails closed", a
       candidate.trackedPaths.push("linked-docs/owner-spec.md");
       candidate.coverage.reachabilityOptOuts[0].evidence.path = "linked-docs/owner-spec.md";
     }, /traverses symbolic link component linked-docs/);
+    await rejects("final symbolic-link path component", async candidate => {
+      await symlink(
+        path.join(root, "docs"),
+        path.join(root, "linked-owner-spec.md"),
+        process.platform === "win32" ? "junction" : "dir",
+      );
+      candidate.trackedPaths.push("linked-owner-spec.md");
+      candidate.coverage.reachabilityOptOuts[0].evidence.path = "linked-owner-spec.md";
+    }, /traverses symbolic link component linked-owner-spec\.md/);
     await rejects("empty affected surfaces", candidate => {
       candidate.coverage.reachabilityOptOuts[0].affectedSurfaces = [];
     }, /affectedSurfaces must be a non-empty array/);
+    await rejects("duplicate affected surface", candidate => {
+      candidate.coverage.reachabilityOptOuts[0].affectedSurfaces.push("synthetic-real-deploy-path");
+    }, /affectedSurfaces contains duplicate/);
     await rejects("empty review triggers", candidate => {
       candidate.coverage.reachabilityOptOuts[0].review.triggers = [];
     }, /review.triggers must be a non-empty array/);
+    await rejects("duplicate review trigger", candidate => {
+      candidate.coverage.reachabilityOptOuts[0].review.triggers.push("owner contract changes");
+    }, /review.triggers contains duplicate/);
+    await rejects("missing approval block", candidate => {
+      delete candidate.coverage.reachabilityOptOuts[0].approval;
+    }, /approval must be an object/);
+    await rejects("malformed approval block", candidate => {
+      candidate.coverage.reachabilityOptOuts[0].approval = [];
+    }, /approval must be an object/);
+    await rejects("missing review block", candidate => {
+      delete candidate.coverage.reachabilityOptOuts[0].review;
+    }, /review must be an object/);
+    await rejects("malformed review block", candidate => {
+      candidate.coverage.reachabilityOptOuts[0].review = [];
+    }, /review must be an object/);
     await rejects("invalid approval date", candidate => {
       candidate.coverage.reachabilityOptOuts[0].approval.approvedOn = "2029-02-30";
     }, /approval.approvedOn is invalid/);
     await rejects("invalid review date", candidate => {
       candidate.coverage.reachabilityOptOuts[0].review.reviewBy = "not-a-date";
     }, /review.reviewBy must use YYYY-MM-DD/);
+    await rejects("future approval date", candidate => {
+      candidate.coverage.reachabilityOptOuts[0].approval.approvedOn = "2030-01-02";
+    }, /approval.approvedOn is in the future/);
     await rejects("expired review row", candidate => {
       candidate.coverage.reachabilityOptOuts[0].review.reviewBy = "2029-12-31";
     }, /expired on 2029-12-31/);
@@ -311,6 +364,9 @@ test("M60 production validator consumes the real Rust audit and fails closed", a
       candidate.trackedPaths.push("docs/outside.schema.yaml");
       candidate.trackedSchemaPaths.push("docs/outside.schema.yaml");
     }, /must match exactly one classified schema root/);
+    await rejects("unknown schema root classification", candidate => {
+      candidate.coverage.schemaRoots[0].classification = "unknown";
+    }, /has unknown classification unknown/);
     await rejects("overlapping schema roots", async candidate => {
       candidate.coverage.schemaRoots.push({
         path: `${productRoot}/nested/`,
@@ -322,6 +378,9 @@ test("M60 production validator consumes the real Rust audit and fails closed", a
     await rejects("malformed audit tuple", candidate => {
       delete candidate.auditResult.tuples[0].component;
     }, /component is not a deployed dictionary translator prescription/);
+    await rejects("duplicate audit tuple", candidate => {
+      candidate.auditResult.tuples.push(structuredClone(candidate.auditResult.tuples[0]));
+    }, /duplicates schema\/component\/namespace tuple/);
     await rejects("asset hash mismatch", candidate => {
       candidate.auditResult.tuples[0].assetHashes[0].sha256 = "0".repeat(64);
     }, /asset hash mismatch/);

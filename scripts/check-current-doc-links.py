@@ -79,6 +79,8 @@ def _local_target(raw_target: str) -> str | None:
     if "\\" in target or target.startswith("/") or WINDOWS_ABSOLUTE_RE.match(target):
         return target
     parsed = urlsplit(target)
+    if parsed.scheme.lower() == "file":
+        raise LinkAuditError(f"file URI is not an allowed external target: {raw_target}")
     if parsed.scheme:
         return None
     return parsed.path or None

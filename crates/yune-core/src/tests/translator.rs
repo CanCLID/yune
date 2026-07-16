@@ -2899,6 +2899,93 @@ fn transformed_correction_only_surface_is_not_a_default_reachability_edge() {
 }
 
 #[test]
+fn prefix_fallback_without_owned_prefix_keeps_leading_syllable_reachability() {
+    // `hx` is a correction-only full-input spelling, so the bounded fallback
+    // arm must not let prefix_fallback claim this request. The independently
+    // deployed normal `h` -> `ha` edge still owns a leading-single family.
+    // `sentence_over_completion` deliberately selects the compact bounded
+    // fallback arm that carries the request-local `prefix_fallback_owned` gate.
+    let formulas = [
+        "derive/^ha$/h/".to_owned(),
+        "derive/^hao$/hx/correction".to_owned(),
+    ];
+    let dictionary = TableDictionary::new([
+        TableEntry::new("ha", "H", 100.0),
+        TableEntry::new("hao", "CORRECTION", 90.0),
+    ]);
+    let syllabary = ["ha", "hao"].map(str::to_owned);
+    let build = |leading_syllable_reachability| {
+        let prism = parse_rime_prism_bin_payload(build_prism_bin(
+            &syllabary,
+            &formulas,
+            0x5904_6001,
+            0x5904_6002,
+        ))
+        .expect("prefix-precedence prism should parse");
+        StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(prism))
+            .with_spelling_algebra(&formulas)
+            .with_prefix_fallback(true)
+            .with_leading_syllable_reachability(leading_syllable_reachability)
+            .with_sentence_over_completion(true)
+            .with_sentence(false)
+    };
+    let translate = |translator: &StaticTableTranslator| {
+        translator.translate_with_context_and_request(
+            "hx",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(2).with_debug_full_count(true),
+        )
+    };
+
+    let disabled = translate(&build(false));
+    assert!(
+        disabled
+            .candidates
+            .iter()
+            .any(|candidate| candidate.text == "CORRECTION"),
+        "the control must retain the correction-only full-input row"
+    );
+    assert!(
+        disabled
+            .candidates
+            .iter()
+            .all(|candidate| candidate.text != "H"),
+        "prefix_fallback must not invent ownership of the normal leading family"
+    );
+
+    let _guard = super::m37_metrics_test_guard();
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let enabled = translate(&build(true));
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    let leading = enabled
+        .candidates
+        .iter()
+        .find(|candidate| candidate.text == "H")
+        .unwrap_or_else(|| {
+            panic!(
+                "leading reachability must survive a non-owning prefix_fallback request: {:?}",
+                enabled.candidates
+            )
+        });
+    assert_eq!(
+        leading.source,
+        CandidateSource::PartialTable {
+            consumed: 1,
+            recompose_on_default: true,
+        }
+    );
+    assert_eq!(
+        metrics.prefix_fallback_views_visited, 0,
+        "the correction-only request must skip prefix_fallback ownership"
+    );
+}
+
+#[test]
 fn normal_correction_wins_a_fuzzy_collision_for_compact_and_heap_reachability() {
     let formulas = [
         "fuzz/^hao$/hx/".to_owned(),

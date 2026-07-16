@@ -108,6 +108,16 @@ class PacketManifestTests(unittest.TestCase):
             self.assertNotEqual(absolute.returncode, 0)
             self.assertIn("unsafe packet path", absolute.stderr)
 
+            for unnormalized in ("nested//b.txt", "nested/./b.txt"):
+                with self.subTest(path=unnormalized):
+                    manifest.write_text(
+                        f"path,bytes,sha256\n{unnormalized},1," + "0" * 64 + "\n",
+                        encoding="utf-8",
+                    )
+                    result = self.run_verify(root, manifest)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("unsafe packet path", result.stderr)
+
     def test_rejects_byte_and_sha256_mismatches(self) -> None:
         temporary, root, manifest = self.fixture()
         with temporary:
@@ -136,6 +146,40 @@ class PacketManifestTests(unittest.TestCase):
             result = self.run_verify(root, manifest)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("symbolic link", result.stderr)
+
+    def test_rejects_gitlinks_in_committed_packet_tree(self) -> None:
+        temporary, root, manifest = self.fixture()
+        with temporary:
+            for command in (
+                ["git", "init", "-q"],
+                ["git", "config", "user.name", "M60 Test"],
+                ["git", "config", "user.email", "m60@example.invalid"],
+                ["git", "add", "packet"],
+                ["git", "commit", "-q", "-m", "packet"],
+            ):
+                subprocess.run(command, cwd=root, check=True, capture_output=True)
+            head = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            subprocess.run(
+                ["git", "update-index", "--add", "--cacheinfo", "160000", head, "packet/vendor"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "commit", "-q", "-m", "packet gitlink"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            result = self.run_verify(root, manifest, treeish="HEAD")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("non-blob tree entry", result.stderr)
 
 
 if __name__ == "__main__":

@@ -97,6 +97,16 @@ class CurrentDocumentLinkTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("symbolic link", result.stderr)
 
+    def test_rejects_file_uri_instead_of_treating_it_as_external(self) -> None:
+        temporary, root, paths = self.fixture()
+        with temporary:
+            (root / "docs" / "current.md").write_text(
+                "[outside](file:///outside.md)\n", encoding="utf-8"
+            )
+            result = self.run_audit(root, paths)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("file URI is not an allowed external target", result.stderr)
+
     def test_requires_paths_file_and_nonempty_membership(self) -> None:
         temporary, root, paths = self.fixture()
         with temporary:

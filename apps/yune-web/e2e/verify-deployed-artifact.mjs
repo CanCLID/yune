@@ -1,4 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -28,6 +29,7 @@ const requestTimeoutMs = Number(
 async function fetchBytes(relative) {
   const url = new URL(relative, appUrlValue);
   url.searchParams.set("yuneSource", expectedCommit);
+  url.searchParams.set("yuneVerify", `${Date.now()}-${randomUUID()}`);
   const response = await fetch(url, {
     cache: "no-store",
     signal: AbortSignal.timeout(requestTimeoutMs),
@@ -36,15 +38,13 @@ async function fetchBytes(relative) {
   return Buffer.from(await response.arrayBuffer());
 }
 
-async function waitForExactBuild(localBuildInfoBytes) {
-  const deadline = Date.now() + waitMs;
+async function waitForExactBytes(relative, expectedBytes, deadline) {
   let lastObservation = null;
   do {
     try {
-      const bytes = await fetchBytes("build-info.json");
-      const value = JSON.parse(bytes.toString("utf8"));
-      lastObservation = value.sourceCommit ?? null;
-      if (bytes.equals(localBuildInfoBytes)) return bytes;
+      const bytes = await fetchBytes(relative);
+      lastObservation = `${bytes.byteLength} bytes / sha256 ${sha256(bytes)}`;
+      if (bytes.equals(expectedBytes)) return bytes;
     } catch (error) {
       lastObservation = error instanceof Error ? error.message : String(error);
     }
@@ -52,8 +52,8 @@ async function waitForExactBuild(localBuildInfoBytes) {
     await new Promise((resolve) => setTimeout(resolve, 5_000));
   } while (true);
   throw new Error(
-    `Deployment did not serve the exact certified build for ${expectedCommit}; ` +
-      `last source observation: ${lastObservation}`,
+    `Deployment did not serve exact certified ${relative} for ${expectedCommit}; ` +
+      `last observation: ${lastObservation}`,
   );
 }
 
@@ -81,13 +81,19 @@ try {
   }
 
   const local = await validateLocalBundle(distRoot, expectedCommit);
-  const remoteBuildInfoBytes = await waitForExactBuild(local.buildInfoBytes);
+  const propagationDeadline = Date.now() + waitMs;
+  const remoteBuildInfoBytes = await waitForExactBytes(
+    "build-info.json",
+    local.buildInfoBytes,
+    propagationDeadline,
+  );
   verified.push({ path: "build-info.json", sha256: sha256(remoteBuildInfoBytes) });
 
-  const remoteManifestBytes = await fetchBytes(manifestName);
-  if (!remoteManifestBytes.equals(local.manifestBytes)) {
-    throw new Error("Served public-artifact-manifest.json differs from the certified bundle");
-  }
+  const remoteManifestBytes = await waitForExactBytes(
+    manifestName,
+    local.manifestBytes,
+    propagationDeadline,
+  );
   verified.push({ path: manifestName, sha256: sha256(remoteManifestBytes) });
 
   const runtimePaths = local.manifest.files
@@ -106,10 +112,14 @@ try {
     );
   for (const relative of runtimePaths) {
     const expected = local.inventory.get(relative);
-    const bytes = await fetchBytes(relative);
-    if (bytes.byteLength !== expected.bytes || sha256(bytes) !== expected.sha256) {
-      throw new Error(`Served ${relative} differs from the certified inventory`);
-    }
+    const expectedBytes = await readFile(path.join(distRoot, relative));
+    const bytes = await waitForExactBytes(
+      relative,
+      expectedBytes,
+      propagationDeadline,
+    );
+    if (bytes.byteLength !== expected.bytes || sha256(bytes) !== expected.sha256)
+      throw new Error(`Internal certified inventory mismatch for ${relative}`);
     verified.push({ path: relative, bytes: bytes.byteLength, sha256: expected.sha256 });
   }
   passed = true;

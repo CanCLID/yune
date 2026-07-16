@@ -105,8 +105,9 @@ retries, but its two measurements have independent failure semantics. A red
 4x release row still blocks publication and is preserved, while the exact 1x
 normal-typing canary runs first so its own receipt cannot be replaced by a
 skip. On failure the runner emits the complete JSON receipts and their SHA-256
-hashes into the retained Cloudflare build log in addition to the compact
-summaries. The complete receipts are gzip/base64 encoded into bounded log chunks,
+hashes into the retained certification log in addition to the compact
+summaries. The complete receipts are gzip/base64 encoded into bounded log chunks
+and preserved in the source/run-attempt-named Actions artifact,
 and the recorded SHA-256 covers their exact JSON file bytes. The runner seeds
 explicit incomplete receipts before preview/browser setup so a setup failure is
 also distinguishable from a measurement that never started.
@@ -117,6 +118,19 @@ short catch-up gap. The original long gap remains recorded as a delayed-host
 row and lowers the sustained-load ratio; any catch-up gap is red, and a profile
 with less than 90% of gaps inside the active unchanged range is also red. The
 public runner does not retry a measured red.
+
+The deployment-maintenance release boundary lives in
+`.github/workflows/deploy-yune-web.yml`. Cloudflare Pages does not run this
+timer-sensitive gate in its shared build VM. The workflow builds and certifies
+without secrets, uploads the exact archive to a preview, runs this deployed
+source-pinned canary there once, and promotes the same archive only after green.
+The production alias then receives a source/toolchain/runtime-hash verification,
+not a duplicate latency measurement. Every `main` push is still classified;
+non-release documentation changes finish with a visible successful no-op.
+Cloudflare Git production and preview auto-builds are disabled, and the
+branch-restricted `yune-web-preview` and `yune-web-production` GitHub
+environments are provisioned. Each credentialed upload also checks the Pages
+API and fails closed if automatic deployment was re-enabled.
 
 For a deployed canary, set an explicit URL and use the direct command:
 

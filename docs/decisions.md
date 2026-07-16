@@ -582,6 +582,16 @@ prism bytes, so the four affected prisms and both manifests were regenerated.
 Locked by a trie-level regression test (verified to fail without the fix) and a
 committed-asset test asserting the six reported words (`d1c0171a`).
 
+Deployment-maintenance design (2026-07-15): D-46 remains fail-closed, while a
+source-pinned GitHub workflow owns classification, the unchanged local
+WEB03-11 certification, run-attempt-named receipts, one deployed preview canary, and promotion
+of the identical hashed artifact. Deployment credentials exist only in fresh
+upload jobs; they are never present while repository build or test code runs.
+Cloudflare Git auto-builds are disabled before the workflow reaches `main`, and
+each credentialed upload reasserts that setting through the Pages API; the first
+green source-bound run then closes the migration. This changes pipeline placement, not engine behavior,
+latency/cadence policy, or the historical closeout evidence.
+
 **D-47 / M59-DEFAULT-ON-REACHABILITY — Leading-single reachability is an
 engine-level default for every schema, and its measured per-keystroke cost gets a
 4-row owner-signed injection-on ceiling.** Per the owner amendment (2026-07-07,

@@ -1040,6 +1040,18 @@ browser latency hard stop in WEB03-11.
   deployed canary passed with the independent 47-key row at `43 ms` p95,
   `44 ms` max, and `0 ms` maximum worker queue wait.
 
+  **Deployment-maintenance activation contract (2026-07-15):** the binding gate and all
+  ceilings are unchanged, but Cloudflare Pages is no longer the build/benchmark
+  host. Every `main` push is classified by the repository workflow; relevant
+  source builds and measures once in a secret-free job, seals the exact dist,
+  passes a source-pinned preview canary, and only then promotes the same archive
+  by Wrangler direct upload. Documentation-only pushes complete as explicit
+  no-ops. Automatic Pages production/preview builds are disabled before the
+  workflow is activated, and each upload fails closed unless the API still
+  reports them disabled. A measured red remains preserved with zero retries and
+  blocks production; only a premeasurement setup failure may be retried under an
+  explicit source/reason/run-attempt identity.
+
 ## WEB-04 Octagram Debug Harness Requirements
 
 **Status: complete; browser behavior re-proved at M59 closeout source

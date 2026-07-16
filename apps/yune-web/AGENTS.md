@@ -24,6 +24,12 @@ The shell is derived from the historical `TypeDuck-HK/TypeDuck-Web` app with pro
   queue-stress profile, not empirical 4x-device proof. Preserve optional JSON
   evidence outside the tracked tree. Release evidence requires a clean Git tree
   and a recomputed full public-artifact inventory; the served worker, app bundle,
-  WASM, and schema manifest must match it. The Cloudflare build runs this same gate and fails
-  closed before publishing; a post-deploy production canary does not replace it.
+  WASM, and schema manifest must match it. The source-pinned GitHub release
+  workflow is the maintenance release boundary: it runs this gate before any
+  production upload, preserves every red, exercises the certified bytes through
+  a Cloudflare preview canary, and promotes the same hashed archive to production.
+  Cloudflare Git auto-builds are disabled before the first direct-upload
+  workflow is pushed, and each upload must reassert that setting through the
+  Pages API. A post-upload artifact check does not replace
+  the binding pre-publish gate.
 - For local-only yune-web tweaks, do not run lint, typecheck, unit tests, Playwright, or browser smoke by default. Run them only when the user explicitly asks for verification or when pushing changes; if changes are not being pushed, skip tests and lint.

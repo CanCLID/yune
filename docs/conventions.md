@@ -97,9 +97,17 @@ The repository spans Cargo/Rust, npm/TypeScript, and Emscripten/WASM.
   browser export contract, and smokes JS/WASM plus filesystem access. Missing
   Emscripten tooling may fall back to the native `yune_web` ABI test unless the
   caller explicitly requires a browser artifact.
-- **Public deployment:** the canonical Cloudflare entrypoint is
-  `apps/yune-web/public-demo/cloudflare-pages-build.sh`; release gates remain
-  fail-closed and source/hash identified.
+- **Public deployment:** `.github/workflows/deploy-yune-web.yml` defines the
+  deployment-maintenance release boundary. It classifies every `main` push,
+  builds and runs the unchanged
+  WEB03-11 gate without deployment credentials, seals one source/hash-identified
+  artifact, proves it on a Cloudflare preview, and promotes those exact bytes by
+  Wrangler direct upload. Cloudflare Git production/preview auto-builds are
+  disabled before activation, and each credentialed upload checks that API
+  interlock, so shared Pages build-host scheduling cannot turn benchmark timer
+  noise into a failed deployment.
+  `apps/yune-web/public-demo/cloudflare-pages-build.sh` remains the local
+  compatibility reproduction entrypoint.
 - **Native packaging:** `scripts/package-typeduck-windows.ps1` and
   `scripts/package-yune-windows.ps1` produce upstream-shaped default headers
   plus named profile headers. Profile-only slots never widen default

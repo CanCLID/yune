@@ -1,0 +1,842 @@
+name: Deploy yune-web certified artifact
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      setup_retry_of:
+        description: URL or run ID of the setup failure being retried
+        required: true
+        type: string
+      setup_retry_reason:
+        description: Why the prior failure was setup-only (never a measured red)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: yune-web-production-release
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  classify:
+    name: Classify release impact
+    runs-on: ubuntu-24.04
+    outputs:
+      release_required: ${{ steps.classify.outputs.release_required }}
+      reason: ${{ steps.classify.outputs.reason }}
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            exit 1
+          }
+      - name: Check out full source history
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+      - name: Classify changed paths
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_NAME: ${{ github.ref }}
+          HEAD_SHA: ${{ github.sha }}
+          SETUP_RETRY_OF: ${{ inputs.setup_retry_of }}
+          SETUP_RETRY_REASON: ${{ inputs.setup_retry_reason }}
+        run: |
+          python3 -m unittest scripts.tests.test_yune_web_release_policy
+          if [ "$GITHUB_REF_NAME" != "refs/heads/main" ]; then
+            printf 'Production releases are main-only; received %s.\n' "$GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          current_main="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk 'NF {print $1; exit}')"
+          printf '%s\n' "$current_main" | grep -Eq '^[0-9a-f]{40}$' || {
+            printf 'Could not prove the current main SHA; refusing to classify this release.\n' >&2
+            exit 1
+          }
+          if [ "$current_main" != "$HEAD_SHA" ]; then
+            printf 'release_required=false\n' >> "$GITHUB_OUTPUT"
+            printf 'reason=superseded by current main %s\n' "$current_main" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ -z "$SETUP_RETRY_OF" ] || [ -z "$SETUP_RETRY_REASON" ]; then
+              printf 'Manual runs require an explicit setup-failure source and reason.\n' >&2
+              exit 1
+            fi
+            if [[ "$SETUP_RETRY_OF" == *$'\n'* || "$SETUP_RETRY_OF" == *$'\r'* || "$SETUP_RETRY_REASON" == *$'\n'* || "$SETUP_RETRY_REASON" == *$'\r'* ]]; then
+              printf 'Setup retry metadata must be single-line text.\n' >&2
+              exit 1
+            fi
+            printf 'release_required=true\n' >> "$GITHUB_OUTPUT"
+            printf 'reason=explicit source-bound setup retry\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base="$(git rev-list --max-parents=0 "$HEAD_SHA")"
+          deployed_source="$({ curl -fsSL --max-time 20 'https://yune-web.pages.dev/build-info.json' || true; } | python3 -c 'import json,sys; data=sys.stdin.read(); print(json.loads(data).get("sourceCommit", "") if data else "")' 2>/dev/null || true)"
+          if printf '%s\n' "$deployed_source" | grep -Eq '^[0-9a-f]{40}$' && \
+             git cat-file -e "$deployed_source^{commit}" 2>/dev/null && \
+             git merge-base --is-ancestor "$deployed_source" "$HEAD_SHA"; then
+            base="$deployed_source"
+          fi
+          python3 scripts/classify_yune_web_release.py \
+            --repo-root . \
+            --base "$base" \
+            --head "$HEAD_SHA" \
+            --github-output "$GITHUB_OUTPUT"
+
+  no-release:
+    name: Deployment no-op
+    needs: classify
+    if: needs.classify.outputs.release_required != 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            exit 1
+          }
+      - name: Record successful no-op
+        env:
+          REASON: ${{ needs.classify.outputs.reason }}
+        run: |
+          printf 'No yune-web release required: %s\n' "$REASON"
+
+  build-certify:
+    name: Build and certify exact source
+    needs: classify
+    if: needs.classify.outputs.release_required == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    outputs:
+      archive_sha256: ${{ steps.seal.outputs.archive_sha256 }}
+      artifact_name: yune-web-release-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+    env:
+      CI: "1"
+    steps:
+      - name: Seed source-bound receipts before setup
+        env:
+          SETUP_RETRY_OF: ${{ inputs.setup_retry_of }}
+          SETUP_RETRY_REASON: ${{ inputs.setup_retry_reason }}
+        run: |
+          EVIDENCE_ROOT="$RUNNER_TEMP/yune-web-release-$GITHUB_SHA"
+          printf 'EVIDENCE_ROOT=%s\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_LATENCY_OUTPUT_DIR=%s/latency\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_LATENCY_EVIDENCE_DIR=%s/latency\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          mkdir -p "$EVIDENCE_ROOT/latency"
+          {
+            printf 'source_commit=%s\n' "$GITHUB_SHA"
+            printf 'source_tree_state=unavailable-before-checkout\n'
+            printf 'started_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf 'runner_os=%s\n' "$RUNNER_OS"
+            printf 'run_id=%s\n' "$GITHUB_RUN_ID"
+            printf 'run_attempt=%s\n' "$GITHUB_RUN_ATTEMPT"
+            printf 'setup_retry_of=%s\n' "${SETUP_RETRY_OF:-not-applicable}"
+            printf 'setup_retry_reason=%s\n' "${SETUP_RETRY_REASON:-not-applicable}"
+            uname -a
+          } > "$EVIDENCE_ROOT/environment.txt"
+          {
+            printf '%s\n' 'bash apps/yune-web/public-demo/build-public-release.sh'
+            printf '%s\n' 'bash apps/yune-web/public-demo/certify-public-release.sh'
+            printf '%s\n' 'tar certified public-demo/dist; hash exact archive'
+          } > "$EVIDENCE_ROOT/commands.txt"
+      - name: Reject GitHub UI reruns
+        run: |
+          if [ "$GITHUB_RUN_ATTEMPT" != "1" ]; then
+            printf 'GitHub reruns are prohibited because they can discard a measured red; use a fresh, explicitly named workflow_dispatch only for setup failure.\n' >&2
+            exit 1
+          fi
+      - name: Check out exact source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Record checked-out source state
+        run: |
+          printf 'checked_out_source_tree_state=%s\n' \
+            "$(test -z "$(git status --porcelain --untracked-files=all)" && printf clean || printf dirty)" \
+            >> "$EVIDENCE_ROOT/environment.txt"
+      - name: Build pinned public artifact
+        run: bash apps/yune-web/public-demo/build-public-release.sh
+      - name: Run binding WEB03-11 certification once
+        run: bash apps/yune-web/public-demo/certify-public-release.sh
+      - name: Seal certified artifact
+        id: seal
+        run: |
+          cp apps/yune-web/public-demo/dist/build-info.json "$EVIDENCE_ROOT/build-info.json"
+          cp apps/yune-web/public-demo/dist/public-artifact-manifest.json "$EVIDENCE_ROOT/public-artifact-manifest.json"
+          tar -C apps/yune-web/public-demo/dist -czf "$EVIDENCE_ROOT/yune-web-dist.tar.gz" .
+          archive_sha256="$(sha256sum "$EVIDENCE_ROOT/yune-web-dist.tar.gz" | awk '{print $1}')"
+          printf '%s\n' "$archive_sha256" > "$EVIDENCE_ROOT/yune-web-dist.tar.gz.sha256"
+          printf 'archive_sha256=%s\n' "$archive_sha256" >> "$GITHUB_OUTPUT"
+          printf 'completed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$EVIDENCE_ROOT/environment.txt"
+      - name: Preserve build, gate, and artifact receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: yune-web-release-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/yune-web-release-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 90
+
+  validate-artifact:
+    name: Independently validate sealed artifact
+    needs: build-certify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            exit 1
+          }
+      - name: Seed validation receipt
+        run: |
+          mkdir -p "$RUNNER_TEMP/artifact-validation"
+          {
+            printf '{\n'
+            printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
+            printf '  "seededAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf '  "status": "setup-pending"\n'
+            printf '}\n'
+          } > "$RUNNER_TEMP/artifact-validation/setup-status.json"
+      - name: Check out source-bound verifier
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Download sealed bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.build-certify.outputs.artifact_name }}
+          path: ${{ runner.temp }}/release
+      - name: Safely extract exact archive
+        env:
+          ARCHIVE: ${{ runner.temp }}/release/yune-web-dist.tar.gz
+          DESTINATION: ${{ runner.temp }}/release-dist
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
+        run: |
+          sibling="$(tr -d '[:space:]' < "$ARCHIVE.sha256")"
+          actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          test "$actual" = "$sibling"
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import tarfile
+
+          archive = pathlib.Path(os.environ["ARCHIVE"])
+          destination = pathlib.Path(os.environ["DESTINATION"])
+          destination.mkdir(parents=True, exist_ok=False)
+          with tarfile.open(archive, "r:gz") as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  relative = pathlib.PurePosixPath(member.name)
+                  if (
+                      relative.is_absolute()
+                      or ".." in relative.parts
+                      or "\\" in member.name
+                      or not (member.isfile() or member.isdir())
+                  ):
+                      raise SystemExit(f"unsafe archive member: {member.name!r}")
+              bundle.extractall(destination, members=members, filter="data")
+          PY
+      - name: Reconcile source, toolchain, inventory, and every file
+        id: reconcile
+        env:
+          YUNE_WEB_EXPECTED_DIST: ${{ runner.temp }}/release-dist
+          YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+          YUNE_WEB_LOCAL_ARTIFACT_RECEIPT: ${{ runner.temp }}/artifact-validation/local-artifact-verification.json
+        run: |
+          node --test apps/yune-web/e2e/public-artifact-verifier.test.mjs
+          node apps/yune-web/e2e/verify-local-artifact.mjs
+      - name: Finalize validation status
+        if: always()
+        env:
+          RECONCILE_OUTCOME: ${{ steps.reconcile.outcome }}
+        run: |
+          status=failed
+          [ "$RECONCILE_OUTCOME" = success ] && status=passed
+          {
+            printf '{\n'
+            printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
+            printf '  "completedAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf '  "status": "%s"\n' "$status"
+            printf '}\n'
+          } > "$RUNNER_TEMP/artifact-validation/setup-status.json"
+      - name: Preserve independent validation receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: yune-web-artifact-validation-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/artifact-validation
+          if-no-files-found: error
+          retention-days: 90
+
+  authorize-preview:
+    name: Confirm candidate is current main
+    needs: validate-artifact
+    runs-on: ubuntu-24.04
+    outputs:
+      current: ${{ steps.current.outputs.current }}
+      current_main: ${{ steps.current.outputs.current_main }}
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            exit 1
+          }
+      - name: Classify current-main state
+        id: current
+        run: |
+          current_main="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk 'NF {print $1; exit}')"
+          printf '%s\n' "$current_main" | grep -Eq '^[0-9a-f]{40}$' || {
+            printf 'Could not prove the current main SHA; refusing to authorize preview.\n' >&2
+            exit 1
+          }
+          printf 'current_main=%s\n' "$current_main" >> "$GITHUB_OUTPUT"
+          if [ "$current_main" = "$GITHUB_SHA" ]; then
+            printf 'current=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'current=false\n' >> "$GITHUB_OUTPUT"
+            printf 'Candidate %s is superseded by current main %s; preserving green certification without upload.\n' "$GITHUB_SHA" "$current_main"
+          fi
+
+  superseded-after-certification:
+    name: Certified candidate superseded
+    needs: authorize-preview
+    if: needs.authorize-preview.outputs.current != 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            exit 1
+          }
+      - run: printf 'Certified source was superseded before preview; no Cloudflare credentials were used.\n'
+
+  deploy-preview:
+    name: Upload certified preview
+    needs:
+      - build-certify
+      - authorize-preview
+    if: needs.authorize-preview.outputs.current == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: yune-web-preview
+    outputs:
+      deployment_url: ${{ steps.resolve.outputs.deployment_url }}
+      deployment_id: ${{ steps.resolve.outputs.deployment_id }}
+      current: ${{ steps.late-current.outputs.current }}
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            exit 1
+          }
+      - name: Seed preview deployment receipt
+        run: |
+          mkdir -p "$RUNNER_TEMP/preview-deployment"
+          {
+            printf 'source_commit=%s\n' "$GITHUB_SHA"
+            printf 'attempted_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf 'status=setup-pending\n'
+          } > "$RUNNER_TEMP/preview-deployment/deployment.txt"
+      - name: Download certified bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.build-certify.outputs.artifact_name }}
+          path: ${{ runner.temp }}/release
+      - name: Verify digest and safely extract certified bundle
+        env:
+          ARCHIVE: ${{ runner.temp }}/release/yune-web-dist.tar.gz
+          DESTINATION: ${{ runner.temp }}/release-dist
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
+        run: |
+          actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          printf 'archive_sha256=%s\nstatus=artifact-validated\n' "$actual" >> "$RUNNER_TEMP/preview-deployment/deployment.txt"
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import tarfile
+
+          archive = pathlib.Path(os.environ["ARCHIVE"])
+          destination = pathlib.Path(os.environ["DESTINATION"])
+          destination.mkdir(parents=True, exist_ok=False)
+          with tarfile.open(archive, "r:gz") as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  relative = pathlib.PurePosixPath(member.name)
+                  if relative.is_absolute() or ".." in relative.parts or "\\" in member.name or not (member.isfile() or member.isdir()):
+                      raise SystemExit(f"unsafe archive member: {member.name!r}")
+              bundle.extractall(destination, members=members, filter="data")
+          PY
+      - name: Install exact Wrangler without credentials
+        run: |
+          npm install --global wrangler@4.111.0
+          test "$(wrangler --version)" = "4.111.0"
+      - name: Reconfirm candidate after environment admission
+        id: late-current
+        run: |
+          current_main="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk 'NF {print $1; exit}')"
+          printf '%s\n' "$current_main" | grep -Eq '^[0-9a-f]{40}$' || {
+            printf 'Could not prove the current main SHA; refusing to use Cloudflare credentials.\n' >&2
+            exit 1
+          }
+          if [ "$current_main" = "$GITHUB_SHA" ]; then
+            printf 'current=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'current=false\n' >> "$GITHUB_OUTPUT"
+            printf 'Candidate %s was superseded by %s during environment admission; upload is a green no-op.\n' "$GITHUB_SHA" "$current_main"
+          fi
+      - name: Assert Cloudflare Git auto-deploy remains disabled
+        if: steps.late-current.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NO_COLOR: "1"
+        run: |
+          curl -fsS \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/yune-web" \
+            > "$RUNNER_TEMP/cloudflare-project-response.json"
+          jq -e '.result.source.config.production_deployments_enabled == false and .result.source.config.preview_deployment_setting == "none"' \
+            "$RUNNER_TEMP/cloudflare-project-response.json" >/dev/null
+          jq '{name: .result.name, source: {type: .result.source.type, config: {production_deployments_enabled: .result.source.config.production_deployments_enabled, preview_deployment_setting: .result.source.config.preview_deployment_setting}}}' \
+            "$RUNNER_TEMP/cloudflare-project-response.json" > "$RUNNER_TEMP/preview-deployment/project-interlock.json"
+      - name: Direct-upload preview without rebuilding
+        if: steps.late-current.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NO_COLOR: "1"
+        run: |
+          set -o pipefail
+          wrangler pages deploy "$RUNNER_TEMP/release-dist" \
+            --project-name yune-web \
+            --branch "verify-$GITHUB_SHA" \
+            --commit-hash "$GITHUB_SHA" \
+            --commit-dirty=false 2>&1 | tee "$RUNNER_TEMP/preview-deployment/wrangler.log"
+      - name: Resolve and assert preview deployment identity
+        id: resolve
+        if: steps.late-current.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          deployment_url="$(grep 'Take a peek over at' "$RUNNER_TEMP/preview-deployment/wrangler.log" | grep -Eo 'https://[A-Za-z0-9.-]+\.pages\.dev' | tail -n 1)"
+          test -n "$deployment_url"
+          selected=null
+          for attempt in 1 2 3 4 5 6; do
+            curl -fsS \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/yune-web/deployments" \
+              > "$RUNNER_TEMP/preview-deployments-response.json"
+            selected="$(jq -c --arg url "$deployment_url" --arg sha "$GITHUB_SHA" --arg branch "verify-$GITHUB_SHA" \
+              '[.result[] | select(.url == $url and .environment == "preview" and .deployment_trigger.metadata.commit_hash == $sha and .deployment_trigger.metadata.branch == $branch) | {id, url, environment, created_on, deployment_trigger: {type: .deployment_trigger.type, metadata: {branch: .deployment_trigger.metadata.branch, commit_hash: .deployment_trigger.metadata.commit_hash, commit_dirty: .deployment_trigger.metadata.commit_dirty}}, latest_stage: {status: .latest_stage.status}}] | sort_by(.created_on) | last' \
+              "$RUNNER_TEMP/preview-deployments-response.json")"
+            [ "$selected" != "null" ] && break
+            sleep 2
+          done
+          test "$selected" != "null"
+          printf '%s\n' "$selected" > "$RUNNER_TEMP/preview-deployment/deployment.json"
+          deployment_id="$(printf '%s\n' "$selected" | jq -r '.id')"
+          resolved_url="$(printf '%s\n' "$selected" | jq -r '.url')"
+          test -n "$deployment_id"
+          test "$deployment_id" != "null"
+          test "$resolved_url" = "$deployment_url"
+          test "$(printf '%s\n' "$selected" | jq -r '.latest_stage.status')" = "success"
+          test "$(printf '%s\n' "$selected" | jq -r '.deployment_trigger.type')" = "ad_hoc"
+          test "$(printf '%s\n' "$selected" | jq -r '.deployment_trigger.metadata.commit_dirty')" = "false"
+          printf 'deployment_url=%s\n' "$resolved_url" >> "$GITHUB_OUTPUT"
+          printf 'deployment_id=%s\n' "$deployment_id" >> "$GITHUB_OUTPUT"
+          {
+            printf 'deployment_url=%s\n' "$resolved_url"
+            printf 'deployment_id=%s\n' "$deployment_id"
+            printf 'environment=preview\n'
+            printf 'completed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf 'status=uploaded\n'
+          } >> "$RUNNER_TEMP/preview-deployment/deployment.txt"
+      - name: Record superseded admission no-op
+        if: steps.late-current.outputs.current != 'true'
+        run: printf 'status=superseded-after-environment-admission\n' >> "$RUNNER_TEMP/preview-deployment/deployment.txt"
+      - name: Preserve preview deployment receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: yune-web-preview-deployment-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/preview-deployment
+          if-no-files-found: error
+          retention-days: 90
+
+  preview-canary:
+    name: Source-pinned preview canary
+    needs: deploy-preview
+    if: needs.deploy-preview.outputs.current == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: "1"
+      YUNE_WEB_APP_URL: ${{ needs.deploy-preview.outputs.deployment_url }}
+      YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+      YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT: "1"
+    steps:
+      - name: Seed preview canary receipt
+        run: |
+          printf 'PLAYWRIGHT_BROWSERS_PATH=%s/ms-playwright\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_LATENCY_OUTPUT_DIR=%s/preview-canary\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_LATENCY_EVIDENCE_DIR=%s/preview-canary\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/preview-canary"
+          {
+            printf '{\n'
+            printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
+            printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
+            printf '  "seededAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf '  "measurementStarted": false,\n'
+            printf '  "status": "setup-pending"\n'
+            printf '}\n'
+          } > "$RUNNER_TEMP/preview-canary/setup-status.json"
+      - name: Reject GitHub UI reruns
+        run: |
+          if [ "$GITHUB_RUN_ATTEMPT" != "1" ]; then
+            printf 'GitHub reruns are prohibited because they can discard a measured red; use a fresh, explicitly named workflow_dispatch only for setup failure.\n' >&2
+            exit 1
+          fi
+      - name: Check out exact source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Install source-pinned canary runtime
+        run: |
+          npm --prefix apps/yune-web/e2e ci
+          PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/ms-playwright" \
+            node apps/yune-web/e2e/node_modules/@playwright/test/cli.js install --with-deps chromium
+      - name: Run deployed canary once
+        run: |
+          if npm --prefix apps/yune-web/e2e run test:e2e:input-latency; then
+            status=passed
+          else
+            status=failed
+          fi
+          {
+            printf '{\n'
+            printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
+            printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
+            printf '  "completedAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf '  "measurementStarted": true,\n'
+            printf '  "status": "%s"\n' "$status"
+            printf '}\n'
+          } > "$RUNNER_TEMP/preview-canary/setup-status.json"
+          test "$status" = passed
+      - name: Preserve preview canary receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: yune-web-preview-canary-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/preview-canary
+          if-no-files-found: error
+          retention-days: 90
+
+  authorize-production:
+    name: Reconfirm candidate before production
+    needs: preview-canary
+    runs-on: ubuntu-24.04
+    outputs:
+      current: ${{ steps.current.outputs.current }}
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            exit 1
+          }
+      - name: Classify current-main state
+        id: current
+        run: |
+          current_main="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk 'NF {print $1; exit}')"
+          printf '%s\n' "$current_main" | grep -Eq '^[0-9a-f]{40}$' || {
+            printf 'Could not prove the current main SHA; refusing to authorize production.\n' >&2
+            exit 1
+          }
+          if [ "$current_main" = "$GITHUB_SHA" ]; then
+            printf 'current=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'current=false\n' >> "$GITHUB_OUTPUT"
+            printf 'Preview-proven source %s is superseded by %s; production promotion is skipped.\n' "$GITHUB_SHA" "$current_main"
+          fi
+
+  superseded-after-preview:
+    name: Preview-proven candidate superseded
+    needs: authorize-production
+    if: needs.authorize-production.outputs.current != 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            exit 1
+          }
+      - run: printf 'Preview-proven source was superseded; certified production bytes were not changed.\n'
+
+  deploy-production:
+    name: Promote identical bytes to production
+    needs:
+      - build-certify
+      - authorize-production
+    if: needs.authorize-production.outputs.current == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: yune-web-production
+    outputs:
+      deployment_url: ${{ steps.resolve.outputs.deployment_url }}
+      deployment_id: ${{ steps.resolve.outputs.deployment_id }}
+      current: ${{ steps.late-current.outputs.current }}
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            exit 1
+          }
+      - name: Seed production deployment receipt
+        run: |
+          mkdir -p "$RUNNER_TEMP/production-deployment"
+          {
+            printf 'source_commit=%s\n' "$GITHUB_SHA"
+            printf 'attempted_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf 'status=setup-pending\n'
+          } > "$RUNNER_TEMP/production-deployment/deployment.txt"
+      - name: Download certified bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.build-certify.outputs.artifact_name }}
+          path: ${{ runner.temp }}/release
+      - name: Verify digest and safely extract certified bundle
+        env:
+          ARCHIVE: ${{ runner.temp }}/release/yune-web-dist.tar.gz
+          DESTINATION: ${{ runner.temp }}/release-dist
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
+        run: |
+          actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          printf 'archive_sha256=%s\nstatus=artifact-validated\n' "$actual" >> "$RUNNER_TEMP/production-deployment/deployment.txt"
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import tarfile
+
+          archive = pathlib.Path(os.environ["ARCHIVE"])
+          destination = pathlib.Path(os.environ["DESTINATION"])
+          destination.mkdir(parents=True, exist_ok=False)
+          with tarfile.open(archive, "r:gz") as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  relative = pathlib.PurePosixPath(member.name)
+                  if relative.is_absolute() or ".." in relative.parts or "\\" in member.name or not (member.isfile() or member.isdir()):
+                      raise SystemExit(f"unsafe archive member: {member.name!r}")
+              bundle.extractall(destination, members=members, filter="data")
+          PY
+      - name: Install exact Wrangler without credentials
+        run: |
+          npm install --global wrangler@4.111.0
+          test "$(wrangler --version)" = "4.111.0"
+      - name: Reconfirm candidate after environment admission
+        id: late-current
+        run: |
+          current_main="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk 'NF {print $1; exit}')"
+          printf '%s\n' "$current_main" | grep -Eq '^[0-9a-f]{40}$' || {
+            printf 'Could not prove the current main SHA; refusing to use Cloudflare credentials.\n' >&2
+            exit 1
+          }
+          if [ "$current_main" = "$GITHUB_SHA" ]; then
+            printf 'current=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'current=false\n' >> "$GITHUB_OUTPUT"
+            printf 'Candidate %s was superseded by %s during environment admission; production upload is a green no-op.\n' "$GITHUB_SHA" "$current_main"
+          fi
+      - name: Assert Cloudflare Git auto-deploy remains disabled
+        if: steps.late-current.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NO_COLOR: "1"
+        run: |
+          curl -fsS \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/yune-web" \
+            > "$RUNNER_TEMP/cloudflare-project-response.json"
+          jq -e '.result.source.config.production_deployments_enabled == false and .result.source.config.preview_deployment_setting == "none"' \
+            "$RUNNER_TEMP/cloudflare-project-response.json" >/dev/null
+          jq '{name: .result.name, source: {type: .result.source.type, config: {production_deployments_enabled: .result.source.config.production_deployments_enabled, preview_deployment_setting: .result.source.config.preview_deployment_setting}}}' \
+            "$RUNNER_TEMP/cloudflare-project-response.json" > "$RUNNER_TEMP/production-deployment/project-interlock.json"
+      - name: Direct-upload production without rebuilding
+        if: steps.late-current.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NO_COLOR: "1"
+        run: |
+          set -o pipefail
+          wrangler pages deploy "$RUNNER_TEMP/release-dist" \
+            --project-name yune-web \
+            --branch main \
+            --commit-hash "$GITHUB_SHA" \
+            --commit-dirty=false 2>&1 | tee "$RUNNER_TEMP/production-deployment/wrangler.log"
+      - name: Resolve and assert production deployment identity
+        id: resolve
+        if: steps.late-current.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          deployment_url="$(grep 'Take a peek over at' "$RUNNER_TEMP/production-deployment/wrangler.log" | grep -Eo 'https://[A-Za-z0-9.-]+\.pages\.dev' | tail -n 1)"
+          test -n "$deployment_url"
+          selected=null
+          for attempt in 1 2 3 4 5 6; do
+            curl -fsS \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/yune-web/deployments" \
+              > "$RUNNER_TEMP/production-deployments-response.json"
+            selected="$(jq -c --arg url "$deployment_url" --arg sha "$GITHUB_SHA" \
+              '[.result[] | select(.url == $url and .environment == "production" and .deployment_trigger.metadata.commit_hash == $sha and .deployment_trigger.metadata.branch == "main") | {id, url, environment, created_on, deployment_trigger: {type: .deployment_trigger.type, metadata: {branch: .deployment_trigger.metadata.branch, commit_hash: .deployment_trigger.metadata.commit_hash, commit_dirty: .deployment_trigger.metadata.commit_dirty}}, latest_stage: {status: .latest_stage.status}}] | sort_by(.created_on) | last' \
+              "$RUNNER_TEMP/production-deployments-response.json")"
+            [ "$selected" != "null" ] && break
+            sleep 2
+          done
+          test "$selected" != "null"
+          printf '%s\n' "$selected" > "$RUNNER_TEMP/production-deployment/deployment.json"
+          deployment_id="$(printf '%s\n' "$selected" | jq -r '.id')"
+          resolved_url="$(printf '%s\n' "$selected" | jq -r '.url')"
+          test -n "$deployment_id"
+          test "$deployment_id" != "null"
+          test "$resolved_url" = "$deployment_url"
+          test "$(printf '%s\n' "$selected" | jq -r '.latest_stage.status')" = "success"
+          test "$(printf '%s\n' "$selected" | jq -r '.deployment_trigger.type')" = "ad_hoc"
+          test "$(printf '%s\n' "$selected" | jq -r '.deployment_trigger.metadata.commit_dirty')" = "false"
+          printf 'deployment_url=%s\n' "$resolved_url" >> "$GITHUB_OUTPUT"
+          printf 'deployment_id=%s\n' "$deployment_id" >> "$GITHUB_OUTPUT"
+          {
+            printf 'deployment_url=%s\n' "$resolved_url"
+            printf 'deployment_id=%s\n' "$deployment_id"
+            printf 'environment=production\n'
+            printf 'completed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf 'status=uploaded\n'
+          } >> "$RUNNER_TEMP/production-deployment/deployment.txt"
+      - name: Record superseded admission no-op
+        if: steps.late-current.outputs.current != 'true'
+        run: printf 'status=superseded-after-environment-admission\n' >> "$RUNNER_TEMP/production-deployment/deployment.txt"
+      - name: Preserve production deployment receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: yune-web-production-deployment-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/production-deployment
+          if-no-files-found: error
+          retention-days: 90
+
+  verify-production:
+    name: Verify production identity and bytes
+    needs:
+      - build-certify
+      - deploy-production
+    if: needs.deploy-production.outputs.current == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      YUNE_WEB_APP_URL: https://yune-web.pages.dev/
+      YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            exit 1
+          }
+      - name: Seed production verification receipt
+        run: |
+          mkdir -p "$RUNNER_TEMP/production-verification"
+          {
+            printf '{\n'
+            printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
+            printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
+            printf '  "seededAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf '  "status": "setup-pending"\n'
+            printf '}\n'
+          } > "$RUNNER_TEMP/production-verification/setup-status.json"
+      - name: Check out verifier at exact source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Download certified bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.build-certify.outputs.artifact_name }}
+          path: ${{ runner.temp }}/release
+      - name: Verify digest and safely extract certified bundle
+        env:
+          ARCHIVE: ${{ runner.temp }}/release/yune-web-dist.tar.gz
+          DESTINATION: ${{ runner.temp }}/release-dist
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
+        run: |
+          actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import tarfile
+
+          archive = pathlib.Path(os.environ["ARCHIVE"])
+          destination = pathlib.Path(os.environ["DESTINATION"])
+          destination.mkdir(parents=True, exist_ok=False)
+          with tarfile.open(archive, "r:gz") as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  relative = pathlib.PurePosixPath(member.name)
+                  if relative.is_absolute() or ".." in relative.parts or "\\" in member.name or not (member.isfile() or member.isdir()):
+                      raise SystemExit(f"unsafe archive member: {member.name!r}")
+              bundle.extractall(destination, members=members, filter="data")
+          PY
+      - name: Verify production source, toolchain, and runtime hashes
+        id: verify
+        env:
+          YUNE_WEB_EXPECTED_DIST: ${{ runner.temp }}/release-dist
+          YUNE_WEB_DEPLOYMENT_RECEIPT: ${{ runner.temp }}/production-verification/deployed-artifact-verification.json
+        run: node apps/yune-web/e2e/verify-deployed-artifact.mjs
+      - name: Finalize production verification status
+        if: always()
+        env:
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+        run: |
+          status=failed
+          [ "$VERIFY_OUTCOME" = success ] && status=passed
+          {
+            printf '{\n'
+            printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
+            printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
+            printf '  "completedAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf '  "status": "%s"\n' "$status"
+            printf '}\n'
+          } > "$RUNNER_TEMP/production-verification/setup-status.json"
+      - name: Preserve production verification receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: yune-web-production-verification-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/production-verification
+          if-no-files-found: error
+          retention-days: 90

@@ -1,0 +1,139 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  manifestName,
+  sha256,
+  validateLocalBundle,
+} from "./public-artifact-verifier.mjs";
+
+const e2eRoot = path.dirname(fileURLToPath(import.meta.url));
+const appRoot = path.resolve(e2eRoot, "..");
+const distRoot = path.resolve(
+  process.env.YUNE_WEB_EXPECTED_DIST ?? path.join(appRoot, "public-demo", "dist"),
+);
+const expectedCommit = process.env.YUNE_WEB_EXPECTED_SOURCE_COMMIT
+  ?.trim()
+  .toLowerCase();
+const appUrlValue = process.env.YUNE_WEB_APP_URL;
+const receiptPath = path.resolve(
+  process.env.YUNE_WEB_DEPLOYMENT_RECEIPT ??
+    path.join(e2eRoot, "test-results", "deployed-artifact-verification.json"),
+);
+const waitMs = Number(process.env.YUNE_WEB_DEPLOYMENT_WAIT_MS ?? "120000");
+const requestTimeoutMs = Number(
+  process.env.YUNE_WEB_DEPLOYMENT_REQUEST_TIMEOUT_MS ?? "20000",
+);
+
+async function fetchBytes(relative) {
+  const url = new URL(relative, appUrlValue);
+  url.searchParams.set("yuneSource", expectedCommit);
+  const response = await fetch(url, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(requestTimeoutMs),
+  });
+  if (!response.ok) throw new Error(`${relative} returned HTTP ${response.status}`);
+  return Buffer.from(await response.arrayBuffer());
+}
+
+async function waitForExactBuild(localBuildInfoBytes) {
+  const deadline = Date.now() + waitMs;
+  let lastObservation = null;
+  do {
+    try {
+      const bytes = await fetchBytes("build-info.json");
+      const value = JSON.parse(bytes.toString("utf8"));
+      lastObservation = value.sourceCommit ?? null;
+      if (bytes.equals(localBuildInfoBytes)) return bytes;
+    } catch (error) {
+      lastObservation = error instanceof Error ? error.message : String(error);
+    }
+    if (Date.now() >= deadline) break;
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+  } while (true);
+  throw new Error(
+    `Deployment did not serve the exact certified build for ${expectedCommit}; ` +
+      `last source observation: ${lastObservation}`,
+  );
+}
+
+const startedAt = new Date().toISOString();
+const verified = [];
+let passed = false;
+let failure = null;
+
+try {
+  if (!appUrlValue) throw new Error("YUNE_WEB_APP_URL is required");
+  if (!/^[0-9a-f]{40}$/.test(expectedCommit ?? "")) {
+    throw new Error("YUNE_WEB_EXPECTED_SOURCE_COMMIT must be a full lowercase SHA");
+  }
+  if (!Number.isSafeInteger(waitMs) || waitMs < 0 || waitMs > 300_000) {
+    throw new Error(`Invalid YUNE_WEB_DEPLOYMENT_WAIT_MS: ${waitMs}`);
+  }
+  if (
+    !Number.isSafeInteger(requestTimeoutMs) ||
+    requestTimeoutMs < 1_000 ||
+    requestTimeoutMs > 60_000
+  ) {
+    throw new Error(
+      `Invalid YUNE_WEB_DEPLOYMENT_REQUEST_TIMEOUT_MS: ${requestTimeoutMs}`,
+    );
+  }
+
+  const local = await validateLocalBundle(distRoot, expectedCommit);
+  const remoteBuildInfoBytes = await waitForExactBuild(local.buildInfoBytes);
+  verified.push({ path: "build-info.json", sha256: sha256(remoteBuildInfoBytes) });
+
+  const remoteManifestBytes = await fetchBytes(manifestName);
+  if (!remoteManifestBytes.equals(local.manifestBytes)) {
+    throw new Error("Served public-artifact-manifest.json differs from the certified bundle");
+  }
+  verified.push({ path: manifestName, sha256: sha256(remoteManifestBytes) });
+
+  const runtimePaths = local.manifest.files
+    .map((file) => file.path)
+    .filter(
+      (relative) =>
+        [
+          "index.html",
+          "worker.js",
+          "yune-web.js",
+          "yune-web.wasm",
+          "schema-asset-manifest.json",
+          "schema/jyut6ping3_mobile.prism.bin.part0",
+          "schema/jyut6ping3_mobile.prism.bin.part1",
+        ].includes(relative) || /^assets\/.*\.(?:js|css)$/.test(relative),
+    );
+  for (const relative of runtimePaths) {
+    const expected = local.inventory.get(relative);
+    const bytes = await fetchBytes(relative);
+    if (bytes.byteLength !== expected.bytes || sha256(bytes) !== expected.sha256) {
+      throw new Error(`Served ${relative} differs from the certified inventory`);
+    }
+    verified.push({ path: relative, bytes: bytes.byteLength, sha256: expected.sha256 });
+  }
+  passed = true;
+} catch (error) {
+  failure = error instanceof Error ? error.message : String(error);
+} finally {
+  await mkdir(path.dirname(receiptPath), { recursive: true });
+  await writeFile(
+    receiptPath,
+    `${JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        startedAt,
+        appUrl: appUrlValue ?? null,
+        expectedSourceCommit: expectedCommit ?? null,
+        passed,
+        failure,
+        verified,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+if (!passed) throw new Error(failure);
+console.log(`Verified deployed yune-web artifact at ${appUrlValue}`);

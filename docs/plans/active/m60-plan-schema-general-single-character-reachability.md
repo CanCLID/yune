@@ -43,13 +43,15 @@ M59 owns the behavior. In particular:
   bidirectional manifest exactness added at `07845e02`; and
 - historical M59 evidence is immutable and is linked, not rewritten.
 
-The planning baseline is the pushed WEB03-11 closeout commit `10b119fa`; its
-measured product source remains `ef485b10`. M60 neither reruns nor supersedes
-that browser evidence. At kickoff, record the actual Yune base commit containing
-this finalized plan and the exact tree state. The pre-existing staged
-`.codex/config.toml` change is user-owned, remains excluded from every M60
-commit, and must be reported as an unrelated dirty path rather than mislabeled
-as a clean source tree.
+The fetched M60 kickoff base is
+`b8cd897f9d6c3158d864bac9d2629482c45c7427`; the WEB03-11 measured product
+source remains `ef485b10`. M60 neither reruns nor supersedes that browser
+evidence. At kickoff, local `main` and `origin/main` matched, the worktree and
+real Git index were empty, and `.codex/config.toml` was clean. The two protected
+UI paths named by the handoff were also clean; their kickoff SHA-256 values are
+recorded externally, and they remain outside every M60 path list, candidate,
+and commit. The real index must remain empty outside temporary, explicitly
+path-limited M60 intent-to-add and commit operations.
 
 Referenced oracle/profile pins remain:
 
@@ -333,9 +335,9 @@ execution and evidence claims.
 ## Execution Sequence
 
 1. **Kickoff and provenance.** Fetch `origin/main`; record the exact base SHA,
-   branch/upstream relation, tracked status, the excluded staged config path,
-   timestamps, tool versions, and the fixed oracle/profile pins. Stop if any
-   other unexplained change overlaps M60 files.
+   branch/upstream relation, tracked status, empty real index, protected UI
+   hashes, timestamps, tool versions, and the fixed oracle/profile pins. Stop
+   if any unexplained change overlaps M60 files.
 2. **Contract and enforcement commit.** Add the contract, separate formalism
    version, empty registry collection, Rust audit tool, checker/updater changes,
    static and narrow real-path tests, and required doc corrections. Tooling-only
@@ -374,8 +376,8 @@ execution and evidence claims.
    source identity. The reviews bind the pre-review tree; the exact three-path
    delta proof binds it to the final tree. Record the containing closeout SHA
    only in an external post-push receipt and the handoff; do not create a
-   self-referential follow-up commit. Confirm the unrelated staged config
-   remains staged and uncommitted.
+   self-referential follow-up commit. Confirm the real index is empty and both
+   protected UI files remain byte-identical to kickoff and unstaged.
 
 ## Load-Bearing Verification
 
@@ -418,7 +420,7 @@ Before the implementation commit, build an isolated candidate from its two
 implementation lists, write `m60-implementation-tree.txt`, add intent-to-add
 entries only for its new-path subset, commit with `git commit --only
 --pathspec-from-file`, require `HEAD^{tree}` to equal the preserved tree, and
-require `.codex/config.toml` to remain the only real staged path. The detailed
+require the real index to remain empty. The detailed
 closeout commands below are normative for that operation with the corresponding
 implementation filenames substituted; do not use a less isolated first-commit
 shortcut.
@@ -430,7 +432,7 @@ GIT_INDEX_FILE="$OUT/m60-implementation.index" git add -A \
   --pathspec-from-file="$OUT/m60-implementation-paths.txt"
 GIT_INDEX_FILE="$OUT/m60-implementation.index" git write-tree \
   > "$OUT/m60-implementation-tree.txt"
-test "$(git diff --cached --name-only)" = ".codex/config.toml"
+test -z "$(git diff --cached --name-only)"
 LC_ALL=C sort -u "$OUT/m60-implementation-paths.txt" \
   > "$OUT/m60-implementation-paths.sorted"
 LC_ALL=C sort -u "$OUT/m60-implementation-new-paths.txt" \
@@ -454,12 +456,12 @@ git commit --only \
   --pathspec-from-file="$OUT/m60-implementation-paths.txt" \
   -m "Implement M60 reachability formalism"
 test "$(git rev-parse HEAD^{tree})" = "$(cat "$OUT/m60-implementation-tree.txt")"
-test "$(git diff --cached --name-only)" = ".codex/config.toml"
+test -z "$(git diff --cached --name-only)"
 test -z "$(git diff --name-only --diff-filter=A)"
 ```
 
-Build the candidate index from `HEAD`, not from the real index that already
-stages the user-owned config. Before both reviews, preserve the first tree:
+Build the candidate index from `HEAD`, never from the real index. Before both
+reviews, preserve the first tree:
 
 ```sh
 rm -f "$OUT/m60.index"
@@ -496,12 +498,11 @@ GIT_INDEX_FILE="$OUT/m60.index" git diff --cached --check
 
 `git commit --only` cannot name a path that is untracked in the real index even
 when it exists in the isolated candidate. Immediately before closeout, confirm
-the real staged-path list contains only the pre-existing user-owned config,
-then add intent-to-add entries only for `$OUT/m60-new-paths.txt` and perform the
-path-limited commit:
+the real index is empty, then add intent-to-add entries only for
+`$OUT/m60-new-paths.txt` and perform the path-limited commit:
 
 ```sh
-test "$(git diff --cached --name-only)" = ".codex/config.toml"
+test -z "$(git diff --cached --name-only)"
 LC_ALL=C sort -u "$OUT/m60-paths.txt" > "$OUT/m60-paths.sorted"
 LC_ALL=C sort -u "$OUT/m60-new-paths.txt" > "$OUT/m60-new-paths.sorted"
 cmp "$OUT/m60-paths.txt" "$OUT/m60-paths.sorted"
@@ -516,7 +517,7 @@ git diff --name-only --diff-filter=A | LC_ALL=C sort \
 cmp "$OUT/m60-new-paths.sorted" "$OUT/m60-intent-actual.txt"
 git commit --only --pathspec-from-file="$OUT/m60-paths.txt" -m "Close M60 reachability formalism"
 test "$(git rev-parse HEAD^{tree})" = "$(cat "$OUT/m60-final-candidate-tree.txt")"
-test "$(git diff --cached --name-only)" = ".codex/config.toml"
+test -z "$(git diff --cached --name-only)"
 test -z "$(git diff --name-only --diff-filter=A)"
 ```
 

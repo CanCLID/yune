@@ -73,12 +73,18 @@ alongside, but separately from, its seven-input Lane B complete-list contract.
 ## Schema-General Reachability Acceptance
 
 M59 makes `leading_syllable_reachability` default-on for every schema while
-retaining TypeDuck-profile `prefix_fallback` precedence. Commit `5fa986d8`
+retaining request-local TypeDuck-profile `prefix_fallback` precedence. The
+canonical [schema-general reachability contract](schema-general-reachability.md)
+defines that precedence: `prefix_fallback` owns only an input with a deployed
+proper prefix (`prefix_fallback_owned`); otherwise leading-syllable
+reachability remains independently available. Commit `5fa986d8`
 binds that contract to the shipped surface: both manifests cover the exact
 60-asset schema tree; the registry dispositions 10 schema assets and three
 configuration carriers; and nine executable validation rows link the fixed
 eight-row deploy matrix plus the direct selectable tracked `jyut6ping3` path.
-New schema assets enter the registry as blocking open rows. This is an
+New schema assets enter the registry as blocking open rows. M60 retains the
+M59 capability version `m59-reach03-v1`, adds formalism version
+`m60-reachability-v1`, and permits no current opt-out. This is an
 acceptance/audit rule, not a schema-id gate or ABI surface.
 
 M59 closes this contract with final native evidence at `443cc636`; fail-closed

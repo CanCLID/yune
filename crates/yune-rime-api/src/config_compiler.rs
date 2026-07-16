@@ -7,6 +7,15 @@ use crate::{
     set_config_value, RIME_VERSION_BYTES,
 };
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct ConfigDirectiveTraceEvent {
+    pub kind: &'static str,
+    pub source_resource_id: String,
+    pub referenced_resource_id: String,
+    pub reference: String,
+    pub optional: bool,
+}
+
 pub(crate) fn source_uses_auto_custom_patch(source: &Path) -> bool {
     fs::read_to_string(source)
         .ok()
@@ -19,6 +28,40 @@ pub(crate) fn apply_config_directives(
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
 ) -> Option<bool> {
+    let mut trace = None;
+    apply_config_directives_with_trace_sink(
+        root,
+        shared_data_dir,
+        patch_dependencies,
+        "",
+        &mut trace,
+    )
+}
+
+pub(crate) fn apply_config_directives_traced(
+    root: &mut Value,
+    shared_data_dir: &Path,
+    patch_dependencies: &mut Vec<(String, c_int)>,
+    source_resource_id: &str,
+    trace: &mut Vec<ConfigDirectiveTraceEvent>,
+) -> Option<bool> {
+    let mut trace = Some(trace);
+    apply_config_directives_with_trace_sink(
+        root,
+        shared_data_dir,
+        patch_dependencies,
+        source_resource_id,
+        &mut trace,
+    )
+}
+
+fn apply_config_directives_with_trace_sink(
+    root: &mut Value,
+    shared_data_dir: &Path,
+    patch_dependencies: &mut Vec<(String, c_int)>,
+    source_resource_id: &str,
+    trace: &mut Option<&mut Vec<ConfigDirectiveTraceEvent>>,
+) -> Option<bool> {
     let local_reference_root = root.clone();
     let root_has_patch = apply_config_directives_inner(
         root,
@@ -26,6 +69,8 @@ pub(crate) fn apply_config_directives(
         patch_dependencies,
         true,
         &local_reference_root,
+        source_resource_id,
+        trace,
     )?;
     Some(!root_has_patch)
 }
@@ -36,6 +81,8 @@ pub(crate) fn apply_config_directives_inner(
     patch_dependencies: &mut Vec<(String, c_int)>,
     is_root: bool,
     local_reference_root: &Value,
+    current_resource_id: &str,
+    trace: &mut Option<&mut Vec<ConfigDirectiveTraceEvent>>,
 ) -> Option<bool> {
     let mut root_has_patch = false;
     match root {
@@ -47,6 +94,8 @@ pub(crate) fn apply_config_directives_inner(
                     patch_dependencies,
                     false,
                     local_reference_root,
+                    current_resource_id,
+                    trace,
                 )?;
             }
         }
@@ -63,6 +112,8 @@ pub(crate) fn apply_config_directives_inner(
                         patch_dependencies,
                         false,
                         local_reference_root,
+                        current_resource_id,
+                        trace,
                     )?;
                 }
             }
@@ -71,12 +122,16 @@ pub(crate) fn apply_config_directives_inner(
                 shared_data_dir,
                 patch_dependencies,
                 local_reference_root,
+                current_resource_id,
+                trace,
             )?;
             let node_has_patch = apply_node_patch_directive(
                 root,
                 shared_data_dir,
                 patch_dependencies,
                 local_reference_root,
+                current_resource_id,
+                trace,
             )?;
             root_has_patch = is_root && node_has_patch;
         }
@@ -90,6 +145,8 @@ pub(crate) fn apply_node_include_directive(
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
     local_reference_root: &Value,
+    current_resource_id: &str,
+    trace: &mut Option<&mut Vec<ConfigDirectiveTraceEvent>>,
 ) -> Option<()> {
     let include = {
         let Value::Mapping(mapping) = root else {
@@ -106,6 +163,8 @@ pub(crate) fn apply_node_include_directive(
         shared_data_dir,
         patch_dependencies,
         local_reference_root,
+        current_resource_id,
+        trace,
     )
 }
 
@@ -115,6 +174,8 @@ pub(crate) fn apply_include_reference(
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
     local_reference_root: &Value,
+    current_resource_id: &str,
+    trace: &mut Option<&mut Vec<ConfigDirectiveTraceEvent>>,
 ) -> Option<()> {
     let (reference, optional) = reference
         .strip_suffix('?')
@@ -124,17 +185,32 @@ pub(crate) fn apply_include_reference(
     } else {
         ("", reference)
     };
+    if let Some(trace) = trace.as_deref_mut() {
+        let referenced_resource_id = if resource.is_empty() {
+            current_resource_id.to_owned()
+        } else {
+            normalize_config_resource_id(resource).unwrap_or_else(|| resource.to_owned())
+        };
+        trace.push(ConfigDirectiveTraceEvent {
+            kind: "include",
+            source_resource_id: current_resource_id.to_owned(),
+            referenced_resource_id,
+            reference: reference.to_owned(),
+            optional,
+        });
+    }
     let included = if resource.is_empty() {
         find_config_value(root, path)
             .cloned()
             .or_else(|| find_config_value(local_reference_root, path).cloned())
     } else {
-        load_external_config_reference(
+        load_external_config_reference_traced(
             resource,
             path,
             optional,
             shared_data_dir,
             patch_dependencies,
+            trace,
         )?
     };
     let Some(included) = included else {
@@ -151,6 +227,8 @@ pub(crate) fn apply_node_patch_directive(
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
     local_reference_root: &Value,
+    current_resource_id: &str,
+    trace: &mut Option<&mut Vec<ConfigDirectiveTraceEvent>>,
 ) -> Option<bool> {
     let (patch, directive_only_node) = {
         let Value::Mapping(mapping) = root else {
@@ -171,6 +249,8 @@ pub(crate) fn apply_node_patch_directive(
         shared_data_dir,
         patch_dependencies,
         local_reference_root,
+        current_resource_id,
+        trace,
     )?;
     Some(true)
 }
@@ -181,21 +261,38 @@ pub(crate) fn apply_patch_directive(
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
     local_reference_root: &Value,
+    current_resource_id: &str,
+    trace: &mut Option<&mut Vec<ConfigDirectiveTraceEvent>>,
 ) -> Option<()> {
     match patch {
-        Value::Mapping(patch) => apply_patch_map(
-            root,
-            patch,
-            shared_data_dir,
-            patch_dependencies,
-            local_reference_root,
-        ),
+        Value::Mapping(patch) => {
+            if let Some(trace) = trace.as_deref_mut() {
+                trace.push(ConfigDirectiveTraceEvent {
+                    kind: "patch-map",
+                    source_resource_id: current_resource_id.to_owned(),
+                    referenced_resource_id: current_resource_id.to_owned(),
+                    reference: "<mapping>".to_owned(),
+                    optional: false,
+                });
+            }
+            apply_patch_map_traced(
+                root,
+                patch,
+                shared_data_dir,
+                patch_dependencies,
+                local_reference_root,
+                current_resource_id,
+                trace,
+            )
+        }
         Value::String(reference) => apply_patch_reference(
             root,
             reference,
             shared_data_dir,
             patch_dependencies,
             local_reference_root,
+            current_resource_id,
+            trace,
         ),
         Value::Sequence(patches) => {
             for patch in patches {
@@ -205,6 +302,8 @@ pub(crate) fn apply_patch_directive(
                     shared_data_dir,
                     patch_dependencies,
                     local_reference_root,
+                    current_resource_id,
+                    trace,
                 )?;
             }
             Some(())
@@ -219,6 +318,8 @@ pub(crate) fn apply_patch_reference(
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
     local_reference_root: &Value,
+    current_resource_id: &str,
+    trace: &mut Option<&mut Vec<ConfigDirectiveTraceEvent>>,
 ) -> Option<()> {
     let (reference, optional) = reference
         .strip_suffix('?')
@@ -228,13 +329,28 @@ pub(crate) fn apply_patch_reference(
     } else {
         ("", reference)
     };
+    if let Some(trace) = trace.as_deref_mut() {
+        let referenced_resource_id = if resource.is_empty() {
+            current_resource_id.to_owned()
+        } else {
+            normalize_config_resource_id(resource).unwrap_or_else(|| resource.to_owned())
+        };
+        trace.push(ConfigDirectiveTraceEvent {
+            kind: "patch",
+            source_resource_id: current_resource_id.to_owned(),
+            referenced_resource_id,
+            reference: reference.to_owned(),
+            optional,
+        });
+    }
     if !resource.is_empty() {
-        let Some(referenced) = load_external_config_reference(
+        let Some(referenced) = load_external_config_reference_traced(
             resource,
             path,
             optional,
             shared_data_dir,
             patch_dependencies,
+            trace,
         )?
         else {
             return Some(());
@@ -246,12 +362,14 @@ pub(crate) fn apply_patch_reference(
                 } else {
                     normalize_external_named_patch(reference, patch)
                 };
-                apply_patch_map(
+                apply_patch_map_traced(
                     root,
                     &patch,
                     shared_data_dir,
                     patch_dependencies,
                     local_reference_root,
+                    &normalize_config_resource_id(resource).unwrap_or_else(|| resource.to_owned()),
+                    trace,
                 )
             }
             _ => None,
@@ -261,12 +379,14 @@ pub(crate) fn apply_patch_reference(
         .cloned()
         .or_else(|| find_config_value(local_reference_root, path).cloned())
     {
-        Some(Value::Mapping(patch)) => apply_patch_map(
+        Some(Value::Mapping(patch)) => apply_patch_map_traced(
             root,
             &patch,
             shared_data_dir,
             patch_dependencies,
             local_reference_root,
+            current_resource_id,
+            trace,
         ),
         Some(_) => None,
         None => optional.then_some(()),
@@ -280,6 +400,25 @@ pub(crate) fn load_external_config_reference(
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
 ) -> Option<Option<Value>> {
+    let mut trace = None;
+    load_external_config_reference_traced(
+        resource,
+        path,
+        optional,
+        shared_data_dir,
+        patch_dependencies,
+        &mut trace,
+    )
+}
+
+fn load_external_config_reference_traced(
+    resource: &str,
+    path: &str,
+    optional: bool,
+    shared_data_dir: &Path,
+    patch_dependencies: &mut Vec<(String, c_int)>,
+    trace: &mut Option<&mut Vec<ConfigDirectiveTraceEvent>>,
+) -> Option<Option<Value>> {
     let resource_id = normalize_config_resource_id(resource)?;
     let resource_path = shared_data_dir.join(format!("{resource_id}.yaml"));
     let timestamp = if resource_path.exists() {
@@ -287,7 +426,7 @@ pub(crate) fn load_external_config_reference(
     } else {
         0
     };
-    patch_dependencies.push((resource_id, timestamp));
+    patch_dependencies.push((resource_id.clone(), timestamp));
     let Some(resource_root) = fs::read_to_string(&resource_path)
         .ok()
         .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
@@ -302,6 +441,8 @@ pub(crate) fn load_external_config_reference(
                 patch_dependencies,
                 false,
                 &resource_root,
+                &resource_id,
+                trace,
             )?;
             Some(Some(value))
         }
@@ -329,15 +470,64 @@ pub(crate) fn apply_custom_patch(
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
 ) -> Option<()> {
+    let mut trace = None;
+    apply_custom_patch_with_trace_sink(
+        root,
+        custom_root,
+        shared_data_dir,
+        patch_dependencies,
+        "",
+        &mut trace,
+    )
+}
+
+pub(crate) fn apply_custom_patch_traced(
+    root: &mut Value,
+    custom_root: &Value,
+    shared_data_dir: &Path,
+    patch_dependencies: &mut Vec<(String, c_int)>,
+    custom_resource_id: &str,
+    trace: &mut Vec<ConfigDirectiveTraceEvent>,
+) -> Option<()> {
+    let mut trace = Some(trace);
+    apply_custom_patch_with_trace_sink(
+        root,
+        custom_root,
+        shared_data_dir,
+        patch_dependencies,
+        custom_resource_id,
+        &mut trace,
+    )
+}
+
+fn apply_custom_patch_with_trace_sink(
+    root: &mut Value,
+    custom_root: &Value,
+    shared_data_dir: &Path,
+    patch_dependencies: &mut Vec<(String, c_int)>,
+    custom_resource_id: &str,
+    trace: &mut Option<&mut Vec<ConfigDirectiveTraceEvent>>,
+) -> Option<()> {
     let Some(Value::Mapping(patch)) = find_config_value(custom_root, "patch") else {
         return Some(());
     };
-    apply_patch_map(
+    if let Some(trace) = trace.as_deref_mut() {
+        trace.push(ConfigDirectiveTraceEvent {
+            kind: "custom-patch",
+            source_resource_id: custom_resource_id.to_owned(),
+            referenced_resource_id: custom_resource_id.to_owned(),
+            reference: "patch".to_owned(),
+            optional: false,
+        });
+    }
+    apply_patch_map_traced(
         root,
         patch,
         shared_data_dir,
         patch_dependencies,
         custom_root,
+        custom_resource_id,
+        trace,
     )
 }
 
@@ -429,12 +619,14 @@ fn merge_literal_config_value(target: &mut Value, value: Value) {
     }
 }
 
-pub(crate) fn apply_patch_map(
+fn apply_patch_map_traced(
     root: &mut Value,
     patch: &Mapping,
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
     local_reference_root: &Value,
+    current_resource_id: &str,
+    trace: &mut Option<&mut Vec<ConfigDirectiveTraceEvent>>,
 ) -> Option<()> {
     for (key, value) in patch {
         let key = key.as_str()?;
@@ -445,6 +637,8 @@ pub(crate) fn apply_patch_map(
             patch_dependencies,
             false,
             local_reference_root,
+            current_resource_id,
+            trace,
         )?;
         if !apply_patch_entry(root, key, value, false) {
             return None;

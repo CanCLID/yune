@@ -1,0 +1,6 @@
+__include: template:/shared_mirror
+
+schema:
+  schema_id: audit_mirror
+  name: M60 shared-carrier mirror
+  version: "1"

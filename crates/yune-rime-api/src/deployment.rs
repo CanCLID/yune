@@ -20,9 +20,10 @@ use yune_core::{
 };
 
 use crate::{
-    apply_config_directives, apply_custom_patch, apply_legacy_preset_config_plugins, bool_from,
-    config_scalar_string, cstring_from_lossless_str, find_config_value, load_runtime_config_root,
-    normalize_config_resource_id, optional_c_string, path_join,
+    apply_config_directives, apply_config_directives_traced, apply_custom_patch,
+    apply_custom_patch_traced, apply_legacy_preset_config_plugins, bool_from, config_scalar_string,
+    cstring_from_lossless_str, find_config_value, load_runtime_config_root,
+    normalize_config_resource_id, optional_c_string, path_join, ConfigDirectiveTraceEvent,
     resource_id::validate_data_resource_id,
     runtime_paths, runtime_user_data_sync_dir,
     schema_install::{clear_dictionary_translator_cache, has_typeduck_lookup_source_rows},
@@ -1577,6 +1578,40 @@ fn deployed_config_yaml_with_build_info(
     shared_data_dir: &Path,
     user_data_dir: &Path,
 ) -> Option<String> {
+    let root = deployed_config_root_with_build_info(
+        source,
+        file_name,
+        shared_data_dir,
+        user_data_dir,
+        None,
+    )?;
+    serde_yaml::to_string(&root).ok()
+}
+
+pub(crate) fn deployed_config_root_with_trace(
+    source: &Path,
+    file_name: &str,
+    shared_data_dir: &Path,
+    user_data_dir: &Path,
+) -> Option<(Value, Vec<ConfigDirectiveTraceEvent>)> {
+    let mut trace = Vec::new();
+    let root = deployed_config_root_with_build_info(
+        source,
+        file_name,
+        shared_data_dir,
+        user_data_dir,
+        Some(&mut trace),
+    )?;
+    Some((root, trace))
+}
+
+fn deployed_config_root_with_build_info(
+    source: &Path,
+    file_name: &str,
+    shared_data_dir: &Path,
+    user_data_dir: &Path,
+    mut trace: Option<&mut Vec<ConfigDirectiveTraceEvent>>,
+) -> Option<Value> {
     let mut root = fs::read_to_string(source)
         .ok()
         .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())?;
@@ -1584,8 +1619,17 @@ fn deployed_config_yaml_with_build_info(
     let timestamp = source_modified_secs(source).unwrap_or(0);
     let mut patch_dependencies = Vec::new();
     let source_uses_custom_patch = resource_uses_custom_patch(&resource_id, source);
-    let apply_auto_custom_patch =
-        apply_config_directives(&mut root, shared_data_dir, &mut patch_dependencies)?;
+    let apply_auto_custom_patch = if let Some(trace) = trace.as_deref_mut() {
+        apply_config_directives_traced(
+            &mut root,
+            shared_data_dir,
+            &mut patch_dependencies,
+            &resource_id,
+            trace,
+        )?
+    } else {
+        apply_config_directives(&mut root, shared_data_dir, &mut patch_dependencies)?
+    };
     apply_legacy_preset_config_plugins(
         &mut root,
         &resource_id,
@@ -1601,12 +1645,23 @@ fn deployed_config_yaml_with_build_info(
             .ok()
             .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
         {
-            apply_custom_patch(
-                &mut root,
-                &custom_root,
-                shared_data_dir,
-                &mut patch_dependencies,
-            )?;
+            if let Some(trace) = trace.as_deref_mut() {
+                apply_custom_patch_traced(
+                    &mut root,
+                    &custom_root,
+                    shared_data_dir,
+                    &mut patch_dependencies,
+                    &custom_resource_id,
+                    trace,
+                )?;
+            } else {
+                apply_custom_patch(
+                    &mut root,
+                    &custom_root,
+                    shared_data_dir,
+                    &mut patch_dependencies,
+                )?;
+            }
             set_build_info(
                 &mut root,
                 &custom_resource_id,
@@ -1619,7 +1674,7 @@ fn deployed_config_yaml_with_build_info(
     for (resource_id, timestamp) in patch_dependencies {
         set_build_info(&mut root, &resource_id, timestamp)?;
     }
-    serde_yaml::to_string(&root).ok()
+    Some(root)
 }
 
 fn custom_patch_resource_id(resource_id: &str) -> String {

@@ -389,6 +389,14 @@ Binding consequences (this section is the owner sign-off; also record in
    D-28 trigger-gated behavior-preserving refactor gated on the full jyutping pin
    suite, if a future need arises. Recorded here + in `docs/ledgers/fork-parity-ledger.md`.
 
+   **DATED CORRECTION 2026-07-15 (M60):** the schema-wide precedence sentence
+   above records the historical M59 closeout understanding, not the production
+   per-input rule. `prefix_fallback` owns only requests with a deployed proper
+   prefix (`prefix_fallback_owned`); otherwise leading-syllable reachability is
+   independently available. M60 formalizes that rule in
+   `docs/contracts/schema-general-reachability.md` without changing runtime
+   behavior or rewriting M59 evidence.
+
 **Standing convention (discovered during the flip, applies beyond it):** per-schema
 acceptance/capability rows must run through the **deploy path** (`schema_install` →
 yune_web), NOT the direct-construction `upstream_*` parity harnesses — those build

@@ -359,8 +359,15 @@ Behavior-sensitive commits with generic subjects include a short body or
 evidence pointer so the invariant is recoverable without reconstructing the
 entire diff.
 
+Every product schema and configuration carrier participates in the canonical
+[schema-general reachability onboarding contract](contracts/schema-general-reachability.md).
+New schema assets remain blocking `open` registry rows until their effective
+production deployment semantics, source trace, and executable validation row
+are reviewed; an explicit `false` requires an exact, unexpired opt-out entry.
+
 ---
 
-_Last reviewed: 2026-07-15. M59 is complete; WEB03-11 is maintenance; M60 is
-the sole next milestone. Windows product execution is external, while this repo
-retains engine/package/profile-API ownership._
+_Last reviewed: 2026-07-15. M59 is complete; WEB03-11 is maintenance;
+schema-general reachability onboarding follows its canonical contract. Windows
+product execution is external, while this repo retains
+engine/package/profile-API ownership._

@@ -1,0 +1,9 @@
+__include: template:/audit_base
+
+schema:
+  schema_id: unresolved
+  name: M60 unresolved-reference control
+  version: "1"
+
+unresolved_branch:
+  __include: missing_required:/branch

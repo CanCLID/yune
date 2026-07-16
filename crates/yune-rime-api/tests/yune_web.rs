@@ -59,6 +59,8 @@ const X11_PAGE_DOWN: i32 = 0xff56;
 
 #[path = "yune_web/m59_reachability.rs"]
 mod m59_reachability;
+#[path = "yune_web/m60_reachability.rs"]
+mod m60_reachability;
 
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))

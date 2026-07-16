@@ -700,6 +700,14 @@ to the manifest and registry as `status: open`, so it cannot silently inherit an
 acceptance claim. The dual `prefix_fallback` / `leading_syllable_reachability`
 mechanism and TypeDuck profile precedence remain unchanged.
 
+_Correction 2026-07-15 (M60 runtime formalism):_ that precedence is per input,
+not schema-wide. `prefix_fallback` owns only requests with a deployed proper
+prefix (`prefix_fallback_owned`); when it does not own the request,
+`leading_syllable_reachability` remains independently available. The canonical
+[schema-general reachability contract](contracts/schema-general-reachability.md)
+records this production-path rule without changing either mechanism or any
+candidate behavior.
+
 _Addendum 2026-07-13 (independent closeout review):_ commit `07845e02` extends
 REACH-03's reconciliation from schema files plus manifest membership to exact
 bidirectional set equality for every regular asset and fails closed on symbolic

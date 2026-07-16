@@ -1,0 +1,11 @@
+foo_first:
+  leading_syllable_reachability: false
+
+foo_second:
+  leading_syllable_reachability: "TRUE"
+
+baz_patch:
+  leading_syllable_reachability: true
+
+nested_defaults:
+  value: retained

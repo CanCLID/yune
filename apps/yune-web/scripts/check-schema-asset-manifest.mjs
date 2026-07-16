@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { lstat, readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+const scriptPath = fileURLToPath(import.meta.url);
 const scriptRoot = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(scriptRoot, "..");
 const repoRoot = path.resolve(appRoot, "../..");
@@ -17,6 +19,7 @@ const workerPath = path.join(appRoot, "src", "worker.ts");
 const schemaOptionsPath = path.join(appRoot, "src", "consts.ts");
 const coveragePath = path.join(appRoot, "schema-acceptance-coverage.json");
 const expectedCoverageVersion = "m59-reach03-v1";
+const expectedFormalismVersion = "m60-reachability-v1";
 
 function repoRelative(file) {
   return path.relative(repoRoot, file).replaceAll(path.sep, "/");
@@ -26,6 +29,127 @@ function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+function assertObject(value, label) {
+  assert(value !== null && typeof value === "object" && !Array.isArray(value), `${label} must be an object`);
+}
+
+function assertNonEmptyString(value, label) {
+  assert(typeof value === "string" && value.trim().length > 0, `${label} must be a non-empty string`);
+}
+
+function assertRepoRelativePath(relativePath, label, { directory = false } = {}) {
+  assertNonEmptyString(relativePath, `${label} path`);
+  assert(!relativePath.includes("\\"), `${label} path must use forward slashes`);
+  assert(!path.posix.isAbsolute(relativePath), `${label} path must be repository-relative`);
+  assert(!/^[A-Za-z]:/.test(relativePath), `${label} path must not be drive-absolute`);
+  const parts = relativePath.split("/");
+  if (directory) {
+    assert(relativePath.endsWith("/"), `${label} root path must end with /`);
+    parts.pop();
+  } else {
+    assert(!relativePath.endsWith("/"), `${label} file path must not end with /`);
+  }
+  assert(!parts.includes(""), `${label} path must be normalized`);
+  assert(!parts.includes(".") && !parts.includes(".."), `${label} path must not escape the repository`);
+}
+
+function resolveUnder(root, relativePath, label) {
+  assertRepoRelativePath(relativePath, label);
+  const resolved = path.resolve(root, ...relativePath.split("/"));
+  assert(resolved.startsWith(`${path.resolve(root)}${path.sep}`), `${label} path escapes the repository`);
+  return resolved;
+}
+
+function assertStringArray(value, label) {
+  assert(Array.isArray(value) && value.length > 0, `${label} must be a non-empty array`);
+  const seen = new Set();
+  for (const entry of value) {
+    assertNonEmptyString(entry, `${label} entry`);
+    assert(!seen.has(entry), `${label} contains duplicate ${entry}`);
+    seen.add(entry);
+  }
+}
+
+function parseIsoDate(value, label) {
+  assert(typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value), `${label} must use YYYY-MM-DD`);
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  assert(!Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value, `${label} is invalid`);
+  return parsed;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function runCommand(command, args, { cwd, label }) {
+  return await new Promise((resolve, reject) => {
+    const child = spawn(command, args, { cwd, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+    const stdout = [];
+    const stderr = [];
+    child.stdout.on("data", chunk => stdout.push(chunk));
+    child.stderr.on("data", chunk => stderr.push(chunk));
+    child.on("error", error => reject(new Error(`${label} could not start: ${error.message}`)));
+    child.on("close", code => {
+      const stdoutText = Buffer.concat(stdout).toString("utf8");
+      const stderrText = Buffer.concat(stderr).toString("utf8");
+      if (code !== 0) {
+        reject(new Error(`${label} failed with exit ${code}: ${stderrText.trim() || stdoutText.trim()}`));
+      } else {
+        resolve({ stdout: stdoutText, stderr: stderrText });
+      }
+    });
+  });
+}
+
+export async function discoverGitTrackedPaths(root, pathspec) {
+  const args = ["-C", root, "ls-files", "-z", "--"];
+  if (pathspec !== undefined) args.push(pathspec);
+  const { stdout } = await runCommand("git", args, {
+    cwd: root,
+    label: pathspec === undefined ? "git tracked-path discovery" : "git tracked-schema discovery",
+  });
+  return stdout.split("\0").filter(Boolean);
+}
+
+export async function runReachabilityAudit({
+  root = repoRoot,
+  cargoRoot = repoRoot,
+  productRoot = expectedSourceRoot,
+  sharedDataRoot = productRoot,
+  userDataRoot = productRoot,
+  schemaAssets,
+} = {}) {
+  assert(Array.isArray(schemaAssets) && schemaAssets.length > 0, "Rust audit requires governed schema assets");
+  const sharedDataDirectory = path.resolve(root, ...sharedDataRoot.split("/"));
+  const userDataDirectory = path.resolve(root, ...userDataRoot.split("/"));
+  const args = [
+    "run",
+    "--locked",
+    "-q",
+    "-p",
+    "yune-rime-api",
+    "--release",
+    "--bin",
+    "yune-schema-reachability-audit",
+    "--",
+    "--repo-root",
+    path.resolve(root),
+    "--shared-data-dir",
+    sharedDataDirectory,
+    "--user-data-dir",
+    userDataDirectory,
+  ];
+  for (const schemaAsset of schemaAssets) args.push("--schema-asset", schemaAsset);
+  const { stdout } = await runCommand("cargo", args, { cwd: cargoRoot, label: "Rust reachability audit" });
+  let parsed;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch (error) {
+    throw new Error(`Rust reachability audit returned malformed JSON: ${error.message}`);
+  }
+  return parsed;
 }
 
 async function sha256(file) {
@@ -215,6 +339,328 @@ async function assertNoPoetPayloads() {
       }
     }
   }
+}
+
+function rootForPath(schemaRoots, candidate) {
+  const matches = schemaRoots.filter(root => candidate.startsWith(root.path));
+  assert(matches.length === 1, `${candidate} must match exactly one classified schema root (matched ${matches.length})`);
+  return matches[0];
+}
+
+async function assertTrackedRegularFile(relativePath, label, { root, trackedSet }) {
+  assertRepoRelativePath(relativePath, label);
+  assert(trackedSet.has(relativePath), `${label} is not tracked: ${relativePath}`);
+  return await assertPathHasNoSymlinkComponents(relativePath, label, { root, directory: false });
+}
+
+async function assertPathHasNoSymlinkComponents(relativePath, label, { root, directory }) {
+  assertRepoRelativePath(relativePath, label, { directory });
+  const parts = relativePath.split("/").filter(Boolean);
+  let current = path.resolve(root);
+  for (const [index, part] of parts.entries()) {
+    current = path.join(current, part);
+    const componentStat = await lstat(current);
+    const componentPath = parts.slice(0, index + 1).join("/");
+    assert(!componentStat.isSymbolicLink(), `${label} traverses symbolic link component ${componentPath}`);
+    if (index < parts.length - 1) {
+      assert(componentStat.isDirectory(), `${label} traverses non-directory component ${componentPath}`);
+    } else if (directory) {
+      assert(componentStat.isDirectory(), `${label} is not a directory: ${relativePath}`);
+    } else {
+      assert(componentStat.isFile(), `${label} is not a regular file: ${relativePath}`);
+    }
+  }
+  return resolveUnder(root, relativePath.replace(/\/$/, ""), label);
+}
+
+function reconciliationKey({ settingAsset, configPath, schemaAsset }) {
+  return `${settingAsset}\0${configPath}\0${schemaAsset}`;
+}
+
+function acceptedProductRow(coverageByFullAsset, schemaAsset, label) {
+  const row = coverageByFullAsset.get(schemaAsset);
+  assert(row !== undefined, `${label} names unknown or unmanifested schema asset ${schemaAsset}`);
+  assert(row.status === "accepted", `${label} names unresolved schema asset ${schemaAsset}`);
+  assert(row.disposition !== "dependency_only", `${label} cannot use dependency-only schema ${schemaAsset}`);
+  assertNonEmptyString(row.acceptanceId, `${label}.acceptanceId`);
+  assertObject(row.acceptance, `${label} accepted real-path row`);
+  return row;
+}
+
+/**
+ * Validate M60 root classification, Rust audit output, and the exact false /
+ * opt-out bijection. This is the same validator called by the production entry
+ * point; tests inject only roots, tracked paths, audit output, and a fixed date.
+ */
+export async function validateReachabilityFormalism({
+  coverage,
+  auditResult,
+  trackedPaths,
+  trackedSchemaPaths,
+  root = repoRoot,
+  productManifestAssets,
+  coverageRegistryPath = "apps/yune-web/schema-acceptance-coverage.json",
+  asOfDate = new Date(),
+}) {
+  assertObject(coverage, "coverage registry");
+  assert(coverage.version === expectedCoverageVersion, `coverage registry must retain ${expectedCoverageVersion}`);
+  assert(
+    coverage.reachabilityFormalismVersion === expectedFormalismVersion,
+    `coverage registry must declare ${expectedFormalismVersion}`,
+  );
+  assert(Array.isArray(coverage.schemaRoots) && coverage.schemaRoots.length > 0, "coverage registry must declare schemaRoots");
+  assert(Array.isArray(coverage.reachabilityOptOuts), "coverage registry must declare reachabilityOptOuts");
+  assert(Array.isArray(coverage.schemaAssets), "coverage registry must declare schemaAssets");
+  assertObject(coverage.mechanismContract, "coverage mechanismContract");
+  assert(
+    coverage.mechanismContract.canonical === "docs/contracts/schema-general-reachability.md",
+    "coverage mechanismContract must link the canonical reachability contract",
+  );
+  assert(
+    coverage.mechanismContract.profilePrecedence.includes("prefix_fallback_owned"),
+    "coverage mechanismContract must state per-input prefix_fallback_owned precedence",
+  );
+
+  const trackedSet = new Set(trackedPaths);
+  assert(trackedSet.size === trackedPaths.length, "injected tracked path list contains duplicates");
+  const trackedSchemaSet = new Set(trackedSchemaPaths);
+  assert(trackedSchemaSet.size === trackedSchemaPaths.length, "tracked schema path list contains duplicates");
+  assertSameStrings(
+    [...trackedSet].filter(trackedPath => trackedPath.endsWith(".schema.yaml")),
+    trackedSchemaPaths,
+    "tracked schema discovery must equal the complete tracked schema set",
+  );
+  for (const schemaPath of trackedSchemaPaths) {
+    assert(schemaPath.endsWith(".schema.yaml"), `tracked schema discovery returned non-schema path ${schemaPath}`);
+    assert(trackedSet.has(schemaPath), `tracked schema path is absent from complete tracked set: ${schemaPath}`);
+    await assertTrackedRegularFile(schemaPath, "tracked schema asset", { root, trackedSet });
+  }
+
+  const allowedClassifications = new Set(["product", "test-fixture", "historical-evidence"]);
+  const seenRootPaths = new Set();
+  const roots = coverage.schemaRoots;
+  for (const [index, schemaRoot] of roots.entries()) {
+    assertObject(schemaRoot, `schemaRoots[${index}]`);
+    assertRepoRelativePath(schemaRoot.path, `schemaRoots[${index}]`, { directory: true });
+    assert(!seenRootPaths.has(schemaRoot.path), `duplicate schema root ${schemaRoot.path}`);
+    seenRootPaths.add(schemaRoot.path);
+    assert(
+      allowedClassifications.has(schemaRoot.classification),
+      `${schemaRoot.path} has unknown classification ${schemaRoot.classification}`,
+    );
+    await assertPathHasNoSymlinkComponents(schemaRoot.path, "schema root", { root, directory: true });
+    if (schemaRoot.classification === "product") {
+      await assertTrackedRegularFile(schemaRoot.manifest, `${schemaRoot.path} manifest`, { root, trackedSet });
+      await assertTrackedRegularFile(schemaRoot.acceptanceRegistry, `${schemaRoot.path} acceptance registry`, {
+        root,
+        trackedSet,
+      });
+    } else {
+      assertNonEmptyString(schemaRoot.disposition, `${schemaRoot.path} non-product disposition`);
+      assert(schemaRoot.manifest === undefined, `${schemaRoot.path} non-product root must not name a product manifest`);
+      assert(
+        schemaRoot.acceptanceRegistry === undefined,
+        `${schemaRoot.path} non-product root must not name an acceptance registry`,
+      );
+    }
+  }
+  for (let left = 0; left < roots.length; left += 1) {
+    for (let right = left + 1; right < roots.length; right += 1) {
+      assert(
+        !roots[left].path.startsWith(roots[right].path) && !roots[right].path.startsWith(roots[left].path),
+        `schema roots overlap: ${roots[left].path} and ${roots[right].path}`,
+      );
+    }
+  }
+  const classifiedCounts = new Map(roots.map(schemaRoot => [schemaRoot.path, 0]));
+  for (const schemaPath of trackedSchemaPaths) {
+    const schemaRoot = rootForPath(roots, schemaPath);
+    classifiedCounts.set(schemaRoot.path, classifiedCounts.get(schemaRoot.path) + 1);
+  }
+  for (const schemaRoot of roots) {
+    assert(classifiedCounts.get(schemaRoot.path) > 0, `schema root is stale or empty: ${schemaRoot.path}`);
+  }
+
+  const productRoots = roots.filter(schemaRoot => schemaRoot.classification === "product");
+  assert(productRoots.length === 1, `exactly one product schema root is supported; found ${productRoots.length}`);
+  const productRoot = productRoots[0];
+  assert(coverage.manifest === productRoot.manifest, "coverage manifest must match the registered product root manifest");
+  assert(
+    productRoot.acceptanceRegistry === coverageRegistryPath,
+    "product root acceptanceRegistry must name the live coverage registry",
+  );
+  const manifestSchemaAssets = productManifestAssets.filter(asset => asset.endsWith(".schema.yaml"));
+  const manifestSchemaSet = new Set(manifestSchemaAssets);
+  assert(manifestSchemaSet.size === manifestSchemaAssets.length, "product manifest contains duplicate schema assets");
+  const coverageAssetSet = new Set();
+  const coverageByFullAsset = new Map();
+  for (const row of coverage.schemaAssets) {
+    assertObject(row, "schema acceptance row");
+    assertRepoRelativePath(row.asset, "schema acceptance asset");
+    assert(!coverageAssetSet.has(row.asset), `duplicate schema acceptance asset ${row.asset}`);
+    coverageAssetSet.add(row.asset);
+    assert(manifestSchemaSet.has(row.asset), `stale or unmanifested schema acceptance row ${row.asset}`);
+    const fullAsset = `${productRoot.path}${row.asset}`;
+    assert(trackedSchemaSet.has(fullAsset), `schema acceptance row is not a tracked current schema: ${row.asset}`);
+    coverageByFullAsset.set(fullAsset, row);
+  }
+  assertSameStrings(coverage.schemaAssets.map(row => row.asset), manifestSchemaAssets, "product schema coverage must equal manifest schemas");
+  const trackedProductSchemas = trackedSchemaPaths.filter(schemaPath => rootForPath(roots, schemaPath).classification === "product");
+  assertSameStrings(
+    trackedProductSchemas,
+    manifestSchemaAssets.map(asset => `${productRoot.path}${asset}`),
+    "tracked product schemas must equal manifested product schemas",
+  );
+
+  assertObject(auditResult, "Rust reachability audit output");
+  assert(auditResult.version === expectedFormalismVersion, "Rust reachability audit has unexpected version");
+  assert(Array.isArray(auditResult.tuples), "Rust reachability audit must contain tuples");
+  assert(auditResult.unresolved === undefined, "Rust reachability audit must not contain unresolved directives");
+  const tupleKeys = new Set();
+  const falseByKey = new Map();
+  for (const [index, tuple] of auditResult.tuples.entries()) {
+    const label = `audit tuple ${index}`;
+    assertObject(tuple, label);
+    await assertTrackedRegularFile(tuple.schemaAsset, `${label}.schemaAsset`, { root, trackedSet });
+    const schemaRow = coverageByFullAsset.get(tuple.schemaAsset);
+    assert(schemaRow !== undefined, `${label} names non-product or unmanifested schema ${tuple.schemaAsset}`);
+    assert(tuple.schemaId === schemaRow.schemaId, `${label}.schemaId does not match registry`);
+    assert(
+      typeof tuple.component === "string" && /^(?:script|table|r10n)_translator(?:@[A-Za-z0-9_.-]+)?$/.test(tuple.component),
+      `${label}.component is not a deployed dictionary translator prescription`,
+    );
+    assertNonEmptyString(tuple.namespace, `${label}.namespace`);
+    assertRepoRelativePath(tuple.namespace, `${label}.namespace`);
+    assert(
+      tuple.configPath === `${tuple.namespace}/leading_syllable_reachability`,
+      `${label}.configPath does not match its namespace`,
+    );
+    assert(typeof tuple.effective === "boolean", `${label}.effective must be boolean`);
+    assert(["script", "table", "r10n"].includes(tuple.translatorArm), `${label}.translatorArm is unsupported`);
+    if (tuple.runtimeArm !== undefined) assertNonEmptyString(tuple.runtimeArm, `${label}.runtimeArm`);
+    const tupleKey = `${tuple.schemaAsset}\0${tuple.component}\0${tuple.namespace}`;
+    assert(!tupleKeys.has(tupleKey), `${label} duplicates schema/component/namespace tuple`);
+    tupleKeys.add(tupleKey);
+
+    assert(Array.isArray(tuple.sourceTrace) && tuple.sourceTrace.length > 0, `${label}.sourceTrace must be non-empty`);
+    const traceAssets = new Set();
+    for (const [traceIndex, trace] of tuple.sourceTrace.entries()) {
+      assertObject(trace, `${label}.sourceTrace[${traceIndex}]`);
+      assertNonEmptyString(trace.kind, `${label}.sourceTrace[${traceIndex}].kind`);
+      assertRepoRelativePath(trace.asset, `${label}.sourceTrace[${traceIndex}].asset`);
+      if (trackedSet.has(trace.asset)) {
+        await assertTrackedRegularFile(trace.asset, `${label}.sourceTrace[${traceIndex}].asset`, { root, trackedSet });
+        traceAssets.add(trace.asset);
+      } else {
+        assert(
+          trace.optional === true,
+          `${label}.sourceTrace[${traceIndex}].asset is unresolved and not optional: ${trace.asset}`,
+        );
+      }
+      if (trace.reference !== undefined) assertNonEmptyString(trace.reference, `${label}.sourceTrace[${traceIndex}].reference`);
+      if (trace.optional !== undefined) {
+        assert(typeof trace.optional === "boolean", `${label}.sourceTrace[${traceIndex}].optional must be boolean`);
+      }
+    }
+    assert(Array.isArray(tuple.assetHashes) && tuple.assetHashes.length > 0, `${label}.assetHashes must be non-empty`);
+    const sortedHashAssets = tuple.assetHashes.map(entry => entry.asset).sort((left, right) => left.localeCompare(right));
+    assert(
+      JSON.stringify(tuple.assetHashes.map(entry => entry.asset)) === JSON.stringify(sortedHashAssets),
+      `${label}.assetHashes must be sorted`,
+    );
+    const hashedAssets = new Set();
+    for (const [hashIndex, hashEntry] of tuple.assetHashes.entries()) {
+      assertObject(hashEntry, `${label}.assetHashes[${hashIndex}]`);
+      assert(!hashedAssets.has(hashEntry.asset), `${label}.assetHashes contains duplicate ${hashEntry.asset}`);
+      hashedAssets.add(hashEntry.asset);
+      const source = await assertTrackedRegularFile(hashEntry.asset, `${label}.assetHashes[${hashIndex}].asset`, {
+        root,
+        trackedSet,
+      });
+      assert(/^[0-9a-f]{64}$/.test(hashEntry.sha256), `${label}.assetHashes[${hashIndex}].sha256 is malformed`);
+      assert((await sha256(source)) === hashEntry.sha256, `${label} asset hash mismatch for ${hashEntry.asset}`);
+    }
+    for (const traceAsset of traceAssets) {
+      assert(hashedAssets.has(traceAsset), `${label} source trace asset lacks a hash: ${traceAsset}`);
+    }
+    assertSameStrings(
+      [...hashedAssets],
+      [...traceAssets],
+      `${label} asset hashes must equal contributing tracked source-trace assets`,
+    );
+    if (tuple.settingAsset === null) {
+      assert(tuple.effective, `${label} inherited default cannot be explicit false without a setting asset`);
+    } else {
+      await assertTrackedRegularFile(tuple.settingAsset, `${label}.settingAsset`, { root, trackedSet });
+      assert(traceAssets.has(tuple.settingAsset), `${label}.settingAsset is absent from its source trace`);
+      assert(hashedAssets.has(tuple.settingAsset), `${label}.settingAsset is absent from its asset hashes`);
+    }
+    if (!tuple.effective) {
+      assert(tuple.settingAsset !== null, `${label} false setting must name settingAsset`);
+      const key = reconciliationKey(tuple);
+      if (!falseByKey.has(key)) falseByKey.set(key, []);
+      falseByKey.get(key).push(tuple);
+    }
+  }
+
+  const decisionPath = "docs/decisions.md";
+  const decisionFile = await assertTrackedRegularFile(decisionPath, "decision registry", { root, trackedSet });
+  const decisionSource = await readFile(decisionFile, "utf8");
+  const optOutIds = new Set();
+  const optOutKeys = new Set();
+  const asOf = asOfDate instanceof Date ? asOfDate : new Date(asOfDate);
+  assert(!Number.isNaN(asOf.valueOf()), "asOfDate must be a valid date");
+  const asOfDay = parseIsoDate(asOf.toISOString().slice(0, 10), "asOfDate");
+  for (const [index, optOut] of coverage.reachabilityOptOuts.entries()) {
+    const label = `reachabilityOptOuts[${index}]`;
+    assertObject(optOut, label);
+    assert(typeof optOut.optOutId === "string" && /^[a-z0-9][a-z0-9-]*$/.test(optOut.optOutId), `${label}.optOutId is malformed`);
+    assert(!optOutIds.has(optOut.optOutId), `duplicate opt-out id ${optOut.optOutId}`);
+    optOutIds.add(optOut.optOutId);
+    await assertTrackedRegularFile(optOut.schemaAsset, `${label}.schemaAsset`, { root, trackedSet });
+    await assertTrackedRegularFile(optOut.settingAsset, `${label}.settingAsset`, { root, trackedSet });
+    const schemaRow = acceptedProductRow(coverageByFullAsset, optOut.schemaAsset, label);
+    assert(optOut.schemaId === schemaRow.schemaId, `${label}.schemaId does not match accepted schema row`);
+    assert(optOut.acceptanceId === schemaRow.acceptanceId, `${label}.acceptanceId does not match accepted real-path row`);
+    assertNonEmptyString(optOut.configPath, `${label}.configPath`);
+    assertRepoRelativePath(optOut.configPath, `${label}.configPath`);
+    assert(optOut.configPath.endsWith("/leading_syllable_reachability"), `${label}.configPath is not reachability`);
+    assertObject(optOut.source, `${label}.source`);
+    assert(/^https:\/\//.test(optOut.source.repository), `${label}.source.repository must be an https URL`);
+    assert(/^[0-9a-fA-F]{40}$/.test(optOut.source.commit), `${label}.source.commit must be 40 hex`);
+    assertNonEmptyString(optOut.owner, `${label}.owner`);
+    assertNonEmptyString(optOut.reason, `${label}.reason`);
+    assertStringArray(optOut.affectedSurfaces, `${label}.affectedSurfaces`);
+    assertObject(optOut.evidence, `${label}.evidence`);
+    assert(["oracle", "owner-spec"].includes(optOut.evidence.kind), `${label}.evidence.kind is unsupported`);
+    await assertTrackedRegularFile(optOut.evidence.path, `${label}.evidence.path`, { root, trackedSet });
+    assert(/^[0-9a-fA-F]{40}$/.test(optOut.evidence.sourceCommit), `${label}.evidence.sourceCommit must be 40 hex`);
+    assertObject(optOut.approval, `${label}.approval`);
+    assert(/^D-\d+$/.test(optOut.approval.decisionId), `${label}.approval.decisionId is malformed`);
+    const decisionHeading = new RegExp(`(?:^|\\n)\\*\\*${escapeRegExp(optOut.approval.decisionId)}(?:\\s|/)`, "m");
+    assert(decisionHeading.test(decisionSource), `${label}.approval decision is missing from docs/decisions.md`);
+    assertNonEmptyString(optOut.approval.approver, `${label}.approval.approver`);
+    const approvedOn = parseIsoDate(optOut.approval.approvedOn, `${label}.approval.approvedOn`);
+    assert(approvedOn <= asOfDay, `${label}.approval.approvedOn is in the future`);
+    assertObject(optOut.review, `${label}.review`);
+    assertStringArray(optOut.review.triggers, `${label}.review.triggers`);
+    const reviewBy = parseIsoDate(optOut.review.reviewBy, `${label}.review.reviewBy`);
+    assert(reviewBy >= asOfDay, `${label} expired on ${optOut.review.reviewBy}`);
+    const key = reconciliationKey(optOut);
+    assert(!optOutKeys.has(key), `${label} duplicates reconciliation key`);
+    optOutKeys.add(key);
+    assert(falseByKey.has(key), `${label} has no matching effective false tuple`);
+  }
+  for (const key of falseByKey.keys()) {
+    assert(optOutKeys.has(key), `effective false tuple has no approved opt-out row: ${key.replaceAll("\0", " | ")}`);
+  }
+  assert(falseByKey.size === optOutKeys.size, "explicit-false and opt-out collections are not bijective");
+  return {
+    trackedSchemas: trackedSchemaPaths.length,
+    productSchemas: trackedProductSchemas.length,
+    auditTuples: auditResult.tuples.length,
+    optOuts: coverage.reachabilityOptOuts.length,
+  };
 }
 
 async function validateAcceptanceCoverage(publicAssets) {
@@ -470,24 +916,62 @@ async function validateAcceptanceCoverage(publicAssets) {
   }
 }
 
-const [publicAssets, publicDemoAssets] = await Promise.all(manifestPaths.map(validateManifest));
-assert(
-  JSON.stringify(publicAssets) === JSON.stringify(publicDemoAssets),
-  "public and public-demo schema asset manifests must be identical",
-);
-
-const manifestAssetPaths = new Set(publicAssets.map(asset => asset.path));
-await assertManifestMatchesTree(publicAssets.map(asset => asset.path));
-const workerSource = await readFile(workerPath, "utf8");
-for (const assetPath of workerLiteralSchemaAssets(workerSource)) {
+export async function validateSchemaAssetManifest({
+  trackedPaths,
+  trackedSchemaPaths,
+  auditResult,
+  reachabilityCoverage,
+  asOfDate = new Date(),
+} = {}) {
+  const [publicAssets, publicDemoAssets] = await Promise.all(manifestPaths.map(validateManifest));
   assert(
-    manifestAssetPaths.has(assetPath),
-    `worker references ${assetPath}, but it is missing from schema-asset-manifest.json`,
+    JSON.stringify(publicAssets) === JSON.stringify(publicDemoAssets),
+    "public and public-demo schema asset manifests must be identical",
+  );
+
+  const manifestAssetPaths = new Set(publicAssets.map(asset => asset.path));
+  await assertManifestMatchesTree(publicAssets.map(asset => asset.path));
+  const workerSource = await readFile(workerPath, "utf8");
+  for (const assetPath of workerLiteralSchemaAssets(workerSource)) {
+    assert(
+      manifestAssetPaths.has(assetPath),
+      `worker references ${assetPath}, but it is missing from schema-asset-manifest.json`,
+    );
+  }
+  await assertNoPoetPayloads();
+  await validateAcceptanceCoverage(publicAssets);
+
+  const actualTrackedPaths = trackedPaths ?? await discoverGitTrackedPaths(repoRoot);
+  const actualTrackedSchemaPaths = trackedSchemaPaths ?? await discoverGitTrackedPaths(repoRoot, "*.schema.yaml");
+  const coverage = reachabilityCoverage ?? await readJson(coveragePath);
+  const productSchemaAssets = publicAssets
+    .map(asset => asset.path)
+    .filter(assetPath => assetPath.endsWith(".schema.yaml"))
+    .map(assetPath => `${expectedSourceRoot}/${assetPath}`);
+  const actualAuditResult = auditResult ?? await runReachabilityAudit({
+    root: repoRoot,
+    productRoot: expectedSourceRoot,
+    schemaAssets: productSchemaAssets,
+  });
+  const formalism = await validateReachabilityFormalism({
+    coverage,
+    auditResult: actualAuditResult,
+    trackedPaths: actualTrackedPaths,
+    trackedSchemaPaths: actualTrackedSchemaPaths,
+    root: repoRoot,
+    productManifestAssets: publicAssets.map(asset => asset.path),
+    asOfDate,
+  });
+  return { publicAssets, formalism };
+}
+
+export async function main() {
+  const result = await validateSchemaAssetManifest();
+  console.log(
+    `Schema asset manifests verified: ${result.publicAssets.length} assets, ${manifestPaths.map(repoRelative).join(", ")}; M59 coverage and M60 reachability formalism accepted (${result.formalism.auditTuples} audit tuples, ${result.formalism.optOuts} opt-outs)`,
   );
 }
-await assertNoPoetPayloads();
-await validateAcceptanceCoverage(publicAssets);
 
-console.log(
-  `Schema asset manifests verified: ${publicAssets.length} assets, ${manifestPaths.map(repoRelative).join(", ")}; M59 REACH-03 coverage accepted`,
-);
+if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {
+  await main();
+}

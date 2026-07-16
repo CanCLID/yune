@@ -1,0 +1,6 @@
+foo_defaults:
+  dictionary: audit
+  leading_syllable_reachability: true
+
+nested_defaults:
+  __include: patches:/nested_defaults

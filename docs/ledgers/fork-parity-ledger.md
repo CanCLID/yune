@@ -207,7 +207,14 @@ Two reachability mechanisms coexist deliberately; **document, do not unify** (ow
 - **`prefix_fallback`** — TypeDuck-fork product contract. Profile-gated, grandfathered per D-31; its jyutping/TypeDuck-profile candidate order is byte-pinned against the fork oracle. Answers to the **TypeDuck fork**. NOT inherited by new schemas.
 - **`leading_syllable_reachability`** — upstream-librime-shaped single-character reachability (the owner "compose any non-lexicon phrase" requirement, oracle-captured against `librime 1.17.0`). **Default-ON for every schema** (M59 flip). Answers to **upstream librime**.
 
-Precedence in code: the injection sites are `if prefix_fallback { … } else if leading_syllable_reachability { … }` — on a schema with both (all jyutping under the flip), `prefix_fallback` is authoritative and `leading_syllable_reachability` never runs, so the byte-pinned TypeDuck-profile order is untouched. Unification stays available as a D-28 trigger-gated behavior-preserving refactor gated on the full jyutping pin suite, never a milestone blocker.
+_Correction 2026-07-15 (M60):_ precedence is per input, not schema-wide.
+`prefix_fallback` owns only a request with a deployed proper prefix
+(`prefix_fallback_owned`); otherwise `leading_syllable_reachability` remains
+independently available. The canonical
+[schema-general reachability contract](../contracts/schema-general-reachability.md)
+records this production-path rule. Unification stays available as a D-28
+trigger-gated behavior-preserving refactor gated on the full jyutping pin suite,
+never a milestone blocker.
 
 M59-REACH-03 records this boundary in executable shipped-schema coverage at
 `5fa986d8`. The 60-asset manifest tree maps to 10 schema-asset dispositions,

@@ -1,0 +1,36 @@
+audit_base:
+  engine:
+    translators:
+      - script_translator@foo
+      - table_translator@bar
+      - r10n_translator@baz
+      - script_translator@shared
+  foo:
+    __include: include:/foo_defaults
+    __patch:
+      - patches:/foo_first
+      - patches:/foo_second
+  bar:
+    dictionary: audit
+    enable_sentence: true
+    yune_sentence_policy: upstream_script
+    __patch:
+      leading_syllable_reachability: true
+  baz:
+    dictionary: audit
+    __patch: patches:/baz_patch
+  shared:
+    dictionary: audit
+    leading_syllable_reachability: "False"
+  optional_branch:
+    __include: missing_optional:/branch?
+  nested_branch:
+    __include: include:/nested_defaults
+
+shared_mirror:
+  engine:
+    translators:
+      - script_translator@shared
+  shared:
+    dictionary: audit
+    leading_syllable_reachability: "False"

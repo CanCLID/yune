@@ -1,9 +1,35 @@
 {
   "version": "m59-reach03-v1",
+  "reachabilityFormalismVersion": "m60-reachability-v1",
   "manifest": "apps/yune-web/public/schema-asset-manifest.json",
+  "schemaRoots": [
+    {
+      "path": "apps/yune-web/public/schema/",
+      "classification": "product",
+      "manifest": "apps/yune-web/public/schema-asset-manifest.json",
+      "acceptanceRegistry": "apps/yune-web/schema-acceptance-coverage.json"
+    },
+    {
+      "path": "crates/yune-core/tests/fixtures/",
+      "classification": "test-fixture",
+      "disposition": "non-product-test-fixture"
+    },
+    {
+      "path": "crates/yune-rime-api/tests/fixtures/",
+      "classification": "test-fixture",
+      "disposition": "non-product-test-fixture"
+    },
+    {
+      "path": "docs/reports/evidence/",
+      "classification": "historical-evidence",
+      "disposition": "non-product-historical-evidence"
+    }
+  ],
+  "reachabilityOptOuts": [],
   "mechanismContract": {
+    "canonical": "docs/contracts/schema-general-reachability.md",
     "schemaGeneralDefault": "translator/leading_syllable_reachability defaults on for every schema and may be explicitly disabled only by a recorded schema setting",
-    "profilePrecedence": "TypeDuck-profile schemas retain their separately owned translator/prefix_fallback path when schema-general reachability is explicitly false"
+    "profilePrecedence": "prefix_fallback is authoritative only for a request with a deployed proper prefix (prefix_fallback_owned); otherwise leading-syllable reachability remains independently available"
   },
   "validationTestFile": "crates/yune-rime-api/tests/yune_web/m59_reachability.rs",
   "configurationCarriers": [

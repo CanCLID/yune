@@ -1,0 +1,6 @@
+__include: template:/audit_base
+
+schema:
+  schema_id: audit
+  name: M60 reachability audit
+  version: "1"

@@ -36,6 +36,7 @@ mod levers;
 mod modules;
 mod notifications;
 mod processors;
+mod reachability_audit;
 mod resource_id;
 mod runtime;
 mod schema_api;
@@ -65,6 +66,8 @@ pub use modules::*;
 use notifications::notify;
 pub use notifications::RimeSetNotificationHandler;
 pub(crate) use processors::*;
+#[doc(hidden)]
+pub use reachability_audit::schema_reachability_audit_json;
 pub use runtime::*;
 pub use schema_api::*;
 pub(crate) use schema_install::{

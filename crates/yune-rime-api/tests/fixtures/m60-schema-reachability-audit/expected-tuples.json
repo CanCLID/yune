@@ -1,0 +1,172 @@
+{
+  "version": "m60-reachability-v1",
+  "schemas": [
+    {
+      "schemaAsset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/audit.schema.yaml",
+      "schemaId": "audit",
+      "assetHashes": [
+        {
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/audit.schema.yaml",
+          "sha256": "ef8f6be40841006a16bdec9658b35bfdca983abc1c8461a4ee3c8d8519b408d7"
+        },
+        {
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/include.yaml",
+          "sha256": "780ce5b0e52178d87807cfde0e91221522c17cf905f1e264433e542b65d9757b"
+        },
+        {
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/patches.yaml",
+          "sha256": "50af3d0dfc2766de827127250509aed20220cd7459fe5572004ed53eba3f100c"
+        },
+        {
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/template.yaml",
+          "sha256": "622fa6723214d4cec9d4c80ffa9c4b81d3dc4fb21fab92a154a492643dcece55"
+        },
+        {
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/user/audit.custom.yaml",
+          "sha256": "5db9a07aef37af82075c3c03022f47beff46c0bc29f040bd63216bf770eed856"
+        }
+      ],
+      "sourceTrace": [
+        {
+          "kind": "source",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/audit.schema.yaml"
+        },
+        {
+          "kind": "include",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/template.yaml",
+          "reference": "template:/audit_base",
+          "optional": false
+        },
+        {
+          "kind": "include",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/include.yaml",
+          "reference": "include:/foo_defaults",
+          "optional": false
+        },
+        {
+          "kind": "patch",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/patches.yaml",
+          "reference": "patches:/foo_first",
+          "optional": false
+        },
+        {
+          "kind": "patch",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/patches.yaml",
+          "reference": "patches:/foo_second",
+          "optional": false
+        },
+        {
+          "kind": "patch-map",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/template.yaml",
+          "reference": "<mapping>",
+          "optional": false
+        },
+        {
+          "kind": "patch",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/patches.yaml",
+          "reference": "patches:/baz_patch",
+          "optional": false
+        },
+        {
+          "kind": "include",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/missing_optional.yaml",
+          "reference": "missing_optional:/branch",
+          "optional": true
+        },
+        {
+          "kind": "include",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/include.yaml",
+          "reference": "include:/nested_defaults",
+          "optional": false
+        },
+        {
+          "kind": "include",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/patches.yaml",
+          "reference": "patches:/nested_defaults",
+          "optional": false
+        },
+        {
+          "kind": "custom-patch",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/user/audit.custom.yaml",
+          "reference": "patch",
+          "optional": false
+        }
+      ],
+      "tuples": [
+        {
+          "component": "r10n_translator@baz",
+          "namespace": "baz",
+          "configPath": "baz/leading_syllable_reachability",
+          "effective": true,
+          "settingAsset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/patches.yaml",
+          "translatorArm": "r10n",
+          "runtimeArm": "upstream-script"
+        },
+        {
+          "component": "script_translator@foo",
+          "namespace": "foo",
+          "configPath": "foo/leading_syllable_reachability",
+          "effective": false,
+          "settingAsset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/user/audit.custom.yaml",
+          "translatorArm": "script",
+          "runtimeArm": "upstream-script"
+        },
+        {
+          "component": "script_translator@shared",
+          "namespace": "shared",
+          "configPath": "shared/leading_syllable_reachability",
+          "effective": false,
+          "settingAsset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/template.yaml",
+          "translatorArm": "script",
+          "runtimeArm": "upstream-script"
+        },
+        {
+          "component": "table_translator@bar",
+          "namespace": "bar",
+          "configPath": "bar/leading_syllable_reachability",
+          "effective": true,
+          "settingAsset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/template.yaml",
+          "translatorArm": "table",
+          "runtimeArm": "upstream-table-lazy-bounded"
+        }
+      ]
+    },
+    {
+      "schemaAsset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/audit_mirror.schema.yaml",
+      "schemaId": "audit_mirror",
+      "assetHashes": [
+        {
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/audit_mirror.schema.yaml",
+          "sha256": "2bc42543d60459edf9ff3a866bbb767d877bdeb80cfa32c27cdaabe372995ff1"
+        },
+        {
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/template.yaml",
+          "sha256": "622fa6723214d4cec9d4c80ffa9c4b81d3dc4fb21fab92a154a492643dcece55"
+        }
+      ],
+      "sourceTrace": [
+        {
+          "kind": "source",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/audit_mirror.schema.yaml"
+        },
+        {
+          "kind": "include",
+          "asset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/template.yaml",
+          "reference": "template:/shared_mirror",
+          "optional": false
+        }
+      ],
+      "tuples": [
+        {
+          "component": "script_translator@shared",
+          "namespace": "shared",
+          "configPath": "shared/leading_syllable_reachability",
+          "effective": false,
+          "settingAsset": "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/shared/template.yaml",
+          "translatorArm": "script",
+          "runtimeArm": "upstream-script"
+        }
+      ]
+    }
+  ]
+}

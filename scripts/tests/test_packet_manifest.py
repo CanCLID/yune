@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import os
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,24 @@ SCRIPT = Path(__file__).resolve().parents[1] / "verify-packet-manifest.py"
 
 
 class PacketManifestTests(unittest.TestCase):
+    @staticmethod
+    def create_junction(link: Path, target: Path) -> None:
+        if sys.platform != "win32" or not hasattr(Path, "is_junction"):
+            raise unittest.SkipTest("directory junctions require Windows and Python 3.12+")
+        result = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(link), str(target)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise unittest.SkipTest(
+                f"directory junctions unavailable: {result.stdout}{result.stderr}"
+            )
+        if not link.is_junction():
+            os.rmdir(link)
+            raise AssertionError("mklink /J did not create a detectable junction")
+
     def run_verify(
         self, root: Path, manifest: Path, *, treeish: str | None = None
     ) -> subprocess.CompletedProcess[str]:
@@ -146,6 +165,19 @@ class PacketManifestTests(unittest.TestCase):
             result = self.run_verify(root, manifest)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("symbolic link", result.stderr)
+
+    def test_rejects_directory_junctions(self) -> None:
+        temporary, root, manifest = self.fixture()
+        with temporary:
+            packet = manifest.parent
+            junction = packet / "junction"
+            self.create_junction(junction, packet / "nested")
+            try:
+                result = self.run_verify(root, manifest)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("junction", result.stderr)
+            finally:
+                os.rmdir(junction)
 
     def test_rejects_gitlinks_in_committed_packet_tree(self) -> None:
         temporary, root, manifest = self.fixture()

@@ -31,13 +31,18 @@ def _is_within(path: Path, root: Path) -> bool:
     return True
 
 
-def _reject_symlink_chain(path: Path, repo_root: Path, label: str) -> None:
+def _is_link_or_junction(path: Path) -> bool:
+    junction_check = getattr(path, "is_junction", None)
+    return path.is_symlink() or bool(junction_check and junction_check())
+
+
+def _reject_link_chain(path: Path, repo_root: Path, label: str) -> None:
     relative = path.relative_to(repo_root)
     cursor = repo_root
     for part in relative.parts:
         cursor /= part
-        if cursor.is_symlink():
-            raise LinkAuditError(f"{label} traverses symbolic link: {cursor}")
+        if _is_link_or_junction(cursor):
+            raise LinkAuditError(f"{label} traverses symbolic link or junction: {cursor}")
 
 
 def _safe_repo_path(raw: str, repo_root: Path, label: str, *, must_be_markdown: bool) -> Path:
@@ -54,7 +59,7 @@ def _safe_repo_path(raw: str, repo_root: Path, label: str, *, must_be_markdown: 
         raise LinkAuditError(f"{label} is missing: {raw}") from error
     if not _is_within(resolved, repo_root):
         raise LinkAuditError(f"{label} escapes the repository: {raw}")
-    _reject_symlink_chain(candidate, repo_root, label)
+    _reject_link_chain(candidate, repo_root, label)
     if not resolved.is_file():
         raise LinkAuditError(f"{label} is not a file: {raw}")
     if must_be_markdown and resolved.suffix.lower() != ".md":
@@ -114,7 +119,7 @@ def audit_current_doc_links(repo_root: Path, paths_file: Path) -> tuple[int, int
                 raise LinkAuditError(f"{raw_doc} has missing local target: {raw_target}") from error
             if not _is_within(resolved, repo_root):
                 raise LinkAuditError(f"{raw_doc} has escaping local target: {raw_target}")
-            _reject_symlink_chain(lexical, repo_root, f"link from {raw_doc}")
+            _reject_link_chain(lexical, repo_root, f"link from {raw_doc}")
             checked_links += 1
     return len(raw_paths), checked_links
 

@@ -29,13 +29,18 @@ class PacketEntry:
     sha256: str
 
 
+def _is_link_or_junction(path: Path) -> bool:
+    junction_check = getattr(path, "is_junction", None)
+    return path.is_symlink() or bool(junction_check and junction_check())
+
+
 def _lexical_relative_to_root(path: Path, root: Path) -> Path:
     """Return lexical in-root parts while tolerating Windows short-name aliases."""
 
     cursor = path.absolute()
     suffix: list[str] = []
     while True:
-        if not cursor.is_symlink():
+        if not _is_link_or_junction(cursor):
             try:
                 if cursor.samefile(root):
                     return Path(*reversed(suffix))
@@ -89,13 +94,15 @@ def _parse_manifest(source: str, manifest_name: str) -> list[PacketEntry]:
     return entries
 
 
-def _reject_symlink_chain(path: Path, root: Path) -> None:
+def _reject_link_chain(path: Path, root: Path) -> None:
     relative = _lexical_relative_to_root(path, root)
     cursor = root
     for part in relative.parts:
         cursor /= part
-        if cursor.is_symlink():
-            raise PacketManifestError(f"packet contains or traverses symbolic link: {cursor}")
+        if _is_link_or_junction(cursor):
+            raise PacketManifestError(
+                f"packet contains or traverses symbolic link or junction: {cursor}"
+            )
 
 
 def _worktree_packet(manifest: Path, repo_root: Path) -> tuple[str, dict[str, bytes]]:
@@ -110,10 +117,10 @@ def _worktree_packet(manifest: Path, repo_root: Path) -> tuple[str, dict[str, by
     except ValueError as error:
         raise PacketManifestError("packet manifest must resolve inside the repository") from error
     packet_root = manifest.parent
-    _reject_symlink_chain(manifest, repo_root)
+    _reject_link_chain(manifest, repo_root)
     files: dict[str, bytes] = {}
     for candidate in packet_root.rglob("*"):
-        _reject_symlink_chain(candidate, repo_root)
+        _reject_link_chain(candidate, repo_root)
         if candidate.is_file() and candidate != manifest:
             relative = candidate.relative_to(packet_root).as_posix()
             files[_safe_relative_path(relative)] = candidate.read_bytes()

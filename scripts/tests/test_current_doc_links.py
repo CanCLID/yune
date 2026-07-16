@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import tempfile
@@ -11,6 +12,24 @@ SCRIPT = Path(__file__).resolve().parents[1] / "check-current-doc-links.py"
 
 
 class CurrentDocumentLinkTests(unittest.TestCase):
+    @staticmethod
+    def create_junction(link: Path, target: Path) -> None:
+        if sys.platform != "win32" or not hasattr(Path, "is_junction"):
+            raise unittest.SkipTest("directory junctions require Windows and Python 3.12+")
+        result = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(link), str(target)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise unittest.SkipTest(
+                f"directory junctions unavailable: {result.stdout}{result.stderr}"
+            )
+        if not link.is_junction():
+            os.rmdir(link)
+            raise AssertionError("mklink /J did not create a detectable junction")
+
     def run_audit(self, root: Path, paths_file: Path) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [
@@ -96,6 +115,24 @@ class CurrentDocumentLinkTests(unittest.TestCase):
             result = self.run_audit(root, paths)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("symbolic link", result.stderr)
+
+    def test_rejects_directory_junction_target(self) -> None:
+        temporary, root, paths = self.fixture()
+        with temporary:
+            target = root / "junction-target"
+            target.mkdir()
+            (target / "target.txt").write_text("target\n", encoding="utf-8")
+            junction = root / "junction"
+            self.create_junction(junction, target)
+            try:
+                (root / "docs" / "current.md").write_text(
+                    "[junction](../junction/target.txt)\n", encoding="utf-8"
+                )
+                result = self.run_audit(root, paths)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("junction", result.stderr)
+            finally:
+                os.rmdir(junction)
 
     def test_rejects_file_uri_instead_of_treating_it_as_external(self) -> None:
         temporary, root, paths = self.fixture()

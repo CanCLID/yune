@@ -431,7 +431,16 @@ $Owned = @(
     (New-OwnerRow 'poet.abbreviation_vocabulary' 'Vec<ModelVocabularyEntry>' 'owned'),
     (New-OwnerRow 'poet.entries_by_code' 'Vec<ModelEntry>' 'owned'),
     (New-OwnerRow 'poet.lookup_index' 'SentenceLookupIndex' 'owned'),
-    (New-OwnerRow 'poet.vocabulary' 'Vec<ModelVocabularyEntry>' 'owned')
+    (New-OwnerRow 'poet.vocabulary' 'Vec<ModelVocabularyEntry>' 'owned'),
+    (New-OwnerRow 'poet.normal_character_code_index' 'HashMap' 'owned')
+)
+$ProductionDefault = @(
+    (New-OwnerRow 'process.owner_snapshot_private_bytes' 'process_memory' 'production-default' '42'),
+    (New-OwnerRow 'poet.abbreviation_vocabulary' 'Vec<ModelVocabularyEntry>' 'production-default'),
+    (New-OwnerRow 'poet.entries_by_code' 'Vec<ModelEntry>' 'production-default'),
+    (New-OwnerRow 'poet.lookup_index' 'SentenceLookupIndex' 'production-default'),
+    (New-OwnerRow 'poet.vocabulary' 'Vec<ModelVocabularyEntry>' 'production-default'),
+    (New-OwnerRow 'poet.normal_character_code_index' 'HashMap' 'production-default')
 )
 $ByteBacked = @(
     (New-OwnerRow 'process.owner_snapshot_private_bytes' 'process_memory' 'byte-backed' '42'),
@@ -441,7 +450,23 @@ $ByteBacked = @(
     (New-OwnerRow 'poet.vocabulary' 'poet_bin:byte_backed:mmap' 'byte-backed')
 )
 Assert-TrackAOwnerShape $Owned 'owned'
+Assert-TrackAOwnerShape $ProductionDefault 'production-default'
 Assert-TrackAOwnerShape $ByteBacked 'byte-backed'
+
+$OwnedDuplicate = @(
+    $Owned
+    New-OwnerRow 'poet.entries_by_code' 'Vec<ModelEntry>' 'owned'
+)
+Assert-Rejected {{ Assert-TrackAOwnerShape $OwnedDuplicate 'owned' }} 'owned core duplicate'
+
+$OwnedMissing = @($Owned | Where-Object {{ $_.owner_id -ne 'poet.lookup_index' }})
+Assert-Rejected {{ Assert-TrackAOwnerShape $OwnedMissing 'owned' }} 'owned core missing'
+
+$OwnedPoetBin = @(
+    $Owned | Where-Object {{ $_.owner_id -ne 'poet.normal_character_code_index' }}
+    New-OwnerRow 'poet.normal_character_code_index' 'poet_bin:unexpected' 'owned'
+)
+Assert-Rejected {{ Assert-TrackAOwnerShape $OwnedPoetBin 'owned' }} 'owned poet_bin drift'
 
 $Duplicate = @(
     $ByteBacked
@@ -516,7 +541,7 @@ foreach ($InvalidValue in @(
         self.assertIn("[UInt64]::TryParse", self.powershell)
         self.assertIn("strictly positive UInt64 receipt", self.powershell)
 
-    def test_macos_owner_checker_rejects_duplicate_missing_and_extra_rows(
+    def test_macos_owner_checker_allows_owned_supplemental_and_rejects_drift(
         self,
     ) -> None:
         match = re.search(
@@ -533,6 +558,7 @@ foreach ($InvalidValue in @(
             ("poet.lookup_index", "SentenceLookupIndex"),
             ("poet.vocabulary", "Vec<ModelVocabularyEntry>"),
             ("poet.abbreviation_vocabulary", "Vec<ModelVocabularyEntry>"),
+            ("poet.normal_character_code_index", "HashMap"),
         )
         byte_backed = (
             ("poet.entries_by_code", "poet_bin:byte_backed:mmap"),
@@ -595,7 +621,16 @@ foreach ($InvalidValue in @(
 
         invalid = (
             ("owned-duplicate", "owned", owned + (owned[0],)),
-            ("owned-missing", "owned", owned[:-1]),
+            (
+                "owned-missing",
+                "owned",
+                tuple(row for row in owned if row[0] != "poet.vocabulary"),
+            ),
+            (
+                "owned-poet-bin",
+                "owned",
+                owned + (("poet.extra", "poet_bin:unexpected"),),
+            ),
             (
                 "byte-extra",
                 "byte-backed",

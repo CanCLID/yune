@@ -936,13 +936,28 @@ if track_a_storage_mode in {"production-default", "owned"}:
         "poet.abbreviation_vocabulary",
     }
     owner_counts = Counter(row["owner_id"] for row in poet_rows)
+    duplicate_owner_ids = sorted(
+        owner_id for owner_id, count in owner_counts.items() if count > 1
+    )
+    if duplicate_owner_ids:
+        raise SystemExit(
+            f"{track_a_storage_mode} Track A POET owner rows must have unique "
+            f"owner IDs; found duplicates {duplicate_owner_ids!r}"
+        )
     expected_counts = Counter({owner_id: 1 for owner_id in expected_owner_ids})
-    if owner_counts != expected_counts:
+    core_owner_counts = Counter(
+        {
+            owner_id: owner_counts[owner_id]
+            for owner_id in expected_owner_ids
+            if owner_counts[owner_id]
+        }
+    )
+    if core_owner_counts != expected_counts:
         raise SystemExit(
             f"{track_a_storage_mode} Track A requires exactly one row for each "
-            "owned poet owner: "
+            "core owned poet owner: "
             f"expected {dict(sorted(expected_counts.items()))!r}, "
-            f"found {dict(sorted(owner_counts.items()))!r}"
+            f"found {dict(sorted(core_owner_counts.items()))!r}"
         )
     byte_backed = [row for row in rows if row["mapping_mode"].startswith("poet_bin:")]
     if byte_backed:
@@ -984,7 +999,7 @@ PY
 if [[ "$track_a_storage_mode" == "byte-backed" ]]; then
   asserted_poet_owner_shape="poet.abbreviation_vocabulary,poet.entries_by_code,poet.prefix_index,poet.vocabulary; mapping_mode=poet_bin:byte_backed:mmap; poet.lookup_index absent"
 else
-  asserted_poet_owner_shape="poet.abbreviation_vocabulary,poet.entries_by_code,poet.lookup_index,poet.vocabulary; mapping_mode does not begin poet_bin:"
+  asserted_poet_owner_shape="required core: poet.abbreviation_vocabulary,poet.entries_by_code,poet.lookup_index,poet.vocabulary exactly once; unique supplemental POET owners allowed; no mapping_mode begins poet_bin:"
 fi
 {
   echo "track_a_storage_mode=$track_a_storage_mode"

@@ -1050,12 +1050,21 @@ function Assert-TrackAOwnerShape($Rows, [string]$StorageMode) {
         "poet.lookup_index",
         "poet.vocabulary"
     )
-    $ActualOwnedOwners = @($PoetRows | ForEach-Object { $_.owner_id } | Sort-Object)
-    if ($ActualOwnedOwners.Count -ne $ExpectedOwnedOwners.Count -or
-        (Compare-Object -ReferenceObject $ExpectedOwnedOwners -DifferenceObject $ActualOwnedOwners).Count -ne 0) {
-        throw "Owned Track A requires the four owned POET owner rows."
+    $DuplicatePoetOwners = @($PoetRows |
+        Group-Object -Property owner_id |
+        Where-Object { $_.Count -gt 1 })
+    if ($DuplicatePoetOwners.Count -gt 0) {
+        throw "Owned Track A POET owner rows must have unique owner IDs."
     }
-    $ByteBackedPoetOwners = @($PoetRows | Where-Object {
+    $ActualCoreOwnedOwners = @($PoetRows |
+        Where-Object { $ExpectedOwnedOwners -contains $_.owner_id } |
+        ForEach-Object { $_.owner_id } |
+        Sort-Object)
+    if ($ActualCoreOwnedOwners.Count -ne $ExpectedOwnedOwners.Count -or
+        (Compare-Object -ReferenceObject $ExpectedOwnedOwners -DifferenceObject $ActualCoreOwnedOwners).Count -ne 0) {
+        throw "Owned Track A requires exactly one row for each of the four core owned POET owners."
+    }
+    $ByteBackedPoetOwners = @($TrackAOwnerRows | Where-Object {
         $_.mapping_mode -like "poet_bin:*"
     })
     if ($ByteBackedPoetOwners.Count -gt 0) {
@@ -1677,7 +1686,7 @@ Assert-TrackAOwnerShape $CombinedMemoryOwnerProfile $TrackAStorageMode
 $AssertedPoetOwnerShape = if ($TrackAStorageMode -eq "byte-backed") {
     "poet.abbreviation_vocabulary,poet.entries_by_code,poet.prefix_index,poet.vocabulary; mapping_mode=poet_bin:byte_backed:mmap; poet.lookup_index absent"
 } else {
-    "poet.abbreviation_vocabulary,poet.entries_by_code,poet.lookup_index,poet.vocabulary; mapping_mode does not begin poet_bin:"
+    "required core: poet.abbreviation_vocabulary,poet.entries_by_code,poet.lookup_index,poet.vocabulary exactly once; unique supplemental POET owners allowed; no mapping_mode begins poet_bin:"
 }
 @(
     "track_a_storage_mode=$TrackAStorageMode",

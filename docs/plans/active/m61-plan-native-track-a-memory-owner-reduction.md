@@ -4,8 +4,8 @@
 > (2026-07-16). **Track:** native engine performance, Windows Track A
 > `luna_pinyin` acceptance lane. **Created:** 2026-07-15; **independently
 > reviewed and corrected:** 2026-07-15; **source-bound finalization:**
-> 2026-07-16. **Type:** attribution-first measurement and conditional reduction
-> plan.
+> 2026-07-16; **Windows prerequisite amendment:** 2026-07-16. **Type:**
+> attribution-first measurement and conditional reduction plan.
 
 ## Outcome
 
@@ -23,11 +23,12 @@ not a default flip.
 
 M61 closes successfully only if all of these conditions hold:
 
-1. one exact clean M61 measurement-tooling commit, descended from the
-   source-current post-M60 kickoff base through the recorded plan-finalization
-   commit and containing no production behavior change, is reproduced in five
-   fixed-binary Windows owned-mode rounds and five fixed-binary byte-backed
-   diagnostic rounds;
+1. one exact clean M61 parity-corrected measurement commit, descended from the
+   source-current post-M60 kickoff base through the immutable measurement-
+   tooling boundary and this docs-only amendment, contains exactly the one
+   reviewed prerequisite behavior correction authorized below and no memory
+   optimization, and is reproduced in five fixed-binary Windows owned-mode
+   rounds and five fixed-binary byte-backed diagnostic rounds;
 2. current process counters and non-overlapping owner rows name a reducible
    owner and reconcile the observed movement rather than relying on M47/M55
    historical bytes;
@@ -180,15 +181,17 @@ All baseline, diagnostic, and final acceptance rounds use:
   schema, and POET presence/hash inventory for every round; the source inputs
   behind those isolated copies remain byte-identical.
 
-The owned/byte-backed A/B source is the exact pushed M61 measurement-tooling
-commit created after Phase 0, not either M60 boundary. Its implementation parent
-boundary is the source-current kickoff base `bc0df36a`; record the formal M60
-closeout, the post-closeout correction, and the plan-finalization commit
-separately. After excluding the plan/requirements/review changes, the
-non-documentation implementation diff from `bc0df36a` may contain only the
-diagnostic selector, missing attribution, fixed-binary aggregator provenance
-support, supplemental-ratchet evaluator, and public-evidence privacy checker
-required below. The final production candidate receives its own exact-source
+The owned/byte-backed A/B source is the exact pushed parity-corrected M61
+measurement commit selected by Phase 0A, not either M60 boundary or any of the
+three pre-correction tooling SHAs. Its implementation parent boundary is the
+source-current kickoff base `bc0df36a`; record the formal M60 closeout, the
+post-closeout correction, the plan-finalization commit, the immutable tooling
+commit, both Phase 0 tooling repairs, and this plan-only amendment separately.
+After excluding plan/review changes, the non-documentation implementation diff
+from `bc0df36a` may contain only the original M61 measurement tooling plus Phase
+0A's single stale-raw-edge correction, pinned-librime fixture/test, structural
+coverage, comparator, and wrapper/aggregator enforcement. It contains no memory
+optimization. The final production candidate receives its own exact-source
 five-round set.
 
 All binding owned, byte-backed, and final sets must run on the same physical
@@ -359,6 +362,109 @@ the current benchmark no longer reads context per key, the Windows acceptance
 machine is unavailable, or the relevant owner cannot be measured, stop before
 M61 measurement.
 
+### Phase 0A — Windows Candidate-Parity Prerequisite Amendment
+
+The original M61 measurement-tooling boundary remains immutable:
+
+- `91b8991c5668ace690a4f6775bd8d91dfc0696f9`, tree
+  `9cd2527e8cf07e78ab8ea2bb9eaaa569056c4662`.
+
+The following pushed descendants are Phase 0 tooling-only repairs, not accepted
+measurement rounds and not production-behavior sources:
+
+- `6a1cbed7d40ad06ec08588772b2d7d18a18a5788`, tree
+  `265bedf9278181acc54812210e3f143838c69f89`, fixes the PowerShell 5.1
+  present-empty environment test without changing the wrapper; and
+- `7805882d93428db0a3791b0631290ab319b524f0`, tree
+  `c198d23fc6777ad8b119e30552980243a6acdbb6`, accepts unique supplemental
+  owned POET owner rows while retaining the exact byte-backed four-row contract.
+
+All five Windows tooling suites are green on clean pushed `7805882d` under
+Windows PowerShell `5.1.26100.8875`. The fresh Windows preflight at that exact
+source completed the native wrapper and strict candidate-shape validation but
+failed behavior parity: `16/17` inputs were exact, with `zhongdengchangdu` the
+only mismatch. Pinned librime returned
+`中等長度 | 中等 | 中 | 種 | 重`; Yune returned
+`中等長度 | 中等 | 中的 | 種的 | 重的`. Candidate count, page metadata,
+highlight, composition preedit, comments, and the other sixteen input pages
+matched. The wrapper used diagnostic `1/1/1` cadence, explicit `owned` mode,
+and no Track B or threshold gate. This is a preserved correctness red, not a
+setup failure, accepted round, or disposition D.
+
+That preflight is bound to:
+
+- librime source commit
+  `33e78140250125871856cdc5b42ddc6a5fcd3cd4`, tree
+  `5758d9896d7dd5c2d5316e595a91612f72a0432e`;
+- official upstream `rime.dll` SHA-256
+  `86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b`;
+- upstream shared-tree SHA-256
+  `3801c4c83ba919e531b80ac27e2c06d116d08b19af2034fcb86e6e17ae1eecf6`;
+- freshly generated upstream build-tree SHA-256
+  `446c90b2f4ffd76b4ec1f4ecca4f534c986e72e3d8803c6998926d0b1cebbf17`;
+- product-schema-tree SHA-256
+  `0bc042c0ab09c732419cf6ba5ce008390e87894c7d374c0d1b44efeac10a9bf0`;
+- measured Yune DLL SHA-256
+  `c6fc3b1594ae98771a39c784953236c3ba0e9873602c056dfcb4c9d9631e329d`;
+  and
+- native benchmark executable SHA-256
+  `a4e6f9ccb1b090bfeb3756090e44ffb84b6fd15e235b2d0f9021b1acc1abae87`.
+
+The fresh build tree is the exact generated M61 oracle identity. It is not
+asserted byte-identical to M59's historical generated tree
+`7f8ce0b50e8acb3d5e66db55fb17879073e5be05a3a7cdc582745fe1e73bf39c`:
+fresh deployment regenerates schema YAML `__build_info` source timestamps while
+the pinned librime source, official DLL, and shared source tree remain fixed.
+The corrected preflight and every accepted round must retain the exact shared
+and build identities above. A different identity is a setup failure unless a
+new create-new deployment is preserved and independently reviewed before any
+measurement.
+
+Owner authorization is limited to one engine-side structural correction in
+`upstream_script_surface_segmentation`: after the valid reverse-good syllable
+graph is pruned, do not restore a stale raw-identity spelling edge into direct
+sentence/recomposition surfaces. Genuinely transformed inverse-overlap choices
+remain eligible, and every viable edge already present in the pruned graph
+remains unchanged. This is a class predicate, never an input or schema allowlist.
+Preserve the other sixteen pages, the existing transformed-overlap control,
+37/59 Luna page guards, reachability, ranking, selection/recomposition,
+lifecycle, model checksums, ABI, and Track B behavior. No rank weight, threshold,
+POET storage/default, memory owner, or other runtime change is authorized. If a
+narrow correction cannot satisfy that boundary, stop and request a new scope
+decision.
+
+The correction commit may contain only that structural correction, an
+externally sourced pinned-librime fixture and non-circular deployed Luna test,
+owned and byte-backed structural coverage, and the fail-closed candidate
+comparator plus owning wrapper/aggregator integration and tests. The tracked
+`scripts/check-native-candidate-parity.py` must:
+
+- require the exact frozen seventeen Track A inputs and exactly one page-zero
+  row set from each of `librime-1.17.0` and `yune`;
+- reject missing, extra, duplicate, malformed, or non-contiguous rows;
+- compare exactly `candidate_index`, `candidate_count`, `page_size`, `page_no`,
+  `is_last_page`, `highlighted_index`, `composition_preedit`, `text`, and
+  `comment`;
+- emit deterministic `candidate-parity.csv`,
+  `zhongdengchangdu-detail.csv`, and `candidate-parity-verdict.txt`;
+- exit nonzero unless all `17/17` pages are exact; and
+- run inside both native wrappers before a round can complete, with the
+  five-round aggregator requiring and hashing each PASS receipt.
+
+After this docs-only amendment and its two reviews are committed and pushed,
+make the correction in a separate commit, obtain two independent correction
+reviews, push it, and repeat the complete seventeen-input Windows preflight.
+Only a clean pushed correction commit with a `17/17` PASS becomes
+`$EXPECTED_MEASUREMENT_SHA`. The owned and byte-backed accepted sets use that
+exact SHA/tree. Every later production candidate must descend from it and
+retain the identical correction/comparator contract. No accepted mode may use
+`91b8991c`, `6a1cbed7`, `7805882d`, or a divergent lineage.
+
+The exact `17 + 1` inputs, `9/60/80` cadence, product deployment, M55 registry,
+M61 `125,000,000 B` supplemental threshold, memory bars, fixed-binary rules,
+and failure/retry policy remain unchanged. A repeated parity red blocks M61; it
+cannot be waived, reclassified, or converted to disposition D.
+
 ## Phase 1 — Fresh Baseline And Diagnostic A/B
 
 ### Benchmark mode support
@@ -378,10 +484,10 @@ explicit diagnostic-only mode selector to both native wrappers:
 - never accepted as proof of the final shipping default.
 
 The selector must not skip deployment, alter inputs/iterations, loosen a gate,
-or choose different candidate behavior. The measurement-tooling commit keeps
-the omitted/default owner assertion at the current owned/no-`poet_bin` state;
-only a later accepted production-candidate commit may change the normal signed
-assertion to require validated `poet_bin` storage.
+or choose different candidate behavior. The parity-corrected measurement commit
+keeps the omitted/default owner assertion at the current owned/no-`poet_bin`
+state; only a later accepted production-candidate commit may change the normal
+signed assertion to require validated `poet_bin` storage.
 
 For `byte-backed`, the wrapper may set `YUNE_POET_BYTE_BACKED=1` only around
 the Track A Yune timing subprocess. It must restore the prior environment before
@@ -432,8 +538,11 @@ historical threshold path, regression behavior, and selector values are frozen:
 ```powershell
 $ErrorActionPreference = "Stop"
 $REPO = (Resolve-Path .).Path
-$EXPECTED_MEASUREMENT_SHA = "<pushed M61 measurement-tooling SHA>"
-$EXPECTED_MEASUREMENT_TREE = "<pushed M61 measurement-tooling tree>"
+$IMMUTABLE_TOOLING_SHA = "91b8991c5668ace690a4f6775bd8d91dfc0696f9"
+$PHASE0_ENV_TEST_SHA = "6a1cbed7d40ad06ec08588772b2d7d18a18a5788"
+$PHASE0_OWNER_SHAPE_SHA = "7805882d93428db0a3791b0631290ab319b524f0"
+$EXPECTED_MEASUREMENT_SHA = "<pushed M61 parity-corrected measurement SHA>"
+$EXPECTED_MEASUREMENT_TREE = "<pushed M61 parity-corrected measurement tree>"
 $EXPECTED_LIBRIME_SHA = "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
 $MEASUREMENT_SHA = (& git -C $REPO rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $MEASUREMENT_SHA -ne $EXPECTED_MEASUREMENT_SHA) {
@@ -442,6 +551,16 @@ if ($LASTEXITCODE -ne 0 -or $MEASUREMENT_SHA -ne $EXPECTED_MEASUREMENT_SHA) {
 $MEASUREMENT_TREE = (& git -C $REPO rev-parse "HEAD^{tree}").Trim()
 if ($LASTEXITCODE -ne 0 -or $MEASUREMENT_TREE -ne $EXPECTED_MEASUREMENT_TREE) {
     throw "measurement tree mismatch: expected $EXPECTED_MEASUREMENT_TREE, got $MEASUREMENT_TREE"
+}
+foreach ($ANCESTOR in @(
+    $IMMUTABLE_TOOLING_SHA,
+    $PHASE0_ENV_TEST_SHA,
+    $PHASE0_OWNER_SHAPE_SHA
+)) {
+    & git -C $REPO merge-base --is-ancestor $ANCESTOR $MEASUREMENT_SHA
+    if ($LASTEXITCODE -ne 0) {
+        throw "measurement source does not descend from required M61 boundary: $ANCESTOR"
+    }
 }
 $MEASUREMENT_STATUS = @(
     & git -C $REPO status --porcelain=v1 --untracked-files=all
@@ -760,14 +879,15 @@ if ($LASTEXITCODE -ne 0) {
 
 ### Runs
 
-- [ ] Create a disposable clean detached clone of the exact pushed M61
-      measurement-tooling commit. Do not switch an existing tree, create a
+- [ ] Create a disposable clean detached clone of the exact pushed Phase 0A
+      parity-corrected measurement commit. Do not switch an existing tree, create a
       branch, or use the dirty main checkout as measurement evidence. Record
       the M60 parent boundary and clean status before and after every accepted
       set, record the intervening plan-only commit chain, and remove the clone
       only after the external packet is secured.
 - [ ] Before building, require `git rev-parse HEAD` to equal the recorded pushed
-      M61 measurement SHA, require `git status --porcelain` to be empty, and
+      M61 parity-corrected measurement SHA/tree, prove the three Phase 0A
+      tooling SHAs are ancestors, require `git status --porcelain` to be empty, and
       record `git ls-remote origin refs/heads/main` plus containment/equality at
       measurement start. A mismatch is a setup failure, not usable evidence.
 - [ ] Build the benchmark and Yune library once; record SHA-256 values.
@@ -786,6 +906,10 @@ if ($LASTEXITCODE -ne 0) {
       measured red; never replace or cherry-pick it.
 - [ ] Verify fixed binary hashes and source/tree identity across every completed
       round: ten binding rounds when both complete five-round sets run.
+- [ ] Require each wrapper round to emit a hashed
+      `candidate-parity-verdict.txt` with `17/17` PASS before aggregation; the
+      aggregator rejects a missing, red, changed, or source/input-mismatched
+      receipt.
 - [ ] Aggregate median, pooled worst, spread, signed verdicts, owner rows,
       private/mapped counters, and candidate/model checks.
 - [ ] Confirm that byte-backed owner rows report `poet_bin` storage and that the
@@ -967,22 +1091,37 @@ amended before implementation. No hidden behavior tradeoff is authorized.
 3. **Measurement/tooling commit.** Add only the explicit diagnostic selector,
    missing attribution, fixed-binary aggregator provenance support,
    supplemental-ratchet evaluator, and public-evidence privacy checker needed
-   for M61. The default signed invocation must remain identical. Push this
-   commit, prove remote `main` equals its SHA, and only then create the exact
-   detached measurement clone.
-4. **External A/B and owner decision.** Preserve all raw results outside Git.
+   for M61. The default signed invocation must remain identical. The immutable
+   original is `91b8991c`; the reviewed PowerShell-environment and owned-owner-
+   shape tooling repairs are `6a1cbed7` and `7805882d`. All are pushed and
+   remote-equal, and none is an accepted measurement source.
+4. **Candidate-parity amendment.** Preserve the clean `7805882d` Windows
+   `16/17` preflight red, review this plan-only candidate twice, add only the two
+   amendment review receipts after review, commit directly to `main`, push, and
+   prove remote equality before any behavior edit.
+5. **Candidate-parity correction.** Add only Phase 0A's structural stale-raw-
+   edge correction, external-oracle fixture/test, owned/byte-backed structural
+   tests, and candidate comparator with wrapper/aggregator enforcement. Run the
+   owning gates and two independent reviews. The reviews name the preserved
+   pre-review tree; their two receipts are the only post-review delta. Commit
+   and push separately with no memory optimization.
+6. **Corrected preflight.** From a new clean detached clone of the pushed
+   correction commit, repeat the complete 17-input Windows preflight with the
+   frozen oracle/shared/build identity. Only `17/17` PASS selects the exact
+   owned/byte-backed measurement source; another red blocks M61 without waiver.
+7. **External A/B and owner decision.** Preserve all raw results outside Git.
    No production code change follows a no-go.
-5. **Conditional implementation commit.** Commit directly to local `main` only
+8. **Conditional implementation commit.** Commit directly to local `main` only
    after focused correctness/owner tests pass, but do not push it before the
    exact-source acceptance set is green. Use a disposable clean detached clone
    for measurement rather than a branch or registered worktree. A measured-red
    default is preserved externally and resolved by an explicit local revert or
    fix-forward disposition before any push; do not rewrite history to hide it.
-6. **Five-round final acceptance and reviews.** A completed red stops closeout.
+9. **Five-round final acceptance and reviews.** A completed red stops closeout.
    Both reviews name the exact implementation commit/tree and the proposed
    final evidence/documentation tree. After review, only the review receipts
    and their manifest entries may change; any other delta requires re-review.
-7. **Closeout commit and push.** Curate only compact receipts, update current
+10. **Closeout commit and push.** Curate only compact receipts, update current
    docs, move the plan, verify exact committed tree and remote identity, and
    preserve the fingerprinted unrelated staged/unstaged/untracked state exactly.
 
@@ -1002,6 +1141,44 @@ The receipts name the exact pre-review candidate tree. They are the only
 post-review additions to the finalized planning commit; any change to this
 plan, `requirements.md`, or `roadmap.md` after those reviews requires rebuilding
 the candidate tree and repeating both reviews.
+
+### Prerequisite amendment review record
+
+This Phase 0A amendment repeats that fail-closed review shape before any
+behavior edit. The plan-only candidate tree is reviewed twice for:
+
+1. requirement/evidence correctness, production semantics, oracle provenance,
+   and the non-circular parity proof; and
+2. change isolation, comparator fail-closure, threshold safety, ABI/runtime
+   boundaries, and accepted-source lineage.
+
+Both receipts must name the preserved plan-only pre-review tree. The exact
+post-review delta is only:
+
+```text
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/planning-amendment-review-isolation.md
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/planning-amendment-review-requirements.md
+```
+
+The complete amendment commit path list is those two receipts plus:
+
+```text
+docs/plans/active/m61-plan-native-track-a-memory-owner-reduction.md
+```
+
+The lists are repository-relative and bytewise sorted. Use an isolated index,
+prove the amendment candidate tree equals the commit tree, keep the real index
+empty, push directly to `main`, and prove `origin/main` equality. Any other
+post-review path or plan edit invalidates both reviews.
+
+The separately scoped correction uses the same pre-review-tree discipline.
+Its only post-review additions are
+`candidate-parity-review-requirements.md` and
+`candidate-parity-review-isolation.md` under the same evidence directory. The
+correction commit's pre-review paths are frozen from the actual minimal
+implementation; any other post-review delta requires both correction reviews
+again. These amendment and correction reviews do not replace the two final
+closeout reviews or alter their exact post-review delta.
 
 The planning finalization itself uses this literal five-path isolated-index
 procedure. The three-path pre-review list contains this plan,
@@ -1274,12 +1451,15 @@ measurement rather than silently substituting a narrower gate:
 
 ```sh
 cargo test -p yune-core --test upstream_luna_pinyin_parity
+cargo test -p yune-core upstream_script_surface_segmentation_prunes_stale_raw_identity_overlap
 cargo test -p yune-core poet
 cargo test -p yune-rime-api dictionary_data
 cargo test -p yune-rime-api deployment
+cargo test -p yune-rime-api --test yune_web m61_luna_zhongdengchangdu_page_zero_matches_pinned_librime
 cargo test -p yune-rime-api --test yune_web m59_luna_
 cargo test -p yune-rime-api --test yune_web m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false
 npm --prefix apps/yune-web run check:schema-manifest
+python3 -B -m unittest scripts/tests/test_native_candidate_parity.py
 python3 -B -m unittest scripts/tests/test_native_benchmark_script.py
 python3 -B -m unittest scripts/tests/test_m59_evidence_tools.py
 python3 -B -m unittest scripts/tests/test_m61_native_mode_contract.py
@@ -1297,6 +1477,14 @@ selector parsing/defaults, inherited-variable rejection, success/failure
 environment restoration before librime and Track B, disposition-specific owner
 assertions, uniform `track_a_storage_mode` provenance, the one-build-plus-four-
 reuse set, the five-all-prebuilt set, and every mixed/hash/receipt/mode rejection.
+
+The Phase 0A correction adds
+`scripts/tests/test_native_candidate_parity.py`. It must exercise a `17/17`
+PASS, the preserved shape-valid `16/17` `zhongdengchangdu` text red, and
+missing/extra/duplicate/non-contiguous/malformed negative cases. Wrapper tests
+must prove that a red comparator prevents round completion; aggregator tests
+must prove that every one of five PASS receipts has the expected input list,
+tool hash, output hash, and uniform source/oracle identity.
 
 The full workspace gate is load-bearing at closeout because a default storage
 change crosses deployment, cache lifecycle, compiled-artifact, and candidate
@@ -1351,7 +1539,12 @@ Curate only:
 - `owner-budget.csv`, `owner-delta.csv`, and branch disposition;
 - unchanged signed-gate verdict and the separate accepted one-row M61 memory
   ratchet;
-- candidate/model/storage-mode checks;
+- the preserved source-bound `16/17` prerequisite red and corrected `17/17`
+  preflight receipts, including comparator tool/output hashes and the exact
+  source, DLL, executable, oracle shared/build, product schema, and model
+  identities;
+- per-round candidate/model/storage-mode checks and hashed comparator PASS
+  receipts;
 - test/check summaries;
 - requirement/evidence and change-isolation reviews; and
 - exact packet manifest with byte size and SHA-256.

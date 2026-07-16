@@ -11,7 +11,7 @@ M61 proposes one narrow performance milestone: reduce the retained native
 Track A `luna_pinyin` memory owner while preserving every signed M59 latency,
 behavior, product-guard, and ABI boundary.
 
-The leading hypothesis is the existing `YUNE-POET/2` byte-backed sentence-model
+The leading hypothesis is the existing `YUNE-POET/3` byte-backed sentence-model
 path. M55 measured a substantial memory reduction from that path but correctly
 left it opt-in because the honest per-key long-input gate was red. Current main
 now contains the later byte-backed incremental-scratch work at `759ff5d7`, plus
@@ -93,8 +93,10 @@ oracle rebase, browser payload change, product/frontend change, Windows TSF/UI
 change, Cloudflare change, or iOS-device claim. D-24, D-25, D-31, D-47, D-48,
 and D-49 remain in force.
 
-The user-owned staged `.codex/config.toml` path remains excluded from every M61
-commit and measurement source claim.
+Every pre-existing staged, unstaged, or untracked user path remains excluded
+from every M61 commit and measurement source claim. Phase 0 must inventory and
+fingerprint the actual dirty state at kickoff; it must not assume
+`.codex/config.toml` is staged or hard-code any current unrelated path.
 
 ## Proposed Requirements
 
@@ -146,7 +148,8 @@ commit created after Phase 0, not the untouched M60 closeout commit. Its parent
 boundary is the recorded M60 closeout SHA. Record every intervening plan-only
 commit; after excluding those documentation/requirements changes, the
 non-documentation implementation diff from M60 may contain only the diagnostic
-selector and missing attribution required below. The final production candidate
+selector, missing attribution, supplemental-ratchet evaluator, and
+public-evidence privacy checker required below. The final production candidate
 receives its own exact-source five-round set.
 
 The Windows machine must be on AC power, quiet, thermally stable, and free of
@@ -166,11 +169,13 @@ against the fresh five-round owned baseline:
    non-overlapping heap owner above `5,000,000 B`;
 4. the five-run median `track_a_private_envelope_bytes` defined below falls by
    at least `10,000,000 B`, while neither that envelope nor
-   `process.after_ready_private_bytes_proxy` worsens by more than `5%` in
-   five-run median or pooled worst;
+   `process.owner_snapshot_private_bytes` worsens by more than `5%` in five-run
+   median or pooled worst;
 5. after-ready/steady and peak working set, private bytes, mapped-file bytes,
    and non-overlapping named-owner rows all remain visible; and
-6. every final round remains under the unchanged M59 memory ceiling.
+6. every final round also passes the unchanged `195,028,378 B` Track A memory
+   row in `m55-thresholds.csv`. This is intentionally redundant with the
+   tighter M61 cap and proves the existing signed registry remains green.
 
 The same-run librime ratio is diagnostic, not an M61 pass/fail target. M61 does
 not promise parity or use the historical "188 MB gap" as a target.
@@ -179,14 +184,18 @@ The measurement-tooling commit must emit these exact private-byte receipts:
 
 - `track_a_private_envelope_bytes`: for each round, take the maximum
   `median_private_bytes` across the 17 Yune Track A key-sequence rows in
-  `summary.csv`. Each source row remains the median across its nine samples of
-  `max(after_ready_private_bytes, after_finalize_private_bytes)`; this is a
-  private-byte envelope, not a counter sampled at peak working set.
-- `process.after_ready_private_bytes_proxy`: a new non-owner process row in
-  `memory-owner-profile.csv`, computed as the median of raw
-  `after_ready_private_bytes` across that round's Yune Track A key-sequence
-  samples. This row supplies the same-phase whole-process value for owner
-  reconciliation.
+  `summary.csv`. Each key row contains 80 samples and uses the benchmark's lower
+  median for an even sample count. Key workloads have no
+  `after_finalize_private_bytes`, so every sample's `private_bytes` equals its
+  `after_ready_private_bytes`. This is a private-byte envelope, not a counter
+  sampled at peak working set.
+- `process.owner_snapshot_private_bytes`: a new non-owner process row in
+  `memory-owner-profile.csv`, sampled immediately before the owner JSON export
+  in the same new zero-key service/session, after schema selection, and at the
+  same lifecycle point as the named POET leaves. The benchmark process itself
+  is already warmed; do not describe this as a cold/fresh process. This supplies
+  the phase-aligned whole-process value for owner reconciliation; post-key
+  `after_ready_private_bytes` must not be substituted.
 
 For either receipt, the five-run median is the median of the five per-round
 values and pooled worst is their maximum. Never label either receipt
@@ -198,7 +207,9 @@ baseline. The independent `125,000,000 B` cap is a conservative absolute bound
 informed by the byte-backed range already demonstrated in M55, not a reuse of
 M55 as current evidence. Both values are frozen when this plan is finalized,
 before the first accepted M61 baseline. They cannot be adjusted, rebaselined,
-or waived after measurement inside M61.
+or waived after measurement inside M61. The relative bar is stricter when the
+fresh baseline is below `156,250,000 B`; above that point the absolute cap is
+stricter. Both always apply.
 
 ### Regression and behavior bars
 
@@ -222,30 +233,50 @@ or waived after measurement inside M61.
 - No `.poet.bin` is added to `apps/yune-web/public/schema`; the web manifest's
   no-POET-payload rule remains binding.
 
-After a green result, create a separate M61 memory-only ratchet containing one
-Track A peak-working-set row at the predeclared `125,000,000 B` ceiling plus
-source/provenance fields. It must pass alongside the existing signed registry;
-it does not copy, replace, or supersede that registry. Never rewrite the
-historical signed registry, loosen another row, or call the new ratchet
-authoritative before final owner approval.
+Before the first accepted M61 measurement, freeze a separate M61 memory-only
+ratchet containing one Track A peak-working-set row at the predeclared
+`125,000,000 B` ceiling plus source/provenance fields. Preserve its SHA-256
+externally, then copy that exact file into the closeout packet at
+`docs/reports/evidence/m61-native-track-a-memory-owner-reduction/m61-memory-threshold.csv`.
+It must pass alongside the existing signed registry; it does not copy, replace,
+or supersede that registry. Never rewrite the historical signed registry,
+loosen another row, or call the new ratchet authoritative before final owner
+approval.
+
+The current aggregator cannot evaluate that file in a second ordinary
+`--thresholds` invocation: it derives the expected Track A input set and run
+ceiling identities from the primary registry. The measurement/tooling commit
+must therefore add and test an explicit supplemental-ratchet interface that
+reuses the same five loaded observations, requires a matching metric key/unit
+and a strictly tighter ceiling, leaves the primary expected-input set and
+verdict untouched, requires all five observations at or below the supplemental
+ceiling, requires `worst_observed <= 125000000` and
+`individual_failures == 0`, and emits a distinct M61 verdict/provenance CSV.
+The finalized plan must paste its exact invocation after the interface exists.
+Do not edit or replace the historical threshold path.
 
 ## Phase 0 — Finalize After M60
 
 - [ ] Fetch the pushed M60 closeout and fill in `<M60_CLOSEOUT_SHA>`.
 - [ ] Re-audit the roadmap, performance dashboard, M60 closeout, current
-      `YUNE-POET/2` code, benchmark wrappers, and threshold registry.
+      `YUNE-POET/3` code, benchmark wrappers, and threshold registry.
 - [ ] Confirm no post-draft change already moved the owner or invalidated the
       branch hypothesis.
 - [ ] Convert the proposed requirement IDs into planned rows only after review.
 - [ ] Record the final path allowlist, external evidence root, exact inputs,
       toolchain, machine identity, pinned oracle/artifact hashes, and the exact
       M60-to-measurement-tooling commit chain.
+- [ ] Inventory and fingerprint every unrelated staged, unstaged, and untracked
+      path at kickoff. Instantiate the corrected M60 isolated-index,
+      pre-review-tree, exact-review-delta, path-limited-commit, commit-tree, and
+      remote-equality procedure with M61 filenames; do not retain the old
+      config-only staged-path assertion if the actual inventory differs.
 - [ ] Run two plan reviews: evidence/measurement validity, then scope/isolation
       and threshold safety. Only then mark the plan finalized.
 
-If M60 is not pushed, the base is dirty beyond the excluded config, the current
-benchmark no longer reads context per key, or the relevant owner cannot be
-measured, stop before M61 execution.
+If M60 is not pushed, the Phase 0 dirty-state inventory contains any unexplained
+or M61-overlapping path, the current benchmark no longer reads context per key,
+or the relevant owner cannot be measured, stop before M61 execution.
 
 ## Phase 1 — Fresh Baseline And Diagnostic A/B
 
@@ -268,6 +299,23 @@ the omitted/default owner assertion at the current owned/no-`poet_bin` state;
 only a later accepted production-candidate commit may change the normal signed
 assertion to require validated `poet_bin` storage.
 
+Conditionalize, but never delete, the current post-aggregation Track A owner
+assertion in both `scripts/benchmark-native-rime-inprocess.ps1` and
+`scripts/benchmark-native-rime-inprocess-macos.sh`:
+
+| Selector/source state | Required measured owner shape |
+| --- | --- |
+| `owned` | no `mapping_mode` beginning `poet_bin:`; owned POET owners remain visible |
+| `byte-backed` | `poet.entries_by_code`, `poet.prefix_index`, `poet.vocabulary`, and `poet.abbreviation_vocabulary` all report `poet_bin:byte_backed:mmap`; no retained owned `poet.lookup_index` |
+| `production-default` before the accepted flip | same as `owned` |
+| `production-default` in the accepted candidate | same as `byte-backed` |
+
+For byte-backed mode, the `poet.*` owner-id set must be exactly those four rows,
+once each; reject duplicates, missing rows, or any fifth POET owner.
+Record the selector and asserted shape in every receipt. This tooling change is
+not a threshold waiver and remains separate from the Phase 3 shipping-default
+transition.
+
 ### Runs
 
 - [ ] Create a disposable clean detached clone of the exact pushed M61
@@ -276,6 +324,10 @@ assertion to require validated `poet_bin` storage.
       the M60 parent boundary and clean status before and after every accepted
       set, record the intervening plan-only commit chain, and remove the clone
       only after the external packet is secured.
+- [ ] Before building, require `git rev-parse HEAD` to equal the recorded pushed
+      M61 measurement SHA, require `git status --porcelain` to be empty, and
+      record `git ls-remote origin refs/heads/main` plus containment/equality at
+      measurement start. A mismatch is a setup failure, not usable evidence.
 - [ ] Build the benchmark and Yune library once; record SHA-256 values.
 - [ ] Run five complete `owned` rounds. Require the unchanged signed registry,
       candidate/model identities, Track B guards, and fixed binary hashes to be
@@ -312,24 +364,35 @@ must reconcile:
 - named heap and byte-backed owners; and
 - phase transients versus retained state.
 
-Only leaf rows explicitly classified `heap_owned_reducible` participate in the
-private-owner sum. Process totals, phase totals, mapped-file rows, and the
-derived `process.after_ready...unclassified_lower_bound` are not owners and
-must never be ranked or added to that sum. For the same after-ready/steady
-phase, define:
+Only unique named-owner rows whose `byte_class` equals
+`heap_owned_reducible` and whose `non_overlapping_reducible_bytes` is greater
+than zero participate in the private-owner sum. No separate CSV
+leaf-classification field is assumed. Duplicate owner IDs within a round are an
+evidence error. Process totals, phase totals, mapped-file rows, and the
+working-set-derived
+`process.after_ready_working_set_unclassified_lower_bound` are not private
+owners and must never be ranked or added to that sum. Using five-run aggregates
+from the common zero-key owner-snapshot phase, define:
 
 ```text
+owned_private = median(five owned process.owner_snapshot_private_bytes rows)
+byte_backed_private = median(five byte-backed process.owner_snapshot_private_bytes rows)
 whole_process_private_delta = owned_private - byte_backed_private
-explained_heap_delta = sum(owned heap_owned_reducible leaves)
-                     - sum(byte-backed heap_owned_reducible leaves)
+
+owned_leaf_total = median(five per-round sums of non_overlapping_reducible_bytes
+                          where byte_class == heap_owned_reducible)
+byte_backed_leaf_total = median(five per-round sums of non_overlapping_reducible_bytes
+                                where byte_class == heap_owned_reducible)
+explained_heap_delta = owned_leaf_total - byte_backed_leaf_total
 coverage = explained_heap_delta / whole_process_private_delta
 ```
 
-Here `owned_private` and `byte_backed_private` are the per-round
-`process.after_ready_private_bytes_proxy` values defined above. Compute the
-formula independently for each owned/byte-backed round pairing, report every
-pair, and aggregate the five whole-process and explained deltas by median; do
-not substitute `summary.csv`'s private envelope into this same-phase equation.
+Report every raw per-round value, but compute the binding delta once from the
+mode-level medians above. Independent fresh processes are not paired by round
+index, and the plan never takes a median of arbitrary per-pair ratios. Require
+the eligible owner-id set to remain stable within each accepted mode or explain
+and fail closed on every missing/new identity before aggregation. Do not
+substitute `summary.csv`'s post-key private envelope into this zero-key equation.
 
 Both deltas must be positive. Require `0.80 <= coverage <= 1.20` and an absolute
 residual no larger than the greater of `5,000,000 B` or `20%` of the
@@ -351,8 +414,12 @@ Before changing runtime behavior:
       formula and tolerance above without double-counting process, mapped, or
       derived residual rows.
 - [ ] Verify whether the likely owner still consists of the retained preset
-      vocabulary recipe, `poet.entries_by_code`, and `poet.lookup_index`, or
-      record the current replacement owner.
+      vocabulary recipe, `poet.vocabulary`, `poet.entries_by_code`, and the
+      small `poet.abbreviation_vocabulary` reducible leaf. Report the guarded
+      `translator.upstream_sentence_model_preset_vocabulary_recipe` and
+      `poet.lookup_index` rows separately; neither is included in the
+      `heap_owned_reducible` coverage sum unless fresh tooling explicitly and
+      validly reclassifies it.
 - [ ] Prove that the proposed reduction affects same-process Windows private
       bytes rather than only clean mapped residency or page-cache luck.
 - [ ] Select exactly one disposition:
@@ -372,26 +439,35 @@ different product profile and counter.
 
 Phase 3 exists only for disposition A, B, or C.
 
-The production policy is native-only and capability-bound, not a global
+The production policy is native-target/capability-bound, not a global
 environment default:
 
-- a repository-owned internal native deployment policy enables POET generation
-  for the supported deployed `luna_pinyin` source; it is not a public ABI flag;
-- runtime consumption requires an artifact whose version plus schema/table/
+- WASM must never select POET storage, even if a sidecar is present. Native
+  runtime consumption requires an artifact whose version plus schema/table/
   source identities validate against that deployment;
 - an absent artifact preserves the owned fallback and its current behavior,
   while a present invalid, stale, or replaced artifact fails loudly;
-- public browser/package deployment policies neither generate, copy, nor
-  consume `.poet.bin`, and their manifest/packaging checks prove that boundary;
-  and
+- M61 adds no `.poet.bin` to the repository-managed web static payload. The
+  existing schema-manifest check proves only the
+  `apps/yune-web/public/schema` boundary, not npm/package contents or runtime
+  generation/consumption;
+- the shared deployer can currently generate or copy a POET sidecar while
+  rebuilding dictionary artifacts. M61 must either preserve and accurately
+  document that behavior or introduce an explicit internal target-aware
+  generation policy with owning tests; it must not infer runtime safety from
+  the manifest;
+- native package scripts receive no schema-payload change. Any binding package-
+  content claim requires a create-new output plus an explicit file allowlist and
+  `.poet.bin` absence assertion; and
 - the shipping native path requires no inherited environment variable. The
   diagnostic selector remains benchmark tooling rather than product policy.
 
 For the expected byte-backed branch:
 
-- [ ] Preserve the current versioned `YUNE-POET/2` validation and loud rejection
-      of present invalid/legacy artifacts. Bump the format only if bytes or
-      semantics actually change.
+- [ ] Preserve the current versioned `YUNE-POET/3` validation and loud rejection
+      of present truncated, checksum-mismatched, invalid, wrong-version, or
+      legacy artifacts, including `YUNE-POET/1` and `YUNE-POET/2`. Bump the
+      format only if bytes or semantics actually change.
 - [ ] Keep POET artifact creation in the untimed deploy/preparation phase and
       prove runtime consumption uses the validated bytes.
 - [ ] Port or retain the current incremental sentence scratch, reachability,
@@ -402,9 +478,15 @@ For the expected byte-backed branch:
       flip with a red ratchet.
 - [ ] Keep the environment switch out of the shipping requirement and record
       the actual storage mode in owner diagnostics.
-- [ ] Add owning tests for cold/warm initialization, source/cache changes,
-      corrupt or replaced POET artifacts, all growing prefixes of the 37/59
-      rows, and process-global lifecycle clearing.
+- [ ] Retain and rerun the existing POET v3 format, corruption/legacy/checksum,
+      deployment/reuse/copy/rebuild, cache replacement, owner shape, every
+      growing 37/59 prefix, pinned-oracle byte-backed result, translator
+      invalidation, and lifecycle coverage. Add only gaps introduced by M61:
+      no-environment native default selection, explicit owned diagnostic
+      override, absent-artifact owned fallback, invalid/stale fail-closed
+      behavior without cached reuse, native-target versus WASM capability
+      isolation, wrapper selector/owner-shape assertions, and lifecycle clearing
+      under the new default.
 - [ ] Report every new cache or hot layer as a named bounded memory owner.
 
 Do not delete the owned fallback or change missing-artifact/source-deploy
@@ -434,10 +516,12 @@ amended before implementation. No hidden behavior tradeoff is authorized.
    to fast-forward to or equal `origin/main`, fill the base SHA, add planned
    requirements, record both plan reviews, and push the finalized plan before
    measurement. Stop for manual reconciliation if the branches diverge; do not
-   rebase around the excluded staged config.
-3. **Measurement/tooling commit.** Add only the explicit diagnostic selector or
-   missing attribution needed for Phase 1. The default signed invocation must
-   remain identical.
+   rebase around unrelated user work.
+3. **Measurement/tooling commit.** Add only the explicit diagnostic selector,
+   missing attribution, supplemental-ratchet evaluator, and public-evidence
+   privacy checker needed for M61. The default signed invocation must remain
+   identical. Push this commit, prove remote `main` equals its SHA, and only
+   then create the exact detached measurement clone.
 4. **External A/B and owner decision.** Preserve all raw results outside Git.
    No production code change follows a no-go.
 5. **Conditional implementation commit.** Commit directly to local `main` only
@@ -452,7 +536,53 @@ amended before implementation. No hidden behavior tradeoff is authorized.
    and their manifest entries may change; any other delta requires re-review.
 7. **Closeout commit and push.** Curate only compact receipts, update current
    docs, move the plan, verify exact committed tree and remote identity, and
-   leave `.codex/config.toml` staged and uncommitted.
+   preserve the fingerprinted unrelated staged/unstaged/untracked state exactly.
+
+### Commit and review-tree isolation
+
+M61 adopts the corrected isolated-index procedure in M60's
+`Load-Bearing Verification` section as a binding minimum, generalized from its
+then-current config-only assertion to the actual Phase 0 dirty-state inventory.
+The post-M60 finalization commit must copy the literal procedure into this plan
+with M61 filenames so it remains usable after the M60 plan moves to completed.
+
+For every M61 implementation or closeout commit:
+
+- create sorted, unique, repository-relative allowlists for all paths, new
+  paths, current documents, and evidence paths; reject empty, stale, escaping,
+  duplicate, or unmatched entries;
+- preserve binary-diff/content fingerprints for every unrelated staged,
+  unstaged, and untracked path, and compare them after the commit;
+- create an isolated index from `HEAD` with `GIT_INDEX_FILE`, `git read-tree
+  HEAD`, and `git add -A --pathspec-from-file`; preserve its `git write-tree`
+  result before touching the real index;
+- add intent-to-add entries only for the allowlisted new-path subset, commit
+  only with `git commit --only --pathspec-from-file`, prove `HEAD^{tree}` equals
+  the isolated candidate tree, and prove the commit's path set equals the
+  allowlist;
+- before review, preserve `m61-pre-review-tree.txt`. Both reviews name the
+  implementation SHA/tree and that pre-review tree. Afterwards, allow only
+  `review-requirements.md`, `review-isolation.md`, and the regenerated packet
+  manifest; prove that exact three-path tree delta or re-review; and
+- build and validate `m61-final-candidate-tree.txt` in the isolated index before
+  closeout. The committed tree must equal it exactly, while every unrelated
+  dirty-state fingerprint remains unchanged.
+
+After every push that binds measurement or closeout evidence, retain this
+literal remote-identity proof (with failure preserved):
+
+```sh
+LOCAL=$(git rev-parse HEAD)
+REMOTE=$(git ls-remote --exit-code origin refs/heads/main | awk 'NR==1{print $1}')
+test "$LOCAL" = "$REMOTE"
+```
+
+For the pushed measurement-tooling source, create a disposable clone, detach at
+`$LOCAL`, require the clone's `HEAD` to equal that expected SHA, and require
+`git status --porcelain=v1 --untracked-files=all` to be empty before and after
+the complete A/B set. The conditional production candidate remains local until
+its exact-source acceptance set is green; its local detached clone and receipts
+must label it unpushed. Push and run the remote proof only after acceptance.
 
 ## Load-Bearing Verification
 
@@ -467,6 +597,8 @@ cargo test -p yune-rime-api deployment
 cargo test -p yune-rime-api --test yune_web m59_luna_
 cargo test -p yune-rime-api --test yune_web m59_schema_general_reachability_deployment_matrix_default_on_and_explicit_false
 npm --prefix apps/yune-web run check:schema-manifest
+python3 -m unittest scripts/tests/test_m61_supplemental_ratchet.py
+python3 -m unittest scripts/tests/test_public_evidence_privacy.py
 cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
@@ -482,6 +614,20 @@ The final native performance command remains the current Windows benchmark with
 the exact 17+1 inputs and `9/60/80` settings. The finalized plan must paste the
 literal command after M60 so it cannot silently drift from the then-current
 wrapper interface.
+
+The measurement/tooling commit also adds
+`scripts/check-public-evidence-privacy.py` with unit tests. It accepts the
+curated packet allowlist plus a required external `--forbid-literal-file`
+created during environment capture and never checked in. That non-empty deny
+file contains the actual username, user-profile/home path, host/computer name,
+hardware serial, stable machine UUIDs, and normalized variants. The checker
+performs case-insensitive literal matching plus generic user-profile path,
+email, and secret/token-pattern checks, while allowing model/chip/RAM/OS,
+toolchain versions, and source/artifact hashes. It fails closed on missing or
+empty inputs and never echoes a forbidden literal into its verdict. Unit tests
+cover bare host/user strings, normalized forms, allowed hardware/OS fields, and
+verdict redaction. The closeout runs the tested tool against every curated
+packet path and records the exact command/verdict.
 
 ## Evidence Contract
 
@@ -514,8 +660,8 @@ Curate only:
 Do not check in `m37_metrics.csv`, `samples.csv`, startup traces, binaries,
 compiled schemas, POET artifacts, raw benchmark trees, or screenshots. Run the
 compact-evidence curator, packet-manifest verifier, current-doc link checker,
-privacy scan, evidence-growth guard, and `git diff --check`. The packet remains
-below the repository's `10 MiB` cap.
+evidence-growth guard, the tested public-evidence privacy checker, and
+`git diff --check`. The packet remains below the repository's `10 MiB` cap.
 
 ## Failure And Retry Policy
 

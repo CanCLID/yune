@@ -254,7 +254,21 @@ catch {{ $InheritedRejected = $_.Exception.Message -like '*ambiguous*' }}
 if (-not $InheritedRejected) {{
     throw 'explicit present-empty variable was accepted by deploy prep'
 }}
-Set-PoetByteBackedEnvironmentState $false $null
+
+$TopLevelRejected = $false
+try {{
+    & {ps_quote(POWERSHELL_WRAPPER)} -TrackAStorageMode owned
+}}
+catch {{
+    $TopLevelRejected = $_.Exception.Message -like `
+        '*Track A storage mode is ambiguous when YUNE_POET_BYTE_BACKED is inherited*'
+}}
+finally {{
+    Set-PoetByteBackedEnvironmentState $false $null
+}}
+if (-not $TopLevelRejected) {{
+    throw 'top-level wrapper accepted an explicit present-empty variable'
+}}
 """
         result = subprocess.run(
             [powershell, "-NoProfile", "-Command", "-"],
@@ -264,31 +278,6 @@ Set-PoetByteBackedEnvironmentState $false $null
             check=False,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
-        environment = os.environ.copy()
-        environment["YUNE_POET_BYTE_BACKED"] = ""
-        top_level = subprocess.run(
-            [
-                powershell,
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                str(POWERSHELL_WRAPPER),
-                "-TrackAStorageMode",
-                "owned",
-            ],
-            env=environment,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        self.assertNotEqual(top_level.returncode, 0)
-        self.assertIn(
-            "Track A storage mode is ambiguous when "
-            "YUNE_POET_BYTE_BACKED is inherited",
-            top_level.stdout + top_level.stderr,
-        )
 
     def test_macos_restores_on_success_and_failure_and_rejects_ambiguity(
         self,

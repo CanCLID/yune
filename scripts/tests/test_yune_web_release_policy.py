@@ -1,3 +1,4 @@
+import re
 import subprocess
 import tempfile
 import unittest
@@ -7,6 +8,14 @@ from scripts.classify_yune_web_release import changed_paths, output_safe, requir
 
 
 class YuneWebReleasePolicyTests(unittest.TestCase):
+    def test_workflow_does_not_override_reserved_github_environment_names(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        workflow = (
+            repo_root / ".github" / "workflows" / "deploy-yune-web.yml"
+        ).read_text(encoding="utf-8")
+        overridden = re.findall(r"^\s+(GITHUB_[A-Z0-9_]+):\s", workflow, re.MULTILINE)
+        self.assertEqual(overridden, [])
+
     def test_github_output_reason_escapes_line_breaks_and_percent(self):
         self.assertEqual(output_safe("a%\r\nb"), "a%25%0D%0Ab")
 

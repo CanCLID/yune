@@ -45,14 +45,14 @@ jobs:
         id: classify
         env:
           EVENT_NAME: ${{ github.event_name }}
-          GITHUB_REF_NAME: ${{ github.ref }}
+          SOURCE_REF: ${{ github.ref }}
           HEAD_SHA: ${{ github.sha }}
           SETUP_RETRY_OF: ${{ inputs.setup_retry_of }}
           SETUP_RETRY_REASON: ${{ inputs.setup_retry_reason }}
         run: |
           python3 -m unittest scripts.tests.test_yune_web_release_policy
-          if [ "$GITHUB_REF_NAME" != "refs/heads/main" ]; then
-            printf 'Production releases are main-only; received %s.\n' "$GITHUB_REF_NAME" >&2
+          if [ "$SOURCE_REF" != "refs/heads/main" ]; then
+            printf 'Production releases are main-only; received %s.\n' "$SOURCE_REF" >&2
             exit 1
           fi
           current_main="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk 'NF {print $1; exit}')"

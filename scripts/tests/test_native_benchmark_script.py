@@ -12,6 +12,9 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parents[1]
 REPO_ROOT = SCRIPTS.parent
 SCRIPT = SCRIPTS / "benchmark-native-rime-inprocess.ps1"
+OUTPUT_POLICY = SCRIPTS / "evidence-output-path.ps1"
+OUTPUT_POLICY_TOOL = SCRIPTS / "evidence-output-path.py"
+RETENTION_TOOL = SCRIPTS / "evidence_retention.py"
 
 
 def ps_quote(value: Path | str) -> str:
@@ -108,6 +111,80 @@ if ($Errors.Count -gt 0) {{ $Errors | ForEach-Object {{ $_.ToString() }}; exit 1
         self.assertIn('[string]$WorkRoot', self.source)
         self.assertIn('apps\\yune-web\\public\\schema', self.source)
         self.assertNotIn('apps\\yune-web\\source\\public\\schema', self.source)
+
+    def test_output_path_policy_does_not_write_python_bytecode_into_source(self) -> None:
+        powershell = shutil.which("powershell")
+        if powershell is None:
+            self.skipTest("Windows PowerShell is unavailable")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repository = root / "repository"
+            scripts = repository / "scripts"
+            scripts.mkdir(parents=True)
+            for source in (OUTPUT_POLICY, OUTPUT_POLICY_TOOL, RETENTION_TOOL):
+                shutil.copy2(source, scripts / source.name)
+            for arguments in (
+                ("init", "--quiet"),
+                ("config", "user.name", "M61 Test"),
+                ("config", "user.email", "m61-test@example.invalid"),
+                ("add", "."),
+                ("commit", "--quiet", "-m", "fixture"),
+            ):
+                result = subprocess.run(
+                    ["git", "-C", str(repository), *arguments],
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+            external = root / "external" / "run"
+            command = f"""
+$ErrorActionPreference = 'Stop'
+. {ps_quote(scripts / OUTPUT_POLICY.name)}
+$Result = Invoke-YuneEvidenceOutputPathPolicy @(
+    'validate',
+    '--repo-root', {ps_quote(repository)},
+    '--path', {ps_quote(external)}
+)
+if ($Result -ne [System.IO.Path]::GetFullPath({ps_quote(external)})) {{
+    throw "unexpected resolved path: $Result"
+}}
+"""
+            result = subprocess.run(
+                [
+                    powershell,
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "-",
+                ],
+                input=command,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertFalse(
+                (scripts / "__pycache__").exists(),
+                "the path-policy helper must not write Python bytecode into source",
+            )
+            status = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(repository),
+                    "status",
+                    "--porcelain=v1",
+                    "--untracked-files=all",
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(status.returncode, 0, status.stdout + status.stderr)
+            self.assertEqual(status.stdout, "")
 
     def test_external_roots_are_create_new_and_legacy_cleanup_is_bounded(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

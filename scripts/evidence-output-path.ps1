@@ -16,7 +16,7 @@ function Invoke-YuneEvidenceOutputPathPolicy([string[]]$Arguments) {
         if ($null -eq $Command) {
             continue
         }
-        & $Command.Source @($Candidate.Prefix) -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 9) else 1)" 2>$null
+        & $Command.Source @($Candidate.Prefix) -B -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 9) else 1)" 2>$null
         if ($LASTEXITCODE -eq 0) {
             $Python = $Command
             $Prefix = @($Candidate.Prefix)
@@ -27,7 +27,7 @@ function Invoke-YuneEvidenceOutputPathPolicy([string[]]$Arguments) {
         throw "Python 3.9 or newer is required for the evidence output path policy"
     }
 
-    $Output = @(& $Python.Source @Prefix $Tool @Arguments 2>&1 | ForEach-Object { [string]$_ })
+    $Output = @(& $Python.Source @Prefix -B $Tool @Arguments 2>&1 | ForEach-Object { [string]$_ })
     if ($LASTEXITCODE -ne 0) {
         throw "Evidence output path policy rejected the destination: $($Output -join ' | ')"
     }

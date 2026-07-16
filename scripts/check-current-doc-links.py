@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
+import stat
 import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -32,8 +34,17 @@ def _is_within(path: Path, root: Path) -> bool:
 
 
 def _is_link_or_junction(path: Path) -> bool:
-    junction_check = getattr(path, "is_junction", None)
-    return path.is_symlink() or bool(junction_check and junction_check())
+    if path.is_symlink():
+        return True
+    if os.name != "nt":
+        return False
+    reparse_tag = getattr(path.lstat(), "st_reparse_tag", None)
+    junction_tag = getattr(stat, "IO_REPARSE_TAG_MOUNT_POINT", None)
+    if reparse_tag is None or junction_tag is None:
+        raise LinkAuditError(
+            f"cannot verify Windows junction status from reparse metadata: {path}"
+        )
+    return reparse_tag == junction_tag
 
 
 def _reject_link_chain(path: Path, repo_root: Path, label: str) -> None:

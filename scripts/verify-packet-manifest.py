@@ -7,7 +7,9 @@ import argparse
 import csv
 import hashlib
 import io
+import os
 import re
+import stat
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -30,8 +32,17 @@ class PacketEntry:
 
 
 def _is_link_or_junction(path: Path) -> bool:
-    junction_check = getattr(path, "is_junction", None)
-    return path.is_symlink() or bool(junction_check and junction_check())
+    if path.is_symlink():
+        return True
+    if os.name != "nt":
+        return False
+    reparse_tag = getattr(path.lstat(), "st_reparse_tag", None)
+    junction_tag = getattr(stat, "IO_REPARSE_TAG_MOUNT_POINT", None)
+    if reparse_tag is None or junction_tag is None:
+        raise PacketManifestError(
+            f"cannot verify Windows junction status from reparse metadata: {path}"
+        )
+    return reparse_tag == junction_tag
 
 
 def _lexical_relative_to_root(path: Path, root: Path) -> Path:

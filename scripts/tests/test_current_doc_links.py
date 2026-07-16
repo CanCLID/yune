@@ -14,8 +14,8 @@ SCRIPT = Path(__file__).resolve().parents[1] / "check-current-doc-links.py"
 class CurrentDocumentLinkTests(unittest.TestCase):
     @staticmethod
     def create_junction(link: Path, target: Path) -> None:
-        if sys.platform != "win32" or not hasattr(Path, "is_junction"):
-            raise unittest.SkipTest("directory junctions require Windows and Python 3.12+")
+        if sys.platform != "win32":
+            raise unittest.SkipTest("directory junctions require Windows")
         result = subprocess.run(
             ["cmd", "/c", "mklink", "/J", str(link), str(target)],
             text=True,
@@ -26,9 +26,6 @@ class CurrentDocumentLinkTests(unittest.TestCase):
             raise unittest.SkipTest(
                 f"directory junctions unavailable: {result.stdout}{result.stderr}"
             )
-        if not link.is_junction():
-            os.rmdir(link)
-            raise AssertionError("mklink /J did not create a detectable junction")
 
     def run_audit(self, root: Path, paths_file: Path) -> subprocess.CompletedProcess[str]:
         return subprocess.run(

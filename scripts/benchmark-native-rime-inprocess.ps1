@@ -9,7 +9,7 @@ param(
     [int]$KeyIterations = 80,
     [ValidateSet("production-default", "owned", "byte-backed")]
     [string]$TrackAStorageMode = "production-default",
-    [string]$TrackAInputs = "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru",
+    [string]$TrackAInputs = "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu",
     [string]$TrackBInputs = "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
     [switch]$DeployProductBeforeBenchmark,
     [switch]$SkipTrackB,
@@ -314,6 +314,9 @@ $WorkRoot = Get-CanonicalSafePath $WorkRoot "WorkRoot"
 $UpstreamOracleRoot = Get-CanonicalSafePath $UpstreamOracleRoot "UpstreamOracleRoot"
 $YuneDll = Get-CanonicalSafePath $YuneDll "YuneDll"
 $ProductSchemaRoot = Get-CanonicalSafePath $ProductSchemaRoot "ProductSchemaRoot"
+$CandidateParityTool = Get-CanonicalSafePath `
+    (Join-Path $RepoRoot "scripts\check-native-candidate-parity.py") `
+    "native candidate parity tool"
 if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) {
     $TrackAThresholds = Get-CanonicalSafePath $TrackAThresholds "TrackAThresholds"
 }
@@ -1313,6 +1316,14 @@ if (-not $OutputRootAfterCreate.Equals($OutputRoot, [System.StringComparison]::O
 }
 $RunStatusPath = Join-Path $OutputRoot "run-status.txt"
 Set-RunStatus "in-progress"
+$CandidateParityInputsPath = Join-Path $OutputRoot "candidate-parity-inputs.csv"
+$CandidateParityInputRows = @("input") + @($TrackAInputs.Split(","))
+[System.IO.File]::WriteAllText(
+    $CandidateParityInputsPath,
+    (($CandidateParityInputRows -join "`n") + "`n"),
+    [System.Text.UTF8Encoding]::new($false)
+)
+$CandidateParityExpectedInputsSha256 = File-Sha256 $CandidateParityInputsPath
 
 try {
     Initialize-BenchmarkRoot $WorkRoot $LegacyWorkRoot $WorkRootWasProvided "WorkRoot"
@@ -1348,6 +1359,7 @@ try {
     $UpstreamBuildTreeSha256 = Tree-Sha256 $BuildSource
     $ProductSchemaTreeSha256 = Tree-Sha256 $ProductSchemaRoot
     $BenchmarkScriptSha256 = File-Sha256 $PSCommandPath
+    $CandidateParityToolSha256 = File-Sha256 $CandidateParityTool
     $BenchmarkRustSource = Get-CanonicalSafePath `
         (Join-Path $RepoRoot "crates\yune-rime-api\benches\native_inprocess_benchmark.rs") `
         "native benchmark Rust source"
@@ -1566,6 +1578,8 @@ $Identity = @(
     "native_benchmark_cargo_target_root=$BenchmarkCargoTargetRoot",
     "native_benchmark_build_command=$BenchmarkBuildCommand",
     "benchmark_script_sha256=$BenchmarkScriptSha256",
+    "candidate_parity_tool_sha256=$CandidateParityToolSha256",
+    "candidate_parity_expected_inputs_sha256=$CandidateParityExpectedInputsSha256",
     "track_a_thresholds_sha256=$TrackAThresholdsSha256",
     "actual_invocation=$ActualInvocation",
     "managed_runtime=false",
@@ -1599,6 +1613,8 @@ $Identity | Set-Content -LiteralPath (Join-Path $OutputRoot "environment.txt") -
     "native_benchmark_receipt=$NativeBenchmarkReceipt",
     "native_benchmark_receipt_sha256=$NativeBenchmarkReceiptSha256",
     "benchmark_script_sha256=$BenchmarkScriptSha256",
+    "candidate_parity_tool_sha256=$CandidateParityToolSha256",
+    "candidate_parity_expected_inputs_sha256=$CandidateParityExpectedInputsSha256",
     "track_a_storage_mode=$TrackAStorageMode",
     "track_a_storage_mode_explicit=$TrackAStorageModeWasProvided"
 ) | Set-Content -LiteralPath (Join-Path $OutputRoot "external-provenance.txt") -Encoding UTF8
@@ -1682,6 +1698,112 @@ $CombinedCandidateSnapshots | Export-Csv -LiteralPath (Join-Path $OutputRoot "ca
 $CombinedRawLookupMicrobench | Export-Csv -LiteralPath (Join-Path $OutputRoot "raw_lookup_microbench.csv") -NoTypeInformation -Encoding UTF8
 $CombinedMemoryOwnerProfile | Export-Csv -LiteralPath (Join-Path $OutputRoot "memory-owner-profile.csv") -NoTypeInformation -Encoding UTF8
 
+$CandidateSnapshotsPath = Join-Path $OutputRoot "candidate_snapshots.csv"
+$CandidateParityArgs = @(
+    "-B", $CandidateParityTool,
+    "--snapshot-csv", $CandidateSnapshotsPath,
+    "--expected-inputs-csv", $CandidateParityInputsPath,
+    "--output-dir", $OutputRoot,
+    "--source-commit", $YuneHead,
+    "--source-tree", $YuneTree,
+    "--oracle-binary-sha256", $UpstreamDllSha256,
+    "--oracle-shared-tree-sha256", $UpstreamSharedTreeSha256,
+    "--oracle-build-tree-sha256", $UpstreamBuildTreeSha256
+)
+$CandidateParityCommand = "python " + (($CandidateParityArgs | ForEach-Object {
+    Quote-CommandArg ([string]$_)
+}) -join " ")
+$CandidateParityCommand | Add-Content -LiteralPath (Join-Path $OutputRoot "commands.txt") -Encoding UTF8
+& python @CandidateParityArgs
+$CandidateParityExitCode = $LASTEXITCODE
+if ($CandidateParityExitCode -ne 0) {
+    throw "Native candidate parity check failed with exit code $CandidateParityExitCode"
+}
+$CandidateParityCsvPath = Join-Path $OutputRoot "candidate-parity.csv"
+$CandidateParityDetailPath = Join-Path $OutputRoot "zhongdengchangdu-detail.csv"
+$CandidateParityVerdictPath = Join-Path $OutputRoot "candidate-parity-verdict.txt"
+$CandidateParityReceipt = Read-NativeBenchmarkBuildReceipt $CandidateParityVerdictPath
+$ExpectedCandidateParityReceiptKeys = @(
+    "detail_csv_sha256",
+    "engines",
+    "exact_inputs",
+    "exit_code",
+    "expected_inputs",
+    "expected_inputs_sha256",
+    "format_version",
+    "mismatches",
+    "oracle_binary_sha256",
+    "oracle_build_tree_sha256",
+    "oracle_shared_tree_sha256",
+    "parity_csv_sha256",
+    "schema_id",
+    "shape",
+    "snapshot_sha256",
+    "source_commit",
+    "source_tree",
+    "tool",
+    "tool_sha256",
+    "track",
+    "verdict"
+)
+$ActualCandidateParityReceiptKeys = @($CandidateParityReceipt.Keys | Sort-Object)
+if (Compare-Object $ExpectedCandidateParityReceiptKeys $ActualCandidateParityReceiptKeys) {
+    throw "Native candidate parity receipt keys differ from the exact contract"
+}
+$CandidateParityHashes = [ordered]@{
+    snapshot_sha256 = File-Sha256 $CandidateSnapshotsPath
+    expected_inputs_sha256 = File-Sha256 $CandidateParityInputsPath
+    parity_csv_sha256 = File-Sha256 $CandidateParityCsvPath
+    detail_csv_sha256 = File-Sha256 $CandidateParityDetailPath
+    tool_sha256 = File-Sha256 $CandidateParityTool
+}
+foreach ($Entry in $CandidateParityHashes.GetEnumerator()) {
+    if (-not $CandidateParityReceipt.ContainsKey($Entry.Key) -or
+        -not ([string]$CandidateParityReceipt[$Entry.Key]).Equals(
+            [string]$Entry.Value,
+            [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+        throw "Native candidate parity receipt mismatch for $($Entry.Key)"
+    }
+}
+$ExpectedCandidateParityReceipt = [ordered]@{
+    format_version = "1"
+    tool = "check-native-candidate-parity.py"
+    expected_inputs = $TrackAInputs
+    source_commit = $YuneHead
+    source_tree = $YuneTree
+    oracle_binary_sha256 = $UpstreamDllSha256
+    oracle_shared_tree_sha256 = $UpstreamSharedTreeSha256
+    oracle_build_tree_sha256 = $UpstreamBuildTreeSha256
+    track = "track-a-comparison"
+    schema_id = "luna_pinyin"
+    engines = "librime-1.17.0,yune"
+    shape = "PASS"
+    exact_inputs = "17/17"
+    mismatches = "none"
+    verdict = "PASS"
+    exit_code = "0"
+}
+foreach ($Entry in $ExpectedCandidateParityReceipt.GetEnumerator()) {
+    if (-not [string]::Equals(
+        [string]$CandidateParityReceipt[$Entry.Key],
+        [string]$Entry.Value,
+        [System.StringComparison]::Ordinal
+    )) {
+        throw "Native candidate parity receipt mismatch for $($Entry.Key)"
+    }
+}
+$CandidateParitySnapshotSha256 = $CandidateParityHashes["snapshot_sha256"]
+$CandidateParityCsvSha256 = $CandidateParityHashes["parity_csv_sha256"]
+$CandidateParityDetailSha256 = $CandidateParityHashes["detail_csv_sha256"]
+$CandidateParityVerdictSha256 = File-Sha256 $CandidateParityVerdictPath
+@(
+    "candidate_parity_snapshot_sha256=$CandidateParitySnapshotSha256",
+    "candidate_parity_csv_sha256=$CandidateParityCsvSha256",
+    "candidate_parity_detail_sha256=$CandidateParityDetailSha256",
+    "candidate_parity_verdict_sha256=$CandidateParityVerdictSha256"
+) | Add-Content -LiteralPath (Join-Path $OutputRoot "external-provenance.txt") -Encoding UTF8
+
 Assert-TrackAOwnerShape $CombinedMemoryOwnerProfile $TrackAStorageMode
 $AssertedPoetOwnerShape = if ($TrackAStorageMode -eq "byte-backed") {
     "poet.abbreviation_vocabulary,poet.entries_by_code,poet.prefix_index,poet.vocabulary; mapping_mode=poet_bin:byte_backed:mmap; poet.lookup_index absent"
@@ -1741,6 +1863,24 @@ if ((File-Sha256 $NativeBenchmarkReceiptInput) -ne $NativeBenchmarkReceiptInputS
 }
 if ((File-Sha256 $PSCommandPath) -ne $BenchmarkScriptSha256) {
     $InputDrift += "benchmark script changed during the benchmark: $PSCommandPath"
+}
+if ((File-Sha256 $CandidateParityTool) -ne $CandidateParityToolSha256) {
+    $InputDrift += "candidate parity tool changed during the benchmark: $CandidateParityTool"
+}
+if ((File-Sha256 $CandidateParityInputsPath) -ne $CandidateParityExpectedInputsSha256) {
+    $InputDrift += "candidate parity expected inputs changed during the benchmark: $CandidateParityInputsPath"
+}
+if ((File-Sha256 $CandidateSnapshotsPath) -ne $CandidateParitySnapshotSha256) {
+    $InputDrift += "candidate parity snapshot changed during the benchmark: $CandidateSnapshotsPath"
+}
+if ((File-Sha256 $CandidateParityCsvPath) -ne $CandidateParityCsvSha256) {
+    $InputDrift += "candidate parity CSV changed during the benchmark: $CandidateParityCsvPath"
+}
+if ((File-Sha256 $CandidateParityDetailPath) -ne $CandidateParityDetailSha256) {
+    $InputDrift += "candidate parity detail changed during the benchmark: $CandidateParityDetailPath"
+}
+if ((File-Sha256 $CandidateParityVerdictPath) -ne $CandidateParityVerdictSha256) {
+    $InputDrift += "candidate parity verdict changed during the benchmark: $CandidateParityVerdictPath"
 }
 if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds) -and
     (File-Sha256 $TrackAThresholds) -ne $TrackAThresholdsSha256) {

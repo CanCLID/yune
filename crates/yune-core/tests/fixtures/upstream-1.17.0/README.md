@@ -15,7 +15,8 @@ from the TypeDuck fork. Use them for core Yune compatibility behavior.
   sentence/lattice closeout; M18 deployment/processor depth; M19 breadth schemas;
   M55 Phase 3R sentence fixture expansion; M59 complete Luna Lane B
   text/order/position and partial-selection composition; M59 Cangjie
-  candidate-zero target derivation and exact-order diagnostics
+  candidate-zero target derivation and exact-order diagnostics; M61 Windows
+  native `zhongdengchangdu` page-zero parity correction
 
 ## Capture Rules
 
@@ -87,6 +88,15 @@ import it separately; the wrapper never overwrites a tracked fixture.
 - The manifest recapture command writes create-new output under ignored
   `target/`; review its byte/diff result and import it separately. The capture
   tool intentionally refuses to overwrite this tracked fixture.
+
+### `m61-luna-zhongdengchangdu-page-zero.json`
+
+- Schema: shipped `luna_pinyin` product deployment.
+- Input: `zhongdengchangdu`; exact page-zero text/order/comments and preedit.
+- Source-row policy: five `librime-1.17.0` rows only from the M61 Windows native
+  17-input preflight comparison; Yune's red rows are not acceptance data.
+- The fixture and manifest bind the source CSV, librime commit/tree, official
+  DLL, deployed shared/build trees, and tracked product-schema tree.
 
 ### `cangjie5-composition.json`
 

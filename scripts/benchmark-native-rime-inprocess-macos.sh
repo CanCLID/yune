@@ -8,7 +8,7 @@ librime_source="/Users/laufei/Documents/GitHub/librime"
 iterations=9
 session_iterations=60
 key_iterations=80
-track_a_inputs="n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru"
+track_a_inputs="n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu"
 track_b_inputs="neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung"
 track_a_storage_mode="production-default"
 track_a_storage_mode_explicit=0
@@ -195,6 +195,115 @@ die() {
   exit 1
 }
 
+validate_candidate_parity_receipt() {
+  python3 - "$@" <<'PY'
+import hashlib
+import pathlib
+import sys
+
+if len(sys.argv) != 13:
+    raise SystemExit("candidate parity receipt validator received invalid arguments")
+
+(
+    receipt_path,
+    tool_path,
+    snapshot_path,
+    inputs_path,
+    parity_path,
+    detail_path,
+) = map(pathlib.Path, sys.argv[1:7])
+(
+    source_commit,
+    source_tree,
+    oracle_binary_sha256,
+    oracle_shared_tree_sha256,
+    oracle_build_tree_sha256,
+    expected_inputs,
+) = sys.argv[7:13]
+
+def sha256(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+receipt = {}
+for line_number, line in enumerate(
+    receipt_path.read_text(encoding="utf-8-sig").splitlines(), start=1
+):
+    if not line.strip() or line.lstrip().startswith("#"):
+        continue
+    if "=" not in line:
+        raise SystemExit(
+            f"candidate parity receipt line {line_number} is not key=value"
+        )
+    key, value = line.split("=", 1)
+    key = key.strip()
+    value = value.strip()
+    if not key or key in receipt:
+        raise SystemExit(
+            f"candidate parity receipt line {line_number} has an invalid key"
+        )
+    receipt[key] = value
+
+expected_keys = {
+    "format_version",
+    "tool",
+    "tool_sha256",
+    "snapshot_sha256",
+    "expected_inputs_sha256",
+    "expected_inputs",
+    "source_commit",
+    "source_tree",
+    "oracle_binary_sha256",
+    "oracle_shared_tree_sha256",
+    "oracle_build_tree_sha256",
+    "track",
+    "schema_id",
+    "engines",
+    "parity_csv_sha256",
+    "detail_csv_sha256",
+    "shape",
+    "exact_inputs",
+    "mismatches",
+    "verdict",
+    "exit_code",
+}
+if set(receipt) != expected_keys:
+    raise SystemExit("candidate parity receipt keys differ from the exact contract")
+
+expected_values = {
+    "format_version": "1",
+    "tool": "check-native-candidate-parity.py",
+    "expected_inputs": expected_inputs,
+    "source_commit": source_commit,
+    "source_tree": source_tree,
+    "oracle_binary_sha256": oracle_binary_sha256,
+    "oracle_shared_tree_sha256": oracle_shared_tree_sha256,
+    "oracle_build_tree_sha256": oracle_build_tree_sha256,
+    "track": "track-a-comparison",
+    "schema_id": "luna_pinyin",
+    "engines": "librime-1.17.0,yune",
+    "shape": "PASS",
+    "exact_inputs": "17/17",
+    "mismatches": "none",
+    "verdict": "PASS",
+    "exit_code": "0",
+}
+for key, expected in expected_values.items():
+    if receipt[key] != expected:
+        raise SystemExit(f"candidate parity receipt mismatch for {key}")
+
+hash_bindings = {
+    "tool_sha256": tool_path,
+    "snapshot_sha256": snapshot_path,
+    "expected_inputs_sha256": inputs_path,
+    "parity_csv_sha256": parity_path,
+    "detail_csv_sha256": detail_path,
+}
+for key, path in hash_bindings.items():
+    if receipt[key].lower() != sha256(path):
+        raise SystemExit(f"candidate parity receipt hash mismatch for {key}")
+PY
+}
+
 assert_poet_byte_backed_restored() {
   local phase="$1"
   if [[ "$inherited_poet_byte_backed_present" == "1" ]]; then
@@ -218,6 +327,28 @@ with path.open("rb") as handle:
     for chunk in iter(lambda: handle.read(1024 * 1024), b""):
         digest.update(chunk)
 print(digest.hexdigest())
+PY
+}
+
+tree_sha256() {
+  python3 - "$1" <<'PY'
+import hashlib
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1]).resolve()
+rows = []
+for path in root.rglob("*"):
+    if path.is_symlink():
+        raise SystemExit(f"tree hash input contains a symlink: {path}")
+    if path.is_file():
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        rows.append(f"{path.relative_to(root).as_posix()}\t{digest.hexdigest()}")
+payload = ("\n".join(sorted(rows)) + "\n").encode("utf-8")
+print(hashlib.sha256(payload).hexdigest())
 PY
 }
 
@@ -246,6 +377,16 @@ fi
 mkdir -p "$output_root"
 clear_dir_under "$work_base/native-inprocess" "$run_work_root"
 mkdir -p "$tool_root" "$oracle_root" "$schema_root"
+candidate_parity_tool="$repo_root/scripts/check-native-candidate-parity.py"
+require_path "$candidate_parity_tool" "native candidate parity tool"
+candidate_parity_inputs="$output_root/candidate-parity-inputs.csv"
+IFS=',' read -r -a candidate_parity_input_rows <<< "$track_a_inputs"
+{
+  printf 'input\n'
+  printf '%s\n' "${candidate_parity_input_rows[@]}"
+} > "$candidate_parity_inputs"
+candidate_parity_tool_sha256="$(sha256_file "$candidate_parity_tool")"
+candidate_parity_expected_inputs_sha256="$(sha256_file "$candidate_parity_inputs")"
 
 if [[ -x "$tool_root/python/bin/cmake" ]]; then
   export PATH="$tool_root/python/bin:$PATH"
@@ -773,6 +914,8 @@ DYLD_LIBRARY_PATH="$librime_dyld${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}" \
 require_path "$build_source/luna_pinyin.schema.yaml" "built luna_pinyin schema"
 require_path "$build_source/luna_pinyin.table.bin" "built luna_pinyin table"
 require_path "$build_source/luna_pinyin.prism.bin" "built luna_pinyin prism"
+oracle_shared_tree_sha256="$(tree_sha256 "$shared_source")"
+oracle_build_tree_sha256="$(tree_sha256 "$build_source")"
 
 write_identity
 
@@ -821,6 +964,8 @@ fi
   echo "librime_tree=$librime_git_tree"
   echo "librime_source_clean_at_build=true"
   echo "benchmark_script_sha256=$(sha256_file "${BASH_SOURCE[0]}")"
+  echo "candidate_parity_tool_sha256=$candidate_parity_tool_sha256"
+  echo "candidate_parity_expected_inputs_sha256=$candidate_parity_expected_inputs_sha256"
   echo "source_yune_dylib_sha256=$source_yune_dylib_sha256"
   echo "measured_yune_dylib_sha256=$track_a_yune_dylib_sha256"
   echo "track_a_yune_dylib_sha256=$track_a_yune_dylib_sha256"
@@ -883,6 +1028,51 @@ if [[ "$skip_track_b" == "0" ]]; then
 fi
 
 combine_outputs
+{
+  printf 'python3 %q' "$candidate_parity_tool"
+  printf ' %q' \
+    --snapshot-csv "$output_root/candidate_snapshots.csv" \
+    --expected-inputs-csv "$candidate_parity_inputs" \
+    --output-dir "$output_root" \
+    --source-commit "$yune_git_head" \
+    --source-tree "$yune_git_tree" \
+    --oracle-binary-sha256 "$track_a_librime_dylib_sha256" \
+    --oracle-shared-tree-sha256 "$oracle_shared_tree_sha256" \
+    --oracle-build-tree-sha256 "$oracle_build_tree_sha256"
+  printf '\n'
+} >> "$output_root/commands.txt"
+python3 -B "$candidate_parity_tool" \
+  --snapshot-csv "$output_root/candidate_snapshots.csv" \
+  --expected-inputs-csv "$candidate_parity_inputs" \
+  --output-dir "$output_root" \
+  --source-commit "$yune_git_head" \
+  --source-tree "$yune_git_tree" \
+  --oracle-binary-sha256 "$track_a_librime_dylib_sha256" \
+  --oracle-shared-tree-sha256 "$oracle_shared_tree_sha256" \
+  --oracle-build-tree-sha256 "$oracle_build_tree_sha256"
+validate_candidate_parity_receipt \
+  "$output_root/candidate-parity-verdict.txt" \
+  "$candidate_parity_tool" \
+  "$output_root/candidate_snapshots.csv" \
+  "$candidate_parity_inputs" \
+  "$output_root/candidate-parity.csv" \
+  "$output_root/zhongdengchangdu-detail.csv" \
+  "$yune_git_head" \
+  "$yune_git_tree" \
+  "$track_a_librime_dylib_sha256" \
+  "$oracle_shared_tree_sha256" \
+  "$oracle_build_tree_sha256" \
+  "$track_a_inputs"
+candidate_parity_snapshot_sha256="$(sha256_file "$output_root/candidate_snapshots.csv")"
+candidate_parity_csv_sha256="$(sha256_file "$output_root/candidate-parity.csv")"
+candidate_parity_detail_sha256="$(sha256_file "$output_root/zhongdengchangdu-detail.csv")"
+candidate_parity_verdict_sha256="$(sha256_file "$output_root/candidate-parity-verdict.txt")"
+{
+  echo "candidate_parity_snapshot_sha256=$candidate_parity_snapshot_sha256"
+  echo "candidate_parity_csv_sha256=$candidate_parity_csv_sha256"
+  echo "candidate_parity_detail_sha256=$candidate_parity_detail_sha256"
+  echo "candidate_parity_verdict_sha256=$candidate_parity_verdict_sha256"
+} >> "$output_root/external-provenance.txt"
 python3 - "$output_root/memory-owner-profile.csv" "$track_a_storage_mode" <<'PY'
 import csv
 import pathlib
@@ -1012,11 +1202,36 @@ yune_git_status_after="$(git -C "$repo_root" status --porcelain=v1 --untracked-f
 if [[ "$yune_git_head_after" != "$yune_git_head" || "$yune_git_tree_after" != "$yune_git_tree" || -n "$yune_git_status_after" ]]; then
   die "Yune source commit, tree, or clean status changed during macOS measurement."
 fi
+if [[ "$(sha256_file "$candidate_parity_tool")" != "$candidate_parity_tool_sha256" ]]; then
+  die "native candidate parity tool changed during macOS measurement."
+fi
+if [[ "$(sha256_file "$candidate_parity_inputs")" != "$candidate_parity_expected_inputs_sha256" ]]; then
+  die "native candidate parity expected inputs changed during macOS measurement."
+fi
 librime_git_head_after="$(git -C "$librime_src" rev-parse HEAD)"
 librime_git_tree_after="$(git -C "$librime_src" rev-parse 'HEAD^{tree}')"
 librime_git_status_after="$(git -C "$librime_src" status --porcelain=v1 --untracked-files=all)"
 if [[ "$librime_git_head_after" != "$librime_git_head" || "$librime_git_tree_after" != "$librime_git_tree" || -n "$librime_git_status_after" ]]; then
   die "librime source commit, tree, or clean status changed during macOS measurement."
+fi
+validate_candidate_parity_receipt \
+  "$output_root/candidate-parity-verdict.txt" \
+  "$candidate_parity_tool" \
+  "$output_root/candidate_snapshots.csv" \
+  "$candidate_parity_inputs" \
+  "$output_root/candidate-parity.csv" \
+  "$output_root/zhongdengchangdu-detail.csv" \
+  "$yune_git_head" \
+  "$yune_git_tree" \
+  "$track_a_librime_dylib_sha256" \
+  "$oracle_shared_tree_sha256" \
+  "$oracle_build_tree_sha256" \
+  "$track_a_inputs"
+if [[ "$(sha256_file "$output_root/candidate_snapshots.csv")" != "$candidate_parity_snapshot_sha256" ||
+      "$(sha256_file "$output_root/candidate-parity.csv")" != "$candidate_parity_csv_sha256" ||
+      "$(sha256_file "$output_root/zhongdengchangdu-detail.csv")" != "$candidate_parity_detail_sha256" ||
+      "$(sha256_file "$output_root/candidate-parity-verdict.txt")" != "$candidate_parity_verdict_sha256" ]]; then
+  die "candidate parity packet changed during macOS measurement."
 fi
 {
   echo "source_commit_after=$yune_git_head_after"

@@ -3343,6 +3343,16 @@ impl StaticTableTranslator {
                     if !allow_abbreviation {
                         syllable.choices.retain(|choice| !choice.abbreviation);
                     }
+                    let spelling = &input[syllable.start..syllable.end];
+                    // The reverse-good graph above already owns every viable
+                    // raw-identity edge. Reintroducing an identity choice from
+                    // the unpruned graph revives a spelling that could not reach
+                    // the farthest vertex (`de` inside `deng...`). Keep only
+                    // genuinely transformed inverse overlaps here; live edges
+                    // remain untouched in `direct_edges_by_start`.
+                    syllable
+                        .choices
+                        .retain(|choice| normalized_original_code(&choice.code) != spelling);
                     if !syllable.choices.is_empty() {
                         direct_edges_by_start[start_index].push(syllable);
                     }

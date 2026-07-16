@@ -46,6 +46,12 @@ PROVENANCE_KEYS = (
     "native_benchmark_executable_prebuilt",
     "native_benchmark_build_performed",
     "benchmark_script_sha256",
+    "candidate_parity_tool_sha256",
+    "candidate_parity_expected_inputs_sha256",
+    "candidate_parity_snapshot_sha256",
+    "candidate_parity_csv_sha256",
+    "candidate_parity_detail_sha256",
+    "candidate_parity_verdict_sha256",
     "track_a_storage_mode",
     "track_a_inputs",
     "track_b_inputs",
@@ -56,7 +62,7 @@ PROVENANCE_KEYS = (
     "skip_track_b",
 )
 TOOL_NAME = "aggregate-native-ratchet.py"
-TOOL_VERSION = "9"
+TOOL_VERSION = "10"
 REQUIRED_RUN_COUNT = 5
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUN_FILES = (
@@ -68,9 +74,85 @@ RUN_FILES = (
     "summary.csv",
     "summary-comparison.csv",
     "threshold-check.csv",
+    "candidate-parity-inputs.csv",
+    "candidate_snapshots.csv",
+    "candidate-parity.csv",
+    "zhongdengchangdu-detail.csv",
+    "candidate-parity-verdict.txt",
 )
 TRACK_A_STORAGE_MODES = frozenset(
     {"production-default", "owned", "byte-backed"}
+)
+FROZEN_TRACK_A_INPUTS = (
+    "n",
+    "ni",
+    "hao",
+    "zhongguo",
+    "ceshiyixiachangjushuruxingnengzenyang",
+    "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+    "cszysmsrsd",
+    "zybfshmsru",
+    "zh",
+    "j",
+    "yi",
+    "che",
+    "chuang",
+    "b",
+    "ceshi",
+    "zhongdengchangdu",
+    "dazisudu",
+)
+CANDIDATE_PARITY_TOOL = REPO_ROOT / "scripts" / "check-native-candidate-parity.py"
+CANDIDATE_PASS_RECEIPT_KEYS = frozenset(
+    {
+        "format_version",
+        "tool",
+        "tool_sha256",
+        "snapshot_sha256",
+        "expected_inputs_sha256",
+        "expected_inputs",
+        "source_commit",
+        "source_tree",
+        "oracle_binary_sha256",
+        "oracle_shared_tree_sha256",
+        "oracle_build_tree_sha256",
+        "track",
+        "schema_id",
+        "engines",
+        "parity_csv_sha256",
+        "detail_csv_sha256",
+        "shape",
+        "exact_inputs",
+        "mismatches",
+        "verdict",
+        "exit_code",
+    }
+)
+CANDIDATE_SNAPSHOT_HEADER = (
+    "engine",
+    "track",
+    "schema_id",
+    "input",
+    "candidate_index",
+    "candidate_count",
+    "page_size",
+    "page_no",
+    "is_last_page",
+    "highlighted_index",
+    "composition_preedit",
+    "text",
+    "comment",
+)
+CANDIDATE_COMPARE_FIELDS = (
+    "candidate_index",
+    "candidate_count",
+    "page_size",
+    "page_no",
+    "is_last_page",
+    "highlighted_index",
+    "composition_preedit",
+    "text",
+    "comment",
 )
 
 
@@ -409,6 +491,330 @@ def _read_key_value_file(path: Path, *, required: bool) -> dict[str, str]:
     return environment
 
 
+def _validate_candidate_parity_receipt(
+    run_path: Path, environment: dict[str, str]
+) -> None:
+    paths = {
+        "snapshot_sha256": run_path / "candidate_snapshots.csv",
+        "expected_inputs_sha256": run_path / "candidate-parity-inputs.csv",
+        "parity_csv_sha256": run_path / "candidate-parity.csv",
+        "detail_csv_sha256": run_path / "zhongdengchangdu-detail.csv",
+    }
+    verdict_path = run_path / "candidate-parity-verdict.txt"
+    receipt = _read_key_value_file(verdict_path, required=True)
+    if set(receipt) != CANDIDATE_PASS_RECEIPT_KEYS:
+        raise EvidenceError(
+            f"{run_path} candidate parity PASS receipt has unexpected keys; "
+            f"missing={sorted(CANDIDATE_PASS_RECEIPT_KEYS - set(receipt))}, "
+            f"extra={sorted(set(receipt) - CANDIDATE_PASS_RECEIPT_KEYS)}"
+        )
+
+    frozen_inputs = ",".join(FROZEN_TRACK_A_INPUTS)
+    fixed = {
+        "format_version": "1",
+        "tool": "check-native-candidate-parity.py",
+        "expected_inputs": frozen_inputs,
+        "track": "track-a-comparison",
+        "schema_id": "luna_pinyin",
+        "engines": "librime-1.17.0,yune",
+        "shape": "PASS",
+        "exact_inputs": "17/17",
+        "mismatches": "none",
+        "verdict": "PASS",
+        "exit_code": "0",
+    }
+    for key, expected in fixed.items():
+        if receipt[key] != expected:
+            raise EvidenceError(
+                f"{run_path} candidate parity receipt mismatch for {key}: "
+                f"{receipt[key]!r} != {expected!r}"
+            )
+    if environment["track_a_inputs"] != frozen_inputs:
+        raise EvidenceError(
+            f"{run_path} candidate parity inputs differ from the frozen M61 order"
+        )
+
+    expected_input_bytes = (
+        "input\n" + "\n".join(FROZEN_TRACK_A_INPUTS) + "\n"
+    ).encode("utf-8")
+    expected_input_hash = hashlib.sha256(expected_input_bytes).hexdigest()
+    actual_tool_hash = _file_sha256(CANDIDATE_PARITY_TOOL)
+    expected_environment_hashes = {
+        "tool_sha256": "candidate_parity_tool_sha256",
+        "snapshot_sha256": "candidate_parity_snapshot_sha256",
+        "expected_inputs_sha256": "candidate_parity_expected_inputs_sha256",
+        "parity_csv_sha256": "candidate_parity_csv_sha256",
+        "detail_csv_sha256": "candidate_parity_detail_sha256",
+    }
+    for receipt_key, environment_key in expected_environment_hashes.items():
+        receipt_hash = receipt[receipt_key]
+        if re.fullmatch(r"[0-9a-fA-F]{64}", receipt_hash) is None:
+            raise EvidenceError(
+                f"{run_path} candidate parity receipt has invalid {receipt_key}"
+            )
+        if receipt_hash.lower() != environment[environment_key].lower():
+            raise EvidenceError(
+                f"{run_path} candidate parity receipt/environment mismatch "
+                f"for {receipt_key}"
+            )
+    if receipt["tool_sha256"].lower() != actual_tool_hash:
+        raise EvidenceError(
+            f"{run_path} candidate parity tool SHA does not match current source"
+        )
+    if receipt["expected_inputs_sha256"].lower() != expected_input_hash:
+        raise EvidenceError(
+            f"{run_path} candidate parity expected-input bytes are not canonical"
+        )
+    for receipt_key, path in paths.items():
+        if _file_sha256(path).lower() != receipt[receipt_key].lower():
+            raise EvidenceError(
+                f"{run_path} candidate parity output hash mismatch for {path.name}"
+            )
+    if _file_sha256(verdict_path).lower() != environment[
+        "candidate_parity_verdict_sha256"
+    ].lower():
+        raise EvidenceError(
+            f"{run_path} candidate parity verdict SHA does not match packet bytes"
+        )
+
+    identity_matches = {
+        "source_commit": "source_commit",
+        "source_tree": "source_tree",
+        "oracle_binary_sha256": "upstream_rime_dll_sha256",
+        "oracle_shared_tree_sha256": "upstream_shared_tree_sha256",
+        "oracle_build_tree_sha256": "upstream_build_tree_sha256",
+    }
+    for receipt_key, environment_key in identity_matches.items():
+        if receipt[receipt_key].lower() != environment[environment_key].lower():
+            raise EvidenceError(
+                f"{run_path} candidate parity source/oracle identity mismatch "
+                f"for {receipt_key}"
+            )
+
+    parity_by_input: dict[str, dict[str, str]] = {}
+    try:
+        with (run_path / "candidate-parity.csv").open(
+            encoding="utf-8-sig", newline=""
+        ) as handle:
+            reader = csv.DictReader(handle)
+            expected_header = [
+                "input",
+                "oracle_rows",
+                "yune_rows",
+                "exact_match",
+                "mismatch_fields",
+                "oracle_texts_json",
+                "yune_texts_json",
+                "oracle_page_sha256",
+                "yune_page_sha256",
+            ]
+            if reader.fieldnames != expected_header:
+                raise EvidenceError(
+                    f"{run_path} candidate parity CSV has an invalid header"
+                )
+            rows = list(reader)
+    except (OSError, UnicodeError, csv.Error) as error:
+        raise EvidenceError(
+            f"{run_path} cannot parse candidate parity CSV: {error}"
+        ) from error
+    if [row.get("input") for row in rows] != list(FROZEN_TRACK_A_INPUTS):
+        raise EvidenceError(
+            f"{run_path} candidate parity CSV inputs differ from frozen order"
+        )
+    for row_number, row in enumerate(rows, start=2):
+        if (
+            None in row
+            or set(row) != set(expected_header)
+            or row.get("oracle_rows") != "5"
+            or row.get("yune_rows") != "5"
+        ):
+            raise EvidenceError(
+                f"{run_path} candidate parity CSV row {row_number} has invalid row counts"
+            )
+        if row.get("exact_match") != "1" or row.get("mismatch_fields") != "":
+            raise EvidenceError(
+                f"{run_path} candidate parity CSV row {row_number} is not exact"
+            )
+        for key in ("oracle_page_sha256", "yune_page_sha256"):
+            if re.fullmatch(r"[0-9a-fA-F]{64}", row.get(key, "")) is None:
+                raise EvidenceError(
+                    f"{run_path} candidate parity CSV row {row_number} has invalid {key}"
+                )
+        try:
+            oracle_texts = json.loads(row["oracle_texts_json"])
+            yune_texts = json.loads(row["yune_texts_json"])
+        except json.JSONDecodeError as error:
+            raise EvidenceError(
+                f"{run_path} candidate parity CSV row {row_number} has invalid text JSON"
+            ) from error
+        for label, value, encoded in (
+            ("oracle", oracle_texts, row["oracle_texts_json"]),
+            ("yune", yune_texts, row["yune_texts_json"]),
+        ):
+            if (
+                not isinstance(value, list)
+                or len(value) != 5
+                or any(not isinstance(text, str) or not text for text in value)
+                or json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+                != encoded
+            ):
+                raise EvidenceError(
+                    f"{run_path} candidate parity CSV row {row_number} has invalid "
+                    f"{label} text list"
+                )
+        if oracle_texts != yune_texts:
+            raise EvidenceError(
+                f"{run_path} candidate parity CSV row {row_number} contradicts "
+                "exact_match: oracle and Yune text lists differ"
+            )
+        if row["oracle_page_sha256"].lower() != row["yune_page_sha256"].lower():
+            raise EvidenceError(
+                f"{run_path} candidate parity CSV row {row_number} contradicts "
+                "exact_match: oracle and Yune page hashes differ"
+            )
+        parity_by_input[row["input"]] = row
+
+    detail_path = run_path / "zhongdengchangdu-detail.csv"
+    try:
+        with detail_path.open(encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            if tuple(reader.fieldnames or ()) != CANDIDATE_SNAPSHOT_HEADER:
+                raise EvidenceError(
+                    f"{run_path} candidate parity detail CSV has an invalid header"
+                )
+            detail_rows = list(reader)
+    except (OSError, UnicodeError, csv.Error) as error:
+        raise EvidenceError(
+            f"{run_path} cannot parse candidate parity detail CSV: {error}"
+        ) from error
+    if len(detail_rows) != 10:
+        raise EvidenceError(
+            f"{run_path} candidate parity detail CSV must contain exactly 10 rows"
+        )
+    detail_groups: dict[str, list[dict[str, str]]] = {
+        "librime-1.17.0": [],
+        "yune": [],
+    }
+    for row_number, row in enumerate(detail_rows, start=2):
+        if None in row or set(row) != set(CANDIDATE_SNAPSHOT_HEADER):
+            raise EvidenceError(
+                f"{run_path} candidate parity detail CSV row {row_number} is malformed"
+            )
+        if (
+            row["engine"] not in detail_groups
+            or row["track"] != "track-a-comparison"
+            or row["schema_id"] != "luna_pinyin"
+            or row["input"] != "zhongdengchangdu"
+        ):
+            raise EvidenceError(
+                f"{run_path} candidate parity detail CSV row {row_number} has "
+                "an invalid page identity"
+            )
+        detail_groups[row["engine"]].append(row)
+    fixed_geometry = {
+        "candidate_count": "5",
+        "page_size": "5",
+        "page_no": "0",
+        "is_last_page": "0",
+        "highlighted_index": "0",
+    }
+    for engine, group in detail_groups.items():
+        try:
+            group.sort(key=lambda row: int(row["candidate_index"]))
+        except ValueError as error:
+            raise EvidenceError(
+                f"{run_path} candidate parity detail CSV has an invalid candidate index"
+            ) from error
+        if [row["candidate_index"] for row in group] != ["0", "1", "2", "3", "4"]:
+            raise EvidenceError(
+                f"{run_path} candidate parity detail CSV {engine} indices are not 0..4"
+            )
+        for row in group:
+            if any(row[field] != expected for field, expected in fixed_geometry.items()):
+                raise EvidenceError(
+                    f"{run_path} candidate parity detail CSV {engine} has invalid geometry"
+                )
+            if not row["composition_preedit"] or not row["text"]:
+                raise EvidenceError(
+                    f"{run_path} candidate parity detail CSV {engine} has an empty value"
+                )
+    oracle_detail = detail_groups["librime-1.17.0"]
+    yune_detail = detail_groups["yune"]
+    for field in CANDIDATE_COMPARE_FIELDS:
+        if [row[field] for row in oracle_detail] != [row[field] for row in yune_detail]:
+            raise EvidenceError(
+                f"{run_path} candidate parity detail CSV differs for {field}"
+            )
+    detail_parity = parity_by_input["zhongdengchangdu"]
+    detail_text_json = json.dumps(
+        [row["text"] for row in oracle_detail],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    detail_page_hash = hashlib.sha256(
+        json.dumps(
+            [[row[field] for field in CANDIDATE_COMPARE_FIELDS] for row in oracle_detail],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    if (
+        detail_parity["oracle_texts_json"] != detail_text_json
+        or detail_parity["oracle_page_sha256"].lower() != detail_page_hash
+    ):
+        raise EvidenceError(
+            f"{run_path} candidate parity detail CSV disagrees with its parity row"
+        )
+
+    replay_files = (
+        "candidate-parity.csv",
+        "zhongdengchangdu-detail.csv",
+        "candidate-parity-verdict.txt",
+    )
+    with tempfile.TemporaryDirectory(prefix="yune-candidate-parity-replay-") as temporary:
+        replay_root = Path(temporary)
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-B",
+                str(CANDIDATE_PARITY_TOOL),
+                "--snapshot-csv",
+                str(run_path / "candidate_snapshots.csv"),
+                "--expected-inputs-csv",
+                str(run_path / "candidate-parity-inputs.csv"),
+                "--output-dir",
+                str(replay_root),
+                "--source-commit",
+                receipt["source_commit"],
+                "--source-tree",
+                receipt["source_tree"],
+                "--oracle-binary-sha256",
+                receipt["oracle_binary_sha256"],
+                "--oracle-shared-tree-sha256",
+                receipt["oracle_shared_tree_sha256"],
+                "--oracle-build-tree-sha256",
+                receipt["oracle_build_tree_sha256"],
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise EvidenceError(
+                f"{run_path} candidate parity deterministic replay failed with "
+                f"exit {result.returncode}: {result.stderr.strip()}"
+            )
+        for name in replay_files:
+            if (replay_root / name).read_bytes() != (run_path / name).read_bytes():
+                raise EvidenceError(
+                    f"{run_path} candidate parity deterministic replay differs for {name}"
+                )
+    if _file_sha256(CANDIDATE_PARITY_TOOL) != actual_tool_hash:
+        raise EvidenceError(
+            f"{run_path} candidate parity tool changed during deterministic replay"
+        )
+
+
 def read_environment(run_path: Path) -> dict[str, str]:
     environment = _read_key_value_file(run_path / "environment.txt", required=True)
     external = _read_key_value_file(
@@ -436,6 +842,12 @@ def read_environment(run_path: Path) -> dict[str, str]:
         "native_benchmark_executable_sha256",
         "native_benchmark_receipt_sha256",
         "benchmark_script_sha256",
+        "candidate_parity_tool_sha256",
+        "candidate_parity_expected_inputs_sha256",
+        "candidate_parity_snapshot_sha256",
+        "candidate_parity_csv_sha256",
+        "candidate_parity_detail_sha256",
+        "candidate_parity_verdict_sha256",
     ):
         if re.fullmatch(r"[0-9a-fA-F]{64}", environment[key]) is None:
             raise EvidenceError(f"{run_path} {key} must be 64 hexadecimal characters")
@@ -814,6 +1226,7 @@ def read_run(path: Path, thresholds: Sequence[Threshold]) -> RunEvidence:
 
     environment = read_environment(path)
     _validate_recorded_input_sets(path, environment, thresholds)
+    _validate_candidate_parity_receipt(path, environment)
     private_envelope = _read_track_a_private_envelope(
         path / "summary.csv", environment, thresholds
     )

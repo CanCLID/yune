@@ -9,6 +9,7 @@ use std::{
 };
 
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use yune_core::{
     m37_metrics_enable, m37_metrics_reset, m37_metrics_snapshot, RimeDictArtifactStatus,
 };
@@ -55,6 +56,11 @@ const M28_UPSTREAM_JYUTPING_COMPOSITION: &str = include_str!(
 const UPSTREAM_LUNA_SENTENCE_EXPANDED: &str = include_str!(
     "../../yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-sentence-expanded.json"
 );
+const M61_LUNA_ZHONGDENGCHANGDU_PAGE_ZERO: &str = include_str!(
+    "../../yune-core/tests/fixtures/upstream-1.17.0/m61-luna-zhongdengchangdu-page-zero.json"
+);
+const UPSTREAM_117_ORACLE_MANIFEST: &str =
+    include_str!("../../yune-core/tests/fixtures/upstream-1.17.0/oracle-manifest.json");
 const X11_PAGE_DOWN: i32 = 0xff56;
 
 #[path = "yune_web/m59_reachability.rs"]
@@ -3373,6 +3379,183 @@ fn stage_and_deploy_tracked_luna(runtime: &YuneWebRuntime) {
             .expect("tracked byte-backed asset should be copied");
     }
     deploy_public_demo_schema(runtime, "luna_pinyin");
+}
+
+#[test]
+fn m61_luna_zhongdengchangdu_page_zero_matches_pinned_librime() {
+    let _guard = test_guard();
+    let fixture_sha256 = format!(
+        "{:x}",
+        Sha256::digest(M61_LUNA_ZHONGDENGCHANGDU_PAGE_ZERO.as_bytes())
+    );
+    assert_eq!(
+        fixture_sha256,
+        "68143faa4a620a2d3b0c1b99a3f96b854bc0f9925ddaebf25b034dd733932196"
+    );
+    let fixture: Value = serde_json::from_str(M61_LUNA_ZHONGDENGCHANGDU_PAGE_ZERO)
+        .expect("pinned M61 Luna page-zero fixture should parse");
+    let manifest: Value = serde_json::from_str(UPSTREAM_117_ORACLE_MANIFEST)
+        .expect("upstream 1.17.0 oracle manifest should parse");
+    let manifest_rows = manifest["files"]
+        .as_array()
+        .expect("oracle manifest files should be an array")
+        .iter()
+        .filter(|row| row["path"].as_str() == Some("m61-luna-zhongdengchangdu-page-zero.json"))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        manifest_rows.len(),
+        1,
+        "M61 fixture must have one manifest row"
+    );
+    assert_eq!(
+        manifest_rows[0],
+        &json!({
+            "path": "m61-luna-zhongdengchangdu-page-zero.json",
+            "milestone": "M61 Phase 0A",
+            "capture_date": "2026-07-16",
+            "sha256": "68143faa4a620a2d3b0c1b99a3f96b854bc0f9925ddaebf25b034dd733932196",
+            "source_row_policy": "m61_windows_native_page_zero_librime_rows_only",
+            "source_capture": "candidate-parity-preflight/comparison/zhongdengchangdu-detail.csv",
+            "source_capture_sha256": "ba3674dab7d662fdc3b184b1757da8dfc559a5163d0579457a5929c106ba0356",
+            "capture_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/benchmark-native-rime-inprocess.ps1 -OutputRoot <fresh-external-output> -WorkRoot <fresh-external-work> -UpstreamOracleRoot <pinned-librime-1.17.0-oracle> -ProductSchemaRoot apps/yune-web/public/schema -YuneDll <exact-source-release-yune-rime-api.dll> -Iterations 1 -SessionIterations 1 -KeyIterations 1 -TrackAStorageMode owned -TrackAInputs <frozen-M61-17-input-list> -SkipTrackB",
+            "import_policy": "Curate only the five librime page-zero rows from the hash-bound external comparison CSV; never derive expected values from Yune or overwrite the external capture."
+        })
+    );
+    assert_eq!(fixture["oracle"]["engine"], "rime/librime");
+    assert_eq!(fixture["oracle"]["engine_tag"], "1.17.0");
+    assert_eq!(
+        fixture["oracle"]["source_commit"].as_str(),
+        Some("33e78140250125871856cdc5b42ddc6a5fcd3cd4")
+    );
+    assert_eq!(
+        fixture["oracle"]["source_tree"].as_str(),
+        Some("5758d9896d7dd5c2d5316e595a91612f72a0432e")
+    );
+    assert_eq!(
+        fixture["oracle"]["dll_sha256"].as_str(),
+        Some("86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b")
+    );
+    assert_eq!(
+        fixture["oracle"]["shared_tree_sha256"].as_str(),
+        Some("3801c4c83ba919e531b80ac27e2c06d116d08b19af2034fcb86e6e17ae1eecf6")
+    );
+    assert_eq!(
+        fixture["oracle"]["build_tree_sha256"].as_str(),
+        Some("446c90b2f4ffd76b4ec1f4ecca4f534c986e72e3d8803c6998926d0b1cebbf17")
+    );
+    assert_eq!(
+        fixture["capture"]["source_file_sha256"].as_str(),
+        Some("ba3674dab7d662fdc3b184b1757da8dfc559a5163d0579457a5929c106ba0356")
+    );
+    assert_eq!(fixture["schema"]["id"], "luna_pinyin");
+    assert_eq!(
+        fixture["schema"]["source_repository"],
+        "rime/rime-luna-pinyin"
+    );
+    assert_eq!(
+        fixture["schema"]["source_commit"],
+        "18a80335c37522311f7cff02886cd81cec3b460a"
+    );
+    assert_eq!(
+        fixture["schema"]["product_schema_tree_sha256"],
+        "0bc042c0ab09c732419cf6ba5ce008390e87894c7d374c0d1b44efeac10a9bf0"
+    );
+    assert_eq!(
+        fixture["capture"]["source_file"],
+        "candidate-parity-preflight/comparison/zhongdengchangdu-detail.csv"
+    );
+    assert_eq!(
+        fixture["capture"]["measurement_source_commit"],
+        "7805882d93428db0a3791b0631290ab319b524f0"
+    );
+    assert_eq!(
+        fixture["capture"]["measurement_source_tree"],
+        "c198d23fc6777ad8b119e30552980243a6acdbb6"
+    );
+    assert_eq!(
+        fixture["capture"]["row_policy"],
+        "librime-1.17.0 page-zero rows only; Yune rows are not acceptance data"
+    );
+    assert_eq!(
+        fixture["capture"]["comparison_fields"],
+        json!([
+            "candidate_index",
+            "candidate_count",
+            "page_size",
+            "page_no",
+            "is_last_page",
+            "highlighted_index",
+            "composition_preedit",
+            "text",
+            "comment"
+        ])
+    );
+
+    let expected = &fixture["case"];
+    let input = expected["input"]
+        .as_str()
+        .expect("M61 fixture input should be a string");
+    let runtime =
+        YuneWebRuntime::create_with_schema("m61-luna-zhongdengchangdu-page-zero", "luna_pinyin");
+    stage_and_deploy_tracked_luna(&runtime);
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null(), "tracked luna_pinyin should initialize");
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+
+    let page = process_input(state, input);
+    assert_schema_storage_byte_backed("luna_pinyin", &page["context"]["debug"]["storage"]);
+    assert_eq!(page["context"]["input"], expected["input"]);
+    assert_eq!(
+        page["context"]["preedit"], expected["composition_preedit"],
+        "deployed composition preedit must match pinned librime"
+    );
+    assert_eq!(page["context"]["page_no"], expected["page_no"]);
+    assert_eq!(page["context"]["page_size"], expected["page_size"]);
+    assert_eq!(
+        page["context"]["is_last_page"], expected["is_last_page"],
+        "deployed page-final state must match pinned librime"
+    );
+    assert_eq!(
+        page["context"]["highlighted"], expected["highlighted_index"],
+        "deployed highlighted index must match pinned librime"
+    );
+    let expected_count = expected["candidate_count"]
+        .as_u64()
+        .and_then(|count| usize::try_from(count).ok())
+        .expect("M61 fixture candidate_count should fit usize");
+    let actual_candidates = page["context"]["candidates"]
+        .as_array()
+        .expect("deployed candidate page should be an array");
+    assert_eq!(actual_candidates.len(), expected_count);
+    let actual_order = actual_candidates
+        .iter()
+        .enumerate()
+        .map(|(candidate_index, candidate)| {
+            json!({
+                "candidate_index": candidate_index,
+                "text": candidate["text"],
+                "comment": candidate["comment"],
+            })
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        Value::Array(actual_order),
+        expected["candidates"],
+        "deployed page-zero text, comments, and order must match pinned librime"
+    );
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
 }
 
 #[test]

@@ -9,7 +9,7 @@
     "release_url": "https://github.com/rime/librime/releases/tag/1.17.0"
   },
   "profile_only": false,
-  "updated": "2026-07-12",
+  "updated": "2026-07-16",
   "files": [
     {
       "path": "luna-pinyin-sentence-expanded.json",
@@ -139,6 +139,17 @@
       "generator_sha256": "1d652dfbac827b2fa12305ce2251cedab1a246426f4e2e480894f3473b8ceed5",
       "generation_command": "python -B scripts/build-m59-cangjie-competing-fixture.py --oracle crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-composition.json --cangjie-dir <pinned-rime-cangjie> --essay <pinned-rime-essay>/essay.txt --output <fresh-absent-output>",
       "import_policy": "Generate only to a fresh absent path, require byte identity with the reviewed fixture, then import separately. The historical oracle and Increment 1 packet remain immutable."
+    },
+    {
+      "path": "m61-luna-zhongdengchangdu-page-zero.json",
+      "milestone": "M61 Phase 0A",
+      "capture_date": "2026-07-16",
+      "sha256": "68143faa4a620a2d3b0c1b99a3f96b854bc0f9925ddaebf25b034dd733932196",
+      "source_row_policy": "m61_windows_native_page_zero_librime_rows_only",
+      "source_capture": "candidate-parity-preflight/comparison/zhongdengchangdu-detail.csv",
+      "source_capture_sha256": "ba3674dab7d662fdc3b184b1757da8dfc559a5163d0579457a5929c106ba0356",
+      "capture_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/benchmark-native-rime-inprocess.ps1 -OutputRoot <fresh-external-output> -WorkRoot <fresh-external-work> -UpstreamOracleRoot <pinned-librime-1.17.0-oracle> -ProductSchemaRoot apps/yune-web/public/schema -YuneDll <exact-source-release-yune-rime-api.dll> -Iterations 1 -SessionIterations 1 -KeyIterations 1 -TrackAStorageMode owned -TrackAInputs <frozen-M61-17-input-list> -SkipTrackB",
+      "import_policy": "Curate only the five librime page-zero rows from the hash-bound external comparison CSV; never derive expected values from Yune or overwrite the external capture."
     }
   ]
 }

@@ -31,6 +31,7 @@ def load_script(name: str):
 
 candidate_order = load_script("compare-candidate-order.py")
 native_ratchet = load_script("aggregate-native-ratchet.py")
+native_candidate_parity = load_script("check-native-candidate-parity.py")
 luna_curator = load_script("curate-m59-luna-composition.py")
 residual_classifier = load_script("classify-m59-4a-residuals.py")
 
@@ -3068,7 +3069,7 @@ class NativeRatchetTests(unittest.TestCase):
         "native_benchmark_build_performed": "True",
         "benchmark_script_sha256": "2" * 64,
         "track_a_storage_mode": "owned",
-        "track_a_inputs": "x",
+        "track_a_inputs": ",".join(native_ratchet.FROZEN_TRACK_A_INPUTS),
         "track_b_inputs": "trackb",
         "iterations": "9",
         "session_iterations": "60",
@@ -3097,11 +3098,14 @@ class NativeRatchetTests(unittest.TestCase):
             {
                 "kind": "latency_ratio",
                 "workload": "key_sequence_process_with_context",
-                "input": "x",
+                "input": input_text,
                 "metric": "yune_librime_median_ratio",
                 "ceiling": "1.5",
                 "unit": "x",
-            },
+            }
+            for input_text in native_ratchet.FROZEN_TRACK_A_INPUTS
+        ]
+        rows.append(
             {
                 "kind": "latency_absolute_us",
                 "workload": "track-b-product/key_sequence_process_with_context",
@@ -3109,8 +3113,8 @@ class NativeRatchetTests(unittest.TestCase):
                 "metric": "median_us",
                 "ceiling": "100",
                 "unit": "us",
-            },
-        ]
+            }
+        )
         if include_absolute:
             rows.append(
                 {
@@ -3190,6 +3194,7 @@ class NativeRatchetTests(unittest.TestCase):
             environment["native_benchmark_receipt_sha256"] = hashlib.sha256(
                 receipt_path.read_bytes()
             ).hexdigest()
+        self.write_candidate_packet(run, environment)
         (run / "run-status.txt").write_text(
             "status=complete\ndate_utc=2026-01-01T00:00:00Z\ndetail=\n",
             encoding="utf-8",
@@ -3208,13 +3213,14 @@ class NativeRatchetTests(unittest.TestCase):
             fields = ["track", "workload", "input", "yune_librime_median_ratio"]
             writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
             writer.writeheader()
-            writer.writerow(
+            writer.writerows(
                 {
                     "track": "track-a-comparison",
                     "workload": "key_sequence_process_with_context",
-                    "input": "x",
+                    "input": input_text,
                     "yune_librime_median_ratio": str(observed),
                 }
+                for input_text in native_ratchet.FROZEN_TRACK_A_INPUTS
             )
         with (run / "summary.csv").open(
             "w", encoding="utf-8", newline=""
@@ -3238,13 +3244,13 @@ class NativeRatchetTests(unittest.TestCase):
             ]
             writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
             writer.writeheader()
-            writer.writerow(
+            writer.writerows(
                 {
                     "engine": "yune",
                     "track": "track-a-comparison",
                     "schema_id": "luna_pinyin",
                     "workload": "key_sequence_process_with_context",
-                    "input": "x",
+                    "input": input_text,
                     "samples": "80",
                     "operations": "80",
                     "median_us": "1",
@@ -3256,6 +3262,7 @@ class NativeRatchetTests(unittest.TestCase):
                     "median_private_bytes": str(private_bytes),
                     "max_peak_pagefile_bytes": "1000",
                 }
+                for input_text in native_ratchet.FROZEN_TRACK_A_INPUTS
             )
         with (run / "threshold-check.csv").open(
             "w", encoding="utf-8", newline=""
@@ -3274,17 +3281,18 @@ class NativeRatchetTests(unittest.TestCase):
             writer.writeheader()
             if include_ratio_check:
                 checked = observed if checked_observed is None else checked_observed
-                writer.writerow(
+                writer.writerows(
                     {
                         "kind": "latency_ratio",
                         "workload": "key_sequence_process_with_context",
-                        "input": "x",
+                        "input": input_text,
                         "metric": "yune_librime_median_ratio",
                         "observed": str(checked),
                         "ceiling": "1.5",
                         "unit": "x",
                         "status": "pass" if checked <= 1.5 else "fail",
                     }
+                    for input_text in native_ratchet.FROZEN_TRACK_A_INPUTS
                 )
             writer.writerow(
                 {
@@ -3299,6 +3307,85 @@ class NativeRatchetTests(unittest.TestCase):
                 }
             )
         return run
+
+    def write_candidate_packet(self, run, environment):
+        inputs = run / "candidate-parity-inputs.csv"
+        inputs.write_bytes(
+            (
+                "input\n"
+                + "\n".join(native_ratchet.FROZEN_TRACK_A_INPUTS)
+                + "\n"
+            ).encode("utf-8")
+        )
+        snapshot = run / "candidate_snapshots.csv"
+        rows = []
+        for engine in native_candidate_parity.ENGINES:
+            for input_text in native_ratchet.FROZEN_TRACK_A_INPUTS:
+                for index in range(5):
+                    rows.append(
+                        {
+                            "engine": engine,
+                            "track": "track-a-comparison",
+                            "schema_id": "luna_pinyin",
+                            "input": input_text,
+                            "candidate_index": str(index),
+                            "candidate_count": "5",
+                            "page_size": "5",
+                            "page_no": "0",
+                            "is_last_page": "0",
+                            "highlighted_index": "0",
+                            "composition_preedit": input_text,
+                            "text": f"{input_text}-{index}",
+                            "comment": "",
+                        }
+                    )
+        with snapshot.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(
+                handle,
+                fieldnames=native_candidate_parity.SNAPSHOT_HEADER,
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            writer.writerows(rows)
+        result = native_candidate_parity.main(
+            [
+                "--snapshot-csv",
+                str(snapshot),
+                "--expected-inputs-csv",
+                str(inputs),
+                "--output-dir",
+                str(run),
+                "--source-commit",
+                environment["source_commit"],
+                "--source-tree",
+                environment["source_tree"],
+                "--oracle-binary-sha256",
+                environment["upstream_rime_dll_sha256"],
+                "--oracle-shared-tree-sha256",
+                environment["upstream_shared_tree_sha256"],
+                "--oracle-build-tree-sha256",
+                environment["upstream_build_tree_sha256"],
+            ]
+        )
+        if result != 0:
+            raise AssertionError(f"candidate test packet failed with {result}")
+        receipt = native_ratchet._read_key_value_file(
+            run / "candidate-parity-verdict.txt", required=True
+        )
+        candidate_fields = {
+            "candidate_parity_tool_sha256": receipt["tool_sha256"],
+            "candidate_parity_expected_inputs_sha256": receipt[
+                "expected_inputs_sha256"
+            ],
+            "candidate_parity_snapshot_sha256": receipt["snapshot_sha256"],
+            "candidate_parity_csv_sha256": receipt["parity_csv_sha256"],
+            "candidate_parity_detail_sha256": receipt["detail_csv_sha256"],
+            "candidate_parity_verdict_sha256": hashlib.sha256(
+                (run / "candidate-parity-verdict.txt").read_bytes()
+            ).hexdigest(),
+        }
+        for key, value in candidate_fields.items():
+            environment.setdefault(key, value)
 
     def run_tool(
         self,

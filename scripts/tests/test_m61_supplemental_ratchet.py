@@ -27,6 +27,7 @@ def load_script(name: str):
 
 
 native_ratchet = load_script("aggregate-native-ratchet.py")
+candidate_parity = load_script("check-native-candidate-parity.py")
 
 FROZEN_SUPPLEMENTAL_BYTES = (
     b'"kind","workload","input","metric","ceiling","unit","source_value",'
@@ -73,30 +74,35 @@ class SupplementalRatchetTests(unittest.TestCase):
             {
                 "kind": "latency_ratio",
                 "workload": "key_sequence_process_with_context",
-                "input": "x",
+                "input": input_text,
                 "metric": "yune_librime_median_ratio",
                 "ceiling": "2",
                 "unit": "x",
-            },
-            {
-                "kind": "memory_peak",
-                "workload": "",
-                "input": "",
-                "metric": "track_a_peak_working_set_bytes",
-                "ceiling": memory_ceiling,
-                "unit": memory_unit,
-            },
-            {
-                "kind": "latency_absolute_us",
-                "workload": (
-                    "track-b-product/key_sequence_process_with_context"
-                ),
-                "input": "trackb",
-                "metric": "median_us",
-                "ceiling": "100",
-                "unit": "us",
-            },
+            }
+            for input_text in native_ratchet.FROZEN_TRACK_A_INPUTS
         ]
+        rows.extend(
+            [
+                {
+                    "kind": "memory_peak",
+                    "workload": "",
+                    "input": "",
+                    "metric": "track_a_peak_working_set_bytes",
+                    "ceiling": memory_ceiling,
+                    "unit": memory_unit,
+                },
+                {
+                    "kind": "latency_absolute_us",
+                    "workload": (
+                        "track-b-product/key_sequence_process_with_context"
+                    ),
+                    "input": "trackb",
+                    "metric": "median_us",
+                    "ceiling": "100",
+                    "unit": "us",
+                },
+            ]
+        )
         with self.thresholds.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(
                 handle, fieldnames=list(rows[0]), lineterminator="\n"
@@ -154,7 +160,7 @@ class SupplementalRatchetTests(unittest.TestCase):
             "native_benchmark_build_performed": "False",
             "benchmark_script_sha256": "2" * 64,
             "track_a_storage_mode": "byte-backed",
-            "track_a_inputs": "x",
+            "track_a_inputs": ",".join(native_ratchet.FROZEN_TRACK_A_INPUTS),
             "track_b_inputs": "trackb",
             "iterations": "9",
             "session_iterations": "60",
@@ -162,6 +168,7 @@ class SupplementalRatchetTests(unittest.TestCase):
             "deploy_product_before_benchmark": "True",
             "skip_track_b": "False",
         }
+        self.write_candidate_packet(run, environment)
         (run / "environment.txt").write_text(
             "".join(f"{key}={value}\n" for key, value in environment.items()),
             encoding="utf-8",
@@ -189,13 +196,14 @@ class SupplementalRatchetTests(unittest.TestCase):
                 lineterminator="\n",
             )
             writer.writeheader()
-            writer.writerow(
+            writer.writerows(
                 {
                     "track": "track-a-comparison",
                     "workload": "key_sequence_process_with_context",
-                    "input": "x",
+                    "input": input_text,
                     "yune_librime_median_ratio": "1",
                 }
+                for input_text in native_ratchet.FROZEN_TRACK_A_INPUTS
             )
         with (run / "summary.csv").open(
             "w", encoding="utf-8", newline=""
@@ -214,16 +222,17 @@ class SupplementalRatchetTests(unittest.TestCase):
                 lineterminator="\n",
             )
             writer.writeheader()
-            writer.writerow(
+            writer.writerows(
                 {
                     "engine": "yune",
                     "track": "track-a-comparison",
                     "schema_id": "luna_pinyin",
                     "workload": "key_sequence_process_with_context",
-                    "input": "x",
+                    "input": input_text,
                     "samples": "80",
                     "median_private_bytes": "50000000",
                 }
+                for input_text in native_ratchet.FROZEN_TRACK_A_INPUTS
             )
         with (run / "threshold-check.csv").open(
             "w", encoding="utf-8", newline=""
@@ -248,13 +257,16 @@ class SupplementalRatchetTests(unittest.TestCase):
                     {
                         "kind": "latency_ratio",
                         "workload": "key_sequence_process_with_context",
-                        "input": "x",
+                        "input": input_text,
                         "metric": "yune_librime_median_ratio",
                         "observed": "1",
                         "ceiling": "2",
                         "unit": "x",
                         "status": "pass",
-                    },
+                    }
+                    for input_text in native_ratchet.FROZEN_TRACK_A_INPUTS
+                ]
+                + [
                     {
                         "kind": "memory_peak",
                         "workload": "",
@@ -281,6 +293,87 @@ class SupplementalRatchetTests(unittest.TestCase):
                 ]
             )
         return run
+
+    def write_candidate_packet(
+        self, run: Path, environment: dict[str, str]
+    ) -> None:
+        inputs = run / "candidate-parity-inputs.csv"
+        inputs.write_bytes(
+            (
+                "input\n"
+                + "\n".join(native_ratchet.FROZEN_TRACK_A_INPUTS)
+                + "\n"
+            ).encode("utf-8")
+        )
+        snapshot = run / "candidate_snapshots.csv"
+        rows = []
+        for engine in candidate_parity.ENGINES:
+            for input_text in native_ratchet.FROZEN_TRACK_A_INPUTS:
+                for index in range(5):
+                    rows.append(
+                        {
+                            "engine": engine,
+                            "track": "track-a-comparison",
+                            "schema_id": "luna_pinyin",
+                            "input": input_text,
+                            "candidate_index": str(index),
+                            "candidate_count": "5",
+                            "page_size": "5",
+                            "page_no": "0",
+                            "is_last_page": "0",
+                            "highlighted_index": "0",
+                            "composition_preedit": input_text,
+                            "text": f"{input_text}-{index}",
+                            "comment": "",
+                        }
+                    )
+        with snapshot.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(
+                handle,
+                fieldnames=candidate_parity.SNAPSHOT_HEADER,
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            writer.writerows(rows)
+        result = candidate_parity.main(
+            [
+                "--snapshot-csv",
+                str(snapshot),
+                "--expected-inputs-csv",
+                str(inputs),
+                "--output-dir",
+                str(run),
+                "--source-commit",
+                environment["source_commit"],
+                "--source-tree",
+                environment["source_tree"],
+                "--oracle-binary-sha256",
+                environment["upstream_rime_dll_sha256"],
+                "--oracle-shared-tree-sha256",
+                environment["upstream_shared_tree_sha256"],
+                "--oracle-build-tree-sha256",
+                environment["upstream_build_tree_sha256"],
+            ]
+        )
+        if result != 0:
+            raise AssertionError(f"candidate test packet failed with {result}")
+        receipt = native_ratchet._read_key_value_file(
+            run / "candidate-parity-verdict.txt", required=True
+        )
+        environment.update(
+            {
+                "candidate_parity_tool_sha256": receipt["tool_sha256"],
+                "candidate_parity_expected_inputs_sha256": receipt[
+                    "expected_inputs_sha256"
+                ],
+                "candidate_parity_snapshot_sha256": receipt["snapshot_sha256"],
+                "candidate_parity_csv_sha256": receipt["parity_csv_sha256"],
+                "candidate_parity_detail_sha256": receipt["detail_csv_sha256"],
+                "candidate_parity_verdict_sha256": hashlib.sha256(
+                    (run / "candidate-parity-verdict.txt").read_bytes()
+                ).hexdigest(),
+            }
+        )
 
     def run_tool(
         self,
@@ -336,7 +429,7 @@ class SupplementalRatchetTests(unittest.TestCase):
             primary_rows = list(csv.DictReader(handle))
         with self.supplemental_output.open(encoding="utf-8") as handle:
             supplemental_rows = list(csv.DictReader(handle))
-        self.assertEqual(len(primary_rows), 3)
+        self.assertEqual(len(primary_rows), 19)
         self.assertEqual(len(supplemental_rows), 1)
         row = supplemental_rows[0]
         self.assertEqual(row["run1_observed"], "120000000")

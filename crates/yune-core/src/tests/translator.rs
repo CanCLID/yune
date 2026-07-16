@@ -4845,6 +4845,65 @@ fn upstream_script_prefix_collector_excludes_dead_longer_overlap_across_storage_
 }
 
 #[test]
+fn upstream_script_surface_segmentation_prunes_stale_raw_identity_overlap() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("zhong1", "ZHONG", 100.0),
+        TableEntry::new("de1", "DE", 100.0),
+        TableEntry::new("deng1", "DENG", 100.0),
+        TableEntry::new("chang2", "CHANG", 100.0),
+        TableEntry::new("du4", "DU", 100.0),
+        TableEntry::new("zhong1de1", "STALE", 90.0),
+        TableEntry::new("zhong1deng1chang2du4", "FULL", 100.0),
+    ]);
+    let formulas = ["derive/\\d//".to_owned()];
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, 0x6100_0001, 0x6100_0002);
+
+    let owned_prism = parse_rime_prism_bin_payload(prism_bytes.clone())
+        .expect("owned stale-overlap prism should parse");
+    let owned =
+        StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(owned_prism))
+            .with_spelling_algebra(&formulas)
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_upstream_sentence_model(100);
+
+    let table_bytes = build_table_bin(&dictionary, 0x6100_0001);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed stale-overlap table metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed stale-overlap table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> =
+        Arc::new(AlgebraPrismByteSource(Arc::<[u8]>::from(prism_bytes)));
+    let runtime_prism = parse_rime_prism_runtime_payload(prism_source)
+        .expect("byte-backed stale-overlap prism should parse");
+    let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_upstream_sentence_model(100);
+
+    for (storage, translator) in [("owned", owned), ("byte", byte_backed)] {
+        let candidates = translator.translate("zhongdengchangdu");
+        assert!(
+            candidates.iter().any(|candidate| candidate.text == "FULL"),
+            "{storage}: the live zhong + deng + chang + du graph must remain admitted"
+        );
+        assert!(
+            !candidates.iter().any(|candidate| candidate.text == "STALE"),
+            "{storage}: the dead raw-identity de overlap must not be restored after reverse-good pruning"
+        );
+    }
+}
+
+#[test]
 fn upstream_script_policy_admits_complete_abbreviation_graphs_across_storage_paths() {
     let _guard = super::m37_metrics_test_guard();
     let dictionary = TableDictionary::new([

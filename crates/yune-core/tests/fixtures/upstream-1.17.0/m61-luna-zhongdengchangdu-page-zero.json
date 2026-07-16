@@ -1,0 +1,72 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "source_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "source_tree": "5758d9896d7dd5c2d5316e595a91612f72a0432e",
+    "dll_sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+    "shared_tree_sha256": "3801c4c83ba919e531b80ac27e2c06d116d08b19af2034fcb86e6e17ae1eecf6",
+    "build_tree_sha256": "446c90b2f4ffd76b4ec1f4ecca4f534c986e72e3d8803c6998926d0b1cebbf17"
+  },
+  "schema": {
+    "id": "luna_pinyin",
+    "source_repository": "rime/rime-luna-pinyin",
+    "source_commit": "18a80335c37522311f7cff02886cd81cec3b460a",
+    "product_schema_tree_sha256": "0bc042c0ab09c732419cf6ba5ce008390e87894c7d374c0d1b44efeac10a9bf0"
+  },
+  "capture": {
+    "method": "M61 Windows native 17-input candidate-parity preflight",
+    "source_file": "candidate-parity-preflight/comparison/zhongdengchangdu-detail.csv",
+    "source_file_sha256": "ba3674dab7d662fdc3b184b1757da8dfc559a5163d0579457a5929c106ba0356",
+    "measurement_source_commit": "7805882d93428db0a3791b0631290ab319b524f0",
+    "measurement_source_tree": "c198d23fc6777ad8b119e30552980243a6acdbb6",
+    "row_policy": "librime-1.17.0 page-zero rows only; Yune rows are not acceptance data",
+    "comparison_fields": [
+      "candidate_index",
+      "candidate_count",
+      "page_size",
+      "page_no",
+      "is_last_page",
+      "highlighted_index",
+      "composition_preedit",
+      "text",
+      "comment"
+    ]
+  },
+  "case": {
+    "input": "zhongdengchangdu",
+    "candidate_count": 5,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "highlighted_index": 0,
+    "composition_preedit": "zhong deng chang du",
+    "candidates": [
+      {
+        "candidate_index": 0,
+        "text": "中等長度",
+        "comment": ""
+      },
+      {
+        "candidate_index": 1,
+        "text": "中等",
+        "comment": ""
+      },
+      {
+        "candidate_index": 2,
+        "text": "中",
+        "comment": ""
+      },
+      {
+        "candidate_index": 3,
+        "text": "種",
+        "comment": ""
+      },
+      {
+        "candidate_index": 4,
+        "text": "重",
+        "comment": ""
+      }
+    ]
+  }
+}

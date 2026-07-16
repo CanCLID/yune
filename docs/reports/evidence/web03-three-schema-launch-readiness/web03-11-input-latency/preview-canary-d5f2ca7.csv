@@ -1,0 +1,10 @@
+scenario,input_length,median_ms,p95_ms,max_ms,cadence_gaps,on_time_gaps,verdict
+normal-jyutping-47,47,49,51,53,46,46,pass
+jyutping-short,3,64,139,139,2,2,pass
+jyutping-historical-long-1,28,48,52,86,27,27,pass
+jyutping-historical-long-2,52,40,48,55,51,51,pass
+typeduck-learned-userdb-prefix,3,46,87,87,2,2,pass
+luna-short,3,37,55,55,2,2,pass
+luna-37,37,41,73,75,36,36,pass
+luna-59,59,50,100,100,58,58,pass
+cangjie-short,1,68,68,68,0,0,pass

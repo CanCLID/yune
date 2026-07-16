@@ -592,6 +592,17 @@ each credentialed upload reasserts that setting through the Pages API; the first
 green source-bound run then closes the migration. This changes pipeline placement, not engine behavior,
 latency/cadence policy, or the historical closeout evidence.
 
+_Activation outcome (2026-07-15):_ clean source `d5f2ca7b` completed the first
+green source-bound run (`29469876243`). The unchanged local 4x/4x lane passed
+8/8 scenarios, 186/186 keys, and 178/178 on-time cadence gaps; the immutable
+preview passed its single deployed canary; the same archive SHA-256 was
+promoted; and production reconciled all 11 required files. Cloudflare Git
+auto-deploy stayed disabled. The preceding classifier failure (`d003957c`) and
+per-file propagation verification failure (`b628ad56`) remain preserved as
+setup/delivery failures, not latency reds. The propagation verifier now polls
+every required byte within one shared bounded window; no threshold or cadence
+policy changed.
+
 **D-47 / M59-DEFAULT-ON-REACHABILITY — Leading-single reachability is an
 engine-level default for every schema, and its measured per-keystroke cost gets a
 4-row owner-signed injection-on ceiling.** Per the owner amendment (2026-07-07,

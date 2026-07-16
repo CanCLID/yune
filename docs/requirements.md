@@ -1052,6 +1052,16 @@ browser latency hard stop in WEB03-11.
   blocks production; only a premeasurement setup failure may be retried under an
   explicit source/reason/run-attempt identity.
 
+  **Activation outcome:** clean source `d5f2ca7b` completed workflow run
+  `29469876243`: the unchanged local lane passed 8/8 scenarios, 186/186 keys,
+  and 178/178 on-time gaps; the independent local 47-key row passed at `46 ms`
+  p95 / `54 ms` max; the immutable preview passed its single source-pinned
+  canary at 8/8, 186/186, and 178/178 with a `51 ms` p95 / `53 ms` max 47-key
+  row; the exact certified archive was promoted; and production verified all
+  11 required files. Cloudflare Git auto-deploy remained disabled. Runs
+  `29469204928` and `29469289763` preserve the classifier and per-file
+  propagation setup failures respectively; neither is a measured latency red.
+
 ## WEB-04 Octagram Debug Harness Requirements
 
 **Status: complete; browser behavior re-proved at M59 closeout source
@@ -2036,7 +2046,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WEB03-08 | WEB-03 | Complete - byte-backed launch guards retain multi-syllable Jyutping composition and visible lookup rows |
 | WEB03-09 | WEB-03 | Complete - long-input byte-backed expansion and browser latency are bounded with focused evidence |
 | WEB03-10 | WEB-03 | Complete - corrected Prism construction restores canonical common multi-syllable Jyutping words with native guards |
-| WEB03-11 | WEB-03 | Complete - source-current hardened local gate, Cloudflare deployment, and source-pinned production canary passed at `ef485b10` |
+| WEB03-11 | WEB-03 | Complete - hardened closeout passed at `ef485b10`; source-bound deployment maintenance activated at `d5f2ca7b` with unchanged local gate, immutable preview canary, identical-byte promotion, and 11/11 production byte verification |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |

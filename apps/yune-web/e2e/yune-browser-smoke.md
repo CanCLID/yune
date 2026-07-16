@@ -132,6 +132,12 @@ branch-restricted `yune-web-preview` and `yune-web-production` GitHub
 environments are provisioned. Each credentialed upload also checks the Pages
 API and fails closed if automatic deployment was re-enabled.
 
+The first complete activation receipt is clean source `d5f2ca7b`, workflow run
+`29469876243`: local certification passed 8/8 scenarios and 186/186 keys, the
+immutable preview passed its single source-pinned canary, the identical archive
+was promoted, and the production alias byte-verified all 11 required files.
+This is delivery-maintenance evidence, not a new browser-performance baseline.
+
 For a deployed canary, set an explicit URL and use the direct command:
 
 ```bash

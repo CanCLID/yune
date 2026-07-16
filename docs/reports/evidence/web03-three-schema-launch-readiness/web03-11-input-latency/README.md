@@ -1,6 +1,60 @@
 # WEB03-11 Browser Input-Latency Hard Stop
 
-Status: complete at `ef485b10`.
+Status: complete at `ef485b10`; deployment-maintenance delivery active at
+`d5f2ca7b`.
+
+## Deployment-maintenance activation
+
+The WEB03-11 gate no longer runs inside the Cloudflare Pages Git build. That
+host is a shared build machine, while the gate deliberately combines 4x
+Chromium main-thread throttling with 4x synthetic worker service amplification.
+Uncontrolled host scheduling can therefore invalidate the requested typing
+cadence even when the measured Yune processing rows remain below their
+ceilings. This is measurement-host noise, not Cloudflare edge CPU execution:
+the published site is static and Yune runs in the visitor's browser worker.
+
+Clean source `d5f2ca7bc89d7257b0d5719581c0d8a67d863036` completed the
+replacement source-bound path in [GitHub Actions run
+29469876243](https://github.com/CanCLID/yune/actions/runs/29469876243):
+
+- the pinned artifact was built and measured once without deployment secrets;
+- the binding local lane passed 8/8 scenarios, 186/186 keys, and 178/178
+  on-time cadence gaps under the unchanged 4x/4x profile;
+- the independent 47-key local row passed at `46 ms` p95, `54 ms` maximum,
+  and `0 ms` maximum worker queue wait;
+- an independent job reconciled source, toolchain, inventory, and every file
+  before upload;
+- immutable preview `868797e2-b8d7-4338-9e83-e5b1124171b6` passed the
+  source-pinned deployed canary with 8/8 scenarios, 186/186 keys, 178/178
+  on-time gaps, and a `51 ms` p95 / `53 ms` maximum 47-key row;
+- the same archive SHA-256
+  `52f8b040682e0e3d755e648ddf5964e6c364a61cc325fc28fe88637d615b8b6d`
+  was promoted without rebuilding; and
+- production deployment `c5d7fc2f-a7dd-4202-85dd-767ac168e374` passed exact
+  source, toolchain, manifest, and 11-file byte verification at the production
+  alias.
+
+Cloudflare Git production and preview auto-deploy remain disabled. Each
+credentialed upload rechecks that interlock, and the branch-restricted preview
+and production environments keep secrets out of repository build and test
+jobs. No engine behavior, latency ceiling, cadence policy, or ABI changed.
+
+Two non-measured-red failures remain explicit. Run `29469204928` stopped before
+measurement because the first classifier attempted to override a reserved
+GitHub ref variable. Run `29469289763` passed both measurements and uploaded
+production, but its final verifier observed the new build identity before the
+new `index.html` had propagated; the subsequently served index byte-matched the
+certified inventory. Source `d5f2ca7b` polls every required file within one
+bounded propagation window and completed a fresh full run. Neither failure was
+discarded or converted into a performance pass.
+
+Compact receipts are
+[`deployment-maintenance-closeout-d5f2ca7.json`](./deployment-maintenance-closeout-d5f2ca7.json),
+[`local-release-gate-d5f2ca7.csv`](./local-release-gate-d5f2ca7.csv), and
+[`preview-canary-d5f2ca7.csv`](./preview-canary-d5f2ca7.csv). The complete
+successful artifacts plus both failed-run receipts remain external at
+`$HOME/yune-web-deployment-maintenance-d5f2ca7-20260715`; their compact files
+are pinned by [`manifest-d5f2ca7.sha256`](./manifest-d5f2ca7.sha256).
 
 ## Final closeout boundary
 

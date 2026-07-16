@@ -1,0 +1,101 @@
+{
+  "sourceCommit": "d5f2ca7bc89d7257b0d5719581c0d8a67d863036",
+  "sourceTreeState": "clean",
+  "workflowRun": {
+    "id": 29469876243,
+    "attempt": 1,
+    "event": "workflow_dispatch",
+    "conclusion": "success",
+    "url": "https://github.com/CanCLID/yune/actions/runs/29469876243"
+  },
+  "setupHistory": [
+    {
+      "sourceCommit": "d003957c50ce6de99134bf769d6e3db6d53bbd21",
+      "workflowRunId": 29469204928,
+      "measurementStarted": false,
+      "classification": "premeasurement-setup-failure",
+      "failure": "Release classification compared a reserved GitHub ref variable with refs/heads/main; GitHub supplied main."
+    },
+    {
+      "sourceCommit": "b628ad56edf99ba5591960b88bc97fd1b4299b0c",
+      "workflowRunId": 29469289763,
+      "measurementVerdict": "pass",
+      "previewCanaryVerdict": "pass",
+      "classification": "postmeasurement-delivery-verification-failure",
+      "failure": "Production verification observed the new build identity before index.html had propagated; the later served index byte-matched the certified inventory."
+    }
+  ],
+  "toolchain": {
+    "rustc": "1.96.1",
+    "emscripten": "4.0.23",
+    "emscriptenReleaseCommit": "aaa43392544d695232b70eda706d751f18980c2a",
+    "emsdkRepositoryCommit": "db04e88298d9916fc51fcd3743045ca3eb695127",
+    "node": "22.16.0"
+  },
+  "artifacts": {
+    "archiveSha256": "52f8b040682e0e3d755e648ddf5964e6c364a61cc325fc28fe88637d615b8b6d",
+    "buildInfoSha256": "7d3026f168eddd2fbab3e7f2b6515617871a82180221dd61e91af20e5e0c5d42",
+    "schemaManifestSha256": "5565dfbaab79ce2d5309418338c2ed446138f3958a0023bceebcfd4c6311be86",
+    "wasmSha256": "da3e7ce367d693c4a6d8711daf3e104d6ba011074cb5df1289de43bc4f0735bf",
+    "publicArtifactManifestSha256": "f414e9c2fcfd5d9b50df6f58228b0a3c9ec5db7e3f6d6671fe3888e73465f7ae"
+  },
+  "localReleaseGate": {
+    "scenarios": 8,
+    "verifiedKeys": 186,
+    "cadenceGaps": 178,
+    "onTimeCadenceGaps": 178,
+    "mainThreadThrottle": 4,
+    "workerActionMultiplier": 4,
+    "thresholdVerdict": "pass",
+    "releaseGradeVerdict": "pass",
+    "normalTyping": {
+      "verifiedKeys": 47,
+      "cadenceGaps": 46,
+      "onTimeCadenceGaps": 46,
+      "p95Ms": 46,
+      "maxMs": 54,
+      "workerQueueWaitMaxMs": 0
+    }
+  },
+  "preview": {
+    "deploymentId": "868797e2-b8d7-4338-9e83-e5b1124171b6",
+    "url": "https://868797e2.yune-web.pages.dev",
+    "environment": "preview",
+    "commitDirty": false,
+    "canary": {
+      "scenarios": 8,
+      "verifiedKeys": 186,
+      "cadenceGaps": 178,
+      "onTimeCadenceGaps": 178,
+      "thresholdVerdict": "pass",
+      "releaseGradeVerdict": "not-applicable",
+      "releaseProfileApplicable": false,
+      "releaseProfileDeviations": [
+        "deployed-origin-canary",
+        "worker-action-multiplier"
+      ],
+      "normalTyping": {
+        "verifiedKeys": 47,
+        "cadenceGaps": 46,
+        "onTimeCadenceGaps": 46,
+        "p95Ms": 51,
+        "maxMs": 53,
+        "workerQueueWaitMaxMs": 0
+      }
+    }
+  },
+  "production": {
+    "deploymentId": "c5d7fc2f-a7dd-4202-85dd-767ac168e374",
+    "immutableUrl": "https://c5d7fc2f.yune-web.pages.dev",
+    "aliasUrl": "https://yune-web.pages.dev/",
+    "environment": "production",
+    "commitDirty": false,
+    "verifiedFileCount": 11,
+    "verificationVerdict": "pass"
+  },
+  "cloudflareGitIntegration": {
+    "productionDeploymentsEnabled": false,
+    "previewDeploymentSetting": "none"
+  },
+  "externalPacket": "$HOME/yune-web-deployment-maintenance-d5f2ca7-20260715"
+}

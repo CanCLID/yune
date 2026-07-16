@@ -29,6 +29,25 @@ class PacketEntry:
     sha256: str
 
 
+def _lexical_relative_to_root(path: Path, root: Path) -> Path:
+    """Return lexical in-root parts while tolerating Windows short-name aliases."""
+
+    cursor = path.absolute()
+    suffix: list[str] = []
+    while True:
+        if not cursor.is_symlink():
+            try:
+                if cursor.samefile(root):
+                    return Path(*reversed(suffix))
+            except OSError:
+                pass
+        if cursor.parent == cursor:
+            break
+        suffix.append(cursor.name)
+        cursor = cursor.parent
+    raise PacketManifestError("packet manifest must be inside the repository")
+
+
 def _safe_relative_path(raw: str) -> str:
     if not raw or "\x00" in raw or "\\" in raw or raw.startswith("/") or WINDOWS_ABSOLUTE_RE.match(raw):
         raise PacketManifestError(f"unsafe packet path: {raw!r}")
@@ -71,7 +90,7 @@ def _parse_manifest(source: str, manifest_name: str) -> list[PacketEntry]:
 
 
 def _reject_symlink_chain(path: Path, root: Path) -> None:
-    relative = path.relative_to(root)
+    relative = _lexical_relative_to_root(path, root)
     cursor = root
     for part in relative.parts:
         cursor /= part
@@ -151,10 +170,9 @@ def verify_packet_manifest(
 ) -> tuple[int, int]:
     repo_root = repo_root.resolve(strict=True)
     manifest_path = manifest if manifest.is_absolute() else repo_root / manifest
-    try:
-        manifest_relative = _safe_relative_path(manifest_path.relative_to(repo_root).as_posix())
-    except ValueError as error:
-        raise PacketManifestError("packet manifest must be inside the repository") from error
+    manifest_relative = _safe_relative_path(
+        _lexical_relative_to_root(manifest_path, repo_root).as_posix()
+    )
     if treeish is None:
         source, files = _worktree_packet(manifest_path, repo_root)
     else:

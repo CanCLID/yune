@@ -10,6 +10,8 @@ session_iterations=60
 key_iterations=80
 track_a_inputs="n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru"
 track_b_inputs="neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung"
+track_a_storage_mode="production-default"
+track_a_storage_mode_explicit=0
 skip_track_b=0
 deploy_product_before_benchmark=1
 
@@ -37,6 +39,9 @@ Options:
   --session-iterations N   Session lifecycle iterations. Default: 60.
   --key-iterations N       Key workload iterations. Default: 80.
   --track-a-inputs CSV     Track A input list.
+  --track-a-storage-mode MODE
+                           Track A Yune storage mode: production-default,
+                           owned, or byte-backed. Default: production-default.
   --track-b-inputs CSV     Track B input list.
   --skip-track-b           Skip the TypeDuck product guard lane.
   --no-product-deploy      Do not deploy Track B before benchmarking.
@@ -69,6 +74,11 @@ while [[ $# -gt 0 ]]; do
       track_a_inputs="$2"
       shift 2
       ;;
+    --track-a-storage-mode)
+      track_a_storage_mode="$2"
+      track_a_storage_mode_explicit=1
+      shift 2
+      ;;
     --track-b-inputs)
       track_b_inputs="$2"
       shift 2
@@ -92,6 +102,29 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+case "$track_a_storage_mode" in
+  production-default|owned|byte-backed) ;;
+  *)
+    echo "invalid --track-a-storage-mode: $track_a_storage_mode (expected production-default, owned, or byte-backed)" >&2
+    exit 2
+    ;;
+esac
+
+inherited_poet_byte_backed_present=0
+inherited_poet_byte_backed_value=""
+if [[ "${YUNE_POET_BYTE_BACKED+x}" == "x" ]]; then
+  inherited_poet_byte_backed_present=1
+  inherited_poet_byte_backed_value="$YUNE_POET_BYTE_BACKED"
+fi
+if [[ "$track_a_storage_mode_explicit" == "1" && "$inherited_poet_byte_backed_present" == "1" ]]; then
+  echo "YUNE_POET_BYTE_BACKED must be absent when --track-a-storage-mode is explicit." >&2
+  exit 1
+fi
+if [[ "$track_a_storage_mode_explicit" == "0" && "$inherited_poet_byte_backed_value" == "1" ]]; then
+  echo "The signed Track A gate requires default-owned poet measurement; unset YUNE_POET_BYTE_BACKED before running it." >&2
+  exit 1
+fi
 
 if ! command -v python3 >/dev/null 2>&1; then
   echo "python3 is required" >&2
@@ -156,6 +189,44 @@ require_path() {
 log() {
   printf '[macos-bench] %s\n' "$*"
 }
+
+die() {
+  echo "$*" >&2
+  exit 1
+}
+
+assert_poet_byte_backed_restored() {
+  local phase="$1"
+  if [[ "$inherited_poet_byte_backed_present" == "1" ]]; then
+    if [[ "${YUNE_POET_BYTE_BACKED+x}" != "x" || "$YUNE_POET_BYTE_BACKED" != "$inherited_poet_byte_backed_value" ]]; then
+      die "YUNE_POET_BYTE_BACKED was not restored to its inherited value $phase."
+    fi
+  elif [[ "${YUNE_POET_BYTE_BACKED+x}" == "x" ]]; then
+    die "YUNE_POET_BYTE_BACKED must be absent $phase."
+  fi
+}
+
+sha256_file() {
+  python3 - "$1" <<'PY'
+import hashlib
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+digest = hashlib.sha256()
+with path.open("rb") as handle:
+    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+        digest.update(chunk)
+print(digest.hexdigest())
+PY
+}
+
+yune_git_head="$(git -C "$repo_root" rev-parse HEAD)"
+yune_git_tree="$(git -C "$repo_root" rev-parse 'HEAD^{tree}')"
+yune_git_status_at_start="$(git -C "$repo_root" status --porcelain=v1 --untracked-files=all)"
+if [[ -n "$yune_git_status_at_start" ]]; then
+  die "macOS source-bound measurement requires a clean Yune checkout."
+fi
 
 librime_source="$(abs_path "$librime_source")"
 work_base="$repo_root/target/macos-performance-verification"
@@ -287,11 +358,16 @@ write_identity() {
   {
     echo "date_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     echo "repo_root=$repo_root"
-    echo "yune_git_head=$(git -C "$repo_root" rev-parse HEAD)"
-    echo "yune_git_status_short=$(git -C "$repo_root" status --short | paste -sd '|' -)"
+    echo "yune_git_head=$yune_git_head"
+    echo "yune_git_tree=$yune_git_tree"
+    echo "yune_git_status_short="
+    echo "source_clean=true"
     echo "librime_source=$librime_source"
     echo "isolated_librime_source=$librime_src"
-    echo "librime_git_head=$(git -C "$librime_src" rev-parse HEAD)"
+    echo "librime_git_head=$librime_git_head"
+    echo "librime_git_tree=$librime_git_tree"
+    echo "librime_git_status_short="
+    echo "librime_source_clean=true"
     echo "librime_target_commit=$oracle_commit"
     echo "oracle_root=$oracle_root"
     echo "transient_work_root=$run_work_root"
@@ -299,6 +375,9 @@ write_identity() {
     sw_vers 2>/dev/null | sed 's/:[[:space:]]*/=/' || true
     echo "cmake=$(command -v cmake)"
     echo "track_a_inputs=$track_a_inputs"
+    echo "track_a_storage_mode=$track_a_storage_mode"
+    echo "track_a_storage_mode_explicit=$track_a_storage_mode_explicit"
+    echo "inherited_poet_byte_backed_present=$inherited_poet_byte_backed_present"
     echo "track_b_inputs=$track_b_inputs"
     echo "iterations=$iterations"
     echo "session_iterations=$session_iterations"
@@ -321,7 +400,13 @@ run_cargo_bench() {
   local extra_dyld="${10}"
   local deploy_before="${11}"
   local deploy_only="${12:-0}"
+  local poet_byte_backed="${13:-0}"
   local engine_output="$output_root/$output_name"
+  case "$poet_byte_backed" in
+    0|1) ;;
+    *) die "invalid scoped YUNE_POET_BYTE_BACKED selector for $output_name: $poet_byte_backed" ;;
+  esac
+  assert_poet_byte_backed_restored "before $output_name"
   clear_dir_under "$output_root" "$engine_output"
   local args=(
     bench -p yune-rime-api --bench native_inprocess_benchmark --
@@ -334,6 +419,7 @@ run_cargo_bench() {
     --build "$build"
     --output "$engine_output"
     --inputs "$inputs"
+    --track-a-storage-mode "$track_a_storage_mode"
     --iterations "$iterations"
     --session-iterations "$session_iterations"
     --key-iterations "$key_iterations"
@@ -344,12 +430,40 @@ run_cargo_bench() {
   if [[ "$deploy_only" == "1" ]]; then
     args+=(--deploy-only)
   fi
+  {
+    if [[ "$poet_byte_backed" == "1" ]]; then
+      printf 'YUNE_POET_BYTE_BACKED=1 '
+    fi
+    printf 'cargo'
+    printf ' %q' "${args[@]}"
+    printf '\n'
+  } >> "$output_root/commands.txt"
   log "running $output_name"
-  (
-    cd "$repo_root"
-    DYLD_LIBRARY_PATH="$extra_dyld${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}" \
-      cargo "${args[@]}"
-  ) 2>&1 | tee "$engine_output/cargo-bench-native-inprocess.log"
+  local status=0
+  if [[ "$poet_byte_backed" == "1" ]]; then
+    if (
+      cd "$repo_root"
+      YUNE_POET_BYTE_BACKED=1 \
+        DYLD_LIBRARY_PATH="$extra_dyld${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}" \
+        cargo "${args[@]}"
+    ) 2>&1 | tee "$engine_output/cargo-bench-native-inprocess.log"; then
+      status=0
+    else
+      status=$?
+    fi
+  else
+    if (
+      cd "$repo_root"
+      DYLD_LIBRARY_PATH="$extra_dyld${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}" \
+        cargo "${args[@]}"
+    ) 2>&1 | tee "$engine_output/cargo-bench-native-inprocess.log"; then
+      status=0
+    else
+      status=$?
+    fi
+  fi
+  assert_poet_byte_backed_restored "after $output_name"
+  return "$status"
 }
 
 prepare_upstream_run() {
@@ -628,6 +742,7 @@ corrective Windows benchmark shape: every keypress is followed by
 \`get_context/free_context\`.
 
 - Track A: \`luna_pinyin\`, Yune versus upstream librime 1.17.0.
+- Track A storage mode: \`$track_a_storage_mode\`.
 - Track B: $([[ "$skip_track_b" == "1" ]] && echo "skipped." || echo "Yune TypeDuck jyut6ping3_mobile product guard.")
 - Claim verdict: \`macos-verdict.md\`.
 - Summary comparison: \`summary-comparison.csv\`.
@@ -636,6 +751,15 @@ EOF
 }
 
 build_librime
+librime_git_head="$(git -C "$librime_src" rev-parse HEAD)"
+librime_git_tree="$(git -C "$librime_src" rev-parse 'HEAD^{tree}')"
+librime_git_status_at_build="$(git -C "$librime_src" status --porcelain=v1 --untracked-files=all)"
+if [[ "$librime_git_head" != "$oracle_commit" ]]; then
+  die "isolated librime source mismatch: expected $oracle_commit, got $librime_git_head"
+fi
+if [[ -n "$librime_git_status_at_build" ]]; then
+  die "macOS source-bound measurement requires a clean isolated librime checkout."
+fi
 librime_dylib="$(find_librime_dylib)"
 rime_deployer="$(find_rime_deployer)"
 require_path "$librime_dylib" "librime dylib"
@@ -653,7 +777,7 @@ require_path "$build_source/luna_pinyin.prism.bin" "built luna_pinyin prism"
 write_identity
 
 {
-  echo "scripts/benchmark-native-rime-inprocess-macos.sh --output-root $output_root --librime-source $librime_source --iterations $iterations --session-iterations $session_iterations --key-iterations $key_iterations --track-a-inputs $track_a_inputs --track-b-inputs $track_b_inputs"
+  echo "scripts/benchmark-native-rime-inprocess-macos.sh --output-root $output_root --librime-source $librime_source --iterations $iterations --session-iterations $session_iterations --key-iterations $key_iterations --track-a-inputs $track_a_inputs --track-a-storage-mode $track_a_storage_mode --track-b-inputs $track_b_inputs"
   echo "cargo build --release -p yune-rime-api"
   echo "DYLD_LIBRARY_PATH=$librime_dyld $rime_deployer --build $user_source $shared_source $build_source"
 } > "$output_root/commands.txt"
@@ -671,22 +795,49 @@ fi
 
 track_a_yune_dylib="$track_a_yune_run/$(basename "$yune_dylib")"
 track_a_librime_dylib="$track_a_librime_run/$(basename "$librime_dylib")"
+source_yune_dylib_sha256="$(sha256_file "$yune_dylib")"
+source_librime_dylib_sha256="$(sha256_file "$librime_dylib")"
+track_a_yune_dylib_sha256="$(sha256_file "$track_a_yune_dylib")"
+track_a_librime_dylib_sha256="$(sha256_file "$track_a_librime_dylib")"
+if [[ "$track_a_yune_dylib_sha256" != "$source_yune_dylib_sha256" ]]; then
+  die "Track A Yune dylib copy hash does not match the built source dylib."
+fi
+if [[ "$track_a_librime_dylib_sha256" != "$source_librime_dylib_sha256" ]]; then
+  die "Track A librime dylib copy hash does not match the pinned source dylib."
+fi
+track_b_yune_dylib_sha256="skipped"
+if [[ "$skip_track_b" == "0" ]]; then
+  track_b_yune_dylib="$track_b_product_run/$(basename "$yune_dylib")"
+  track_b_yune_dylib_sha256="$(sha256_file "$track_b_yune_dylib")"
+  if [[ "$track_b_yune_dylib_sha256" != "$source_yune_dylib_sha256" ]]; then
+    die "Track B Yune dylib copy hash does not match the built source dylib."
+  fi
+fi
+{
+  echo "source_commit=$yune_git_head"
+  echo "source_tree=$yune_git_tree"
+  echo "source_clean_at_start=true"
+  echo "librime_commit=$librime_git_head"
+  echo "librime_tree=$librime_git_tree"
+  echo "librime_source_clean_at_build=true"
+  echo "benchmark_script_sha256=$(sha256_file "${BASH_SOURCE[0]}")"
+  echo "source_yune_dylib_sha256=$source_yune_dylib_sha256"
+  echo "measured_yune_dylib_sha256=$track_a_yune_dylib_sha256"
+  echo "track_a_yune_dylib_sha256=$track_a_yune_dylib_sha256"
+  echo "source_librime_dylib_sha256=$source_librime_dylib_sha256"
+  echo "upstream_librime_dylib_sha256=$track_a_librime_dylib_sha256"
+  echo "track_a_librime_dylib_sha256=$track_a_librime_dylib_sha256"
+  echo "track_b_yune_dylib_sha256=$track_b_yune_dylib_sha256"
+  echo "track_a_storage_mode=$track_a_storage_mode"
+  echo "track_a_storage_mode_explicit=$track_a_storage_mode_explicit"
+} > "$output_root/external-provenance.txt"
 track_a_original_build="$run_work_root/track-a-yune-original-build"
 track_a_generated_poet="$run_work_root/track-a-yune-luna_pinyin.poet.bin"
 clear_dir_under "$run_work_root" "$track_a_original_build"
 copy_dir_contents "$track_a_yune_run/user/build" "$track_a_original_build"
-if [[ "${YUNE_POET_BYTE_BACKED:-}" == "1" ]]; then
-  die "The signed Track A gate requires default-owned poet measurement; unset YUNE_POET_BYTE_BACKED before running it."
-fi
-(
-  export YUNE_POET_BYTE_BACKED=1
-  run_cargo_bench "track-a-yune-deploy-prep" "yune" "track-a-comparison" "luna_pinyin" \
-    "$track_a_yune_dylib" "$track_a_yune_run/shared" "$track_a_yune_run/user" "$track_a_yune_run/user/build" \
-    "deploy-prep" "$(dirname "$track_a_yune_dylib")" 1 1
-)
-if [[ "${YUNE_POET_BYTE_BACKED:-}" == "1" ]]; then
-  die "Failed to restore YUNE_POET_BYTE_BACKED after Track A deploy prep."
-fi
+run_cargo_bench "track-a-yune-deploy-prep" "yune" "track-a-comparison" "luna_pinyin" \
+  "$track_a_yune_dylib" "$track_a_yune_run/shared" "$track_a_yune_run/user" "$track_a_yune_run/user/build" \
+  "deploy-prep" "$(dirname "$track_a_yune_dylib")" 1 1 1
 require_path "$track_a_yune_run/user/build/luna_pinyin.poet.bin" "Track A Yune poet artifact"
 cp "$track_a_yune_run/user/build/luna_pinyin.poet.bin" "$track_a_generated_poet"
 clear_dir_under "$run_work_root" "$track_a_yune_run/user/build"
@@ -694,8 +845,15 @@ copy_dir_contents "$track_a_original_build" "$track_a_yune_run/user/build"
 cp "$track_a_generated_poet" "$track_a_yune_run/user/build/luna_pinyin.poet.bin"
 {
   echo "track_a_deploy_prep=separate_process"
+  echo "track_a_storage_mode=$track_a_storage_mode"
   echo "poet_generation_environment=YUNE_POET_BYTE_BACKED=1 (deploy-prep invocation only)"
-  echo "benchmark_poet_environment=default-owned"
+  if [[ "$track_a_storage_mode" == "byte-backed" ]]; then
+    echo "benchmark_poet_environment=YUNE_POET_BYTE_BACKED=1 (Track A Yune timing only)"
+  elif [[ "$inherited_poet_byte_backed_present" == "1" ]]; then
+    echo "benchmark_poet_environment=inherited non-byte-backed value preserved"
+  else
+    echo "benchmark_poet_environment=absent"
+  fi
   echo "restored_oracle_build_artifacts=true"
   echo "poet_artifact=$track_a_yune_run/user/build/luna_pinyin.poet.bin"
   stat -f "poet_bytes=%z" "$track_a_yune_run/user/build/luna_pinyin.poet.bin"
@@ -703,31 +861,48 @@ cp "$track_a_generated_poet" "$track_a_yune_run/user/build/luna_pinyin.poet.bin"
   stat -f "table_bytes=%z" "$track_a_yune_run/user/build/luna_pinyin.table.bin"
 } > "$output_root/track-a-yune-deploy-prep-artifacts.txt"
 
-run_cargo_bench "track-a-yune" "yune" "track-a-comparison" "luna_pinyin" \
-  "$track_a_yune_dylib" "$track_a_yune_run/shared" "$track_a_yune_run/user" "$track_a_yune_run/user/build" \
-  "$track_a_inputs" "$(dirname "$track_a_yune_dylib")" 0 0
+if [[ "$track_a_storage_mode" == "byte-backed" ]]; then
+  run_cargo_bench "track-a-yune" "yune" "track-a-comparison" "luna_pinyin" \
+    "$track_a_yune_dylib" "$track_a_yune_run/shared" "$track_a_yune_run/user" "$track_a_yune_run/user/build" \
+    "$track_a_inputs" "$(dirname "$track_a_yune_dylib")" 0 0 1
+else
+  run_cargo_bench "track-a-yune" "yune" "track-a-comparison" "luna_pinyin" \
+    "$track_a_yune_dylib" "$track_a_yune_run/shared" "$track_a_yune_run/user" "$track_a_yune_run/user/build" \
+    "$track_a_inputs" "$(dirname "$track_a_yune_dylib")" 0 0 0
+fi
+assert_poet_byte_backed_restored "before Track A librime timing"
 run_cargo_bench "track-a-librime-1.17.0" "librime-1.17.0" "track-a-comparison" "luna_pinyin" \
   "$track_a_librime_dylib" "$track_a_librime_run/shared" "$track_a_librime_run/user" "$track_a_librime_run/user/build" \
-  "$track_a_inputs" "$(dirname "$track_a_librime_dylib"):$librime_dyld" 0 0
+  "$track_a_inputs" "$(dirname "$track_a_librime_dylib"):$librime_dyld" 0 0 0
 if [[ "$skip_track_b" == "0" ]]; then
   track_b_yune_dylib="$track_b_product_run/$(basename "$yune_dylib")"
+  assert_poet_byte_backed_restored "before Track B timing"
   run_cargo_bench "track-b-yune-product" "yune" "track-b-product" "jyut6ping3_mobile" \
     "$track_b_yune_dylib" "$track_b_product_run/shared" "$track_b_product_run/user" "$track_b_product_run/user/build" \
-    "$track_b_inputs" "$(dirname "$track_b_yune_dylib")" "$deploy_product_before_benchmark" 0
+    "$track_b_inputs" "$(dirname "$track_b_yune_dylib")" "$deploy_product_before_benchmark" 0 0
 fi
 
 combine_outputs
-python3 - "$output_root/memory-owner-profile.csv" <<'PY'
+python3 - "$output_root/memory-owner-profile.csv" "$track_a_storage_mode" <<'PY'
 import csv
 import pathlib
 import sys
+from collections import Counter
 
 path = pathlib.Path(sys.argv[1])
+track_a_storage_mode = sys.argv[2]
 if not path.is_file():
     raise SystemExit(f"missing Track A memory-owner evidence: {path}")
 with path.open(encoding="utf-8-sig", newline="") as handle:
     reader = csv.DictReader(handle)
-    required = {"engine", "track", "schema_id", "mapping_mode"}
+    required = {
+        "engine",
+        "track",
+        "schema_id",
+        "owner_id",
+        "mapping_mode",
+        "track_a_storage_mode",
+    }
     missing = sorted(required.difference(reader.fieldnames or ()))
     if missing:
         raise SystemExit(f"memory-owner evidence is missing columns {missing}: {path}")
@@ -740,12 +915,101 @@ with path.open(encoding="utf-8-sig", newline="") as handle:
     ]
 if not rows:
     raise SystemExit(f"memory-owner evidence has no Yune Track A luna_pinyin rows: {path}")
-byte_backed = [row for row in rows if row["mapping_mode"].startswith("poet_bin:")]
-if byte_backed:
+wrong_modes = sorted(
+    {
+        row["track_a_storage_mode"]
+        for row in rows
+        if row["track_a_storage_mode"] != track_a_storage_mode
+    }
+)
+if wrong_modes:
     raise SystemExit(
-        "signed Track A requires default-owned poet measurement, "
-        f"but {len(byte_backed)} memory-owner rows report poet_bin storage"
+        "Track A memory-owner evidence has inconsistent storage-mode provenance: "
+        f"expected {track_a_storage_mode!r}, found {wrong_modes!r}"
     )
+poet_rows = [row for row in rows if row["owner_id"].startswith("poet.")]
+if track_a_storage_mode in {"production-default", "owned"}:
+    expected_owner_ids = {
+        "poet.entries_by_code",
+        "poet.lookup_index",
+        "poet.vocabulary",
+        "poet.abbreviation_vocabulary",
+    }
+    owner_counts = Counter(row["owner_id"] for row in poet_rows)
+    expected_counts = Counter({owner_id: 1 for owner_id in expected_owner_ids})
+    if owner_counts != expected_counts:
+        raise SystemExit(
+            f"{track_a_storage_mode} Track A requires exactly one row for each "
+            "owned poet owner: "
+            f"expected {dict(sorted(expected_counts.items()))!r}, "
+            f"found {dict(sorted(owner_counts.items()))!r}"
+        )
+    byte_backed = [row for row in rows if row["mapping_mode"].startswith("poet_bin:")]
+    if byte_backed:
+        raise SystemExit(
+            f"{track_a_storage_mode} Track A requires owned poet storage, "
+            f"but {len(byte_backed)} memory-owner rows report poet_bin storage"
+        )
+elif track_a_storage_mode == "byte-backed":
+    expected_owner_ids = {
+        "poet.entries_by_code",
+        "poet.prefix_index",
+        "poet.vocabulary",
+        "poet.abbreviation_vocabulary",
+    }
+    owner_counts = Counter(row["owner_id"] for row in poet_rows)
+    expected_counts = Counter({owner_id: 1 for owner_id in expected_owner_ids})
+    if owner_counts != expected_counts:
+        raise SystemExit(
+            "byte-backed Track A requires exactly one row for each expected poet owner: "
+            f"expected {dict(sorted(expected_counts.items()))!r}, "
+            f"found {dict(sorted(owner_counts.items()))!r}"
+        )
+    invalid_mapping_modes = sorted(
+        {
+            (row["owner_id"], row["mapping_mode"])
+            for row in poet_rows
+            if row["mapping_mode"] != "poet_bin:byte_backed:mmap"
+        }
+    )
+    if invalid_mapping_modes:
+        raise SystemExit(
+            "byte-backed Track A poet owners must use "
+            "mapping_mode=poet_bin:byte_backed:mmap; "
+            f"found {invalid_mapping_modes!r}"
+        )
+    if any(row["owner_id"] == "poet.lookup_index" for row in rows):
+        raise SystemExit("byte-backed Track A must not report poet.lookup_index")
 PY
+if [[ "$track_a_storage_mode" == "byte-backed" ]]; then
+  asserted_poet_owner_shape="poet.abbreviation_vocabulary,poet.entries_by_code,poet.prefix_index,poet.vocabulary; mapping_mode=poet_bin:byte_backed:mmap; poet.lookup_index absent"
+else
+  asserted_poet_owner_shape="poet.abbreviation_vocabulary,poet.entries_by_code,poet.lookup_index,poet.vocabulary; mapping_mode does not begin poet_bin:"
+fi
+{
+  echo "track_a_storage_mode=$track_a_storage_mode"
+  echo "asserted_poet_owner_shape=$asserted_poet_owner_shape"
+  echo "status=pass"
+} > "$output_root/track-a-owner-shape.txt"
+yune_git_head_after="$(git -C "$repo_root" rev-parse HEAD)"
+yune_git_tree_after="$(git -C "$repo_root" rev-parse 'HEAD^{tree}')"
+yune_git_status_after="$(git -C "$repo_root" status --porcelain=v1 --untracked-files=all)"
+if [[ "$yune_git_head_after" != "$yune_git_head" || "$yune_git_tree_after" != "$yune_git_tree" || -n "$yune_git_status_after" ]]; then
+  die "Yune source commit, tree, or clean status changed during macOS measurement."
+fi
+librime_git_head_after="$(git -C "$librime_src" rev-parse HEAD)"
+librime_git_tree_after="$(git -C "$librime_src" rev-parse 'HEAD^{tree}')"
+librime_git_status_after="$(git -C "$librime_src" status --porcelain=v1 --untracked-files=all)"
+if [[ "$librime_git_head_after" != "$librime_git_head" || "$librime_git_tree_after" != "$librime_git_tree" || -n "$librime_git_status_after" ]]; then
+  die "librime source commit, tree, or clean status changed during macOS measurement."
+fi
+{
+  echo "source_commit_after=$yune_git_head_after"
+  echo "source_tree_after=$yune_git_tree_after"
+  echo "source_clean_after=true"
+  echo "librime_commit_after=$librime_git_head_after"
+  echo "librime_tree_after=$librime_git_tree_after"
+  echo "librime_source_clean_after=true"
+} >> "$output_root/external-provenance.txt"
 write_readme
 log "done: $output_root"

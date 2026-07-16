@@ -7,6 +7,8 @@ param(
     [int]$Iterations = 9,
     [int]$SessionIterations = 60,
     [int]$KeyIterations = 80,
+    [ValidateSet("production-default", "owned", "byte-backed")]
+    [string]$TrackAStorageMode = "production-default",
     [string]$TrackAInputs = "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru",
     [string]$TrackBInputs = "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
     [switch]$DeployProductBeforeBenchmark,
@@ -20,6 +22,100 @@ param(
 
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "evidence-output-path.ps1")
+
+function Get-PoetByteBackedEnvironmentState {
+    $Value = [Environment]::GetEnvironmentVariable(
+        "YUNE_POET_BYTE_BACKED",
+        "Process"
+    )
+    return [pscustomobject]@{
+        Present = $null -ne $Value
+        Value = $Value
+    }
+}
+
+function Set-PoetByteBackedEnvironmentState(
+    [bool]$Present,
+    [AllowNull()]
+    [AllowEmptyString()]
+    [string]$Value
+) {
+    if ($null -eq ("Yune.BenchmarkNativeEnvironment" -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+
+namespace Yune {
+    public static class BenchmarkNativeEnvironment {
+        private const int ErrorEnvvarNotFound = 203;
+
+        [DllImport(
+            "kernel32.dll",
+            CharSet = CharSet.Unicode,
+            ExactSpelling = true,
+            SetLastError = true
+        )]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetEnvironmentVariableW(
+            string name,
+            string value
+        );
+
+        public static void SetPresent(string value) {
+            if (value == null) {
+                throw new ArgumentNullException("value");
+            }
+            Set(value);
+        }
+
+        public static void Remove() {
+            if (!SetEnvironmentVariableW("YUNE_POET_BYTE_BACKED", null)) {
+                int error = Marshal.GetLastWin32Error();
+                if (error != ErrorEnvvarNotFound) {
+                    throw new Win32Exception(error);
+                }
+            }
+        }
+
+        private static void Set(string value) {
+            if (!SetEnvironmentVariableW("YUNE_POET_BYTE_BACKED", value)) {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+        }
+    }
+}
+'@
+    }
+    if ($Present) {
+        [Yune.BenchmarkNativeEnvironment]::SetPresent($Value)
+    }
+    else {
+        [Yune.BenchmarkNativeEnvironment]::Remove()
+    }
+}
+
+function Restore-PoetByteBackedEnvironmentState(
+    [bool]$WasPresent,
+    [AllowNull()]
+    [AllowEmptyString()]
+    [string]$Value
+) {
+    Set-PoetByteBackedEnvironmentState $WasPresent $Value
+}
+
+$InheritedPoetByteBackedState = Get-PoetByteBackedEnvironmentState
+$InheritedPoetByteBackedPresent = $InheritedPoetByteBackedState.Present
+$InheritedPoetByteBacked = $InheritedPoetByteBackedState.Value
+$TrackAStorageModeWasProvided = $PSBoundParameters.ContainsKey("TrackAStorageMode")
+if ($TrackAStorageModeWasProvided -and $InheritedPoetByteBackedPresent) {
+    throw "Track A storage mode is ambiguous when YUNE_POET_BYTE_BACKED is inherited; unset it before running the benchmark."
+}
+if (-not $TrackAStorageModeWasProvided -and
+    $InheritedPoetByteBackedPresent -and
+    $InheritedPoetByteBacked -eq "1") {
+    throw "The signed Track A gate requires default-owned poet measurement; unset YUNE_POET_BYTE_BACKED before running it."
+}
 
 function Assert-PlainFileSystemPath([string]$Path, [string]$Label) {
     if ([string]::IsNullOrWhiteSpace($Path)) {
@@ -752,6 +848,7 @@ function Run-NativeBench(
     $BenchArgs = @(
         "--engine", $EngineName,
         "--track", $Track,
+        "--track-a-storage-mode", $TrackAStorageMode,
         "--schema", $Schema,
         "--dll", (Join-Path $RunRoot "rime.dll"),
         "--shared", (Join-Path $RunRoot "shared"),
@@ -783,6 +880,7 @@ function Invoke-DeployPrep(
     $BenchArgs = @(
         "--engine", $EngineName,
         "--track", $Track,
+        "--track-a-storage-mode", $TrackAStorageMode,
         "--schema", $Schema,
         "--dll", (Join-Path $RunRoot "rime.dll"),
         "--shared", (Join-Path $RunRoot "shared"),
@@ -809,30 +907,159 @@ function Invoke-TrackAPoetDeployPrep(
     # poet sidecar. Poet *generation* is guarded by the same opt-in as poet
     # consumption, so scope the opt-in to the separate deploy-prep invocation and
     # restore the benchmark environment before any timing process starts.
-    $PreviousPoetByteBacked = [Environment]::GetEnvironmentVariable(
-        "YUNE_POET_BYTE_BACKED",
-        "Process"
-    )
-    if ($PreviousPoetByteBacked -eq "1") {
+    $PreviousPoetByteBackedState = Get-PoetByteBackedEnvironmentState
+    $PreviousPoetByteBackedPresent = $PreviousPoetByteBackedState.Present
+    $PreviousPoetByteBacked = $PreviousPoetByteBackedState.Value
+    if ($TrackAStorageModeWasProvided -and $PreviousPoetByteBackedPresent) {
+        throw "Track A storage mode is ambiguous when YUNE_POET_BYTE_BACKED is inherited; unset it before running the benchmark."
+    }
+    if (-not $TrackAStorageModeWasProvided -and
+        $PreviousPoetByteBackedPresent -and
+        $PreviousPoetByteBacked -eq "1") {
         throw "The signed Track A gate requires default-owned poet measurement; unset YUNE_POET_BYTE_BACKED before running it."
     }
     try {
-        [Environment]::SetEnvironmentVariable("YUNE_POET_BYTE_BACKED", "1", "Process")
+        Set-PoetByteBackedEnvironmentState $true "1"
         Invoke-DeployPrep "yune" "track-a-comparison" "luna_pinyin" $RunRoot $ExtraPath "track-a-yune"
     }
     finally {
-        [Environment]::SetEnvironmentVariable(
-            "YUNE_POET_BYTE_BACKED",
-            $PreviousPoetByteBacked,
-            "Process"
-        )
+        Restore-PoetByteBackedEnvironmentState `
+            $PreviousPoetByteBackedPresent `
+            $PreviousPoetByteBacked
+        Assert-TrackAPoetEnvironmentRestored `
+            "Track A deploy prep" `
+            $PreviousPoetByteBackedPresent `
+            $PreviousPoetByteBacked
     }
-    $RestoredPoetByteBacked = [Environment]::GetEnvironmentVariable(
-        "YUNE_POET_BYTE_BACKED",
-        "Process"
+}
+
+function Assert-TrackAPoetEnvironmentRestored(
+    [string]$Phase,
+    [bool]$ExpectedPresent,
+    [AllowNull()]
+    [string]$ExpectedValue
+) {
+    $ObservedState = Get-PoetByteBackedEnvironmentState
+    if ($ObservedState.Present -ne $ExpectedPresent -or
+        ($ExpectedPresent -and $ObservedState.Value -cne $ExpectedValue)) {
+        throw "YUNE_POET_BYTE_BACKED was not restored before $Phase."
+    }
+}
+
+function Invoke-TrackAYuneBench(
+    $RunRoot,
+    $ExtraPath
+) {
+    $PreviousPoetByteBackedState = Get-PoetByteBackedEnvironmentState
+    $PreviousPoetByteBackedPresent = $PreviousPoetByteBackedState.Present
+    $PreviousPoetByteBacked = $PreviousPoetByteBackedState.Value
+    if ($TrackAStorageModeWasProvided -and $PreviousPoetByteBackedPresent) {
+        throw "Track A storage mode is ambiguous when YUNE_POET_BYTE_BACKED is inherited; unset it before running the benchmark."
+    }
+    if (-not $TrackAStorageModeWasProvided -and
+        $PreviousPoetByteBackedPresent -and
+        $PreviousPoetByteBacked -eq "1") {
+        throw "The signed Track A gate requires default-owned poet measurement; unset YUNE_POET_BYTE_BACKED before running it."
+    }
+    try {
+        if ($TrackAStorageMode -eq "byte-backed") {
+            Set-PoetByteBackedEnvironmentState $true "1"
+        }
+        Run-NativeBench `
+            "yune" `
+            "track-a-comparison" `
+            "luna_pinyin" `
+            $RunRoot `
+            $ExtraPath `
+            $TrackAInputs `
+            "track-a-yune"
+    }
+    finally {
+        Restore-PoetByteBackedEnvironmentState `
+            $PreviousPoetByteBackedPresent `
+            $PreviousPoetByteBacked
+        Assert-TrackAPoetEnvironmentRestored `
+            "Track A Yune timing" `
+            $PreviousPoetByteBackedPresent `
+            $PreviousPoetByteBacked
+    }
+}
+
+function Assert-TrackAOwnerShape($Rows, [string]$StorageMode) {
+    $TrackAOwnerRows = @($Rows | Where-Object {
+        $_.engine -eq "yune" -and
+        $_.track -eq "track-a-comparison" -and
+        $_.schema_id -eq "luna_pinyin"
+    })
+    if ($TrackAOwnerRows.Count -eq 0) {
+        throw "The Track A gate produced no Yune luna_pinyin memory-owner rows."
+    }
+    $ModeDriftRows = @($TrackAOwnerRows | Where-Object {
+        $_.track_a_storage_mode -ne $StorageMode
+    })
+    if ($ModeDriftRows.Count -gt 0) {
+        throw "Track A memory-owner evidence contains $($ModeDriftRows.Count) rows with storage-mode drift."
+    }
+    $OwnerSnapshotRows = @($TrackAOwnerRows | Where-Object {
+        $_.owner_id -eq "process.owner_snapshot_private_bytes"
+    })
+    if ($OwnerSnapshotRows.Count -ne 1) {
+        throw "Track A requires exactly one process.owner_snapshot_private_bytes receipt."
+    }
+    $OwnerSnapshotPrivateBytesText = [string]$OwnerSnapshotRows[0].retained_estimate_bytes
+    [UInt64]$OwnerSnapshotPrivateBytes = 0
+    if ($OwnerSnapshotPrivateBytesText -notmatch "^[0-9]+$" -or
+        -not [UInt64]::TryParse(
+            $OwnerSnapshotPrivateBytesText,
+            [ref]$OwnerSnapshotPrivateBytes
+        ) -or
+        $OwnerSnapshotPrivateBytes -eq 0) {
+        throw "Track A process.owner_snapshot_private_bytes must be a strictly positive UInt64 receipt."
+    }
+
+    $PoetRows = @($TrackAOwnerRows | Where-Object {
+        $_.owner_id -like "poet.*"
+    })
+    if ($StorageMode -eq "byte-backed") {
+        $ExpectedOwners = @(
+            "poet.abbreviation_vocabulary",
+            "poet.entries_by_code",
+            "poet.prefix_index",
+            "poet.vocabulary"
+        )
+        $ActualOwners = @($PoetRows | ForEach-Object { $_.owner_id } | Sort-Object)
+        if ($ActualOwners.Count -ne $ExpectedOwners.Count -or
+            (Compare-Object -ReferenceObject $ExpectedOwners -DifferenceObject $ActualOwners).Count -ne 0) {
+            throw "Byte-backed Track A requires exactly the four POET byte-backed owner rows."
+        }
+        $InvalidStorage = @($PoetRows | Where-Object {
+            $_.mapping_mode -ne "poet_bin:byte_backed:mmap"
+        })
+        if ($InvalidStorage.Count -gt 0) {
+            throw "Byte-backed Track A POET owner rows must use poet_bin:byte_backed:mmap."
+        }
+        if (@($PoetRows | Where-Object { $_.owner_id -eq "poet.lookup_index" }).Count -gt 0) {
+            throw "Byte-backed Track A must not report poet.lookup_index."
+        }
+        return
+    }
+
+    $ExpectedOwnedOwners = @(
+        "poet.abbreviation_vocabulary",
+        "poet.entries_by_code",
+        "poet.lookup_index",
+        "poet.vocabulary"
     )
-    if ($RestoredPoetByteBacked -ne $PreviousPoetByteBacked) {
-        throw "Failed to restore YUNE_POET_BYTE_BACKED after Track A deploy prep."
+    $ActualOwnedOwners = @($PoetRows | ForEach-Object { $_.owner_id } | Sort-Object)
+    if ($ActualOwnedOwners.Count -ne $ExpectedOwnedOwners.Count -or
+        (Compare-Object -ReferenceObject $ExpectedOwnedOwners -DifferenceObject $ActualOwnedOwners).Count -ne 0) {
+        throw "Owned Track A requires the four owned POET owner rows."
+    }
+    $ByteBackedPoetOwners = @($PoetRows | Where-Object {
+        $_.mapping_mode -like "poet_bin:*"
+    })
+    if ($ByteBackedPoetOwners.Count -gt 0) {
+        throw "Owned Track A must not report poet_bin owner rows."
     }
 }
 
@@ -1259,6 +1486,7 @@ $InvocationParts = @(
     "-Iterations", "$Iterations",
     "-SessionIterations", "$SessionIterations",
     "-KeyIterations", "$KeyIterations",
+    "-TrackAStorageMode", (Quote-CommandArg $TrackAStorageMode),
     "-TrackAInputs", (Quote-CommandArg $TrackAInputs),
     "-TrackBInputs", (Quote-CommandArg $TrackBInputs)
 )
@@ -1298,7 +1526,9 @@ $Commands | Set-Content -LiteralPath (Join-Path $OutputRoot "commands.txt") -Enc
     "native_benchmark_executable_prebuilt=$NativeBenchmarkExecutableWasProvided",
     "native_benchmark_build_performed=$NativeBenchmarkBuildPerformed",
     "native_benchmark_receipt=$NativeBenchmarkReceipt",
-    "native_benchmark_receipt_sha256=$NativeBenchmarkReceiptSha256"
+    "native_benchmark_receipt_sha256=$NativeBenchmarkReceiptSha256",
+    "track_a_storage_mode=$TrackAStorageMode",
+    "track_a_storage_mode_explicit=$TrackAStorageModeWasProvided"
 ) | Set-Content -LiteralPath (Join-Path $OutputRoot "actual-invocation.txt") -Encoding UTF8
 
 $Identity = @(
@@ -1334,6 +1564,8 @@ $Identity = @(
     "skip_track_b=$($SkipTrackB.IsPresent)",
     "track_a_thresholds=$TrackAThresholds",
     "fail_on_regression=$($FailOnRegression.IsPresent)",
+    "track_a_storage_mode=$TrackAStorageMode",
+    "track_a_storage_mode_explicit=$TrackAStorageModeWasProvided",
     "track_a_inputs=$TrackAInputs",
     "track_b_inputs=$TrackBInputs",
     "iterations=$Iterations",
@@ -1357,7 +1589,9 @@ $Identity | Set-Content -LiteralPath (Join-Path $OutputRoot "environment.txt") -
     "native_benchmark_build_performed=$NativeBenchmarkBuildPerformed",
     "native_benchmark_receipt=$NativeBenchmarkReceipt",
     "native_benchmark_receipt_sha256=$NativeBenchmarkReceiptSha256",
-    "benchmark_script_sha256=$BenchmarkScriptSha256"
+    "benchmark_script_sha256=$BenchmarkScriptSha256",
+    "track_a_storage_mode=$TrackAStorageMode",
+    "track_a_storage_mode_explicit=$TrackAStorageModeWasProvided"
 ) | Set-Content -LiteralPath (Join-Path $OutputRoot "external-provenance.txt") -Encoding UTF8
 
 $TrackAYuneBuild = Join-Path $TrackAYuneRun "user\build"
@@ -1376,16 +1610,25 @@ $TrackAPoet = Get-Item -LiteralPath (Join-Path $TrackAYuneBuild "luna_pinyin.poe
 @(
     "track_a_deploy_prep=separate_process",
     "poet_generation_environment=YUNE_POET_BYTE_BACKED=1 (deploy-prep invocation only)",
-    "benchmark_poet_environment=$(if ([Environment]::GetEnvironmentVariable('YUNE_POET_BYTE_BACKED', 'Process') -eq '1') { 'invalid-byte-backed' } else { 'default-owned' })",
+    "track_a_storage_mode=$TrackAStorageMode",
+    "benchmark_poet_environment=$(if ($TrackAStorageMode -eq 'byte-backed') { 'YUNE_POET_BYTE_BACKED=1 (Track A Yune timing only)' } elseif (-not $InheritedPoetByteBackedPresent) { 'unset' } else { 'restored inherited non-activating value' })",
     "restored_oracle_build_artifacts=true",
     "poet_artifact=$(Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin")",
     "poet_bytes=$($TrackAPoet.Length)",
     "table_artifact=$(Join-Path $TrackAYuneBuild "luna_pinyin.table.bin")",
     "table_bytes=$($TrackATable.Length)"
 ) | Set-Content -LiteralPath (Join-Path $OutputRoot "track-a-yune-deploy-prep-artifacts.txt") -Encoding UTF8
-Run-NativeBench "yune" "track-a-comparison" "luna_pinyin" $TrackAYuneRun $UpstreamDistLib $TrackAInputs "track-a-yune"
+Invoke-TrackAYuneBench $TrackAYuneRun $UpstreamDistLib
+Assert-TrackAPoetEnvironmentRestored `
+    "same-run librime comparison" `
+    $InheritedPoetByteBackedPresent `
+    $InheritedPoetByteBacked
 Run-NativeBench "librime-1.17.0" "track-a-comparison" "luna_pinyin" $TrackALibrimeRun (($UpstreamDistLib, $UpstreamBin, $UpstreamDistBin) -join ";") $TrackAInputs "track-a-librime-1.17.0"
 if (-not $SkipTrackB) {
+    Assert-TrackAPoetEnvironmentRestored `
+        "Track B product guard" `
+        $InheritedPoetByteBackedPresent `
+        $InheritedPoetByteBacked
     Run-NativeBench "yune" "track-b-product" "jyut6ping3_mobile" $TrackBProductRun $RepoRoot $TrackBInputs "track-b-yune-product" -DeployBeforeBenchmark:$DeployProductBeforeBenchmark.IsPresent
 }
 
@@ -1430,20 +1673,18 @@ $CombinedCandidateSnapshots | Export-Csv -LiteralPath (Join-Path $OutputRoot "ca
 $CombinedRawLookupMicrobench | Export-Csv -LiteralPath (Join-Path $OutputRoot "raw_lookup_microbench.csv") -NoTypeInformation -Encoding UTF8
 $CombinedMemoryOwnerProfile | Export-Csv -LiteralPath (Join-Path $OutputRoot "memory-owner-profile.csv") -NoTypeInformation -Encoding UTF8
 
-$TrackAOwnerRows = @($CombinedMemoryOwnerProfile | Where-Object {
-    $_.engine -eq "yune" -and
-    $_.track -eq "track-a-comparison" -and
-    $_.schema_id -eq "luna_pinyin"
-})
-if ($TrackAOwnerRows.Count -eq 0) {
-    throw "The signed Track A gate produced no Yune luna_pinyin memory-owner rows."
+Assert-TrackAOwnerShape $CombinedMemoryOwnerProfile $TrackAStorageMode
+$AssertedPoetOwnerShape = if ($TrackAStorageMode -eq "byte-backed") {
+    "poet.abbreviation_vocabulary,poet.entries_by_code,poet.prefix_index,poet.vocabulary; mapping_mode=poet_bin:byte_backed:mmap; poet.lookup_index absent"
+} else {
+    "poet.abbreviation_vocabulary,poet.entries_by_code,poet.lookup_index,poet.vocabulary; mapping_mode does not begin poet_bin:"
 }
-$ByteBackedPoetOwners = @($TrackAOwnerRows | Where-Object {
-    $_.mapping_mode -like "poet_bin:*"
-})
-if ($ByteBackedPoetOwners.Count -gt 0) {
-    throw "The signed Track A gate requires default-owned poet measurement, but memory-owner evidence reports $($ByteBackedPoetOwners.Count) poet_bin owner rows."
-}
+@(
+    "track_a_storage_mode=$TrackAStorageMode",
+    "asserted_poet_owner_shape=$AssertedPoetOwnerShape",
+    "owner_snapshot_private_bytes_rows=1",
+    "status=pass"
+) | Set-Content -LiteralPath (Join-Path $OutputRoot "track-a-owner-shape.txt") -Encoding UTF8
 
 $TrackAComparison = Write-TrackAComparison $CombinedSummary (Join-Path $OutputRoot "summary-comparison.csv")
 Invoke-TrackAThresholdCheck $TrackAComparison $CombinedSummary $CombinedMemoryOwnerProfile $TrackAThresholds (Join-Path $OutputRoot "threshold-check.csv") -Fail:$($FailOnRegression.IsPresent)
@@ -1458,6 +1699,7 @@ This run uses the Rust native_inprocess_benchmark bench and loads each engine DL
 - Track A: luna_pinyin, Yune versus librime 1.17.0.
 - Track B: $TrackBReadme
 - Track A inputs: $TrackAInputs.
+- Track A storage mode: $TrackAStorageMode.
 - Track B inputs: $TrackBInputs.
 - Summary comparison: summary-comparison.csv.
 - Threshold gate: $ThresholdReadme

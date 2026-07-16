@@ -94,6 +94,7 @@ fn main() {
 struct Options {
     engine: String,
     track: String,
+    track_a_storage_mode: String,
     schema: String,
     dll: PathBuf,
     shared: PathBuf,
@@ -118,6 +119,20 @@ impl Options {
         Self {
             engine: take_arg(&mut args, "--engine"),
             track: take_arg_default(&mut args, "--track", "track-a"),
+            track_a_storage_mode: take_arg_default(
+                &mut args,
+                "--track-a-storage-mode",
+                "production-default",
+            )
+            .tap(|value| {
+                assert!(
+                    matches!(
+                        value.as_str(),
+                        "production-default" | "owned" | "byte-backed"
+                    ),
+                    "invalid --track-a-storage-mode {value}"
+                );
+            }),
             schema: take_arg(&mut args, "--schema"),
             dll: PathBuf::from(take_arg(&mut args, "--dll")),
             shared: PathBuf::from(take_arg(&mut args, "--shared")),
@@ -1367,6 +1382,7 @@ fn write_metadata(path: &PathBuf, options: &Options) {
     let metadata = [
         format!("engine={}", options.engine),
         format!("track={}", options.track),
+        format!("track_a_storage_mode={}", options.track_a_storage_mode),
         format!("schema={}", options.schema),
         format!("dll={}", options.dll.display()),
         format!("shared={}", options.shared.display()),
@@ -1952,7 +1968,7 @@ fn write_memory_owner_profile(
     options: &Options,
     samples: &[Sample],
 ) {
-    let mut output = String::from("engine,track,schema_id,session_id,owner_id,module,structure,byte_class,sharing_scope,retained_estimate_bytes,non_overlapping_reducible_bytes,logical_bytes,item_count,mapped_file_bytes,mapping_mode,evidence_source,notes\n");
+    let mut output = String::from("engine,track,schema_id,track_a_storage_mode,session_id,owner_id,module,structure,byte_class,sharing_scope,retained_estimate_bytes,non_overlapping_reducible_bytes,logical_bytes,item_count,mapped_file_bytes,mapping_mode,evidence_source,notes\n");
     if options.engine != "yune" {
         fs::write(path, output).expect("memory owner profile CSV should be written");
         return;
@@ -1966,6 +1982,7 @@ fn write_memory_owner_profile(
         assert_ne!(session_id, 0, "create_session returned 0");
         select_schema(api, session_id, &options.schema);
         set_default_options(api, session_id);
+        let owner_snapshot_memory = current_memory_sample();
         let rows = exports.snapshot();
         let named_non_overlapping = rows
             .iter()
@@ -2002,10 +2019,11 @@ fn write_memory_owner_profile(
                 _ => "session_or_process_heap",
             };
             output.push_str(&format!(
-                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
                 csv(&options.engine),
                 csv(&options.track),
                 csv(&options.schema),
+                csv(&options.track_a_storage_mode),
                 row.session_id,
                 csv(&row.owner),
                 csv(module),
@@ -2022,7 +2040,13 @@ fn write_memory_owner_profile(
                 csv(&row.notes),
             ));
         }
-        append_process_memory_owner_rows(&mut output, options, samples, named_non_overlapping);
+        append_process_memory_owner_rows(
+            &mut output,
+            options,
+            samples,
+            named_non_overlapping,
+            owner_snapshot_memory.private,
+        );
         assert_eq!(
             require("destroy_session", api.destroy_session)(session_id),
             TRUE
@@ -2036,6 +2060,7 @@ fn append_process_memory_owner_rows(
     options: &Options,
     samples: &[Sample],
     named_non_overlapping_bytes: u64,
+    owner_snapshot_private_bytes: Option<u64>,
 ) {
     let median_steady = median_u64(
         samples
@@ -2058,6 +2083,11 @@ fn append_process_memory_owner_rows(
         .filter_map(|sample| sample.peak_pagefile_bytes)
         .max();
     for (owner, value, note) in [
+        (
+            "process.owner_snapshot_private_bytes",
+            owner_snapshot_private_bytes,
+            "private bytes sampled immediately before the zero-key post-schema-selection memory-owner JSON export",
+        ),
         (
             "process.after_ready_working_set_unclassified_lower_bound",
             median_steady.map(|value| value.saturating_sub(named_non_overlapping_bytes)),
@@ -2084,10 +2114,11 @@ fn append_process_memory_owner_rows(
         };
         let (module, structure) = split_owner_id(owner);
         output.push_str(&format!(
-            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
             csv(&options.engine),
             csv(&options.track),
             csv(&options.schema),
+            csv(&options.track_a_storage_mode),
             0,
             csv(owner),
             csv(module),

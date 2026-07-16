@@ -3067,6 +3067,7 @@ class NativeRatchetTests(unittest.TestCase):
         "native_benchmark_executable_prebuilt": "False",
         "native_benchmark_build_performed": "True",
         "benchmark_script_sha256": "2" * 64,
+        "track_a_storage_mode": "owned",
         "track_a_inputs": "x",
         "track_b_inputs": "trackb",
         "iterations": "9",
@@ -3137,11 +3138,13 @@ class NativeRatchetTests(unittest.TestCase):
         receipt_override=None,
         include_ratio_check=True,
         checked_observed=None,
+        prebuilt=None,
+        private_bytes=1000,
     ):
         run = self.root / f"run-{number}"
         run.mkdir()
         environment = dict(self.provenance)
-        builder_run = str(number).endswith("1")
+        builder_run = str(number).endswith("1") if prebuilt is None else not prebuilt
         environment["native_benchmark_executable_prebuilt"] = (
             "False" if builder_run else "True"
         )
@@ -3191,6 +3194,10 @@ class NativeRatchetTests(unittest.TestCase):
             "status=complete\ndate_utc=2026-01-01T00:00:00Z\ndetail=\n",
             encoding="utf-8",
         )
+        (run / "memory-owner-profile.csv").write_text(
+            "owner_id,mapping_mode\npoet.vocabulary,owned\n",
+            encoding="utf-8",
+        )
         (run / "environment.txt").write_text(
             "".join(f"{key}={value}\n" for key, value in environment.items()),
             encoding="utf-8",
@@ -3207,6 +3214,47 @@ class NativeRatchetTests(unittest.TestCase):
                     "workload": "key_sequence_process_with_context",
                     "input": "x",
                     "yune_librime_median_ratio": str(observed),
+                }
+            )
+        with (run / "summary.csv").open(
+            "w", encoding="utf-8", newline=""
+        ) as handle:
+            fields = [
+                "engine",
+                "track",
+                "schema_id",
+                "workload",
+                "input",
+                "samples",
+                "operations",
+                "median_us",
+                "p95_us",
+                "p99_us",
+                "max_us",
+                "median_working_set_bytes",
+                "max_peak_working_set_bytes",
+                "median_private_bytes",
+                "max_peak_pagefile_bytes",
+            ]
+            writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+            writer.writeheader()
+            writer.writerow(
+                {
+                    "engine": "yune",
+                    "track": "track-a-comparison",
+                    "schema_id": "luna_pinyin",
+                    "workload": "key_sequence_process_with_context",
+                    "input": "x",
+                    "samples": "80",
+                    "operations": "80",
+                    "median_us": "1",
+                    "p95_us": "1",
+                    "p99_us": "1",
+                    "max_us": "1",
+                    "median_working_set_bytes": "1000",
+                    "max_peak_working_set_bytes": "1000",
+                    "median_private_bytes": str(private_bytes),
+                    "max_peak_pagefile_bytes": "1000",
                 }
             )
         with (run / "threshold-check.csv").open(
@@ -3331,6 +3379,14 @@ class NativeRatchetTests(unittest.TestCase):
             native_ratchet._file_sha256(runs[0] / "summary-comparison.csv"),
         )
         self.assertEqual(
+            provenance["runs"][0]["raw_files_sha256"][
+                "memory-owner-profile.csv"
+            ],
+            native_ratchet._file_sha256(
+                runs[0] / "memory-owner-profile.csv"
+            ),
+        )
+        self.assertEqual(
             provenance["validated_provenance"]["measured_yune_dll_sha256"],
             "b" * 64,
         )
@@ -3341,6 +3397,14 @@ class NativeRatchetTests(unittest.TestCase):
         self.assertEqual(
             provenance["validated_provenance"]["native_benchmark_builder_run"],
             "1",
+        )
+        self.assertEqual(
+            provenance["validated_provenance"]["track_a_storage_mode"],
+            "owned",
+        )
+        self.assertEqual(
+            provenance["track_a_private_envelope_bytes"]["median_observed"],
+            "1000",
         )
         self.assertEqual(
             [
@@ -3667,39 +3731,209 @@ namespace['_write_output_pair'](
 
     def test_native_benchmark_build_reuse_sequence_is_exact(self):
         bad_cases = (
-            (
-                "run-1-reused",
-                1,
-                {
-                    "native_benchmark_executable_prebuilt": "True",
-                    "native_benchmark_build_performed": "False",
-                },
-            ),
-            (
-                "run-2-rebuilt",
-                2,
-                {
-                    "native_benchmark_executable_prebuilt": "False",
-                    "native_benchmark_build_performed": "True",
-                },
-            ),
+            ("reuse-then-build", [True, False, True, True, True]),
+            ("two-builds", [False, False, True, True, True]),
+            ("late-rebuild", [False, True, False, True, True]),
         )
-        for case_number, (label, bad_index, override) in enumerate(bad_cases, start=1):
+        for case_number, (label, prebuilt_modes) in enumerate(
+            bad_cases, start=1
+        ):
             with self.subTest(label=label):
-                runs = []
-                for index in range(1, 6):
-                    runs.append(
-                        self.write_run(
-                            case_number * 10 + index,
-                            1,
-                            provenance_override=override if index == bad_index else None,
-                        )
+                runs = [
+                    self.write_run(
+                        case_number * 10 + index,
+                        1,
+                        prebuilt=prebuilt,
                     )
+                    for index, prebuilt in enumerate(prebuilt_modes, start=1)
+                ]
                 result, stderr = self.run_tool(runs, return_stderr=True)
                 self.assertEqual(result, 2)
-                self.assertIn("run 1 built once", stderr)
+                self.assertIn("either run 1 built once", stderr)
                 self.assertFalse(self.output.exists())
                 self.assertFalse(self.sidecar.exists())
+
+    def test_five_all_prebuilt_runs_with_one_identity_are_accepted(self):
+        runs = [
+            self.write_run(index, 1, prebuilt=True)
+            for index in range(1, 6)
+        ]
+        self.assertEqual(self.run_tool(runs), 0)
+        provenance = json.loads(self.sidecar.read_text(encoding="utf-8"))
+        self.assertEqual(
+            provenance["validated_provenance"]["native_benchmark_mode_sequence"],
+            "reuse,reuse,reuse,reuse,reuse",
+        )
+        self.assertEqual(
+            provenance["validated_provenance"]["native_benchmark_builder_run"],
+            "preceding-mode",
+        )
+
+    def test_storage_mode_is_required_valid_and_uniform(self):
+        bad_cases = (
+            ("invalid", 5, {"track_a_storage_mode": "surprise"}),
+            ("drift", 5, {"track_a_storage_mode": "byte-backed"}),
+        )
+        for case_number, (label, bad_index, override) in enumerate(
+            bad_cases, start=1
+        ):
+            with self.subTest(label=label):
+                runs = [
+                    self.write_run(
+                        case_number * 10 + index,
+                        1,
+                        provenance_override=(
+                            override if index == bad_index else None
+                        ),
+                    )
+                    for index in range(1, 6)
+                ]
+                result, stderr = self.run_tool(runs, return_stderr=True)
+                self.assertEqual(result, 2)
+                self.assertIn("track_a_storage_mode", stderr)
+                self.assertFalse(self.output.exists())
+                self.assertFalse(self.sidecar.exists())
+
+    def test_fixed_binary_hashes_and_reuse_identity_cannot_drift(self):
+        cases = (
+            (
+                "yune-dll-hash",
+                {"measured_yune_dll_sha256": "9" * 64},
+                None,
+                "measured_yune_dll_sha256",
+            ),
+            (
+                "benchmark-hash",
+                {"native_benchmark_executable_sha256": "9" * 64},
+                None,
+                "native_benchmark_executable_sha256",
+            ),
+            (
+                "reuse-path",
+                {
+                    "native_benchmark_executable": (
+                        "/external/other-target/native-benchmark"
+                    )
+                },
+                {
+                    "native_benchmark_executable_path": (
+                        "/external/other-target/native-benchmark"
+                    )
+                },
+                "native_benchmark_receipt_sha256",
+            ),
+        )
+        for case_number, (
+            label,
+            provenance_override,
+            receipt_override,
+            message,
+        ) in enumerate(cases, start=1):
+            with self.subTest(label=label):
+                runs = [
+                    self.write_run(case_number * 10 + index, 1)
+                    for index in range(1, 5)
+                ]
+                runs.append(
+                    self.write_run(
+                        case_number * 10 + 5,
+                        1,
+                        provenance_override=provenance_override,
+                        receipt_override=receipt_override,
+                    )
+                )
+                result, stderr = self.run_tool(runs, return_stderr=True)
+                self.assertEqual(result, 2)
+                self.assertIn(message, stderr)
+                self.assertFalse(self.output.exists())
+                self.assertFalse(self.sidecar.exists())
+
+    def test_track_a_private_envelope_uses_maximum_yune_key_row(self):
+        self.write_thresholds()
+        runs = [
+            self.write_run(index, 1, private_bytes=1000 + index)
+            for index in range(1, 6)
+        ]
+        summary = runs[0] / "summary.csv"
+        with summary.open("a", encoding="utf-8", newline="") as handle:
+            writer = csv.writer(handle, lineterminator="\n")
+            writer.writerow(
+                [
+                    "librime-1.17.0",
+                    "track-a-comparison",
+                    "luna_pinyin",
+                    "key_sequence_process_with_context",
+                    "x",
+                    "80",
+                    "80",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "999999",
+                    "1",
+                ]
+            )
+        self.assertEqual(self.run_tool(runs), 0)
+        provenance = json.loads(self.sidecar.read_text(encoding="utf-8"))
+        receipt = provenance["track_a_private_envelope_bytes"]
+        self.assertEqual(receipt["run1_observed"], "1001")
+        self.assertEqual(receipt["median_observed"], "1003")
+        self.assertEqual(receipt["worst_observed"], "1005")
+
+    def test_private_envelope_rejects_missing_duplicate_and_sample_drift(self):
+        cases = ("missing", "duplicate", "samples", "schema")
+        for case_number, case in enumerate(cases, start=1):
+            with self.subTest(case=case):
+                runs = [
+                    self.write_run(case_number * 10 + index, 1)
+                    for index in range(1, 6)
+                ]
+                summary = runs[-1] / "summary.csv"
+                with summary.open(encoding="utf-8") as handle:
+                    rows = list(csv.DictReader(handle))
+                if case == "missing":
+                    rows = []
+                elif case == "duplicate":
+                    rows.append(dict(rows[0]))
+                elif case == "samples":
+                    rows[0]["samples"] = "79"
+                else:
+                    rows[0]["schema_id"] = "other_schema"
+                with summary.open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.DictWriter(
+                        handle,
+                        fieldnames=[
+                            "engine",
+                            "track",
+                            "schema_id",
+                            "workload",
+                            "input",
+                            "samples",
+                            "operations",
+                            "median_us",
+                            "p95_us",
+                            "p99_us",
+                            "max_us",
+                            "median_working_set_bytes",
+                            "max_peak_working_set_bytes",
+                            "median_private_bytes",
+                            "max_peak_pagefile_bytes",
+                        ],
+                        lineterminator="\n",
+                    )
+                    writer.writeheader()
+                    writer.writerows(rows)
+                result, stderr = self.run_tool(runs, return_stderr=True)
+                self.assertEqual(result, 2)
+                self.assertTrue(
+                    "private row" in stderr
+                    or "samples differ" in stderr
+                    or "private rows differ" in stderr,
+                    stderr,
+                )
 
     def test_native_benchmark_receipt_must_match_packet_and_environment(self):
         bad_cases = (
@@ -3785,6 +4019,15 @@ namespace['_write_output_pair'](
                 self.assertIn("benchmark run status must be complete", stderr)
                 self.assertFalse(self.output.exists())
                 self.assertFalse(self.sidecar.exists())
+
+    def test_memory_owner_profile_is_required_for_source_bound_aggregation(self):
+        runs = [self.write_run(index, 1) for index in range(1, 6)]
+        (runs[-1] / "memory-owner-profile.csv").unlink()
+        result, stderr = self.run_tool(runs, return_stderr=True)
+        self.assertEqual(result, 2)
+        self.assertIn("missing memory-owner-profile.csv", stderr)
+        self.assertFalse(self.output.exists())
+        self.assertFalse(self.sidecar.exists())
 
     def test_summary_and_threshold_check_disagreement_is_structural(self):
         runs = [self.write_run(index, 1) for index in range(1, 5)]

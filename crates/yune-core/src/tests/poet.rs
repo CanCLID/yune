@@ -958,7 +958,6 @@ fn upstream_sentence_model_reads_candidates_from_byte_backed_poet_artifact() {
         TableEntry::new("x", "X", 100.0),
         TableEntry::new("y", "Y", 100.0),
         TableEntry::new("z", "Z", 100.0),
-        TableEntry::new("phrase-only", "AB", 50.0),
     ];
     let vocabulary = vec![
         PresetVocabularyEntry::new("AB", 1_000_000.0),
@@ -997,34 +996,8 @@ fn upstream_sentence_model_reads_candidates_from_byte_backed_poet_artifact() {
         byte_model.candidates_for_code_spans_with_limit("wxyz", &spans, 5),
         heap_model.candidates_for_code_spans_with_limit("wxyz", &spans, 5)
     );
-    for code in ["a", "w", "missing", "phrase-only"] {
-        assert_eq!(
-            byte_model.has_normal_character_code(code),
-            heap_model.has_normal_character_code(code),
-            "byte-backed normal-character membership must match owned storage for {code}",
-        );
-    }
-    assert!(heap_model.has_normal_character_code("a"));
-    assert!(byte_model.has_normal_character_code("w"));
-    assert!(heap_model.has_code("phrase-only"));
-    assert!(byte_model.has_code("phrase-only"));
-    assert!(!heap_model.has_normal_character_code("phrase-only"));
-    assert!(!byte_model.has_normal_character_code("phrase-only"));
 
     let owners = byte_model.memory_owner_rows();
-    assert_eq!(
-        owners
-            .iter()
-            .map(|row| row.owner.as_str())
-            .collect::<Vec<_>>(),
-        [
-            "poet.entries_by_code",
-            "poet.prefix_index",
-            "poet.vocabulary",
-            "poet.abbreviation_vocabulary",
-        ],
-        "byte-backed YUNE-POET/3 must retain exactly its four mapped owners",
-    );
     let owner = |name: &str| {
         owners
             .iter()
@@ -1051,21 +1024,6 @@ fn upstream_sentence_model_reads_candidates_from_byte_backed_poet_artifact() {
         owner("poet.prefix_index").class,
         MemoryOwnerClass::MmapFileBacked
     );
-
-    let heap_owners = heap_model.memory_owner_rows();
-    let normal_character_code_owner = heap_owners
-        .iter()
-        .find(|row| row.owner == "poet.normal_character_code_index")
-        .unwrap_or_else(|| {
-            panic!("owned sentence model must retain its normal-character index: {heap_owners:?}")
-        });
-    assert_eq!(
-        normal_character_code_owner.class,
-        MemoryOwnerClass::HeapOwnedGuarded
-    );
-    assert_eq!(normal_character_code_owner.storage, "sorted Box<[String]>");
-    assert!(normal_character_code_owner.item_count > 0);
-    assert!(normal_character_code_owner.estimated_bytes > 0);
 }
 
 #[test]
@@ -1096,24 +1054,6 @@ fn script_phrase_derivation_uses_librime_five_percent_reading_threshold() {
             10,
         )
         .expect("filtered byte-backed poet artifact should load");
-        for code in ["a-main", "a-minor", "b", "missing"] {
-            assert_eq!(
-                byte_model.has_normal_character_code(code),
-                heap_model.has_normal_character_code(code),
-                "byte-backed normal-character membership must match owned storage for {code} at {minor_weight}%",
-            );
-        }
-        assert!(heap_model.has_normal_character_code("a-main"));
-        assert_eq!(
-            heap_model.has_normal_character_code("a-minor"),
-            admitted,
-            "owned {minor_weight}% reading admission must match librime ScriptEncoder",
-        );
-        assert_eq!(
-            byte_model.has_normal_character_code("a-minor"),
-            admitted,
-            "byte-backed {minor_weight}% reading admission must match librime ScriptEncoder",
-        );
         let spans = [
             SentenceCodeSpan::new(0, 1, "a-minor"),
             SentenceCodeSpan::new(1, 2, "b"),

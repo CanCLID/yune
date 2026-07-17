@@ -4,7 +4,8 @@
 > (2026-07-16). **Track:** native engine performance, Windows Track A
 > `luna_pinyin` acceptance lane. **Created:** 2026-07-15; **independently
 > reviewed and corrected:** 2026-07-15; **source-bound finalization:**
-> 2026-07-16; **Windows prerequisite amendment:** 2026-07-16. **Type:**
+> 2026-07-16; **Windows candidate-parity prerequisite amendment:** 2026-07-16;
+> **Windows Track B prerequisite amendment:** 2026-07-16. **Type:**
 > attribution-first measurement and conditional reduction plan.
 
 ## Outcome
@@ -23,12 +24,13 @@ not a default flip.
 
 M61 closes successfully only if all of these conditions hold:
 
-1. one exact clean M61 parity-corrected measurement commit, descended from the
-   source-current post-M60 kickoff base through the immutable measurement-
-   tooling boundary and this docs-only amendment, contains exactly the one
-   reviewed prerequisite behavior correction authorized below and no memory
-   optimization, and is reproduced in five fixed-binary Windows owned-mode
-   rounds and five fixed-binary byte-backed diagnostic rounds;
+1. one exact clean M61 measurement commit, descended from the source-current
+   post-M60 kickoff base through the immutable measurement-tooling boundary,
+   contains exactly the reviewed Phase 0A candidate-parity correction and the
+   reviewed Phase 0B Track B packed-syllabary prerequisite correction authorized
+   below, contains no Track A POET/default-flip optimization, and is reproduced
+   in five fixed-binary Windows owned-mode rounds and five fixed-binary
+   byte-backed diagnostic rounds;
 2. current process counters and non-overlapping owner rows name a reducible
    owner and reconcile the observed movement rather than relying on M47/M55
    historical bytes;
@@ -181,18 +183,22 @@ All baseline, diagnostic, and final acceptance rounds use:
   schema, and POET presence/hash inventory for every round; the source inputs
   behind those isolated copies remain byte-identical.
 
-The owned/byte-backed A/B source is the exact pushed parity-corrected M61
-measurement commit selected by Phase 0A, not either M60 boundary or any of the
-three pre-correction tooling SHAs. Its implementation parent boundary is the
-source-current kickoff base `bc0df36a`; record the formal M60 closeout, the
-post-closeout correction, the plan-finalization commit, the immutable tooling
-commit, both Phase 0 tooling repairs, and this plan-only amendment separately.
-After excluding plan/review changes, the non-documentation implementation diff
-from `bc0df36a` may contain only the original M61 measurement tooling plus Phase
-0A's single stale-raw-edge correction, pinned-librime fixture/test, structural
-coverage, comparator, and wrapper/aggregator enforcement. It contains no memory
-optimization. The final production candidate receives its own exact-source
-five-round set.
+The owned/byte-backed A/B source is the exact pushed Phase 0B-corrected M61
+measurement commit, not either M60 boundary or an earlier tooling/parity source.
+Its implementation parent boundary is the source-current kickoff base
+`bc0df36a`; record the formal M60 closeout, post-closeout correction,
+plan-finalization commit, immutable tooling commit, Phase 0 tooling repairs,
+Phase 0A amendment/correction, source-clean helper repair, POET-rebind tooling
+repair through `f18b0df2d0149bc2a28cd9bd2c075c34030b5568` (tree
+`e4ba5201eab8b8fd8cb24ae14dd49a8c9959aa10`), this Phase 0B plan-only
+amendment, and its correction separately. After excluding plan/review changes,
+the non-documentation implementation diff from `bc0df36a` may contain only the
+original M61 measurement tooling, Phase 0A's stale-raw-edge correction and
+owning proof, the source-clean/POET-rebind tooling repairs, and Phase 0B's exact
+packed-syllabary representation correction plus owning tests. Phase 0B is a
+Track B prerequisite and does not consume `M61-BRANCH-01`; no Track A POET
+storage/default optimization is present. The final production candidate
+receives its own exact-source five-round set.
 
 All binding owned, byte-backed, and final sets must run on the same physical
 Windows machine with the same OS build, power policy, and materially equivalent
@@ -465,6 +471,80 @@ M61 `125,000,000 B` supplemental threshold, memory bars, fixed-binary rules,
 and failure/retry policy remain unchanged. A repeated parity red blocks M61; it
 cannot be waived, reclassified, or converted to disposition D.
 
+### Phase 0B — Windows Track B Session-Private Prerequisite Amendment
+
+Clean pushed source `f18b0df2d0149bc2a28cd9bd2c075c34030b5568`, tree
+`e4ba5201eab8b8fd8cb24ae14dd49a8c9959aa10`, corrected the benchmark's restored
+Luna-table/POET checksum binding and became the next diagnostic source. Its
+fresh owned set stopped exactly as required:
+
+- `owned/run-1` and `owned/run-2` completed with `32/32` signed rows green and
+  `17/17` candidate parity;
+- `owned/run-3` retained `17/17` candidate parity and passed the other `31/32`
+  signed rows, but
+  `track-b-product/session_create_select_destroy median_private_bytes` measured
+  `32,727,040 B` against the unchanged `32,084,378 B` ceiling, an excess of
+  `642,662 B` (about `2.0%`); and
+- all 60 session observations are present and independently reproduce that
+  median. The source-bound blocker receipt is retained externally at
+  `C:\yune-m61\f18b0df2d0149bc2a28cd9bd2c075c34030b5568\BLOCKER.md`, SHA-256
+  `bbb0a2649c3243c2680edc7d8e259a531a36e8150d508094bab6b843fd13ea4f`.
+
+This is a measured red, not a setup failure or disposition D. Those three
+rounds are immutable and unaccepted: never append runs 4–5, reuse runs 1–2,
+rerun `f18b0df2` as acceptance, average the red away, or change the signed
+registry.
+
+The owner-authorized prerequisite correction is exact. The two Track B
+`compact_table.syllabary_codes` rows retain `4,850,892 B` across `134,628`
+codes as `Vec<String>`; the corresponding Track A row is only `11,573 B` across
+424 codes. Replace that per-string representation with a class-general packed
+canonical-code sequence: one contiguous valid UTF-8 buffer plus monotonic
+`u32` offsets, borrowed `&str` indexed/iterated access, exact source order,
+duplicates, empty-code, and Unicode-boundary preservation, and fail-closed
+aggregate-length conversion. Keep prism lookups monomorphized and allocation-
+free. Update the existing owner row to count the packed buffer and offset
+allocation honestly with the unchanged item count. The exact owning regression
+test is
+`packed_syllabary_codes_preserve_order_boundaries_and_owner_accounting`.
+
+The correction may touch only these production paths plus tests within them:
+
+```text
+crates/yune-core/src/dictionary/compiled_prism.rs
+crates/yune-core/src/dictionary/compiled_table.rs
+crates/yune-core/src/dictionary/prism_writer.rs
+crates/yune-core/src/translator/mod.rs
+crates/yune-core/src/translator/reverse_graph.rs
+crates/yune-rime-api/src/schema_install.rs
+```
+
+The correction is representation-only. It preserves candidate text, comments,
+order, reachability, compiled artifact formats, D-32 warm immutable-asset
+semantics, session lifecycle, cache invalidation, ABI, Track A behavior, and all
+Track B behavior/latency guards. No benchmark, wrapper, comparator, aggregator,
+threshold, cadence, evidence tool, schema asset, POET storage/default, input or
+schema allowlist, process trimming, sleep, sample timing, benchmark-only cleanup,
+or process-global cache change is authorized. If packed borrowed access cannot
+satisfy this boundary, stop for another scope decision rather than substituting
+another owner.
+
+Commit this plan-only amendment after two independent reviews. Then implement
+the packed owner correction separately, freeze its exact pre-review tree, add
+only its two review receipts after review, commit and push it, and prove remote
+equality. The correction commit's parent must be exactly the Phase 0B plan-only
+amendment commit. From a new clean detached clone and create-new evidence root,
+repeat the complete `17 + 1` preflight and five wholly new fixed-binary owned
+rounds. All five rounds must pass `32/32`; the `f18b0df2` partial set contributes
+no round. Any new-source red blocks M61 and exhausts this single prerequisite
+exception. In that case, immediately create and push a separate exact revert of
+the Phase 0B correction, prove remote equality at the revert commit, preserve
+both commits and all red evidence, and stop; an unaccepted prerequisite
+correction must not remain on `main`. Only a fully green replacement set may
+proceed to the existing exploratory byte-backed/A-B sequence. This prerequisite
+does not consume the one later evidence-selected Track A branch authorized by
+`M61-BRANCH-01`.
+
 ## Phase 1 — Fresh Baseline And Diagnostic A/B
 
 ### Benchmark mode support
@@ -541,8 +621,12 @@ $REPO = (Resolve-Path .).Path
 $IMMUTABLE_TOOLING_SHA = "91b8991c5668ace690a4f6775bd8d91dfc0696f9"
 $PHASE0_ENV_TEST_SHA = "6a1cbed7d40ad06ec08588772b2d7d18a18a5788"
 $PHASE0_OWNER_SHAPE_SHA = "7805882d93428db0a3791b0631290ab319b524f0"
-$EXPECTED_MEASUREMENT_SHA = "<pushed M61 parity-corrected measurement SHA>"
-$EXPECTED_MEASUREMENT_TREE = "<pushed M61 parity-corrected measurement tree>"
+$PHASE0_SOURCE_CLEAN_SHA = "a39c4d868820063dc3deaa42f7fdc9b3aee5e7a6"
+$PHASE0_POET_REBIND_SHA = "f18b0df2d0149bc2a28cd9bd2c075c34030b5568"
+$PHASE0_TRACK_B_AMENDMENT_SHA = "<pushed reviewed Phase 0B plan amendment SHA>"
+$PHASE0_TRACK_B_CORRECTION_SHA = "<pushed reviewed Track B correction SHA>"
+$EXPECTED_MEASUREMENT_SHA = $PHASE0_TRACK_B_CORRECTION_SHA
+$EXPECTED_MEASUREMENT_TREE = "<pushed reviewed Track B correction tree>"
 $EXPECTED_LIBRIME_SHA = "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
 $MEASUREMENT_SHA = (& git -C $REPO rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $MEASUREMENT_SHA -ne $EXPECTED_MEASUREMENT_SHA) {
@@ -555,12 +639,20 @@ if ($LASTEXITCODE -ne 0 -or $MEASUREMENT_TREE -ne $EXPECTED_MEASUREMENT_TREE) {
 foreach ($ANCESTOR in @(
     $IMMUTABLE_TOOLING_SHA,
     $PHASE0_ENV_TEST_SHA,
-    $PHASE0_OWNER_SHAPE_SHA
+    $PHASE0_OWNER_SHAPE_SHA,
+    $PHASE0_SOURCE_CLEAN_SHA,
+    $PHASE0_POET_REBIND_SHA,
+    $PHASE0_TRACK_B_AMENDMENT_SHA,
+    $PHASE0_TRACK_B_CORRECTION_SHA
 )) {
     & git -C $REPO merge-base --is-ancestor $ANCESTOR $MEASUREMENT_SHA
     if ($LASTEXITCODE -ne 0) {
         throw "measurement source does not descend from required M61 boundary: $ANCESTOR"
     }
+}
+$CORRECTION_PARENT = (& git -C $REPO rev-parse "$PHASE0_TRACK_B_CORRECTION_SHA^").Trim()
+if ($LASTEXITCODE -ne 0 -or $CORRECTION_PARENT -ne $PHASE0_TRACK_B_AMENDMENT_SHA) {
+    throw "Track B correction parent mismatch: expected $PHASE0_TRACK_B_AMENDMENT_SHA, got $CORRECTION_PARENT"
 }
 $MEASUREMENT_STATUS = @(
     & git -C $REPO status --porcelain=v1 --untracked-files=all
@@ -879,22 +971,26 @@ if ($LASTEXITCODE -ne 0) {
 
 ### Runs
 
-- [ ] Create a disposable clean detached clone of the exact pushed Phase 0A
-      parity-corrected measurement commit. Do not switch an existing tree, create a
-      branch, or use the dirty main checkout as measurement evidence. Record
+- [ ] Create a disposable clean detached clone of the exact pushed Phase 0B
+      Track B-corrected measurement commit. Do not switch an existing tree,
+      create a branch, or use the main checkout as measurement evidence. Record
       the M60 parent boundary and clean status before and after every accepted
       set, record the intervening plan-only commit chain, and remove the clone
       only after the external packet is secured.
 - [ ] Before building, require `git rev-parse HEAD` to equal the recorded pushed
-      M61 parity-corrected measurement SHA/tree, prove the three Phase 0A
-      tooling SHAs are ancestors, require `git status --porcelain` to be empty, and
-      record `git ls-remote origin refs/heads/main` plus containment/equality at
-      measurement start. A mismatch is a setup failure, not usable evidence.
+      M61 Phase 0B-corrected measurement SHA/tree, prove every frozen Phase 0
+      source named in the binding command is an ancestor, require `git status
+      --porcelain` to be empty, and record `git ls-remote origin
+      refs/heads/main` plus containment/equality at measurement start. A
+      mismatch is a setup failure, not usable evidence.
 - [ ] Build the benchmark and Yune library once; record SHA-256 values.
-- [ ] Run five complete `owned` rounds. Require the unchanged signed registry,
+- [ ] Run five wholly new `owned` rounds. Require the unchanged signed registry,
       candidate/model identities, Track B guards, and fixed binary hashes to be
-      green before treating memory work as eligible. Any owned-baseline red
-      stops M61 for regression diagnosis.
+      green before treating memory work as eligible. The preserved `f18b0df2`
+      runs contribute no round. Phase 0B is the sole correction exception to the
+      earlier owned-baseline stop; any red at the corrected source stops M61,
+      exhausts that exception, and cannot be retried or converted to disposition
+      D without another owner decision.
 - [ ] Run one explicitly named exploratory byte-backed round. A measured red is
       preserved and skips the five-round byte-backed set. It may select only
       disposition B or D, and only if its owner evidence is sufficient. Any
@@ -1109,19 +1205,35 @@ amended before implementation. No hidden behavior tradeoff is authorized.
    correction commit, repeat the complete 17-input Windows preflight with the
    frozen oracle/shared/build identity. Only `17/17` PASS selects the exact
    owned/byte-backed measurement source; another red blocks M61 without waiver.
-7. **External A/B and owner decision.** Preserve all raw results outside Git.
+7. **Track B prerequisite amendment.** Preserve the `f18b0df2` owned red,
+   review the Phase 0B plan-only candidate twice, add only its two unique review
+   receipts, commit directly to `main`, push, and prove remote equality before
+   touching the retained owner.
+8. **Track B packed-syllabary correction.** Change only the six frozen Phase 0B
+   implementation paths and owning tests, with no benchmark or threshold edit.
+   Freeze the pre-review tree, obtain two independent reviews, add only their
+   two receipts, require the correction parent to equal the Phase 0B amendment
+   commit, commit and push separately, and prove remote equality.
+9. **Corrected-source preflight and replacement owned baseline.** From a new
+   clean detached clone and create-new root, repeat the complete `17 + 1`
+   preflight and five wholly new owned rounds. Reuse no `f18b0df2` round. Only
+   `17/17` parity plus `32/32` in every round permits the A/B; another red blocks
+   M61 with the Phase 0B exception exhausted. If red, push an exact correction
+   revert, prove remote equality at the revert, preserve both commits and the
+   red, and stop with no unaccepted prerequisite correction left on `main`.
+10. **External A/B and owner decision.** Preserve all raw results outside Git.
    No production code change follows a no-go.
-8. **Conditional implementation commit.** Commit directly to local `main` only
+11. **Conditional implementation commit.** Commit directly to local `main` only
    after focused correctness/owner tests pass, but do not push it before the
    exact-source acceptance set is green. Use a disposable clean detached clone
    for measurement rather than a branch or registered worktree. A measured-red
    default is preserved externally and resolved by an explicit local revert or
    fix-forward disposition before any push; do not rewrite history to hide it.
-9. **Five-round final acceptance and reviews.** A completed red stops closeout.
+12. **Five-round final acceptance and reviews.** A completed red stops closeout.
    Both reviews name the exact implementation commit/tree and the proposed
    final evidence/documentation tree. After review, only the review receipts
    and their manifest entries may change; any other delta requires re-review.
-10. **Closeout commit and push.** Curate only compact receipts, update current
+13. **Closeout commit and push.** Curate only compact receipts, update current
    docs, move the plan, verify exact committed tree and remote identity, and
    preserve the fingerprinted unrelated staged/unstaged/untracked state exactly.
 
@@ -1140,7 +1252,9 @@ commit:
 The receipts name the exact pre-review candidate tree. They are the only
 post-review additions to the finalized planning commit; any change to this
 plan, `requirements.md`, or `roadmap.md` after those reviews requires rebuilding
-the candidate tree and repeating both reviews.
+the candidate tree and repeating both reviews unless an explicit later
+owner-authorized amendment uses its own immutable pre-review tree and exact
+review-delta contract below.
 
 ### Prerequisite amendment review record
 
@@ -1179,6 +1293,50 @@ correction commit's pre-review paths are frozen from the actual minimal
 implementation; any other post-review delta requires both correction reviews
 again. These amendment and correction reviews do not replace the two final
 closeout reviews or alter their exact post-review delta.
+
+### Track B prerequisite amendment review record
+
+Phase 0B repeats the fail-closed review shape before the packed-syllabary edit.
+The plan-only pre-review candidate is reviewed independently for:
+
+1. requirement/evidence correctness, the preserved measured-red status, owner
+   sufficiency, and the complete new-source measurement contract; and
+2. change isolation, threshold/cadence safety, representation-only runtime/ABI
+   boundaries, and candidate-tree/accepted-source lineage.
+
+Both receipts name the preserved plan-only pre-review tree. The exact
+post-review delta is only:
+
+```text
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/planning-track-b-amendment-review-isolation.md
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/planning-track-b-amendment-review-requirements.md
+```
+
+The complete amendment commit contains exactly those two receipts plus:
+
+```text
+docs/plans/active/m61-plan-native-track-a-memory-owner-reduction.md
+```
+
+Use a bytewise-sorted path list, isolated index, intent-to-add for only the two
+new receipts, a path-limited commit, preserved candidate-tree hash, exact
+commit-tree equality, an empty real index, direct push to `main`, and remote
+equality. Any other post-review path or plan edit invalidates both reviews.
+
+The separately scoped packed-syllabary correction uses the same discipline. Its
+pre-review tree contains only the six frozen Phase 0B implementation paths and
+tests within them. Its only post-review additions are:
+
+```text
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/track-b-correction-review-isolation.md
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/track-b-correction-review-requirements.md
+```
+
+Both correction receipts name the correction source parent, preserved
+pre-review tree, exact implementation paths, and verification. Any other
+post-review delta requires both correction reviews again. Neither Phase 0B
+review pair replaces the two final closeout reviews or changes their exact
+three-path post-review delta.
 
 The planning finalization itself uses this literal five-path isolated-index
 procedure. The three-path pre-review list contains this plan,
@@ -1453,6 +1611,7 @@ measurement rather than silently substituting a narrower gate:
 cargo test -p yune-core --test upstream_luna_pinyin_parity
 cargo test -p yune-core upstream_script_surface_segmentation_prunes_stale_raw_identity_overlap
 cargo test -p yune-core poet
+cargo test -p yune-core packed_syllabary_codes_preserve_order_boundaries_and_owner_accounting
 cargo test -p yune-rime-api dictionary_data
 cargo test -p yune-rime-api deployment
 cargo test -p yune-rime-api --test yune_web m61_luna_zhongdengchangdu_page_zero_matches_pinned_librime
@@ -1463,6 +1622,7 @@ python3 -B -m unittest scripts/tests/test_native_candidate_parity.py
 python3 -B -m unittest scripts/tests/test_native_benchmark_script.py
 python3 -B -m unittest scripts/tests/test_m59_evidence_tools.py
 python3 -B -m unittest scripts/tests/test_m61_native_mode_contract.py
+python3 -B -m unittest scripts/tests/test_m61_luna_poet_rebind.py
 python3 -B -m unittest scripts/tests/test_m61_supplemental_ratchet.py
 python3 -B -m unittest scripts/tests/test_public_evidence_privacy.py
 cargo fmt --check
@@ -1485,6 +1645,14 @@ missing/extra/duplicate/non-contiguous/malformed negative cases. Wrapper tests
 must prove that a red comparator prevents round completion; aggregator tests
 must prove that every one of five PASS receipts has the expected input list,
 tool hash, output hash, and uniform source/oracle identity.
+
+The Phase 0B owner test
+`packed_syllabary_codes_preserve_order_boundaries_and_owner_accounting` must
+prove exact order, duplicates, empty/non-ASCII codes, borrowed boundary-safe
+access, final offset, overflow rejection, unchanged item count, and honest
+packed-buffer/offset owner accounting. Existing compact-table, prism,
+dictionary-data, deployment, Luna, reachability, and workspace gates prove the
+representation does not change observable behavior.
 
 The full workspace gate is load-bearing at closeout because a default storage
 change crosses deployment, cache lifecycle, compiled-artifact, and candidate
@@ -1563,6 +1731,15 @@ evidence-growth guard, the tested public-evidence privacy checker, and
   cherry-picked. It receives a source-bound disposition.
 - A variable DLL or benchmark-executable hash rejects that complete evidence
   set. Preserve it and restart the full set after correction.
+- The preserved `f18b0df2` owned Track B session-private red has exactly one
+  owner-authorized exception: Phase 0B's packed `compact_table.syllabary_codes`
+  correction followed by a wholly new five-round owned set at the reviewed,
+  pushed correction source. No `f18b0df2` round is reusable and no second
+  prerequisite correction/retry exists. A red at the corrected source blocks
+  M61 with this exception exhausted. Push an exact revert of the Phase 0B
+  correction, prove remote equality at that revert, retain the correction and
+  revert commits plus the complete red evidence, and stop; do not leave the
+  unaccepted correction on `main`.
 - An exploratory diagnostic red may select one bounded correction only when
   the owned baseline is green and the red's owner evidence names it. Skip the
   remaining byte-backed rounds. After correction, run a new complete set under

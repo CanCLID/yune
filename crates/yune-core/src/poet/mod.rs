@@ -1810,20 +1810,15 @@ impl PoetModelStorage {
         }
     }
 
-    fn normal_character_codes(&self) -> Box<[String]> {
-        let mut codes = match self {
-            Self::Empty => Vec::new(),
+    fn retained_normal_character_codes(&self) -> Box<[String]> {
+        let mut codes: Vec<String> = match self {
             Self::Owned(storage) => storage
                 .character_codes(false)
                 .values()
                 .flatten()
                 .cloned()
                 .collect(),
-            Self::ByteBacked(storage) => storage
-                .all_character_codes(false)
-                .into_iter()
-                .map(ToOwned::to_owned)
-                .collect(),
+            Self::Empty | Self::ByteBacked(_) => return Box::default(),
         };
         codes.sort();
         codes.dedup();
@@ -2030,11 +2025,10 @@ impl UpstreamSentenceModel {
             source,
             expected_dictionary_checksum,
         )?));
-        let normal_character_codes = storage.normal_character_codes();
         Ok(Self {
             storage,
             lookup_index: SentenceLookupIndex::default(),
-            normal_character_codes,
+            normal_character_codes: Box::default(),
             max_candidates: max_candidates.max(1),
             max_sentences: 1,
             max_homophones: 1,
@@ -2105,7 +2099,7 @@ impl UpstreamSentenceModel {
         if let Some(index_start) = index_start {
             crate::m37_record_upstream_sentence_model_index_build(index_start.elapsed());
         }
-        let normal_character_codes = storage.normal_character_codes();
+        let normal_character_codes = storage.retained_normal_character_codes();
         Self {
             storage,
             lookup_index,
@@ -2168,25 +2162,27 @@ impl UpstreamSentenceModel {
     #[must_use]
     pub fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
         let mut rows = self.storage.memory_owner_rows(&self.lookup_index);
-        rows.push(MemoryOwnerRow::new(
-            "poet.normal_character_code_index",
-            MemoryOwnerClass::HeapOwnedGuarded,
-            mem::size_of::<Box<[String]>>()
-                .saturating_add(
-                    self.normal_character_codes
-                        .len()
-                        .saturating_mul(mem::size_of::<String>()),
-                )
-                .saturating_add(
-                    self.normal_character_codes
-                        .iter()
-                        .map(String::capacity)
-                        .sum::<usize>(),
-                ),
-            self.normal_character_codes.len(),
-            "sorted Box<[String]>",
-            "single-character dictionary readings that reconstruct librime syllable ids",
-        ));
+        if !matches!(&self.storage, PoetModelStorage::ByteBacked(_)) {
+            rows.push(MemoryOwnerRow::new(
+                "poet.normal_character_code_index",
+                MemoryOwnerClass::HeapOwnedGuarded,
+                mem::size_of::<Box<[String]>>()
+                    .saturating_add(
+                        self.normal_character_codes
+                            .len()
+                            .saturating_mul(mem::size_of::<String>()),
+                    )
+                    .saturating_add(
+                        self.normal_character_codes
+                            .iter()
+                            .map(String::capacity)
+                            .sum::<usize>(),
+                    ),
+                self.normal_character_codes.len(),
+                "sorted Box<[String]>",
+                "single-character dictionary readings that reconstruct librime syllable ids",
+            ));
+        }
         rows.extend(self.grammar.memory_owner_rows());
         rows
     }
@@ -2683,9 +2679,13 @@ impl UpstreamSentenceModel {
     }
 
     pub(crate) fn has_normal_character_code(&self, code: &str) -> bool {
-        self.normal_character_codes
-            .binary_search_by(|candidate| candidate.as_str().cmp(code))
-            .is_ok()
+        match &self.storage {
+            PoetModelStorage::ByteBacked(storage) => storage.has_normal_character_code(code),
+            PoetModelStorage::Empty | PoetModelStorage::Owned(_) => self
+                .normal_character_codes
+                .binary_search_by(|candidate| candidate.as_str().cmp(code))
+                .is_ok(),
+        }
     }
 
     fn candidates_for_graph_with_limit(

@@ -657,22 +657,19 @@ impl ByteBackedPoetStore {
         self.len_strings(&sections.text_pool, start, end)
     }
 
-    pub(super) fn all_character_codes(&self, abbreviation: bool) -> Vec<&str> {
-        let sections = if abbreviation {
-            &self.sections.abbreviation_character_codes
-        } else {
-            &self.sections.character_codes
-        };
-        let mut codes = Vec::new();
+    pub(super) fn has_normal_character_code(&self, code: &str) -> bool {
+        let sections = &self.sections.character_codes;
         for row_index in 0..sections.rows.count as usize {
             let row = row_offset(&sections.rows, row_index);
             let start = read_u32(self.bytes(), row + 4)
                 .expect("poet character code ranges are validated during parse");
             let end = read_u32(self.bytes(), row + 8)
                 .expect("poet character code ranges are validated during parse");
-            codes.extend(self.len_strings(&sections.text_pool, start, end));
+            if self.len_string_range_contains(&sections.text_pool, start, end, code.as_bytes()) {
+                return true;
+            }
         }
-        codes
+        false
     }
 
     pub(super) fn memory_owner_rows(&self) -> Vec<crate::MemoryOwnerRow> {
@@ -926,6 +923,31 @@ impl ByteBackedPoetStore {
             cursor = string_end;
         }
         strings
+    }
+
+    fn len_string_range_contains(
+        &self,
+        section: &PoetBinSectionSummary,
+        start: u32,
+        end: u32,
+        needle: &[u8],
+    ) -> bool {
+        let pool = section_bytes(self.bytes(), section)
+            .expect("poet len-string pools are validated during parse");
+        let mut cursor = start as usize;
+        let end = end as usize;
+        while cursor < end {
+            let len = read_u32(pool, cursor)
+                .expect("poet len-string lengths are validated during parse")
+                as usize;
+            cursor += 4;
+            let string_end = cursor + len;
+            if &pool[cursor..string_end] == needle {
+                return true;
+            }
+            cursor = string_end;
+        }
+        false
     }
 }
 

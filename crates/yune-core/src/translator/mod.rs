@@ -1334,10 +1334,10 @@ impl TableStorage {
         }
     }
 
-    fn syllabary_codes(&self) -> Option<&[String]> {
+    fn compact_store(&self) -> Option<&CompactTableStore> {
         match self {
             Self::Heap(_) => None,
-            Self::Compact(store) => Some(store.syllabary_codes()),
+            Self::Compact(store) => Some(store),
         }
     }
 
@@ -2559,83 +2559,86 @@ impl StaticTableTranslator {
         // phrase prefixes and therefore keeps this seed single-character-only.
         let include_all_candidates =
             self.prefix_fallback && !self.direct_prism_surface_mapping_current;
-        let (canonical_codes, leading_single_codes) =
-            if let Some(syllabary_codes) = self.storage.syllabary_codes() {
-                let leading_single_codes = syllabary_codes
-                    .iter()
-                    .filter(|code| {
-                        self.storage
-                            .exact_candidates(code)
-                            .any(|candidate| candidate.text().chars().count() == 1)
-                    })
-                    .cloned()
-                    .collect::<Vec<_>>();
-                let canonical_codes = if include_all_candidates {
-                    syllabary_codes.to_vec()
-                } else {
-                    leading_single_codes.clone()
-                };
-                (canonical_codes, leading_single_codes)
+        let (canonical_codes, leading_single_codes) = if let Some(syllabary_codes) = self
+            .storage
+            .compact_store()
+            .map(|store| store.syllabary_codes())
+        {
+            let leading_single_codes = syllabary_codes
+                .iter()
+                .filter(|code| {
+                    self.storage
+                        .exact_candidates(code)
+                        .any(|candidate| candidate.text().chars().count() == 1)
+                })
+                .map(|code| code.as_str().to_owned())
+                .collect::<Vec<_>>();
+            let canonical_codes = if include_all_candidates {
+                syllabary_codes.to_vec()
             } else {
-                // Heap/source algebra rewrites storage keys. Capture the canonical
-                // code from the immutable raw comment before expansion so the
-                // resulting surface edge can still filter correction collisions and
-                // preserve tone metadata. Track single-character ownership
-                // separately so phrase groups can never widen the leading-syllable
-                // boundary cap.
-                let mut codes = Vec::new();
-                let mut has_single_candidate = Vec::new();
-                let mut index_by_code = HashMap::<String, usize>::new();
-                let mut record = |storage_code: &str, raw_comment: &str, is_single: bool| {
-                    let canonical = canonical_fetch_group(raw_comment);
-                    let canonical = if canonical.is_empty() {
-                        storage_code
-                    } else {
-                        canonical.as_ref()
-                    };
-                    if canonical.is_empty() {
-                        return;
-                    }
-                    if let Some(index) = index_by_code.get(canonical).copied() {
-                        has_single_candidate[index] |= is_single;
-                    } else {
-                        let canonical = canonical.to_owned();
-                        index_by_code.insert(canonical.clone(), codes.len());
-                        codes.push(canonical);
-                        has_single_candidate.push(is_single);
-                    }
+                leading_single_codes.clone()
+            };
+            (canonical_codes, leading_single_codes)
+        } else {
+            // Heap/source algebra rewrites storage keys. Capture the canonical
+            // code from the immutable raw comment before expansion so the
+            // resulting surface edge can still filter correction collisions and
+            // preserve tone metadata. Track single-character ownership
+            // separately so phrase groups can never widen the leading-syllable
+            // boundary cap.
+            let mut codes = Vec::new();
+            let mut has_single_candidate = Vec::new();
+            let mut index_by_code = HashMap::<String, usize>::new();
+            let mut record = |storage_code: &str, raw_comment: &str, is_single: bool| {
+                let canonical = canonical_fetch_group(raw_comment);
+                let canonical = if canonical.is_empty() {
+                    storage_code
+                } else {
+                    canonical.as_ref()
                 };
-                if let Some(source_entries) = &self.source_entries {
-                    for (storage_code, candidate) in source_entries {
-                        record(
-                            storage_code,
-                            &candidate.comment,
-                            candidate.text.chars().count() == 1,
-                        );
-                    }
-                } else {
-                    for storage_code in self.storage.all_codes() {
-                        for candidate in self.storage.exact_candidates(storage_code.as_ref()) {
-                            record(
-                                storage_code.as_ref(),
-                                candidate.raw_comment(),
-                                candidate.text().chars().count() == 1,
-                            );
-                        }
-                    }
+                if canonical.is_empty() {
+                    return;
                 }
-                let leading_single_codes = codes
-                    .iter()
-                    .zip(&has_single_candidate)
-                    .filter(|(_, has_single)| **has_single)
-                    .map(|(code, _)| code.clone())
-                    .collect::<Vec<_>>();
-                if include_all_candidates {
-                    (codes, leading_single_codes)
+                if let Some(index) = index_by_code.get(canonical).copied() {
+                    has_single_candidate[index] |= is_single;
                 } else {
-                    (leading_single_codes.clone(), leading_single_codes)
+                    let canonical = canonical.to_owned();
+                    index_by_code.insert(canonical.clone(), codes.len());
+                    codes.push(canonical);
+                    has_single_candidate.push(is_single);
                 }
             };
+            if let Some(source_entries) = &self.source_entries {
+                for (storage_code, candidate) in source_entries {
+                    record(
+                        storage_code,
+                        &candidate.comment,
+                        candidate.text.chars().count() == 1,
+                    );
+                }
+            } else {
+                for storage_code in self.storage.all_codes() {
+                    for candidate in self.storage.exact_candidates(storage_code.as_ref()) {
+                        record(
+                            storage_code.as_ref(),
+                            candidate.raw_comment(),
+                            candidate.text().chars().count() == 1,
+                        );
+                    }
+                }
+            }
+            let leading_single_codes = codes
+                .iter()
+                .zip(&has_single_candidate)
+                .filter(|(_, has_single)| **has_single)
+                .map(|(code, _)| code.clone())
+                .collect::<Vec<_>>();
+            if include_all_candidates {
+                (codes, leading_single_codes)
+            } else {
+                (leading_single_codes.clone(), leading_single_codes)
+            }
+        };
         let algebra = SpellingAlgebra::parse(&self.spelling_algebra_formulas);
         let max_leading_single_surface_len = if algebra.is_empty() {
             leading_single_codes
@@ -2852,9 +2855,12 @@ impl StaticTableTranslator {
             && !self.enable_correction
             && lookup_code.starts_with('m')
             && self.storage.has_code(lookup_code);
-        if let (Some(prism), Some(syllabary_codes)) =
-            (self.prism_payload.as_ref(), self.storage.syllabary_codes())
-        {
+        if let (Some(prism), Some(syllabary_codes)) = (
+            self.prism_payload.as_ref(),
+            self.storage
+                .compact_store()
+                .map(|store| store.syllabary_codes()),
+        ) {
             let track_b_short_prefix = self.uses_m44_track_b_short_prefix_lookup(lookup_code);
             let prism_start = crate::m37_metrics_enabled().then(Instant::now);
             let lookups = prism.lookup_canonical_codes(lookup_code, syllabary_codes);
@@ -3018,9 +3024,12 @@ impl StaticTableTranslator {
         {
             return specs;
         }
-        let (Some(prism), Some(syllabary_codes)) =
-            (self.prism_payload.as_ref(), self.storage.syllabary_codes())
-        else {
+        let (Some(prism), Some(syllabary_codes)) = (
+            self.prism_payload.as_ref(),
+            self.storage
+                .compact_store()
+                .map(|store| store.syllabary_codes()),
+        ) else {
             return specs;
         };
         let prism_start = crate::m37_metrics_enabled().then(Instant::now);
@@ -3063,9 +3072,12 @@ impl StaticTableTranslator {
         let untoned_character_code_model = untoned_dictionary
             .then(|| self.upstream_sentence_model())
             .flatten();
-        let (Some(prism), Some(syllabary_codes)) =
-            (self.prism_payload.as_ref(), self.storage.syllabary_codes())
-        else {
+        let (Some(prism), Some(syllabary_codes)) = (
+            self.prism_payload.as_ref(),
+            self.storage
+                .compact_store()
+                .map(|store| store.syllabary_codes()),
+        ) else {
             return None;
         };
         let boundaries = input
@@ -4025,7 +4037,7 @@ impl StaticTableTranslator {
             return None;
         }
         let prism = self.prism_payload.as_ref()?;
-        let syllabary_codes = self.storage.syllabary_codes()?;
+        let syllabary_codes = self.storage.compact_store()?.syllabary_codes();
         let discovery_start = crate::m37_metrics_enabled().then(Instant::now);
         let mut candidates_considered = 0usize;
         let mut codes_emitted = 0usize;
@@ -7182,9 +7194,12 @@ impl StaticTableTranslator {
         if !self.direct_prism_surface_mapping_current {
             return false;
         }
-        let (Some(prism), Some(syllabary_codes)) =
-            (self.prism_payload.as_ref(), self.storage.syllabary_codes())
-        else {
+        let (Some(prism), Some(syllabary_codes)) = (
+            self.prism_payload.as_ref(),
+            self.storage
+                .compact_store()
+                .map(|store| store.syllabary_codes()),
+        ) else {
             return false;
         };
         let mut boundaries = lookup_code
@@ -7769,9 +7784,12 @@ impl StaticTableTranslator {
         lookup_code: &str,
     ) -> Vec<(usize, Vec<LeadingFetchCode>)> {
         if self.leading_fetch_index_seed.is_none() && self.direct_prism_surface_mapping_current {
-            if let (Some(prism), Some(syllabary_codes)) =
-                (self.prism_payload.as_ref(), self.storage.syllabary_codes())
-            {
+            if let (Some(prism), Some(syllabary_codes)) = (
+                self.prism_payload.as_ref(),
+                self.storage
+                    .compact_store()
+                    .map(|store| store.syllabary_codes()),
+            ) {
                 let mut groups: Vec<(usize, Vec<LeadingFetchCode>)> = Vec::new();
                 let direct_identity = prism.has_byte_backed_identity_spelling_map();
                 for (length, lookup) in
@@ -7877,9 +7895,12 @@ impl StaticTableTranslator {
 
     fn direct_no_algebra_fetch_codes(&self, prefix: &str) -> Vec<LeadingFetchCode> {
         if self.direct_prism_surface_mapping_current {
-            if let (Some(prism), Some(syllabary_codes)) =
-                (self.prism_payload.as_ref(), self.storage.syllabary_codes())
-            {
+            if let (Some(prism), Some(syllabary_codes)) = (
+                self.prism_payload.as_ref(),
+                self.storage
+                    .compact_store()
+                    .map(|store| store.syllabary_codes()),
+            ) {
                 let lookups = prism.lookup_canonical_codes(prefix, syllabary_codes);
                 let direct_identity = prism.has_byte_backed_identity_spelling_map();
                 let mut fetches = lookups
@@ -8066,9 +8087,12 @@ impl StaticTableTranslator {
                 };
 
                 if self.direct_prism_surface_mapping_current {
-                    if let (Some(prism), Some(syllabary_codes)) =
-                        (self.prism_payload.as_ref(), self.storage.syllabary_codes())
-                    {
+                    if let (Some(prism), Some(syllabary_codes)) = (
+                        self.prism_payload.as_ref(),
+                        self.storage
+                            .compact_store()
+                            .map(|store| store.syllabary_codes()),
+                    ) {
                         let direct_identity = prism.has_byte_backed_identity_spelling_map();
                         prism.visit_canonical_codes(prefix, syllabary_codes, |lookup| {
                             visit_fetch(LeadingFetchCode {
@@ -9230,7 +9254,14 @@ mod lookup_guard_tests {
             TableEntry::new(canonical, "SECOND", 90.0),
         ]);
         let store = CompactTableStore::from_dictionary(dictionary);
-        assert_eq!(store.syllabary_codes(), [canonical]);
+        assert_eq!(
+            store
+                .syllabary_codes()
+                .iter()
+                .map(|code| code.as_str())
+                .collect::<Vec<_>>(),
+            [canonical]
+        );
         let double_array =
             DartsDoubleArray::build(&[(surface, 0)]).expect("synthetic prism surface should build");
         let double_array_size = double_array.units().len() as u32;
@@ -9547,8 +9578,8 @@ fn dictionary_is_untoned(storage: &TableStorage) -> bool {
     fn has_tone_digit(code: &str) -> bool {
         code.bytes().any(|byte| byte.is_ascii_digit())
     }
-    match storage.syllabary_codes() {
-        Some(codes) if !codes.is_empty() => !codes.iter().any(|code| has_tone_digit(code)),
+    match storage.compact_store().map(|store| store.syllabary_codes()) {
+        Some(codes) if !codes.is_empty() => !codes.iter().any(|code| has_tone_digit(code.as_str())),
         _ => {
             let mut saw_any = false;
             for code in storage.all_codes() {

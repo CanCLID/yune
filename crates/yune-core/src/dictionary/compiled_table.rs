@@ -35,6 +35,158 @@ pub(super) const YUNE_TABLE_WEIGHT_NATURAL_LOG: u8 = 1;
 const YUNE_TABLE_METADATA_V1: u32 = 1;
 const YUNE_TABLE_ADVANCED_MARKER: &[u8] = b"YUNE-TABLE-ADV\0";
 
+/// Allocation-free indexed access to canonical syllabary codes.
+pub trait CanonicalCodeSequence {
+    fn len(&self) -> usize;
+
+    fn get(&self, index: usize) -> Option<&str>;
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
+
+impl<T> CanonicalCodeSequence for T
+where
+    T: AsRef<[String]> + ?Sized,
+{
+    fn len(&self) -> usize {
+        self.as_ref().len()
+    }
+
+    fn get(&self, index: usize) -> Option<&str> {
+        self.as_ref().get(index).map(String::as_str)
+    }
+}
+
+/// Canonical syllabary codes stored in one UTF-8 buffer with cumulative offsets.
+#[derive(Debug)]
+pub struct PackedSyllabaryCodes {
+    utf8: Box<str>,
+    offsets: Box<[u32]>,
+}
+
+/// A borrowed canonical code yielded without recreating its source `String`.
+#[derive(Debug, Eq, PartialEq)]
+pub struct PackedCodeRef<'a>(&'a str);
+
+impl<'a> PackedCodeRef<'a> {
+    #[must_use]
+    pub fn as_str(&self) -> &'a str {
+        self.0
+    }
+
+    /// Preserves the former `&String::clone()` call shape for callers that
+    /// explicitly need to retain a code after the packed store is moved. The
+    /// iterator itself remains a borrowed `&str` view and prism hot paths use
+    /// indexed borrowed access without allocating.
+    #[must_use]
+    #[allow(clippy::should_implement_trait)]
+    pub fn clone(&self) -> String {
+        self.0.to_owned()
+    }
+}
+
+impl std::ops::Deref for PackedCodeRef<'_> {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.0
+    }
+}
+
+impl AsRef<str> for PackedCodeRef<'_> {
+    fn as_ref(&self) -> &str {
+        self.0
+    }
+}
+
+impl Default for PackedSyllabaryCodes {
+    fn default() -> Self {
+        Self {
+            utf8: String::new().into_boxed_str(),
+            offsets: vec![0].into_boxed_slice(),
+        }
+    }
+}
+
+impl PackedSyllabaryCodes {
+    fn try_from_codes<'a>(
+        codes: impl IntoIterator<Item = &'a str>,
+    ) -> Result<Self, RimeTableBinParseError> {
+        let mut utf8 = String::new();
+        let mut offsets = vec![0];
+        for code in codes {
+            let current = *offsets
+                .last()
+                .expect("packed syllabary always starts with offset zero");
+            let next = checked_packed_offset(current, code.len())?;
+            utf8.push_str(code);
+            offsets.push(next);
+        }
+        Ok(Self {
+            utf8: utf8.into_boxed_str(),
+            offsets: offsets.into_boxed_slice(),
+        })
+    }
+
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.offsets.len().saturating_sub(1)
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    #[must_use]
+    pub fn get(&self, index: usize) -> Option<&str> {
+        let start = usize::try_from(*self.offsets.get(index)?).ok()?;
+        let end = usize::try_from(*self.offsets.get(index.checked_add(1)?)?).ok()?;
+        self.utf8.get(start..end)
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl ExactSizeIterator<Item = PackedCodeRef<'_>> + DoubleEndedIterator + '_ {
+        (0..self.len()).map(|index| {
+            PackedCodeRef(
+                self.get(index)
+                    .expect("packed syllabary offsets are validated during construction"),
+            )
+        })
+    }
+
+    #[must_use]
+    pub fn to_vec(&self) -> Vec<String> {
+        self.iter().map(|code| code.as_str().to_owned()).collect()
+    }
+
+    fn heap_bytes(&self) -> usize {
+        self.utf8
+            .len()
+            .saturating_add(self.offsets.len().saturating_mul(mem::size_of::<u32>()))
+    }
+}
+
+impl CanonicalCodeSequence for PackedSyllabaryCodes {
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn get(&self, index: usize) -> Option<&str> {
+        self.get(index)
+    }
+}
+
+fn checked_packed_offset(current: u32, code_len: usize) -> Result<u32, RimeTableBinParseError> {
+    let code_len = u32::try_from(code_len).map_err(|_| RimeTableBinParseError::InvalidLength)?;
+    current
+        .checked_add(code_len)
+        .ok_or(RimeTableBinParseError::InvalidLength)
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RimeTableBinParseError {
     TooShort,
@@ -146,7 +298,7 @@ impl DictionaryLookupByteSource for CompactLookupByteSource {
 
 #[derive(Debug)]
 pub struct CompactTableStore {
-    syllabary_codes: Vec<String>,
+    syllabary_codes: PackedSyllabaryCodes,
     storage: CompactTableStorage,
     advanced: TableDictionaryAdvancedData,
     entry_weight_domain: TableEntryWeightDomain,
@@ -381,7 +533,10 @@ impl CompactTableStore {
         }
 
         Self {
-            syllabary_codes,
+            syllabary_codes: PackedSyllabaryCodes::try_from_codes(
+                syllabary_codes.iter().map(String::as_str),
+            )
+            .expect("in-memory syllabary aggregate length should fit u32"),
             storage: CompactTableStorage::Owned {
                 code_groups,
                 entries: compact_entries,
@@ -448,10 +603,11 @@ impl CompactTableStore {
         }
 
         let syllable_refs = read_syllabary_refs(bytes, syllabary_offset, expected_syllable_count)?;
-        let syllabary_codes = syllable_refs
-            .iter()
-            .map(|reference| reference.as_str(bytes).to_owned())
-            .collect::<Vec<_>>();
+        let syllabary_codes = PackedSyllabaryCodes::try_from_codes(
+            syllable_refs
+                .iter()
+                .map(|reference| reference.as_str(bytes)),
+        )?;
         let (code_groups, entries) =
             read_byte_backed_head_index_entries(bytes, index_offset, &syllable_refs)?;
 
@@ -489,6 +645,8 @@ impl CompactTableStore {
             usize::try_from(read_u32_le(source.bytes(), 40).map_err(map_metadata_error)?)
                 .map_err(|_| RimeTableBinParseError::InvalidCount)?;
         validate_marisa_head_index(source.bytes(), layout.index_offset, syllabary_codes.len())?;
+        let syllabary_codes =
+            PackedSyllabaryCodes::try_from_codes(syllabary_codes.iter().map(String::as_str))?;
 
         Ok(Self {
             syllabary_codes,
@@ -505,7 +663,7 @@ impl CompactTableStore {
     }
 
     #[must_use]
-    pub fn syllabary_codes(&self) -> &[String] {
+    pub fn syllabary_codes(&self) -> &PackedSyllabaryCodes {
         &self.syllabary_codes
     }
 
@@ -749,10 +907,10 @@ impl CompactTableStore {
         let mut rows = vec![MemoryOwnerRow::new(
             "compact_table.syllabary_codes",
             MemoryOwnerClass::HeapOwnedReducible,
-            estimate_string_vec_bytes(&self.syllabary_codes, self.syllabary_codes.capacity()),
+            self.syllabary_codes.heap_bytes(),
             self.syllabary_codes.len(),
-            "Vec<String>",
-            "canonical code list retained for prism lookup",
+            "Box<str> + Box<[u32]>",
+            "packed canonical code UTF-8 buffer and cumulative offsets retained for prism lookup",
         )];
         rows.extend(self.storage.memory_owner_rows());
         rows.extend(self.storage.payload_owner_rows());
@@ -916,12 +1074,6 @@ fn byte_source_class(source: &dyn CompactTableByteSource) -> MemoryOwnerClass {
 
 fn estimate_owned_string_bytes(value: &str) -> usize {
     mem::size_of::<String>().saturating_add(value.len())
-}
-
-fn estimate_string_vec_bytes(values: &[String], capacity: usize) -> usize {
-    mem::size_of::<Vec<String>>()
-        .saturating_add(capacity.saturating_mul(mem::size_of::<String>()))
-        .saturating_add(values.iter().map(|value| value.capacity()).sum::<usize>())
 }
 
 fn estimate_string_usize_map_bytes(values: &HashMap<String, usize>) -> usize {
@@ -1665,7 +1817,7 @@ enum CompactAllCodesInner<'a> {
         inner: std::slice::Iter<'a, ByteBackedCodeGroup>,
     },
     Marisa {
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a PackedSyllabaryCodes,
         bytes: &'a [u8],
         stack: Vec<MarisaTraversalFrame>,
         pending: Vec<String>,
@@ -2243,7 +2395,7 @@ fn find_marisa_trunk_node(bytes: &[u8], index_offset: usize, key: usize) -> Opti
 fn marisa_initial_prefix_frames(
     bytes: &[u8],
     index_offset: usize,
-    syllabary_codes: &[String],
+    syllabary_codes: &PackedSyllabaryCodes,
     prefix: &str,
 ) -> Vec<MarisaTraversalFrame> {
     let Ok(head_count) = read_count(bytes, index_offset) else {
@@ -2262,7 +2414,7 @@ fn marisa_initial_prefix_frames(
         };
         frames.push(MarisaTraversalFrame::Node {
             ids: vec![syllable_id],
-            code: code.clone(),
+            code: code.to_owned(),
             node_offset,
             level: MarisaNodeLevel::Head,
         });
@@ -2276,7 +2428,7 @@ fn marisa_code_prefix_compatible(code: &str, prefix: &str) -> bool {
 
 fn marisa_code_string_with_extra_ids(
     base: &str,
-    syllabary_codes: &[String],
+    syllabary_codes: &PackedSyllabaryCodes,
     extra_ids: &[usize],
 ) -> Option<String> {
     let mut code = String::from(base);
@@ -2321,7 +2473,7 @@ fn push_marisa_node_entry_frame(
 
 struct MarisaChildFrameInput<'a> {
     bytes: &'a [u8],
-    syllabary_codes: &'a [String],
+    syllabary_codes: &'a PackedSyllabaryCodes,
     ids: &'a [usize],
     code: &'a str,
     node_offset: usize,
@@ -3424,5 +3576,82 @@ mod marisa_key_enumeration_tests {
             MissingIdTable.keys_for_ids(&[0, 1, 2]),
             Err(RimeTableBinParseError::InvalidCount)
         );
+    }
+}
+
+#[cfg(test)]
+mod packed_syllabary_tests {
+    use super::{
+        checked_packed_offset, CompactTableStore, PackedSyllabaryCodes, RimeTableBinParseError,
+    };
+    use crate::{MemoryOwnerClass, TableDictionary, TableEntry};
+    use std::mem;
+
+    #[test]
+    fn packed_syllabary_codes_preserve_order_boundaries_and_owner_accounting() {
+        let source = ["", "a", "廣", "a", "é", "e\u{301}"];
+        let packed = PackedSyllabaryCodes::try_from_codes(source).expect("fixture should pack");
+
+        assert_eq!(packed.len(), source.len());
+        assert_eq!(
+            packed.iter().map(|code| code.as_str()).collect::<Vec<_>>(),
+            source
+        );
+        assert_eq!(packed.get(0), Some(""));
+        assert_eq!(packed.get(2), Some("廣"));
+        assert_eq!(packed.get(4), Some("é"));
+        assert_eq!(packed.get(5), Some("e\u{301}"));
+        assert_eq!(packed.get(source.len()), None);
+        assert_eq!(packed.to_vec(), source.map(str::to_owned));
+        assert_eq!(packed.offsets.first().copied(), Some(0));
+        assert!(
+            packed
+                .offsets
+                .windows(2)
+                .all(|window| window[0] <= window[1]),
+            "empty codes may repeat an offset but offsets must never decrease"
+        );
+        assert_eq!(
+            packed.offsets.last().copied(),
+            Some(source.iter().map(|code| code.len() as u32).sum())
+        );
+        assert_eq!(
+            packed.offsets.last().copied(),
+            u32::try_from(packed.utf8.len()).ok()
+        );
+        assert_eq!(
+            checked_packed_offset(u32::MAX, 1),
+            Err(RimeTableBinParseError::InvalidLength)
+        );
+        if usize::BITS > u32::BITS {
+            assert_eq!(
+                checked_packed_offset(0, u32::MAX as usize + 1),
+                Err(RimeTableBinParseError::InvalidLength)
+            );
+        }
+
+        let store = CompactTableStore::from_dictionary(TableDictionary::new([
+            TableEntry::new("", "empty", 1.0),
+            TableEntry::new("a", "latin", 1.0),
+            TableEntry::new("廣", "unicode", 1.0),
+            TableEntry::new("a", "duplicate-code-row", 0.5),
+            TableEntry::new("e\u{301}", "combining", 1.0),
+        ]));
+        let codes = store.syllabary_codes();
+        assert_eq!(
+            codes.iter().map(|code| code.as_str()).collect::<Vec<_>>(),
+            vec!["", "a", "廣", "e\u{301}"]
+        );
+        let owner = store
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == "compact_table.syllabary_codes")
+            .expect("packed syllabary owner row should exist");
+        let expected_bytes = codes.utf8.len() + codes.offsets.len() * mem::size_of::<u32>();
+        assert_eq!(owner.class, MemoryOwnerClass::HeapOwnedReducible);
+        assert_eq!(owner.estimated_bytes, expected_bytes);
+        assert_eq!(owner.item_count, codes.len());
+        assert_eq!(owner.item_count, 4);
+        assert_eq!(owner.storage, "Box<str> + Box<[u32]>");
     }
 }

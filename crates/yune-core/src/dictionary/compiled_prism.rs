@@ -1,3 +1,4 @@
+use super::compiled_table::CanonicalCodeSequence;
 use super::{CompactTableByteSource, RimeCorrectionEntry, RimeToleranceRule};
 use crate::dictionary::compiled::{
     parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le,
@@ -108,7 +109,7 @@ impl RimePrismBinPayload {
     pub fn lookup_canonical_codes<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
     ) -> Vec<PrismLookupCode<'a>> {
         self.lookup_canonical_codes_with_limit(spelling, syllabary_codes, usize::MAX)
     }
@@ -117,7 +118,7 @@ impl RimePrismBinPayload {
     pub fn lookup_canonical_codes_with_limit<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<PrismLookupCode<'a>> {
         let Some(spelling_index) = self
@@ -133,7 +134,7 @@ impl RimePrismBinPayload {
     fn visit_canonical_codes<'a, B, F>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         visitor: &mut F,
     ) -> ControlFlow<B>
     where
@@ -152,7 +153,7 @@ impl RimePrismBinPayload {
     fn visit_canonical_codes_for_index<'a, B, F>(
         &self,
         spelling_index: usize,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         visitor: &mut F,
     ) -> ControlFlow<B>
     where
@@ -184,7 +185,7 @@ impl RimePrismBinPayload {
     fn lookup_canonical_codes_for_index<'a>(
         &self,
         spelling_index: usize,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<PrismLookupCode<'a>> {
         self.spelling_map
@@ -211,7 +212,7 @@ impl RimePrismBinPayload {
     fn common_prefix_canonical_codes<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<(usize, PrismLookupCode<'a>)> {
         let Some(double_array) = self.double_array.as_ref() else {
@@ -242,7 +243,7 @@ impl RimePrismBinPayload {
     fn trailing_ascii_digit_prefix_canonical_codes<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<(usize, PrismLookupCode<'a>)> {
         let Some(double_array) = self.double_array.as_ref() else {
@@ -388,7 +389,7 @@ impl RimePrismRuntimePayload {
     pub fn lookup_canonical_codes<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
     ) -> Vec<PrismLookupCode<'a>> {
         self.lookup_canonical_codes_with_limit(spelling, syllabary_codes, usize::MAX)
     }
@@ -397,7 +398,7 @@ impl RimePrismRuntimePayload {
     pub fn lookup_canonical_codes_with_limit<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<PrismLookupCode<'a>> {
         match &self.storage {
@@ -419,7 +420,7 @@ impl RimePrismRuntimePayload {
     pub fn predictive_canonical_codes_with_limit<'a>(
         &self,
         prefix: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<PrismLookupCode<'a>> {
         let alphabet = predictive_alphabet(syllabary_codes);
@@ -479,7 +480,7 @@ impl RimePrismRuntimePayload {
     pub(crate) fn visit_canonical_codes<'a, B>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         mut visitor: impl FnMut(PrismLookupCode<'a>) -> ControlFlow<B>,
     ) -> ControlFlow<B> {
         match &self.storage {
@@ -499,7 +500,7 @@ impl RimePrismRuntimePayload {
     pub(crate) fn common_prefix_canonical_codes<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<(usize, PrismLookupCode<'a>)> {
         match &self.storage {
@@ -519,7 +520,7 @@ impl RimePrismRuntimePayload {
     pub(crate) fn trailing_ascii_digit_prefix_canonical_codes<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<(usize, PrismLookupCode<'a>)> {
         match &self.storage {
@@ -531,10 +532,10 @@ impl RimePrismRuntimePayload {
     }
 }
 
-fn predictive_alphabet(syllabary_codes: &[String]) -> Vec<u8> {
-    let mut alphabet = syllabary_codes
-        .iter()
-        .flat_map(|code| code.bytes())
+fn predictive_alphabet(syllabary_codes: &(impl CanonicalCodeSequence + ?Sized)) -> Vec<u8> {
+    let mut alphabet = (0..syllabary_codes.len())
+        .filter_map(|index| syllabary_codes.get(index))
+        .flat_map(str::bytes)
         .filter(|byte| *byte != 0)
         .collect::<Vec<_>>();
     alphabet.sort_unstable();
@@ -598,7 +599,7 @@ impl ByteBackedRimePrismPayload {
     fn lookup_canonical_codes_with_limit<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<PrismLookupCode<'a>> {
         let Some(spelling_index) = self
@@ -617,7 +618,7 @@ impl ByteBackedRimePrismPayload {
     fn visit_canonical_codes<'a, B, F>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         visitor: &mut F,
     ) -> ControlFlow<B>
     where
@@ -639,7 +640,7 @@ impl ByteBackedRimePrismPayload {
     fn visit_canonical_codes_for_index<'a, B, F>(
         &self,
         spelling_index: usize,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         visitor: &mut F,
     ) -> ControlFlow<B>
     where
@@ -657,7 +658,9 @@ impl ByteBackedRimePrismPayload {
                 return ControlFlow::Continue(());
             }
             return visitor(PrismLookupCode {
-                code: &syllabary_codes[spelling_index],
+                code: syllabary_codes
+                    .get(spelling_index)
+                    .expect("identity spelling index was bounds-checked"),
                 syllable_id: spelling_index,
                 spelling_type: 0,
                 normal: true,
@@ -703,7 +706,7 @@ impl ByteBackedRimePrismPayload {
     fn lookup_canonical_codes_for_index<'a>(
         &self,
         spelling_index: usize,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<PrismLookupCode<'a>> {
         if let ByteBackedPrismSpellingMap::Identity {
@@ -719,7 +722,9 @@ impl ByteBackedRimePrismPayload {
                 return Vec::new();
             }
             return vec![PrismLookupCode {
-                code: &syllabary_codes[spelling_index],
+                code: syllabary_codes
+                    .get(spelling_index)
+                    .expect("identity spelling index was bounds-checked"),
                 syllable_id: spelling_index,
                 spelling_type: 0,
                 normal: true,
@@ -766,7 +771,7 @@ impl ByteBackedRimePrismPayload {
     fn common_prefix_canonical_codes<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<(usize, PrismLookupCode<'a>)> {
         let Some(double_array) = self.double_array else {
@@ -796,7 +801,7 @@ impl ByteBackedRimePrismPayload {
     fn trailing_ascii_digit_prefix_canonical_codes<'a>(
         &self,
         spelling: &str,
-        syllabary_codes: &'a [String],
+        syllabary_codes: &'a (impl CanonicalCodeSequence + ?Sized),
         limit: usize,
     ) -> Vec<(usize, PrismLookupCode<'a>)> {
         let Some(double_array) = self.double_array else {

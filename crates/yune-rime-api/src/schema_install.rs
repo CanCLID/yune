@@ -1278,7 +1278,13 @@ fn reverse_lookup_dictionary_from_lazy_outcome(
                 ..
             } = *compiled;
             if let Some(store) = compact_store {
-                let syllabary_codes = store.syllabary_codes().to_vec();
+                // Reverse-lookup data outlives this compact store, so this is
+                // the one intentional owned copy of the packed code sequence.
+                let syllabary_codes = store
+                    .syllabary_codes()
+                    .iter()
+                    .map(|code| code.as_str().to_owned())
+                    .collect::<Vec<_>>();
                 return Some(ReverseLookupDictionaryLoad {
                     dictionary: store.to_table_dictionary(),
                     prism_payload,

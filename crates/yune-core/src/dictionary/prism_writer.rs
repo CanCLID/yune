@@ -1,3 +1,4 @@
+use super::compiled_table::CanonicalCodeSequence;
 use super::{double_array::DartsKeyValue, DartsDoubleArray};
 use crate::dictionary::table_writer::{
     append_c_string, put_c_string, put_f32_le, put_i32_le, put_offset, put_u32_le,
@@ -40,7 +41,7 @@ struct PrismSpellingMap {
 }
 
 pub fn build_prism_bin(
-    syllabary: &[String],
+    syllabary: &(impl CanonicalCodeSequence + ?Sized),
     algebra_formulas: &[String],
     dict_file_checksum: u32,
     schema_file_checksum: u32,
@@ -109,7 +110,10 @@ pub fn build_prism_bin(
     bytes
 }
 
-fn is_identity_spelling_map(spelling_map: &PrismSpellingMap, syllabary: &[String]) -> bool {
+fn is_identity_spelling_map(
+    spelling_map: &PrismSpellingMap,
+    syllabary: &(impl CanonicalCodeSequence + ?Sized),
+) -> bool {
     spelling_map.entries.len() == syllabary.len()
         && spelling_map.entries.iter().all(|entry| {
             let descriptors = spelling_map.descriptors_for(entry);
@@ -119,7 +123,7 @@ fn is_identity_spelling_map(spelling_map: &PrismSpellingMap, syllabary: &[String
             usize::try_from(descriptor.syllable_id)
                 .ok()
                 .and_then(|syllable_id| syllabary.get(syllable_id))
-                .is_some_and(|canonical| canonical == &entry.spelling)
+                .is_some_and(|canonical| canonical == entry.spelling)
                 && descriptor.spelling_type == 0
                 && !descriptor.is_correction
                 && descriptor.credibility == 0.0
@@ -127,12 +131,15 @@ fn is_identity_spelling_map(spelling_map: &PrismSpellingMap, syllabary: &[String
 }
 
 fn build_spelling_descriptors(
-    syllabary: &[String],
+    syllabary: &(impl CanonicalCodeSequence + ?Sized),
     algebra_formulas: &[String],
 ) -> PrismSpellingMap {
     let algebra = SpellingAlgebra::parse(algebra_formulas);
     let mut records = Vec::new();
-    for (index, syllable) in syllabary.iter().enumerate() {
+    for index in 0..syllabary.len() {
+        let syllable = syllabary
+            .get(index)
+            .expect("syllabary index comes from its reported length");
         for variant in algebra.expand_deployed_spelling_variants(syllable) {
             if variant.code.is_empty() {
                 continue;

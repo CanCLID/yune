@@ -1,0 +1,3 @@
+Commands: git diff --check; GIT_INDEX_FILE=<isolated M61 pre-review index> git diff --cached --check
+Pre-review result: PASS; both commands exited 0 with no output.
+The final-candidate and committed-range reruns are preserved externally because this receipt is outside the allowed post-review delta.

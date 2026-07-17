@@ -1,0 +1,14 @@
+correction_commit=91f5969688a3d2dba96a67d1cfe813c7ba4ee861
+correction_tree=6626ed16d5e135fa477ca26e9786d11121c92b44
+revert_commit=01a62f2a6cd2b3d668545a110de8c7c3fc2fbb10
+revert_parent=91f5969688a3d2dba96a67d1cfe813c7ba4ee861
+isolated_revert_tree=f1c36a0079d85628f5cbef140bd94288930cc2e8
+revert_commit_tree=f1c36a0079d85628f5cbef140bd94288930cc2e8
+quality_repair_tree=f1c36a0079d85628f5cbef140bd94288930cc2e8
+path_count=3
+path_1=crates/yune-core/src/poet/mod.rs
+path_2=crates/yune-core/src/poet/storage.rs
+path_3=crates/yune-core/src/tests/poet.rs
+real_index=empty
+real_worktree=clean
+runtime_disposition=RESTORED_TO_PUSHED_QUALITY_REPAIR_TREE

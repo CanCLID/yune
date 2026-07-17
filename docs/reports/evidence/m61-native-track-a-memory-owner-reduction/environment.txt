@@ -1,0 +1,14 @@
+capture_scope=sanitized_binding_windows_environment
+os=Microsoft Windows 11 Pro
+os_version=10.0.26200
+os_build=26200
+cpu=AMD Ryzen 9 9950X3D 16-Core Processor
+physical_memory_bytes=63762190336
+power_scheme=Balanced
+rustc=rustc 1.96.0 (ac68faa20 2026-05-25)
+cargo=cargo 1.96.0 (30a34c682 2026-05-25)
+powershell=5.1.26100.8875
+thermal_sensor=unavailable
+measurement_start_utc=2026-07-17T03:03:00.5790421Z
+measurement_end_utc=2026-07-17T03:19:43.4632057Z
+privacy_note=host user profile stable identifiers serials and raw paths retained externally only

@@ -1,0 +1,5 @@
+classification=MEASURED_RED_NO_RETRY
+stage=reconcile-red
+measured_artifact_count=0
+error=M61 owner reconciliation command failed; preserve its classified result
+timestamp_utc=2026-07-17T03:19:43.4632057Z

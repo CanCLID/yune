@@ -1,12 +1,13 @@
 # M61 Native Track A Memory-Owner Reduction
 
-> **Milestone:** M61. **Status:** Finalized and authorized for execution
-> (2026-07-16). **Track:** native engine performance, Windows Track A
+> **Milestone:** M61. **Status:** Complete — disposition D, measured
+> partial/no-go (2026-07-16). **Track:** native engine performance, Windows Track A
 > `luna_pinyin` acceptance lane. **Created:** 2026-07-15; **independently
 > reviewed and corrected:** 2026-07-15; **source-bound finalization:**
 > 2026-07-16; **Windows candidate-parity prerequisite amendment:** 2026-07-16;
 > **Windows Track B prerequisite amendment:** 2026-07-16;
-> **post-diagnostic disposition-B and quality-gate amendment:** 2026-07-16.
+> **post-diagnostic disposition-B and quality-gate amendment:** 2026-07-16;
+> **restored-tree test-contract corrections:** 2026-07-16.
 > **Type:**
 > attribution-first measurement and conditional reduction plan.
 
@@ -49,6 +50,52 @@ If the current owner is absent, attribution does not reconcile, the byte-backed
 control remains red, or no bounded branch clears the win bar, M61 closes
 partial/no-go without a production change. That is a valid outcome.
 
+### Final result
+
+M61 closed through that valid disposition-D path. Correction source
+`91f5969688a3d2dba96a67d1cfe813c7ba4ee861`, tree
+`6626ed16d5e135fa477ca26e9786d11121c92b44`, completed five fixed-binary
+owned rounds, one green exploratory byte-backed round, and five fixed-binary
+byte-backed rounds. Both complete sets passed all `32/32` signed aggregate
+rows and all `160/160` individual observations; every candidate receipt passed
+`17/17`, and Track B remained green. The diagnostic byte-backed peak median was
+`116,162,560 B` and its worst observation was `116,334,592 B`, below the
+unaccepted `125,000,000 B` supplemental cap.
+
+The binding owner reconciliation nevertheless completed red. The
+`25,096,192 B` whole-process private delta had `18,724,242 B` of explained
+named-owner delta, so coverage was `0.746098930`, below `0.80`; the
+`6,371,950 B` residual also exceeded its `5,019,238 B` limit. The first
+correction-source measured red exhausted disposition B. Commit
+`01a62f2a6cd2b3d668545a110de8c7c3fc2fbb10` explicitly reverted the exact
+three-path correction and restored tree
+`f1c36a0079d85628f5cbef140bd94288930cc2e8`, byte-identical to the pushed
+quality-repair runtime tree. No production-default candidate or final
+production acceptance set was created, no supplemental ratchet was accepted,
+and no runtime reduction remains.
+
+Closeout verification preserved two deterministic test-contract reds rather
+than misreporting the literal workspace command as green. The exact restored-
+tree runner passed gates 1--19, then `cargo test --workspace` exited `101` in
+`cantonese_parity` at `37/41`. A cfg(test)-only correction now makes four
+all-pages oracle comparisons explicitly request the complete candidate list
+while retaining the bounded initial product-page assertions. The disjoint
+never-reached tail then exposed one older lifecycle-documentation assertion
+that predated M56's narrow cross-thread contract; a second cfg(test)-only
+correction now locks the current one-service boundary and valid-session cross-
+thread tolerance without a parallel-progress guarantee. These closeout
+corrections change no runtime, fixture, schema,
+ranking, page size, ABI, measurement, or disposition-D result.
+
+The final disjoint recovery passed source-current formatting and exact strict
+workspace Clippy, the complete API library (`364 passed / 1 ignored`), every
+previously unreached API bin and integration target (`114 passed / 3 ignored`),
+and both remaining zero-test doc groups. Nonduplicated successful accounting
+for the preserved prefix plus disjoint recovery is `1,184 passed / 12 ignored`.
+Neither the `37` passing tests within the failed Cantonese target, the `363`
+passing tests within the failed API library, nor the focused product-page test
+that is also present in the full `yune_web` target is double-counted.
+
 ## Authority And Boundaries
 
 M60 is complete and pushed. Its formal closeout commit is
@@ -58,7 +105,7 @@ formalism correction and M61 kickoff base is
 `bc0df36a6eee3ad63319d8c29336542082559c94`, with tree
 `523ab0e5f3a8aa67f807a07586591c92f9ef1ead`. The latter changes M60
 documentation, registry wording, and focused tests only; it does not change
-production runtime behavior. M61 is the sole authorized execution milestone
+production runtime behavior. M61 was the sole authorized execution milestone
 after that boundary.
 
 The separate owner request that authorized M61 satisfies M60's statement that
@@ -360,11 +407,11 @@ aggregate invocation is authoritative.
       measurement.
 - [x] Run two finalization reviews: evidence/measurement validity, then
       scope/isolation and threshold safety.
-- [ ] At execution kickoff, record the exact plan-finalization and
+- [x] At execution kickoff, record the exact plan-finalization and
       measurement-tooling commit chain, final path allowlist, external evidence
       root, Windows toolchain/machine identity, power/thermal state, significant
       workloads, and pinned oracle/artifact hashes.
-- [ ] Inventory and fingerprint every unrelated staged, unstaged, and untracked
+- [x] Inventory and fingerprint every unrelated staged, unstaged, and untracked
       path at kickoff. Instantiate the corrected M60 isolated-index,
       pre-review-tree, exact-review-delta, path-limited-commit, commit-tree, and
       remote-equality procedure with M61 filenames; do not retain the old
@@ -631,13 +678,13 @@ $PHASE0_ENV_TEST_SHA = "6a1cbed7d40ad06ec08588772b2d7d18a18a5788"
 $PHASE0_OWNER_SHAPE_SHA = "7805882d93428db0a3791b0631290ab319b524f0"
 $PHASE0_SOURCE_CLEAN_SHA = "a39c4d868820063dc3deaa42f7fdc9b3aee5e7a6"
 $PHASE0_POET_REBIND_SHA = "f18b0df2d0149bc2a28cd9bd2c075c34030b5568"
-$PHASE0_TRACK_B_AMENDMENT_SHA = "<pushed reviewed Phase 0B plan amendment SHA>"
-$PHASE0_TRACK_B_CORRECTION_SHA = "<pushed reviewed Track B correction SHA>"
-$POST_DIAGNOSTIC_AMENDMENT_SHA = "<pushed reviewed post-diagnostic amendment SHA>"
-$QUALITY_GATE_REPAIR_SHA = "<pushed reviewed quality-gate repair SHA>"
-$QUALITY_GATE_REPAIR_TREE = "<pushed reviewed quality-gate repair tree>"
-$DISPOSITION_B_CORRECTION_SHA = "<local disposition-B correction SHA>"
-$DISPOSITION_B_CORRECTION_TREE = "<local disposition-B correction tree>"
+$PHASE0_TRACK_B_AMENDMENT_SHA = "10584514d1870dc0a3e41e95e97258128ed03b60"
+$PHASE0_TRACK_B_CORRECTION_SHA = "67d32a2bea36a391a8a11ea4e725dbfebe118252"
+$POST_DIAGNOSTIC_AMENDMENT_SHA = "cfdbca0d86690b904a153e980506013f79245138"
+$QUALITY_GATE_REPAIR_SHA = "931c7c59d6d471c69b70dc0d2f082149665a4e68"
+$QUALITY_GATE_REPAIR_TREE = "f1c36a0079d85628f5cbef140bd94288930cc2e8"
+$DISPOSITION_B_CORRECTION_SHA = "91f5969688a3d2dba96a67d1cfe813c7ba4ee861"
+$DISPOSITION_B_CORRECTION_TREE = "6626ed16d5e135fa477ca26e9786d11121c92b44"
 $EXPECTED_MEASUREMENT_SHA = $DISPOSITION_B_CORRECTION_SHA
 $EXPECTED_MEASUREMENT_TREE = $DISPOSITION_B_CORRECTION_TREE
 $EXPECTED_LIBRIME_SHA = "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
@@ -855,7 +902,10 @@ Invoke-M61Round -Mode "byte-backed" -Name "byte-backed-exploratory\run-1" `
 Invoke-M61Aggregate -SetRoot $BYTE_BACKED -Supplemental
 ```
 
-For a production candidate, start a fresh PowerShell process in a new clean
+Disposition D created no production candidate, so the candidate SHA/tree and
+final-output placeholders in the following preserved command template are
+intentionally uninstantiated. For an accepted production candidate, the
+executing session would start a fresh PowerShell process in a new clean
 detached clone and use this complete block. It deliberately rebinds every source
 and root, builds the candidate DLL and benchmark anew, rejects the diagnostic
 environment variable, and never supplies `-TrackAStorageMode`:
@@ -865,8 +915,8 @@ $ErrorActionPreference = "Stop"
 $REPO = (Resolve-Path .).Path
 $EXPECTED_CANDIDATE_SHA = "<local M61 production-candidate SHA>"
 $EXPECTED_CANDIDATE_TREE = "<local M61 production-candidate tree>"
-$EXPECTED_QUALITY_GATE_REPAIR_SHA = "<pushed reviewed quality-gate repair SHA>"
-$EXPECTED_DISPOSITION_B_CORRECTION_SHA = "<local accepted disposition-B correction SHA>"
+$EXPECTED_QUALITY_GATE_REPAIR_SHA = "931c7c59d6d471c69b70dc0d2f082149665a4e68"
+$EXPECTED_DISPOSITION_B_CORRECTION_SHA = "91f5969688a3d2dba96a67d1cfe813c7ba4ee861"
 $EXPECTED_LIBRIME_SHA = "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
 $CANDIDATE_SHA = (& git -C $REPO rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $CANDIDATE_SHA -ne $EXPECTED_CANDIDATE_SHA) {
@@ -1028,14 +1078,14 @@ if ($LASTEXITCODE -ne 0) {
       and the separately named exploratory byte-backed run. The owned set is
       green; the exploratory measured owner-shape red is preserved and its
       remaining five-round byte-backed set is skipped.
-- [ ] After the post-diagnostic amendment and quality-gate repair are pushed and
+- [x] After the post-diagnostic amendment and quality-gate repair are pushed and
       remote-equal, create the disposition-B correction as the exact local child
       of the repair. Create a new disposable detached clone at that local commit;
       do not switch an existing tree, create a branch, registered worktree, or
       use the main checkout as measurement evidence. Record the M60/Phase 0
       chain and clean status before and after every accepted set, and remove the
       clone only after the external packet is secured.
-- [ ] Before building the replacement A/B, require `git rev-parse HEAD` and
+- [x] Before building the replacement A/B, require `git rev-parse HEAD` and
       `HEAD^{tree}` to equal the recorded local disposition-B correction
       SHA/tree, prove every frozen source named in the revised binding command
       is an ancestor with the exact direct-parent chain, and require `git status
@@ -1043,30 +1093,30 @@ if ($LASTEXITCODE -ne 0) {
       require it to equal the pushed quality-gate repair SHA; the local
       correction must descend from that remote tip but is intentionally not yet
       contained by it. A mismatch is a setup failure, not usable evidence.
-- [ ] Build the replacement benchmark and Yune library once; record SHA-256
+- [x] Build the replacement benchmark and Yune library once; record SHA-256
       values. Run five wholly new `owned` rounds and require the unchanged signed
       registry, candidate/model identities, Track B guards, and fixed binary
       hashes to be green. No `67d32a2b` or `f18b0df2` round contributes.
-- [ ] Run one new explicitly named exploratory byte-backed round at the
+- [x] Run one new explicitly named exploratory byte-backed round at the
       disposition-B correction. A measured red is preserved, skips the
       five-round byte-backed set, exhausts the one B correction, and selects
       disposition D through the explicit revert path above.
-- [ ] After a green replacement exploratory round, run five complete
+- [x] After a green replacement exploratory round, run five complete
       `byte-backed` rounds.
       Record run order, set-boundary thermal state, and elapsed time so
       time/thermal bias remains visible.
-- [ ] Preserve any setup failure under an explicit retry name. Preserve every
+- [x] Preserve any setup failure under an explicit retry name. Preserve every
       measured red; never replace or cherry-pick it.
-- [ ] Verify fixed binary hashes and source/tree identity across every completed
+- [x] Verify fixed binary hashes and source/tree identity across every completed
       replacement round: ten aggregate-binding rounds when both five-round sets
       run, plus the separately preserved exploratory round.
-- [ ] Require each wrapper round to emit a hashed
+- [x] Require each wrapper round to emit a hashed
       `candidate-parity-verdict.txt` with `17/17` PASS before aggregation; the
       aggregator rejects a missing, red, changed, or source/input-mismatched
       receipt.
-- [ ] Aggregate median, pooled worst, spread, signed verdicts, owner rows,
+- [x] Aggregate median, pooled worst, spread, signed verdicts, owner rows,
       private/mapped counters, and candidate/model checks.
-- [ ] Confirm that byte-backed owner rows report `poet_bin` storage and that the
+- [x] Confirm that byte-backed owner rows report `poet_bin` storage and that the
       default-owned rows do not accidentally reuse a prior process-global
       translator/cache instance.
 
@@ -1129,20 +1179,23 @@ lane when same-process private bytes and named owners close the contract.
 
 Before changing runtime behavior:
 
-- [ ] Name at least `10,000,000 B` of current non-overlapping reducible memory.
-- [ ] Reconcile the owned-to-byte-backed whole-process private delta under the
-      formula and tolerance above without double-counting process, mapped, or
-      derived residual rows.
-- [ ] Verify whether the likely owner still consists of the retained preset
+- [x] Name at least `10,000,000 B` of current non-overlapping reducible memory.
+      The selected POET owner delta was `18,724,242 B`.
+- [x] **Evaluated — FAIL:** reconcile the owned-to-byte-backed whole-process
+      private delta under the formula and tolerance above without
+      double-counting process, mapped, or derived residual rows. Coverage was
+      `0.746098930`, and the `6,371,950 B` residual exceeded its
+      `5,019,238 B` limit.
+- [x] Verify whether the likely owner still consists of the retained preset
       vocabulary recipe, `poet.vocabulary`, `poet.entries_by_code`, and the
       small `poet.abbreviation_vocabulary` reducible leaf. Report the guarded
       `translator.upstream_sentence_model_preset_vocabulary_recipe` and
       `poet.lookup_index` rows separately; neither is included in the
       `heap_owned_reducible` coverage sum unless fresh tooling explicitly and
       validly reclassifies it.
-- [ ] Prove that the proposed reduction affects same-process Windows private
+- [x] Prove that the proposed reduction affects same-process Windows private
       bytes rather than only clean mapped residency or page-cache luck.
-- [ ] Select exactly one disposition:
+- [x] Select exactly one disposition: **D — measured partial/no-go.**
   - **A — byte-backed POET re-land:** diagnostic clears the signed and behavior
     gates and projects the full win;
   - **B — one bounded scratch/access correction:** memory wins but one measured
@@ -1240,6 +1293,28 @@ correction and production-default candidate chain, require `origin/main` to
 equal that accepted implementation SHA, and only then build the
 evidence/documentation pre-review tree for final closeout reviews.
 
+#### Disposition-B correction result
+
+The authorized three-path correction was committed as
+`91f5969688a3d2dba96a67d1cfe813c7ba4ee861`, tree
+`6626ed16d5e135fa477ca26e9786d11121c92b44`. Its detached clean-source
+replacement sequence completed five owned rounds, the separately named green
+exploratory byte-backed round, and five byte-backed rounds. Both complete sets
+passed `32/32` aggregate rows, `160/160` individual observations, `17/17`
+candidate parity in every round, fixed source/binary/model identities, Track B,
+and the unchanged signed registry. Byte-backed storage emitted exactly the four
+mapped POET owners and no retained fifth owner. The diagnostic supplemental row
+also passed, with a `116,162,560 B` median and `116,334,592 B` worst peak.
+
+Owner reconciliation then produced the binding measured red: coverage
+`0.746098930` was below `0.80`, and residual `6,371,950 B` exceeded its
+`5,019,238 B` bound. Per the no-retry rule, no production-default candidate or
+final five-round production set was created. The exact correction was reverted
+by `01a62f2a6cd2b3d668545a110de8c7c3fc2fbb10`; the resulting tree
+`f1c36a0079d85628f5cbef140bd94288930cc2e8` exactly equals the pushed
+quality-repair tree. The correction and revert remain in direct-main history so
+the measured-red source remains auditable.
+
 ### Baseline quality-gate restoration amendment
 
 The exact pushed `67d32a2b` source also exposes pre-existing source-quality reds
@@ -1282,6 +1357,70 @@ repair separately, and prove `origin/main` equality before the local
 disposition-B correction is created. The final candidate reruns the binding
 workspace tests; no duplicate repair-source workspace run is required.
 
+### Restored-tree workspace test-contract corrections
+
+The exact 20-gate restored-tree closeout runner was bound to source
+`01a62f2a6cd2b3d668545a110de8c7c3fc2fbb10`, runtime tree
+`f1c36a0079d85628f5cbef140bd94288930cc2e8`. Gates 1--19 exited zero. Gate
+20 executed the literal `cargo test --workspace` command and exited `101`.
+Its successful prefix is retained: `yune-cli` `34/34`, `frontend_surrogate`
+`5/5`, the `yune-core` library `555/555`, and canonical provenance `2/2`.
+`cantonese_parity` then reported `37 passed / 4 failed` in:
+
+- `m21_closeout_rows_match_typeduck_v112_real_dictionary_goldens`;
+- `m21_nri_prefix_fallback_matches_typeduck_v112_real_dictionary_goldens`;
+- `m21_prediction_count_matches_typeduck_v112_real_dictionary_goldens`; and
+- `m58_current_yune_web_profile_reaches_beingo_bei_at_typeduck_rank`.
+
+WEB03 commit `a7f61dae` intentionally made the initial TypeDuck/profile refresh
+page-sized with explicit on-demand completion. Those four tests still compared
+the bounded initial list to all-pages/page-50 oracle fixtures. The first
+correction changes only `crates/yune-core/tests/cantonese_parity.rs`, adding
+four explicit `ensure_complete_candidate_list()` calls immediately before the
+complete-list comparisons. The M58 helper still asserts the bounded initial
+leader and target absence before expansion, while the real deployed profile
+page-size-6 guard still pages to the target. The isolated core-test correction
+tree is `bf4ef0b8d7d234b248cc61e9a1c5ad6b57ee61af`; its corrected blob is
+`a8bc25e21c80107caafcd19525c470f3f991378d`.
+
+The first serial retry was deliberately interrupted before a verdict while its
+scope was audited. It is preserved with `exit_code=-1`, `gate_verdict=none`,
+and reuse prohibited. Retry 2 then passed `cargo fmt --check`, serial
+`cantonese_parity` `41/41`, and the real deployed product-page guard `1/1`.
+Following the M59 disjoint-recovery pattern, retry 3 retained the successful
+workspace prefix and ran only the interrupted/never-reached suffix. Strict
+workspace Clippy passed, and the eight never-reached `yune-core` integration
+targets passed `69` tests with `8` declared ignores. The API package's library
+target then exposed one second deterministic contract red: `363 passed / 1
+failed / 1 ignored` because the old lifecycle test still required pre-M56
+blanket wording that had been intentionally replaced by the current narrow
+threading contract.
+
+The second correction changes only
+`crates/yune-rime-api/src/tests/lifecycle_safety.rs`, itself compiled solely
+under `cfg(test)`. It renames the stale test and locks both the current
+one-active-service convention and M56's valid-session cross-thread tolerance
+without promising parallel progress. The combined two-test correction tree is
+`6cb28424f7bcf5a535ac6173b651e9ba1b7bd160`; the corrected lifecycle-test blob
+is `5a805ad7c41858fca92ef75ac4a604087e195936`. Retry 4 passed source-current
+formatting and exact strict workspace Clippy, the complete owning API library
+(`364 passed / 1 ignored`), every still-never-reached API bin and integration
+target (`114 passed / 3 ignored`), and the remaining API/core doc groups (`0`
+tests each). Its status and completion receipts have SHA-256
+`e8817e5f73a8d3507d40f2351bc29b91a7e37dd3853191acf91d88aee1a2d1af`
+and `815abfa7112a13263dc5dcf3ebfcc433d15c411744c663b9ffdc64be79a46f2a`.
+The original broad red, the no-verdict interruption, and the second API-library
+red remain preserved; the literal workspace command is not rerun or claimed as
+an exit-zero receipt. These are closeout test-contract corrections, not M61
+memory-measurement retries, and do not reopen disposition D.
+
+The first isolated pre-review tree then exposed an evidence-storage red: the
+working-tree packet manifest passed, but the repository-wide LF rule would have
+normalized imported Windows receipts in the commit tree. That candidate was
+discarded before review. The minimum `.gitattributes` packet-subtree `-text`
+rule now preserves the exact curated bytes; it changes no source/runtime
+behavior and is included in both final reviews and closeout path envelopes.
+
 ## Phase 3 — Conditional Production Candidate
 
 Phase 3 exists only for disposition A, B, or C.
@@ -1311,21 +1450,27 @@ environment default:
 
 For expected byte-backed disposition A or B:
 
-- [ ] Preserve the current versioned `YUNE-POET/3` validation and loud rejection
+- [x] **Not applicable under disposition D — not run and not claimed:** preserve
+      the current versioned `YUNE-POET/3` validation and loud rejection
       of present truncated, checksum-mismatched, invalid, wrong-version, or
       legacy artifacts, including `YUNE-POET/1` and `YUNE-POET/2`. Bump the
       format only if bytes or semantics actually change.
-- [ ] Keep POET artifact creation in the untimed deploy/preparation phase and
+- [x] **Not applicable under disposition D — not run and not claimed:** keep
+      POET artifact creation in the untimed deploy/preparation phase and
       prove runtime consumption uses the validated bytes.
-- [ ] Port or retain the current incremental sentence scratch, reachability,
+- [x] **Not applicable under disposition D — not run and not claimed:** port or
+      retain the current incremental sentence scratch, reachability,
       lookup, and cache-invalidation behavior without reconstructing the owned
       vocabulary/entry maps.
-- [ ] Make the validated native deployed Luna path production-default in the
+- [x] **Not applicable under disposition D — not run and not claimed:** make the
+      validated native deployed Luna path production-default in the
       same candidate that passes all gates. Do not land an intermediate default
       flip with a red ratchet.
-- [ ] Keep the environment switch out of the shipping requirement and record
+- [x] **Not applicable under disposition D — not run and not claimed:** keep the
+      environment switch out of the shipping requirement and record
       the actual storage mode in owner diagnostics.
-- [ ] Retain and rerun the existing POET v3 format, corruption/legacy/checksum,
+- [x] **Not applicable under disposition D — not run and not claimed:** retain
+      and rerun the existing POET v3 format, corruption/legacy/checksum,
       deployment/reuse/copy/rebuild, cache replacement, owner shape, every
       growing 37/59 prefix, pinned-oracle byte-backed result, translator
       invalidation, and lifecycle coverage. Add only gaps introduced by M61:
@@ -1334,7 +1479,8 @@ For expected byte-backed disposition A or B:
       behavior without cached reuse, native-target versus WASM capability
       isolation, wrapper selector/owner-shape assertions, and lifecycle clearing
       under the new default.
-- [ ] Report every new cache or hot layer as a named bounded memory owner.
+- [x] **Not applicable under disposition D — not run and not claimed:** report
+      every new cache or hot layer as a named bounded memory owner.
 
 Do not delete the owned fallback or change missing-artifact/source-deploy
 semantics unless the fresh audit proves that change necessary and the plan is
@@ -1342,18 +1488,30 @@ amended before implementation. No hidden behavior tradeoff is authorized.
 
 ## Phase 4 — Final Five-Round Acceptance
 
-- [ ] Build the production-default candidate once and record all hashes.
-- [ ] Run five complete final Windows rounds with the normal signed invocation;
+- [x] **Skipped by D — not run and not claimed:** build the production-default
+      candidate once and record all hashes.
+- [x] **Skipped by D — not run and not claimed:** run five complete final
+      Windows rounds with the normal signed invocation;
       no diagnostic mode or inherited POET environment variable may be active.
-- [ ] Require the memory win, unchanged signed registry, all individual rows,
+- [x] **Skipped by D — not run and not claimed:** require the memory win,
+      unchanged signed registry, all individual rows,
       Track B guards, candidate/model identities, and owner-shape checks above.
-- [ ] Run the load-bearing Rust, manifest, evidence, and documentation gates.
-- [ ] If available, run a five-round exact-source macOS diagnostic outside the
+- [x] Run the load-bearing restored-tree Rust, manifest, evidence, and
+      documentation closeout gates. Gates 1--19 exited zero. The exact workspace
+      command was preserved red at `cantonese_parity`; after the two cfg(test)
+      contract corrections, the successful prefix was retained and the
+      interrupted plus every never-reached target passed under the M59 disjoint-
+      recovery pattern. The literal workspace invocation was not rerun and is
+      not claimed as exit-zero. No production-default final-set gate is claimed.
+- [x] **Skipped by D — not run and not claimed:** run a five-round exact-source
+      macOS diagnostic outside the
       Windows acceptance packet and label RSS/absolute differences as
       platform-specific. Do not delay or redefine Windows acceptance around it.
-- [ ] Publish the compact packet, obtain two independent reviews, update the
-      dashboard/roadmap/requirements/decisions only for the measured result,
-      and move this plan to `plans/completed/`.
+- [x] Publish the compact packet, freeze the pre-review tree for two independent
+      reviews, update current docs only for the measured result, and move this
+      plan to `plans/completed/`. The two review receipts and regenerated packet
+      manifest are the only permitted post-review delta; final commit/push
+      proofs remain external.
 
 ## Execution And Commit Sequence
 
@@ -1419,24 +1577,41 @@ amended before implementation. No hidden behavior tradeoff is authorized.
     exploratory byte-backed round, then five byte-backed rounds only if it is
     green. Complete owner reconciliation. A measured red selects D and the
     explicit correction revert path; do not rewrite history.
+    **Result:** the replacement A/B completed green through both five-round
+    signed sets, then owner reconciliation completed red and selected D. The
+    correction was explicitly reverted without rewriting history.
 13. **Production-default candidate.** Only after the replacement A/B and owner
     reconciliation are green, create a separate direct-parent local commit that
     makes validated native POET storage the default while preserving the owned
     override/fallback and WASM boundary. Freeze the actual sorted path list and
     run focused correctness/owner tests before final measurement.
+    **Result:** skipped by D; no production-default candidate was created.
 14. **Five-round final acceptance and implementation push.** Use a disposable
     clean detached clone of the exact local production candidate. A measured red
     takes the explicit two-revert disposition above without retry. After a wholly
     green set, push the disposition-B correction plus production-default
     candidate chain and prove `origin/main` equals the accepted implementation
     SHA.
-15. **Final reviews and closeout commit.** Curate only the compact packet and
+    **Result:** skipped by D; no final production set or accepted implementation
+    push exists. The correction/revert chain was pushed for auditability, with
+    `origin/main` equal to the revert before closeout.
+15. **Workspace test-contract corrections and nonduplicative recovery.**
+    Preserve the exact workspace red and its successful prefix. Change only the
+    two cfg(test) paths named above, freeze the core-only and combined correction
+    trees, preserve the interrupted no-verdict retry, and recover the interrupted
+    plus never-reached targets without replacing the original broad receipt.
+    Run source-current formatting and strict workspace Clippy after the final
+    test-only edit.
+16. **Final reviews and closeout commit.** Curate only the compact packet and
     current-document updates on top of the pushed implementation. Both reviews
     name that exact implementation commit/tree and the proposed pre-review
     evidence/documentation tree. After review, only the two receipts and
     regenerated packet manifest may change. Move the plan, verify exact
     committed tree and remote identity, push the closeout separately, and
     preserve the fingerprinted unrelated state exactly.
+    **Result:** this completed-plan candidate and compact packet follow that
+    closeout path; after review, the only permitted additions are the two
+    receipts and regenerated packet manifest.
 
 ## Finalization Review Record
 
@@ -1692,6 +1867,21 @@ For every M61 implementation or closeout commit:
   closeout. The committed tree must equal it exactly, while every unrelated
   dirty-state fingerprint remains unchanged.
 
+The restored-tree closeout correction allowlist adds exactly two cfg(test)
+paths: `crates/yune-core/tests/cantonese_parity.rs` and
+`crates/yune-rime-api/src/tests/lifecycle_safety.rs`. The first path alone
+produces tree `bf4ef0b8d7d234b248cc61e9a1c5ad6b57ee61af`; both together produce
+tree `6cb28424f7bcf5a535ac6173b651e9ba1b7bd160` relative to restored runtime
+tree `f1c36a0079d85628f5cbef140bd94288930cc2e8`. Neither correction path is
+production runtime code. Both final closeout reviews must assess their contract
+accuracy and isolation.
+
+The closeout path envelope also includes `.gitattributes` solely for the M61
+packet-subtree `-text` rule discovered by the failed pre-review tree-mode
+manifest check. That rule preserves imported Windows evidence bytes so the
+working-tree, candidate-tree, and committed-tree manifest proofs bind the same
+content; it does not alter runtime or product files.
+
 Create and retain these newline-delimited external lists in `LC_ALL=C` sorted,
 unique order; reject empty, duplicate, absolute, escaping, unmatched, or stale
 entries:
@@ -1906,11 +2096,20 @@ packed-buffer/offset owner accounting. Existing compact-table, prism,
 dictionary-data, deployment, Luna, reachability, and workspace gates prove the
 representation does not change observable behavior.
 
-The full workspace gate is load-bearing at closeout because a default storage
-change crosses deployment, cache lifecycle, compiled-artifact, and candidate
-behavior boundaries. Do not run browser latency, Cloudflare, package, Windows
+The full workspace gate is load-bearing at closeout because it verifies the
+restored runtime tree together with the retained prerequisite and quality
+repairs; for an accepted branch it would also cover a default storage change
+across deployment, cache lifecycle, compiled-artifact, and candidate behavior
+boundaries. Do not run browser latency, Cloudflare, package, Windows
 frontend, or iOS suites unless the implementation unexpectedly touches those
 surfaces; such a touch normally stops M61 for scope review.
+
+The literal closeout workspace command remains preserved red. Its successful
+prefix is retained, and the interrupted plus never-reached result groups are
+covered by the source-current disjoint recovery above. This is a complete
+workspace-surface proof, not a claim that the original command exited zero.
+Do not duplicate the successful prefix or replace either deterministic test-
+contract red with a later broad green receipt.
 
 The final native performance command is the binding Windows command shape above
 with the exact 17+1 inputs and `9/60/80` settings. The final production set
@@ -1955,10 +2154,12 @@ Curate only:
 
 - `README.md` with the exact verdict and source boundary;
 - provenance, commands, environment, timestamps, and binary hashes;
-- owned/byte-backed/final five-round aggregate tables;
+- owned and byte-backed five-round aggregate tables, plus final production
+  five-round tables only for an accepted A/B/C disposition;
 - `owner-budget.csv`, `owner-delta.csv`, and branch disposition;
-- unchanged signed-gate verdict and the separate accepted one-row M61 memory
-  ratchet;
+- unchanged signed-gate verdict and, only for an accepted A/B/C disposition,
+  the separate accepted one-row M61 memory ratchet; disposition D instead
+  retains the explicitly unaccepted supplemental projection;
 - the preserved source-bound `16/17` prerequisite red and corrected `17/17`
   preflight receipts, including comparator tool/output hashes and the exact
   source, DLL, executable, oracle shared/build, product schema, and model
@@ -1979,6 +2180,14 @@ evidence-growth guard, the tested public-evidence privacy checker, and
 
 - A setup failure before measurement may be fixed and retried under an explicit
   `retry-N-<reason>` name. Preserve the failed setup receipt.
+- A deterministic closeout test-contract red is not a memory measurement red.
+  Preserve the exact failing command and successful prefix, correct only the
+  stale test contract under an explicit path allowlist, then rerun its owning
+  target plus every never-reached target. Do not overwrite the red with a broad
+  rerun.
+- An interrupted runner with no gate verdict is neither green nor red. Record
+  `gate_verdict=none`, prohibit reuse, and restart only the still-unproved
+  owning slice under a new retry name.
 - A measured red is never discarded, renamed as setup, averaged away, or
   cherry-picked. It receives a source-bound disposition.
 - A variable DLL or benchmark-executable hash rejects that complete evidence

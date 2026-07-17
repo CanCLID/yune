@@ -817,6 +817,28 @@ historical source-scoped provenance for its exact 37/59 slice._
 
 **D-49 / WINDOWS-PRODUCT-REPOSITORY-OWNERSHIP — Transfer the Windows product/frontend track out of this engine repository.** [`CanCLID/yune-windows`](https://github.com/CanCLID/yune-windows) owns P2-WIN-01 execution: TSF input delivery, candidate UI, settings, installer/update, diagnostics, accessibility, Windows product evidence, and its delivery schedule. This repository preserves the superseded P2-WIN-01 handoff record and continues to own the Yune engine/package boundary, upstream-shaped default ABI, named TypeDuck profile API, oracle fixtures, and separately reviewed engine changes requested by the product. Cross-repository work must arrive as a named proposal with pinned package/source provenance and owning tests; Windows product needs do not implicitly widen `rime_get_api()` or reopen the completed P2-WIN-02 boundary fix.
 
+**D-50 / M61-NATIVE-MEMORY-MEASURED-NO-GO — Close the correction-source
+byte-backed POET branch without making it production-default.** Five fixed-binary
+owned rounds and five byte-backed rounds at correction source `91f59696` passed
+`17/17` candidate parity, Track B guards, and the unchanged signed registry. The
+diagnostic byte-backed peak-working-set median was `116,162,560 B` and its worst
+observation was `116,334,592 B`, below the frozen `125,000,000 B` supplemental
+cap. That projected cap pass is not final acceptance.
+
+The binding same-process reconciliation failed: the private-byte delta was
+`25,096,192 B`, explained named-owner delta was `18,724,242 B`, coverage was
+`0.746098930` against the required `0.80..=1.20`, and the `6,371,950 B`
+residual exceeded the `5,019,238 B` bound. M61 therefore selects disposition D.
+Commit `01a62f2a` explicitly reverts correction `91f59696` and restores runtime
+tree `f1c36a0079d85628f5cbef140bd94288930cc2e8`. No production-default storage
+change, threshold change, supplemental-ratchet claim, ABI/schema/browser
+change, retry, or successor owner branch is authorized by M61. Any future
+native-memory work requires a new source-bound plan and fresh owner evidence.
+The later restored-tree closeout corrections touch only two cfg(test) paths to
+align all-pages/paging assertions and the M56 lifecycle-documentation lock with
+their current contracts. They do not alter runtime behavior, retry the measured
+red, or reopen this disposition.
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing founding and foundation records are retained historical source context** for the now-retired GSD project. Historical `.planning/codebase/` notes were folded into durable docs before `.planning/` was removed. The live `docs/roadmap.md` is current sequencing, not frozen founding context.
@@ -838,6 +860,6 @@ permit an assertion without recoverable real-browser, real-asset evidence.
 
 ---
 
-_Last reviewed: 2026-07-15. Rolling milestone summaries were removed from this
+_Last reviewed: 2026-07-16. Rolling milestone summaries were removed from this
 log; final outcomes belong to the milestone history and performance dashboard.
 No decision ID or binding D-47/D-48 owner disposition was removed._

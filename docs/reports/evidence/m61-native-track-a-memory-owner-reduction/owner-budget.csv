@@ -1,0 +1,426 @@
+mode,run,owner_id,module,structure,byte_class,sharing_scope,retained_estimate_bytes,non_overlapping_reducible_bytes,logical_bytes,item_count,mapped_file_bytes,mapping_mode,eligible_private_owner
+owned,1,reverse_lookup.entries,reverse_lookup,entries,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+owned,1,reverse_lookup.comments_index,reverse_lookup,comments_index,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+owned,1,reverse_lookup.config,reverse_lookup,config,heap_owned_required,session_or_process_heap,40,0,0,1,0,ReverseLookupTranslator,0
+owned,1,translator.entries_by_code,translator,entries_by_code,shared,shared_reference,0,0,0,0,0,compact_table,0
+owned,1,compact_table.syllabary_codes,compact_table,syllabary_codes,heap_owned_reducible,session_or_process_heap,3073,3073,0,424,0,Box<str> + Box<[u32]>,1
+owned,1,compact_table.syllable_ids_by_code,compact_table,syllable_ids_by_code,heap_owned_reducible,session_or_process_heap,15757,15757,0,424,0,"HashMap<String, usize>",1
+owned,1,compact_table.storage,compact_table,storage,mmap_file_backed,file_mapping,13013460,0,0,498564,13013460,byte_backed:mmap,0
+owned,1,compact_table.candidate_text_payload,compact_table,candidate_text_payload,shared_or_overlapping,shared_or_overlapping,13013460,0,13013460,498564,0,byte_backed,0
+owned,1,compact_table.candidate_comment_payload,compact_table,candidate_comment_payload,shared_or_overlapping,shared_or_overlapping,0,0,0,498564,0,byte_backed,0
+owned,1,compact_table.stems,compact_table,stems,heap_owned_required,session_or_process_heap,48,0,0,0,0,"HashMap<String, Vec<String>>",0
+owned,1,compact_table.lookup_records,compact_table,lookup_records,shared,shared_reference,0,0,0,0,0,none,0
+owned,1,compact_table.corrections_tolerance,compact_table,corrections_tolerance,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+owned,1,compact_table.dict_settings,compact_table,dict_settings,heap_owned_required,session_or_process_heap,24,0,0,0,0,"BTreeMap<String, String>",0
+owned,1,compact_table.preset_vocabulary,compact_table,preset_vocabulary,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<PresetVocabularyEntry>,0
+owned,1,translator.normal_codes,translator,normal_codes,shared,shared_reference,0,0,0,424,0,compact_table.has_code,0
+owned,1,translator.leading_fetch_seed,translator,leading_fetch_seed,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Vec<String>,0
+owned,1,translator.spelling_correction_entries,translator,spelling_correction_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+owned,1,translator.spelling_abbreviation_entries,translator,spelling_abbreviation_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+owned,1,translator.spelling_correction_surfaces,translator,spelling_correction_surfaces,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,HashSet<String>,0
+owned,1,translator.leading_fetch_index,translator,leading_fetch_index,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",0
+owned,1,translator.bounded_upstream_script_cache,translator,bounded_upstream_script_cache,heap_owned_guarded,session_or_process_heap,7200,0,0,0,0,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,0
+owned,1,translator.prefix_fallback_window_cache,translator,prefix_fallback_window_cache,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,0
+owned,1,prism.double_array_units,prism,double_array_units,mmap_file_backed,file_mapping,7168,0,0,1792,7168,byte_backed:mmap,0
+owned,1,prism.spelling_map,prism,spelling_map,mmap_file_backed,file_mapping,24244,0,0,1166,24244,byte_backed:mmap,0
+owned,1,prism.corrections_tolerance,prism,corrections_tolerance,heap_owned_required,session_or_process_heap,48,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+owned,1,prism.tips_payload,prism,tips_payload,mmap_file_backed,file_mapping,0,0,0,0,0,byte_backed:mmap,0
+owned,1,translator.upstream_sentence_model_build_source,translator,upstream_sentence_model_build_source,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"Option<Vec<(String, Candidate)>>",0
+owned,1,translator.upstream_sentence_model_preset_vocabulary_recipe,translator,upstream_sentence_model_preset_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,18047883,0,0,442712,0,Vec<PresetVocabularyEntry>,0
+owned,1,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,translator,upstream_sentence_model_abbreviation_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,469,0,0,11,0,Vec<PresetVocabularyEntry>,0
+owned,1,poet.entries_by_code,poet,entries_by_code,heap_owned_reducible,session_or_process_heap,18694662,18694662,0,513353,0,Vec<ModelEntry>,1
+owned,1,poet.lookup_index,poet,lookup_index,heap_owned_guarded,session_or_process_heap,2660848,0,0,332604,0,SentenceLookupIndex,0
+owned,1,poet.vocabulary,poet,vocabulary,heap_owned_reducible,session_or_process_heap,28147,28147,0,193,0,Vec<ModelVocabularyEntry>,1
+owned,1,poet.abbreviation_vocabulary,poet,abbreviation_vocabulary,heap_owned_reducible,session_or_process_heap,1433,1433,0,11,0,Vec<ModelVocabularyEntry>,1
+owned,1,poet.normal_character_code_index,poet,normal_character_code_index,heap_owned_guarded,session_or_process_heap,11538,0,0,423,0,sorted Box<[String]>,0
+owned,1,schema.config,schema,config,overlap_estimate,logical_overlap,1889,0,1889,2,0,schema_reload_signature,0
+owned,1,schema.processors,schema,processors,heap_owned_guarded,session_or_process_heap,2599,0,0,2,0,SessionState processors,0
+owned,1,session.userdb,session,userdb,heap_owned_guarded,session_or_process_heap,24,0,0,0,0,UserDb,0
+owned,1,runtime.session_state,runtime,session_state,heap_owned_guarded,session_or_process_heap,3222,0,0,1,0,SessionState,0
+owned,1,process.owner_snapshot_private_bytes,process,owner_snapshot_private_bytes,unclassified,process_memory_proxy,108417024,0,108417024,1,0,process_memory,0
+owned,1,process.after_ready_working_set_unclassified_lower_bound,process,after_ready_working_set_unclassified_lower_bound,unclassified,process_memory_proxy,91472096,0,91472096,1,0,process_memory,0
+owned,1,process.peak_working_set_high_water,process,peak_working_set_high_water,unclassified,process_memory_proxy,154218496,0,154218496,1,0,process_memory,0
+owned,1,process.private_bytes_proxy,process,private_bytes_proxy,unclassified,process_memory_proxy,98557952,0,98557952,1,0,process_memory,0
+owned,1,process.peak_pagefile_high_water,process,peak_pagefile_high_water,unclassified,process_memory_proxy,175919104,0,175919104,1,0,process_memory,0
+owned,2,reverse_lookup.entries,reverse_lookup,entries,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+owned,2,reverse_lookup.comments_index,reverse_lookup,comments_index,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+owned,2,reverse_lookup.config,reverse_lookup,config,heap_owned_required,session_or_process_heap,40,0,0,1,0,ReverseLookupTranslator,0
+owned,2,translator.entries_by_code,translator,entries_by_code,shared,shared_reference,0,0,0,0,0,compact_table,0
+owned,2,compact_table.syllabary_codes,compact_table,syllabary_codes,heap_owned_reducible,session_or_process_heap,3073,3073,0,424,0,Box<str> + Box<[u32]>,1
+owned,2,compact_table.syllable_ids_by_code,compact_table,syllable_ids_by_code,heap_owned_reducible,session_or_process_heap,15757,15757,0,424,0,"HashMap<String, usize>",1
+owned,2,compact_table.storage,compact_table,storage,mmap_file_backed,file_mapping,13013460,0,0,498564,13013460,byte_backed:mmap,0
+owned,2,compact_table.candidate_text_payload,compact_table,candidate_text_payload,shared_or_overlapping,shared_or_overlapping,13013460,0,13013460,498564,0,byte_backed,0
+owned,2,compact_table.candidate_comment_payload,compact_table,candidate_comment_payload,shared_or_overlapping,shared_or_overlapping,0,0,0,498564,0,byte_backed,0
+owned,2,compact_table.stems,compact_table,stems,heap_owned_required,session_or_process_heap,48,0,0,0,0,"HashMap<String, Vec<String>>",0
+owned,2,compact_table.lookup_records,compact_table,lookup_records,shared,shared_reference,0,0,0,0,0,none,0
+owned,2,compact_table.corrections_tolerance,compact_table,corrections_tolerance,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+owned,2,compact_table.dict_settings,compact_table,dict_settings,heap_owned_required,session_or_process_heap,24,0,0,0,0,"BTreeMap<String, String>",0
+owned,2,compact_table.preset_vocabulary,compact_table,preset_vocabulary,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<PresetVocabularyEntry>,0
+owned,2,translator.normal_codes,translator,normal_codes,shared,shared_reference,0,0,0,424,0,compact_table.has_code,0
+owned,2,translator.leading_fetch_seed,translator,leading_fetch_seed,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Vec<String>,0
+owned,2,translator.spelling_correction_entries,translator,spelling_correction_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+owned,2,translator.spelling_abbreviation_entries,translator,spelling_abbreviation_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+owned,2,translator.spelling_correction_surfaces,translator,spelling_correction_surfaces,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,HashSet<String>,0
+owned,2,translator.leading_fetch_index,translator,leading_fetch_index,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",0
+owned,2,translator.bounded_upstream_script_cache,translator,bounded_upstream_script_cache,heap_owned_guarded,session_or_process_heap,7200,0,0,0,0,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,0
+owned,2,translator.prefix_fallback_window_cache,translator,prefix_fallback_window_cache,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,0
+owned,2,prism.double_array_units,prism,double_array_units,mmap_file_backed,file_mapping,7168,0,0,1792,7168,byte_backed:mmap,0
+owned,2,prism.spelling_map,prism,spelling_map,mmap_file_backed,file_mapping,24244,0,0,1166,24244,byte_backed:mmap,0
+owned,2,prism.corrections_tolerance,prism,corrections_tolerance,heap_owned_required,session_or_process_heap,48,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+owned,2,prism.tips_payload,prism,tips_payload,mmap_file_backed,file_mapping,0,0,0,0,0,byte_backed:mmap,0
+owned,2,translator.upstream_sentence_model_build_source,translator,upstream_sentence_model_build_source,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"Option<Vec<(String, Candidate)>>",0
+owned,2,translator.upstream_sentence_model_preset_vocabulary_recipe,translator,upstream_sentence_model_preset_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,18047883,0,0,442712,0,Vec<PresetVocabularyEntry>,0
+owned,2,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,translator,upstream_sentence_model_abbreviation_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,469,0,0,11,0,Vec<PresetVocabularyEntry>,0
+owned,2,poet.entries_by_code,poet,entries_by_code,heap_owned_reducible,session_or_process_heap,18694662,18694662,0,513353,0,Vec<ModelEntry>,1
+owned,2,poet.lookup_index,poet,lookup_index,heap_owned_guarded,session_or_process_heap,2660848,0,0,332604,0,SentenceLookupIndex,0
+owned,2,poet.vocabulary,poet,vocabulary,heap_owned_reducible,session_or_process_heap,28147,28147,0,193,0,Vec<ModelVocabularyEntry>,1
+owned,2,poet.abbreviation_vocabulary,poet,abbreviation_vocabulary,heap_owned_reducible,session_or_process_heap,1433,1433,0,11,0,Vec<ModelVocabularyEntry>,1
+owned,2,poet.normal_character_code_index,poet,normal_character_code_index,heap_owned_guarded,session_or_process_heap,11538,0,0,423,0,sorted Box<[String]>,0
+owned,2,schema.config,schema,config,overlap_estimate,logical_overlap,1889,0,1889,2,0,schema_reload_signature,0
+owned,2,schema.processors,schema,processors,heap_owned_guarded,session_or_process_heap,2599,0,0,2,0,SessionState processors,0
+owned,2,session.userdb,session,userdb,heap_owned_guarded,session_or_process_heap,24,0,0,0,0,UserDb,0
+owned,2,runtime.session_state,runtime,session_state,heap_owned_guarded,session_or_process_heap,3222,0,0,1,0,SessionState,0
+owned,2,process.owner_snapshot_private_bytes,process,owner_snapshot_private_bytes,unclassified,process_memory_proxy,108773376,0,108773376,1,0,process_memory,0
+owned,2,process.after_ready_working_set_unclassified_lower_bound,process,after_ready_working_set_unclassified_lower_bound,unclassified,process_memory_proxy,92475616,0,92475616,1,0,process_memory,0
+owned,2,process.peak_working_set_high_water,process,peak_working_set_high_water,unclassified,process_memory_proxy,153890816,0,153890816,1,0,process_memory,0
+owned,2,process.private_bytes_proxy,process,private_bytes_proxy,unclassified,process_memory_proxy,99717120,0,99717120,1,0,process_memory,0
+owned,2,process.peak_pagefile_high_water,process,peak_pagefile_high_water,unclassified,process_memory_proxy,175296512,0,175296512,1,0,process_memory,0
+owned,3,reverse_lookup.entries,reverse_lookup,entries,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+owned,3,reverse_lookup.comments_index,reverse_lookup,comments_index,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+owned,3,reverse_lookup.config,reverse_lookup,config,heap_owned_required,session_or_process_heap,40,0,0,1,0,ReverseLookupTranslator,0
+owned,3,translator.entries_by_code,translator,entries_by_code,shared,shared_reference,0,0,0,0,0,compact_table,0
+owned,3,compact_table.syllabary_codes,compact_table,syllabary_codes,heap_owned_reducible,session_or_process_heap,3073,3073,0,424,0,Box<str> + Box<[u32]>,1
+owned,3,compact_table.syllable_ids_by_code,compact_table,syllable_ids_by_code,heap_owned_reducible,session_or_process_heap,15757,15757,0,424,0,"HashMap<String, usize>",1
+owned,3,compact_table.storage,compact_table,storage,mmap_file_backed,file_mapping,13013460,0,0,498564,13013460,byte_backed:mmap,0
+owned,3,compact_table.candidate_text_payload,compact_table,candidate_text_payload,shared_or_overlapping,shared_or_overlapping,13013460,0,13013460,498564,0,byte_backed,0
+owned,3,compact_table.candidate_comment_payload,compact_table,candidate_comment_payload,shared_or_overlapping,shared_or_overlapping,0,0,0,498564,0,byte_backed,0
+owned,3,compact_table.stems,compact_table,stems,heap_owned_required,session_or_process_heap,48,0,0,0,0,"HashMap<String, Vec<String>>",0
+owned,3,compact_table.lookup_records,compact_table,lookup_records,shared,shared_reference,0,0,0,0,0,none,0
+owned,3,compact_table.corrections_tolerance,compact_table,corrections_tolerance,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+owned,3,compact_table.dict_settings,compact_table,dict_settings,heap_owned_required,session_or_process_heap,24,0,0,0,0,"BTreeMap<String, String>",0
+owned,3,compact_table.preset_vocabulary,compact_table,preset_vocabulary,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<PresetVocabularyEntry>,0
+owned,3,translator.normal_codes,translator,normal_codes,shared,shared_reference,0,0,0,424,0,compact_table.has_code,0
+owned,3,translator.leading_fetch_seed,translator,leading_fetch_seed,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Vec<String>,0
+owned,3,translator.spelling_correction_entries,translator,spelling_correction_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+owned,3,translator.spelling_abbreviation_entries,translator,spelling_abbreviation_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+owned,3,translator.spelling_correction_surfaces,translator,spelling_correction_surfaces,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,HashSet<String>,0
+owned,3,translator.leading_fetch_index,translator,leading_fetch_index,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",0
+owned,3,translator.bounded_upstream_script_cache,translator,bounded_upstream_script_cache,heap_owned_guarded,session_or_process_heap,7200,0,0,0,0,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,0
+owned,3,translator.prefix_fallback_window_cache,translator,prefix_fallback_window_cache,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,0
+owned,3,prism.double_array_units,prism,double_array_units,mmap_file_backed,file_mapping,7168,0,0,1792,7168,byte_backed:mmap,0
+owned,3,prism.spelling_map,prism,spelling_map,mmap_file_backed,file_mapping,24244,0,0,1166,24244,byte_backed:mmap,0
+owned,3,prism.corrections_tolerance,prism,corrections_tolerance,heap_owned_required,session_or_process_heap,48,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+owned,3,prism.tips_payload,prism,tips_payload,mmap_file_backed,file_mapping,0,0,0,0,0,byte_backed:mmap,0
+owned,3,translator.upstream_sentence_model_build_source,translator,upstream_sentence_model_build_source,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"Option<Vec<(String, Candidate)>>",0
+owned,3,translator.upstream_sentence_model_preset_vocabulary_recipe,translator,upstream_sentence_model_preset_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,18047883,0,0,442712,0,Vec<PresetVocabularyEntry>,0
+owned,3,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,translator,upstream_sentence_model_abbreviation_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,469,0,0,11,0,Vec<PresetVocabularyEntry>,0
+owned,3,poet.entries_by_code,poet,entries_by_code,heap_owned_reducible,session_or_process_heap,18694662,18694662,0,513353,0,Vec<ModelEntry>,1
+owned,3,poet.lookup_index,poet,lookup_index,heap_owned_guarded,session_or_process_heap,2660848,0,0,332604,0,SentenceLookupIndex,0
+owned,3,poet.vocabulary,poet,vocabulary,heap_owned_reducible,session_or_process_heap,28147,28147,0,193,0,Vec<ModelVocabularyEntry>,1
+owned,3,poet.abbreviation_vocabulary,poet,abbreviation_vocabulary,heap_owned_reducible,session_or_process_heap,1433,1433,0,11,0,Vec<ModelVocabularyEntry>,1
+owned,3,poet.normal_character_code_index,poet,normal_character_code_index,heap_owned_guarded,session_or_process_heap,11538,0,0,423,0,sorted Box<[String]>,0
+owned,3,schema.config,schema,config,overlap_estimate,logical_overlap,1889,0,1889,2,0,schema_reload_signature,0
+owned,3,schema.processors,schema,processors,heap_owned_guarded,session_or_process_heap,2599,0,0,2,0,SessionState processors,0
+owned,3,session.userdb,session,userdb,heap_owned_guarded,session_or_process_heap,24,0,0,0,0,UserDb,0
+owned,3,runtime.session_state,runtime,session_state,heap_owned_guarded,session_or_process_heap,3222,0,0,1,0,SessionState,0
+owned,3,process.owner_snapshot_private_bytes,process,owner_snapshot_private_bytes,unclassified,process_memory_proxy,108359680,0,108359680,1,0,process_memory,0
+owned,3,process.after_ready_working_set_unclassified_lower_bound,process,after_ready_working_set_unclassified_lower_bound,unclassified,process_memory_proxy,91304160,0,91304160,1,0,process_memory,0
+owned,3,process.peak_working_set_high_water,process,peak_working_set_high_water,unclassified,process_memory_proxy,154030080,0,154030080,1,0,process_memory,0
+owned,3,process.private_bytes_proxy,process,private_bytes_proxy,unclassified,process_memory_proxy,98684928,0,98684928,1,0,process_memory,0
+owned,3,process.peak_pagefile_high_water,process,peak_pagefile_high_water,unclassified,process_memory_proxy,175775744,0,175775744,1,0,process_memory,0
+owned,4,reverse_lookup.entries,reverse_lookup,entries,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+owned,4,reverse_lookup.comments_index,reverse_lookup,comments_index,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+owned,4,reverse_lookup.config,reverse_lookup,config,heap_owned_required,session_or_process_heap,40,0,0,1,0,ReverseLookupTranslator,0
+owned,4,translator.entries_by_code,translator,entries_by_code,shared,shared_reference,0,0,0,0,0,compact_table,0
+owned,4,compact_table.syllabary_codes,compact_table,syllabary_codes,heap_owned_reducible,session_or_process_heap,3073,3073,0,424,0,Box<str> + Box<[u32]>,1
+owned,4,compact_table.syllable_ids_by_code,compact_table,syllable_ids_by_code,heap_owned_reducible,session_or_process_heap,15757,15757,0,424,0,"HashMap<String, usize>",1
+owned,4,compact_table.storage,compact_table,storage,mmap_file_backed,file_mapping,13013460,0,0,498564,13013460,byte_backed:mmap,0
+owned,4,compact_table.candidate_text_payload,compact_table,candidate_text_payload,shared_or_overlapping,shared_or_overlapping,13013460,0,13013460,498564,0,byte_backed,0
+owned,4,compact_table.candidate_comment_payload,compact_table,candidate_comment_payload,shared_or_overlapping,shared_or_overlapping,0,0,0,498564,0,byte_backed,0
+owned,4,compact_table.stems,compact_table,stems,heap_owned_required,session_or_process_heap,48,0,0,0,0,"HashMap<String, Vec<String>>",0
+owned,4,compact_table.lookup_records,compact_table,lookup_records,shared,shared_reference,0,0,0,0,0,none,0
+owned,4,compact_table.corrections_tolerance,compact_table,corrections_tolerance,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+owned,4,compact_table.dict_settings,compact_table,dict_settings,heap_owned_required,session_or_process_heap,24,0,0,0,0,"BTreeMap<String, String>",0
+owned,4,compact_table.preset_vocabulary,compact_table,preset_vocabulary,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<PresetVocabularyEntry>,0
+owned,4,translator.normal_codes,translator,normal_codes,shared,shared_reference,0,0,0,424,0,compact_table.has_code,0
+owned,4,translator.leading_fetch_seed,translator,leading_fetch_seed,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Vec<String>,0
+owned,4,translator.spelling_correction_entries,translator,spelling_correction_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+owned,4,translator.spelling_abbreviation_entries,translator,spelling_abbreviation_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+owned,4,translator.spelling_correction_surfaces,translator,spelling_correction_surfaces,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,HashSet<String>,0
+owned,4,translator.leading_fetch_index,translator,leading_fetch_index,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",0
+owned,4,translator.bounded_upstream_script_cache,translator,bounded_upstream_script_cache,heap_owned_guarded,session_or_process_heap,7200,0,0,0,0,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,0
+owned,4,translator.prefix_fallback_window_cache,translator,prefix_fallback_window_cache,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,0
+owned,4,prism.double_array_units,prism,double_array_units,mmap_file_backed,file_mapping,7168,0,0,1792,7168,byte_backed:mmap,0
+owned,4,prism.spelling_map,prism,spelling_map,mmap_file_backed,file_mapping,24244,0,0,1166,24244,byte_backed:mmap,0
+owned,4,prism.corrections_tolerance,prism,corrections_tolerance,heap_owned_required,session_or_process_heap,48,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+owned,4,prism.tips_payload,prism,tips_payload,mmap_file_backed,file_mapping,0,0,0,0,0,byte_backed:mmap,0
+owned,4,translator.upstream_sentence_model_build_source,translator,upstream_sentence_model_build_source,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"Option<Vec<(String, Candidate)>>",0
+owned,4,translator.upstream_sentence_model_preset_vocabulary_recipe,translator,upstream_sentence_model_preset_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,18047883,0,0,442712,0,Vec<PresetVocabularyEntry>,0
+owned,4,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,translator,upstream_sentence_model_abbreviation_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,469,0,0,11,0,Vec<PresetVocabularyEntry>,0
+owned,4,poet.entries_by_code,poet,entries_by_code,heap_owned_reducible,session_or_process_heap,18694662,18694662,0,513353,0,Vec<ModelEntry>,1
+owned,4,poet.lookup_index,poet,lookup_index,heap_owned_guarded,session_or_process_heap,2660848,0,0,332604,0,SentenceLookupIndex,0
+owned,4,poet.vocabulary,poet,vocabulary,heap_owned_reducible,session_or_process_heap,28147,28147,0,193,0,Vec<ModelVocabularyEntry>,1
+owned,4,poet.abbreviation_vocabulary,poet,abbreviation_vocabulary,heap_owned_reducible,session_or_process_heap,1433,1433,0,11,0,Vec<ModelVocabularyEntry>,1
+owned,4,poet.normal_character_code_index,poet,normal_character_code_index,heap_owned_guarded,session_or_process_heap,11538,0,0,423,0,sorted Box<[String]>,0
+owned,4,schema.config,schema,config,overlap_estimate,logical_overlap,1889,0,1889,2,0,schema_reload_signature,0
+owned,4,schema.processors,schema,processors,heap_owned_guarded,session_or_process_heap,2599,0,0,2,0,SessionState processors,0
+owned,4,session.userdb,session,userdb,heap_owned_guarded,session_or_process_heap,24,0,0,0,0,UserDb,0
+owned,4,runtime.session_state,runtime,session_state,heap_owned_guarded,session_or_process_heap,3222,0,0,1,0,SessionState,0
+owned,4,process.owner_snapshot_private_bytes,process,owner_snapshot_private_bytes,unclassified,process_memory_proxy,108482560,0,108482560,1,0,process_memory,0
+owned,4,process.after_ready_working_set_unclassified_lower_bound,process,after_ready_working_set_unclassified_lower_bound,unclassified,process_memory_proxy,91767008,0,91767008,1,0,process_memory,0
+owned,4,process.peak_working_set_high_water,process,peak_working_set_high_water,unclassified,process_memory_proxy,154189824,0,154189824,1,0,process_memory,0
+owned,4,process.private_bytes_proxy,process,private_bytes_proxy,unclassified,process_memory_proxy,99041280,0,99041280,1,0,process_memory,0
+owned,4,process.peak_pagefile_high_water,process,peak_pagefile_high_water,unclassified,process_memory_proxy,175898624,0,175898624,1,0,process_memory,0
+owned,5,reverse_lookup.entries,reverse_lookup,entries,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+owned,5,reverse_lookup.comments_index,reverse_lookup,comments_index,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+owned,5,reverse_lookup.config,reverse_lookup,config,heap_owned_required,session_or_process_heap,40,0,0,1,0,ReverseLookupTranslator,0
+owned,5,translator.entries_by_code,translator,entries_by_code,shared,shared_reference,0,0,0,0,0,compact_table,0
+owned,5,compact_table.syllabary_codes,compact_table,syllabary_codes,heap_owned_reducible,session_or_process_heap,3073,3073,0,424,0,Box<str> + Box<[u32]>,1
+owned,5,compact_table.syllable_ids_by_code,compact_table,syllable_ids_by_code,heap_owned_reducible,session_or_process_heap,15757,15757,0,424,0,"HashMap<String, usize>",1
+owned,5,compact_table.storage,compact_table,storage,mmap_file_backed,file_mapping,13013460,0,0,498564,13013460,byte_backed:mmap,0
+owned,5,compact_table.candidate_text_payload,compact_table,candidate_text_payload,shared_or_overlapping,shared_or_overlapping,13013460,0,13013460,498564,0,byte_backed,0
+owned,5,compact_table.candidate_comment_payload,compact_table,candidate_comment_payload,shared_or_overlapping,shared_or_overlapping,0,0,0,498564,0,byte_backed,0
+owned,5,compact_table.stems,compact_table,stems,heap_owned_required,session_or_process_heap,48,0,0,0,0,"HashMap<String, Vec<String>>",0
+owned,5,compact_table.lookup_records,compact_table,lookup_records,shared,shared_reference,0,0,0,0,0,none,0
+owned,5,compact_table.corrections_tolerance,compact_table,corrections_tolerance,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+owned,5,compact_table.dict_settings,compact_table,dict_settings,heap_owned_required,session_or_process_heap,24,0,0,0,0,"BTreeMap<String, String>",0
+owned,5,compact_table.preset_vocabulary,compact_table,preset_vocabulary,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<PresetVocabularyEntry>,0
+owned,5,translator.normal_codes,translator,normal_codes,shared,shared_reference,0,0,0,424,0,compact_table.has_code,0
+owned,5,translator.leading_fetch_seed,translator,leading_fetch_seed,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Vec<String>,0
+owned,5,translator.spelling_correction_entries,translator,spelling_correction_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+owned,5,translator.spelling_abbreviation_entries,translator,spelling_abbreviation_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+owned,5,translator.spelling_correction_surfaces,translator,spelling_correction_surfaces,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,HashSet<String>,0
+owned,5,translator.leading_fetch_index,translator,leading_fetch_index,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",0
+owned,5,translator.bounded_upstream_script_cache,translator,bounded_upstream_script_cache,heap_owned_guarded,session_or_process_heap,7200,0,0,0,0,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,0
+owned,5,translator.prefix_fallback_window_cache,translator,prefix_fallback_window_cache,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,0
+owned,5,prism.double_array_units,prism,double_array_units,mmap_file_backed,file_mapping,7168,0,0,1792,7168,byte_backed:mmap,0
+owned,5,prism.spelling_map,prism,spelling_map,mmap_file_backed,file_mapping,24244,0,0,1166,24244,byte_backed:mmap,0
+owned,5,prism.corrections_tolerance,prism,corrections_tolerance,heap_owned_required,session_or_process_heap,48,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+owned,5,prism.tips_payload,prism,tips_payload,mmap_file_backed,file_mapping,0,0,0,0,0,byte_backed:mmap,0
+owned,5,translator.upstream_sentence_model_build_source,translator,upstream_sentence_model_build_source,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"Option<Vec<(String, Candidate)>>",0
+owned,5,translator.upstream_sentence_model_preset_vocabulary_recipe,translator,upstream_sentence_model_preset_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,18047883,0,0,442712,0,Vec<PresetVocabularyEntry>,0
+owned,5,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,translator,upstream_sentence_model_abbreviation_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,469,0,0,11,0,Vec<PresetVocabularyEntry>,0
+owned,5,poet.entries_by_code,poet,entries_by_code,heap_owned_reducible,session_or_process_heap,18694662,18694662,0,513353,0,Vec<ModelEntry>,1
+owned,5,poet.lookup_index,poet,lookup_index,heap_owned_guarded,session_or_process_heap,2660848,0,0,332604,0,SentenceLookupIndex,0
+owned,5,poet.vocabulary,poet,vocabulary,heap_owned_reducible,session_or_process_heap,28147,28147,0,193,0,Vec<ModelVocabularyEntry>,1
+owned,5,poet.abbreviation_vocabulary,poet,abbreviation_vocabulary,heap_owned_reducible,session_or_process_heap,1433,1433,0,11,0,Vec<ModelVocabularyEntry>,1
+owned,5,poet.normal_character_code_index,poet,normal_character_code_index,heap_owned_guarded,session_or_process_heap,11538,0,0,423,0,sorted Box<[String]>,0
+owned,5,schema.config,schema,config,overlap_estimate,logical_overlap,1889,0,1889,2,0,schema_reload_signature,0
+owned,5,schema.processors,schema,processors,heap_owned_guarded,session_or_process_heap,2599,0,0,2,0,SessionState processors,0
+owned,5,session.userdb,session,userdb,heap_owned_guarded,session_or_process_heap,24,0,0,0,0,UserDb,0
+owned,5,runtime.session_state,runtime,session_state,heap_owned_guarded,session_or_process_heap,3222,0,0,1,0,SessionState,0
+owned,5,process.owner_snapshot_private_bytes,process,owner_snapshot_private_bytes,unclassified,process_memory_proxy,108978176,0,108978176,1,0,process_memory,0
+owned,5,process.after_ready_working_set_unclassified_lower_bound,process,after_ready_working_set_unclassified_lower_bound,unclassified,process_memory_proxy,91619552,0,91619552,1,0,process_memory,0
+owned,5,process.peak_working_set_high_water,process,peak_working_set_high_water,unclassified,process_memory_proxy,153989120,0,153989120,1,0,process_memory,0
+owned,5,process.private_bytes_proxy,process,private_bytes_proxy,unclassified,process_memory_proxy,98902016,0,98902016,1,0,process_memory,0
+owned,5,process.peak_pagefile_high_water,process,peak_pagefile_high_water,unclassified,process_memory_proxy,175779840,0,175779840,1,0,process_memory,0
+byte-backed,1,reverse_lookup.entries,reverse_lookup,entries,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+byte-backed,1,reverse_lookup.comments_index,reverse_lookup,comments_index,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+byte-backed,1,reverse_lookup.config,reverse_lookup,config,heap_owned_required,session_or_process_heap,40,0,0,1,0,ReverseLookupTranslator,0
+byte-backed,1,translator.entries_by_code,translator,entries_by_code,shared,shared_reference,0,0,0,0,0,compact_table,0
+byte-backed,1,compact_table.syllabary_codes,compact_table,syllabary_codes,heap_owned_reducible,session_or_process_heap,3073,3073,0,424,0,Box<str> + Box<[u32]>,1
+byte-backed,1,compact_table.syllable_ids_by_code,compact_table,syllable_ids_by_code,heap_owned_reducible,session_or_process_heap,15757,15757,0,424,0,"HashMap<String, usize>",1
+byte-backed,1,compact_table.storage,compact_table,storage,mmap_file_backed,file_mapping,13013460,0,0,498564,13013460,byte_backed:mmap,0
+byte-backed,1,compact_table.candidate_text_payload,compact_table,candidate_text_payload,shared_or_overlapping,shared_or_overlapping,13013460,0,13013460,498564,0,byte_backed,0
+byte-backed,1,compact_table.candidate_comment_payload,compact_table,candidate_comment_payload,shared_or_overlapping,shared_or_overlapping,0,0,0,498564,0,byte_backed,0
+byte-backed,1,compact_table.stems,compact_table,stems,heap_owned_required,session_or_process_heap,48,0,0,0,0,"HashMap<String, Vec<String>>",0
+byte-backed,1,compact_table.lookup_records,compact_table,lookup_records,shared,shared_reference,0,0,0,0,0,none,0
+byte-backed,1,compact_table.corrections_tolerance,compact_table,corrections_tolerance,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+byte-backed,1,compact_table.dict_settings,compact_table,dict_settings,heap_owned_required,session_or_process_heap,24,0,0,0,0,"BTreeMap<String, String>",0
+byte-backed,1,compact_table.preset_vocabulary,compact_table,preset_vocabulary,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<PresetVocabularyEntry>,0
+byte-backed,1,translator.normal_codes,translator,normal_codes,shared,shared_reference,0,0,0,424,0,compact_table.has_code,0
+byte-backed,1,translator.leading_fetch_seed,translator,leading_fetch_seed,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Vec<String>,0
+byte-backed,1,translator.spelling_correction_entries,translator,spelling_correction_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+byte-backed,1,translator.spelling_abbreviation_entries,translator,spelling_abbreviation_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+byte-backed,1,translator.spelling_correction_surfaces,translator,spelling_correction_surfaces,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,HashSet<String>,0
+byte-backed,1,translator.leading_fetch_index,translator,leading_fetch_index,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",0
+byte-backed,1,translator.bounded_upstream_script_cache,translator,bounded_upstream_script_cache,heap_owned_guarded,session_or_process_heap,7200,0,0,0,0,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,0
+byte-backed,1,translator.prefix_fallback_window_cache,translator,prefix_fallback_window_cache,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,0
+byte-backed,1,prism.double_array_units,prism,double_array_units,mmap_file_backed,file_mapping,7168,0,0,1792,7168,byte_backed:mmap,0
+byte-backed,1,prism.spelling_map,prism,spelling_map,mmap_file_backed,file_mapping,24244,0,0,1166,24244,byte_backed:mmap,0
+byte-backed,1,prism.corrections_tolerance,prism,corrections_tolerance,heap_owned_required,session_or_process_heap,48,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+byte-backed,1,prism.tips_payload,prism,tips_payload,mmap_file_backed,file_mapping,0,0,0,0,0,byte_backed:mmap,0
+byte-backed,1,translator.upstream_sentence_model_build_source,translator,upstream_sentence_model_build_source,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"Option<Vec<(String, Candidate)>>",0
+byte-backed,1,translator.upstream_sentence_model_preset_vocabulary_recipe,translator,upstream_sentence_model_preset_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,18047883,0,0,442712,0,Vec<PresetVocabularyEntry>,0
+byte-backed,1,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,translator,upstream_sentence_model_abbreviation_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,469,0,0,11,0,Vec<PresetVocabularyEntry>,0
+byte-backed,1,poet.entries_by_code,poet,entries_by_code,mmap_file_backed,file_mapping,3041842,0,0,70805,3041842,poet_bin:byte_backed:mmap,0
+byte-backed,1,poet.prefix_index,poet,prefix_index,mmap_file_backed,file_mapping,2875064,0,0,84852,2875064,poet_bin:byte_backed:mmap,0
+byte-backed,1,poet.vocabulary,poet,vocabulary,mmap_file_backed,file_mapping,22698030,0,0,401200,22698030,poet_bin:byte_backed:mmap,0
+byte-backed,1,poet.abbreviation_vocabulary,poet,abbreviation_vocabulary,mmap_file_backed,file_mapping,713,0,0,11,713,poet_bin:byte_backed:mmap,0
+byte-backed,1,schema.config,schema,config,overlap_estimate,logical_overlap,1955,0,1955,2,0,schema_reload_signature,0
+byte-backed,1,schema.processors,schema,processors,heap_owned_guarded,session_or_process_heap,2599,0,0,2,0,SessionState processors,0
+byte-backed,1,session.userdb,session,userdb,heap_owned_guarded,session_or_process_heap,24,0,0,0,0,UserDb,0
+byte-backed,1,runtime.session_state,runtime,session_state,heap_owned_guarded,session_or_process_heap,3222,0,0,1,0,SessionState,0
+byte-backed,1,process.owner_snapshot_private_bytes,process,owner_snapshot_private_bytes,unclassified,process_memory_proxy,82821120,0,82821120,1,0,process_memory,0
+byte-backed,1,process.after_ready_working_set_unclassified_lower_bound,process,after_ready_working_set_unclassified_lower_bound,unclassified,process_memory_proxy,109446770,0,109446770,1,0,process_memory,0
+byte-backed,1,process.peak_working_set_high_water,process,peak_working_set_high_water,unclassified,process_memory_proxy,116277248,0,116277248,1,0,process_memory,0
+byte-backed,1,process.private_bytes_proxy,process,private_bytes_proxy,unclassified,process_memory_proxy,68722688,0,68722688,1,0,process_memory,0
+byte-backed,1,process.peak_pagefile_high_water,process,peak_pagefile_high_water,unclassified,process_memory_proxy,75767808,0,75767808,1,0,process_memory,0
+byte-backed,2,reverse_lookup.entries,reverse_lookup,entries,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+byte-backed,2,reverse_lookup.comments_index,reverse_lookup,comments_index,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+byte-backed,2,reverse_lookup.config,reverse_lookup,config,heap_owned_required,session_or_process_heap,40,0,0,1,0,ReverseLookupTranslator,0
+byte-backed,2,translator.entries_by_code,translator,entries_by_code,shared,shared_reference,0,0,0,0,0,compact_table,0
+byte-backed,2,compact_table.syllabary_codes,compact_table,syllabary_codes,heap_owned_reducible,session_or_process_heap,3073,3073,0,424,0,Box<str> + Box<[u32]>,1
+byte-backed,2,compact_table.syllable_ids_by_code,compact_table,syllable_ids_by_code,heap_owned_reducible,session_or_process_heap,15757,15757,0,424,0,"HashMap<String, usize>",1
+byte-backed,2,compact_table.storage,compact_table,storage,mmap_file_backed,file_mapping,13013460,0,0,498564,13013460,byte_backed:mmap,0
+byte-backed,2,compact_table.candidate_text_payload,compact_table,candidate_text_payload,shared_or_overlapping,shared_or_overlapping,13013460,0,13013460,498564,0,byte_backed,0
+byte-backed,2,compact_table.candidate_comment_payload,compact_table,candidate_comment_payload,shared_or_overlapping,shared_or_overlapping,0,0,0,498564,0,byte_backed,0
+byte-backed,2,compact_table.stems,compact_table,stems,heap_owned_required,session_or_process_heap,48,0,0,0,0,"HashMap<String, Vec<String>>",0
+byte-backed,2,compact_table.lookup_records,compact_table,lookup_records,shared,shared_reference,0,0,0,0,0,none,0
+byte-backed,2,compact_table.corrections_tolerance,compact_table,corrections_tolerance,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+byte-backed,2,compact_table.dict_settings,compact_table,dict_settings,heap_owned_required,session_or_process_heap,24,0,0,0,0,"BTreeMap<String, String>",0
+byte-backed,2,compact_table.preset_vocabulary,compact_table,preset_vocabulary,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<PresetVocabularyEntry>,0
+byte-backed,2,translator.normal_codes,translator,normal_codes,shared,shared_reference,0,0,0,424,0,compact_table.has_code,0
+byte-backed,2,translator.leading_fetch_seed,translator,leading_fetch_seed,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Vec<String>,0
+byte-backed,2,translator.spelling_correction_entries,translator,spelling_correction_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+byte-backed,2,translator.spelling_abbreviation_entries,translator,spelling_abbreviation_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+byte-backed,2,translator.spelling_correction_surfaces,translator,spelling_correction_surfaces,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,HashSet<String>,0
+byte-backed,2,translator.leading_fetch_index,translator,leading_fetch_index,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",0
+byte-backed,2,translator.bounded_upstream_script_cache,translator,bounded_upstream_script_cache,heap_owned_guarded,session_or_process_heap,7200,0,0,0,0,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,0
+byte-backed,2,translator.prefix_fallback_window_cache,translator,prefix_fallback_window_cache,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,0
+byte-backed,2,prism.double_array_units,prism,double_array_units,mmap_file_backed,file_mapping,7168,0,0,1792,7168,byte_backed:mmap,0
+byte-backed,2,prism.spelling_map,prism,spelling_map,mmap_file_backed,file_mapping,24244,0,0,1166,24244,byte_backed:mmap,0
+byte-backed,2,prism.corrections_tolerance,prism,corrections_tolerance,heap_owned_required,session_or_process_heap,48,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+byte-backed,2,prism.tips_payload,prism,tips_payload,mmap_file_backed,file_mapping,0,0,0,0,0,byte_backed:mmap,0
+byte-backed,2,translator.upstream_sentence_model_build_source,translator,upstream_sentence_model_build_source,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"Option<Vec<(String, Candidate)>>",0
+byte-backed,2,translator.upstream_sentence_model_preset_vocabulary_recipe,translator,upstream_sentence_model_preset_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,18047883,0,0,442712,0,Vec<PresetVocabularyEntry>,0
+byte-backed,2,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,translator,upstream_sentence_model_abbreviation_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,469,0,0,11,0,Vec<PresetVocabularyEntry>,0
+byte-backed,2,poet.entries_by_code,poet,entries_by_code,mmap_file_backed,file_mapping,3041842,0,0,70805,3041842,poet_bin:byte_backed:mmap,0
+byte-backed,2,poet.prefix_index,poet,prefix_index,mmap_file_backed,file_mapping,2875064,0,0,84852,2875064,poet_bin:byte_backed:mmap,0
+byte-backed,2,poet.vocabulary,poet,vocabulary,mmap_file_backed,file_mapping,22698030,0,0,401200,22698030,poet_bin:byte_backed:mmap,0
+byte-backed,2,poet.abbreviation_vocabulary,poet,abbreviation_vocabulary,mmap_file_backed,file_mapping,713,0,0,11,713,poet_bin:byte_backed:mmap,0
+byte-backed,2,schema.config,schema,config,overlap_estimate,logical_overlap,1955,0,1955,2,0,schema_reload_signature,0
+byte-backed,2,schema.processors,schema,processors,heap_owned_guarded,session_or_process_heap,2599,0,0,2,0,SessionState processors,0
+byte-backed,2,session.userdb,session,userdb,heap_owned_guarded,session_or_process_heap,24,0,0,0,0,UserDb,0
+byte-backed,2,runtime.session_state,runtime,session_state,heap_owned_guarded,session_or_process_heap,3222,0,0,1,0,SessionState,0
+byte-backed,2,process.owner_snapshot_private_bytes,process,owner_snapshot_private_bytes,unclassified,process_memory_proxy,82653184,0,82653184,1,0,process_memory,0
+byte-backed,2,process.after_ready_working_set_unclassified_lower_bound,process,after_ready_working_set_unclassified_lower_bound,unclassified,process_memory_proxy,109250162,0,109250162,1,0,process_memory,0
+byte-backed,2,process.peak_working_set_high_water,process,peak_working_set_high_water,unclassified,process_memory_proxy,116334592,0,116334592,1,0,process_memory,0
+byte-backed,2,process.private_bytes_proxy,process,private_bytes_proxy,unclassified,process_memory_proxy,68825088,0,68825088,1,0,process_memory,0
+byte-backed,2,process.peak_pagefile_high_water,process,peak_pagefile_high_water,unclassified,process_memory_proxy,75788288,0,75788288,1,0,process_memory,0
+byte-backed,3,reverse_lookup.entries,reverse_lookup,entries,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+byte-backed,3,reverse_lookup.comments_index,reverse_lookup,comments_index,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+byte-backed,3,reverse_lookup.config,reverse_lookup,config,heap_owned_required,session_or_process_heap,40,0,0,1,0,ReverseLookupTranslator,0
+byte-backed,3,translator.entries_by_code,translator,entries_by_code,shared,shared_reference,0,0,0,0,0,compact_table,0
+byte-backed,3,compact_table.syllabary_codes,compact_table,syllabary_codes,heap_owned_reducible,session_or_process_heap,3073,3073,0,424,0,Box<str> + Box<[u32]>,1
+byte-backed,3,compact_table.syllable_ids_by_code,compact_table,syllable_ids_by_code,heap_owned_reducible,session_or_process_heap,15757,15757,0,424,0,"HashMap<String, usize>",1
+byte-backed,3,compact_table.storage,compact_table,storage,mmap_file_backed,file_mapping,13013460,0,0,498564,13013460,byte_backed:mmap,0
+byte-backed,3,compact_table.candidate_text_payload,compact_table,candidate_text_payload,shared_or_overlapping,shared_or_overlapping,13013460,0,13013460,498564,0,byte_backed,0
+byte-backed,3,compact_table.candidate_comment_payload,compact_table,candidate_comment_payload,shared_or_overlapping,shared_or_overlapping,0,0,0,498564,0,byte_backed,0
+byte-backed,3,compact_table.stems,compact_table,stems,heap_owned_required,session_or_process_heap,48,0,0,0,0,"HashMap<String, Vec<String>>",0
+byte-backed,3,compact_table.lookup_records,compact_table,lookup_records,shared,shared_reference,0,0,0,0,0,none,0
+byte-backed,3,compact_table.corrections_tolerance,compact_table,corrections_tolerance,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+byte-backed,3,compact_table.dict_settings,compact_table,dict_settings,heap_owned_required,session_or_process_heap,24,0,0,0,0,"BTreeMap<String, String>",0
+byte-backed,3,compact_table.preset_vocabulary,compact_table,preset_vocabulary,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<PresetVocabularyEntry>,0
+byte-backed,3,translator.normal_codes,translator,normal_codes,shared,shared_reference,0,0,0,424,0,compact_table.has_code,0
+byte-backed,3,translator.leading_fetch_seed,translator,leading_fetch_seed,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Vec<String>,0
+byte-backed,3,translator.spelling_correction_entries,translator,spelling_correction_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+byte-backed,3,translator.spelling_abbreviation_entries,translator,spelling_abbreviation_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+byte-backed,3,translator.spelling_correction_surfaces,translator,spelling_correction_surfaces,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,HashSet<String>,0
+byte-backed,3,translator.leading_fetch_index,translator,leading_fetch_index,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",0
+byte-backed,3,translator.bounded_upstream_script_cache,translator,bounded_upstream_script_cache,heap_owned_guarded,session_or_process_heap,7200,0,0,0,0,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,0
+byte-backed,3,translator.prefix_fallback_window_cache,translator,prefix_fallback_window_cache,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,0
+byte-backed,3,prism.double_array_units,prism,double_array_units,mmap_file_backed,file_mapping,7168,0,0,1792,7168,byte_backed:mmap,0
+byte-backed,3,prism.spelling_map,prism,spelling_map,mmap_file_backed,file_mapping,24244,0,0,1166,24244,byte_backed:mmap,0
+byte-backed,3,prism.corrections_tolerance,prism,corrections_tolerance,heap_owned_required,session_or_process_heap,48,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+byte-backed,3,prism.tips_payload,prism,tips_payload,mmap_file_backed,file_mapping,0,0,0,0,0,byte_backed:mmap,0
+byte-backed,3,translator.upstream_sentence_model_build_source,translator,upstream_sentence_model_build_source,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"Option<Vec<(String, Candidate)>>",0
+byte-backed,3,translator.upstream_sentence_model_preset_vocabulary_recipe,translator,upstream_sentence_model_preset_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,18047883,0,0,442712,0,Vec<PresetVocabularyEntry>,0
+byte-backed,3,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,translator,upstream_sentence_model_abbreviation_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,469,0,0,11,0,Vec<PresetVocabularyEntry>,0
+byte-backed,3,poet.entries_by_code,poet,entries_by_code,mmap_file_backed,file_mapping,3041842,0,0,70805,3041842,poet_bin:byte_backed:mmap,0
+byte-backed,3,poet.prefix_index,poet,prefix_index,mmap_file_backed,file_mapping,2875064,0,0,84852,2875064,poet_bin:byte_backed:mmap,0
+byte-backed,3,poet.vocabulary,poet,vocabulary,mmap_file_backed,file_mapping,22698030,0,0,401200,22698030,poet_bin:byte_backed:mmap,0
+byte-backed,3,poet.abbreviation_vocabulary,poet,abbreviation_vocabulary,mmap_file_backed,file_mapping,713,0,0,11,713,poet_bin:byte_backed:mmap,0
+byte-backed,3,schema.config,schema,config,overlap_estimate,logical_overlap,1955,0,1955,2,0,schema_reload_signature,0
+byte-backed,3,schema.processors,schema,processors,heap_owned_guarded,session_or_process_heap,2599,0,0,2,0,SessionState processors,0
+byte-backed,3,session.userdb,session,userdb,heap_owned_guarded,session_or_process_heap,24,0,0,0,0,UserDb,0
+byte-backed,3,runtime.session_state,runtime,session_state,heap_owned_guarded,session_or_process_heap,3222,0,0,1,0,SessionState,0
+byte-backed,3,process.owner_snapshot_private_bytes,process,owner_snapshot_private_bytes,unclassified,process_memory_proxy,83656704,0,83656704,1,0,process_memory,0
+byte-backed,3,process.after_ready_working_set_unclassified_lower_bound,process,after_ready_working_set_unclassified_lower_bound,unclassified,process_memory_proxy,109745778,0,109745778,1,0,process_memory,0
+byte-backed,3,process.peak_working_set_high_water,process,peak_working_set_high_water,unclassified,process_memory_proxy,116162560,0,116162560,1,0,process_memory,0
+byte-backed,3,process.private_bytes_proxy,process,private_bytes_proxy,unclassified,process_memory_proxy,68755456,0,68755456,1,0,process_memory,0
+byte-backed,3,process.peak_pagefile_high_water,process,peak_pagefile_high_water,unclassified,process_memory_proxy,75722752,0,75722752,1,0,process_memory,0
+byte-backed,4,reverse_lookup.entries,reverse_lookup,entries,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+byte-backed,4,reverse_lookup.comments_index,reverse_lookup,comments_index,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+byte-backed,4,reverse_lookup.config,reverse_lookup,config,heap_owned_required,session_or_process_heap,40,0,0,1,0,ReverseLookupTranslator,0
+byte-backed,4,translator.entries_by_code,translator,entries_by_code,shared,shared_reference,0,0,0,0,0,compact_table,0
+byte-backed,4,compact_table.syllabary_codes,compact_table,syllabary_codes,heap_owned_reducible,session_or_process_heap,3073,3073,0,424,0,Box<str> + Box<[u32]>,1
+byte-backed,4,compact_table.syllable_ids_by_code,compact_table,syllable_ids_by_code,heap_owned_reducible,session_or_process_heap,15757,15757,0,424,0,"HashMap<String, usize>",1
+byte-backed,4,compact_table.storage,compact_table,storage,mmap_file_backed,file_mapping,13013460,0,0,498564,13013460,byte_backed:mmap,0
+byte-backed,4,compact_table.candidate_text_payload,compact_table,candidate_text_payload,shared_or_overlapping,shared_or_overlapping,13013460,0,13013460,498564,0,byte_backed,0
+byte-backed,4,compact_table.candidate_comment_payload,compact_table,candidate_comment_payload,shared_or_overlapping,shared_or_overlapping,0,0,0,498564,0,byte_backed,0
+byte-backed,4,compact_table.stems,compact_table,stems,heap_owned_required,session_or_process_heap,48,0,0,0,0,"HashMap<String, Vec<String>>",0
+byte-backed,4,compact_table.lookup_records,compact_table,lookup_records,shared,shared_reference,0,0,0,0,0,none,0
+byte-backed,4,compact_table.corrections_tolerance,compact_table,corrections_tolerance,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+byte-backed,4,compact_table.dict_settings,compact_table,dict_settings,heap_owned_required,session_or_process_heap,24,0,0,0,0,"BTreeMap<String, String>",0
+byte-backed,4,compact_table.preset_vocabulary,compact_table,preset_vocabulary,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<PresetVocabularyEntry>,0
+byte-backed,4,translator.normal_codes,translator,normal_codes,shared,shared_reference,0,0,0,424,0,compact_table.has_code,0
+byte-backed,4,translator.leading_fetch_seed,translator,leading_fetch_seed,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Vec<String>,0
+byte-backed,4,translator.spelling_correction_entries,translator,spelling_correction_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+byte-backed,4,translator.spelling_abbreviation_entries,translator,spelling_abbreviation_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+byte-backed,4,translator.spelling_correction_surfaces,translator,spelling_correction_surfaces,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,HashSet<String>,0
+byte-backed,4,translator.leading_fetch_index,translator,leading_fetch_index,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",0
+byte-backed,4,translator.bounded_upstream_script_cache,translator,bounded_upstream_script_cache,heap_owned_guarded,session_or_process_heap,7200,0,0,0,0,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,0
+byte-backed,4,translator.prefix_fallback_window_cache,translator,prefix_fallback_window_cache,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,0
+byte-backed,4,prism.double_array_units,prism,double_array_units,mmap_file_backed,file_mapping,7168,0,0,1792,7168,byte_backed:mmap,0
+byte-backed,4,prism.spelling_map,prism,spelling_map,mmap_file_backed,file_mapping,24244,0,0,1166,24244,byte_backed:mmap,0
+byte-backed,4,prism.corrections_tolerance,prism,corrections_tolerance,heap_owned_required,session_or_process_heap,48,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+byte-backed,4,prism.tips_payload,prism,tips_payload,mmap_file_backed,file_mapping,0,0,0,0,0,byte_backed:mmap,0
+byte-backed,4,translator.upstream_sentence_model_build_source,translator,upstream_sentence_model_build_source,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"Option<Vec<(String, Candidate)>>",0
+byte-backed,4,translator.upstream_sentence_model_preset_vocabulary_recipe,translator,upstream_sentence_model_preset_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,18047883,0,0,442712,0,Vec<PresetVocabularyEntry>,0
+byte-backed,4,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,translator,upstream_sentence_model_abbreviation_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,469,0,0,11,0,Vec<PresetVocabularyEntry>,0
+byte-backed,4,poet.entries_by_code,poet,entries_by_code,mmap_file_backed,file_mapping,3041842,0,0,70805,3041842,poet_bin:byte_backed:mmap,0
+byte-backed,4,poet.prefix_index,poet,prefix_index,mmap_file_backed,file_mapping,2875064,0,0,84852,2875064,poet_bin:byte_backed:mmap,0
+byte-backed,4,poet.vocabulary,poet,vocabulary,mmap_file_backed,file_mapping,22698030,0,0,401200,22698030,poet_bin:byte_backed:mmap,0
+byte-backed,4,poet.abbreviation_vocabulary,poet,abbreviation_vocabulary,mmap_file_backed,file_mapping,713,0,0,11,713,poet_bin:byte_backed:mmap,0
+byte-backed,4,schema.config,schema,config,overlap_estimate,logical_overlap,1955,0,1955,2,0,schema_reload_signature,0
+byte-backed,4,schema.processors,schema,processors,heap_owned_guarded,session_or_process_heap,2599,0,0,2,0,SessionState processors,0
+byte-backed,4,session.userdb,session,userdb,heap_owned_guarded,session_or_process_heap,24,0,0,0,0,UserDb,0
+byte-backed,4,runtime.session_state,runtime,session_state,heap_owned_guarded,session_or_process_heap,3222,0,0,1,0,SessionState,0
+byte-backed,4,process.owner_snapshot_private_bytes,process,owner_snapshot_private_bytes,unclassified,process_memory_proxy,84475904,0,84475904,1,0,process_memory,0
+byte-backed,4,process.after_ready_working_set_unclassified_lower_bound,process,after_ready_working_set_unclassified_lower_bound,unclassified,process_memory_proxy,109385330,0,109385330,1,0,process_memory,0
+byte-backed,4,process.peak_working_set_high_water,process,peak_working_set_high_water,unclassified,process_memory_proxy,115920896,0,115920896,1,0,process_memory,0
+byte-backed,4,process.private_bytes_proxy,process,private_bytes_proxy,unclassified,process_memory_proxy,68853760,0,68853760,1,0,process_memory,0
+byte-backed,4,process.peak_pagefile_high_water,process,peak_pagefile_high_water,unclassified,process_memory_proxy,75431936,0,75431936,1,0,process_memory,0
+byte-backed,5,reverse_lookup.entries,reverse_lookup,entries,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+byte-backed,5,reverse_lookup.comments_index,reverse_lookup,comments_index,shared_or_overlapping,shared_or_overlapping,0,0,0,0,0,lazy_unloaded,0
+byte-backed,5,reverse_lookup.config,reverse_lookup,config,heap_owned_required,session_or_process_heap,40,0,0,1,0,ReverseLookupTranslator,0
+byte-backed,5,translator.entries_by_code,translator,entries_by_code,shared,shared_reference,0,0,0,0,0,compact_table,0
+byte-backed,5,compact_table.syllabary_codes,compact_table,syllabary_codes,heap_owned_reducible,session_or_process_heap,3073,3073,0,424,0,Box<str> + Box<[u32]>,1
+byte-backed,5,compact_table.syllable_ids_by_code,compact_table,syllable_ids_by_code,heap_owned_reducible,session_or_process_heap,15757,15757,0,424,0,"HashMap<String, usize>",1
+byte-backed,5,compact_table.storage,compact_table,storage,mmap_file_backed,file_mapping,13013460,0,0,498564,13013460,byte_backed:mmap,0
+byte-backed,5,compact_table.candidate_text_payload,compact_table,candidate_text_payload,shared_or_overlapping,shared_or_overlapping,13013460,0,13013460,498564,0,byte_backed,0
+byte-backed,5,compact_table.candidate_comment_payload,compact_table,candidate_comment_payload,shared_or_overlapping,shared_or_overlapping,0,0,0,498564,0,byte_backed,0
+byte-backed,5,compact_table.stems,compact_table,stems,heap_owned_required,session_or_process_heap,48,0,0,0,0,"HashMap<String, Vec<String>>",0
+byte-backed,5,compact_table.lookup_records,compact_table,lookup_records,shared,shared_reference,0,0,0,0,0,none,0
+byte-backed,5,compact_table.corrections_tolerance,compact_table,corrections_tolerance,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+byte-backed,5,compact_table.dict_settings,compact_table,dict_settings,heap_owned_required,session_or_process_heap,24,0,0,0,0,"BTreeMap<String, String>",0
+byte-backed,5,compact_table.preset_vocabulary,compact_table,preset_vocabulary,heap_owned_required,session_or_process_heap,0,0,0,0,0,Vec<PresetVocabularyEntry>,0
+byte-backed,5,translator.normal_codes,translator,normal_codes,shared,shared_reference,0,0,0,424,0,compact_table.has_code,0
+byte-backed,5,translator.leading_fetch_seed,translator,leading_fetch_seed,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Vec<String>,0
+byte-backed,5,translator.spelling_correction_entries,translator,spelling_correction_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+byte-backed,5,translator.spelling_abbreviation_entries,translator,spelling_abbreviation_entries,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,"HashSet<(String, String, String)>",0
+byte-backed,5,translator.spelling_correction_surfaces,translator,spelling_correction_surfaces,heap_owned_guarded,session_or_process_heap,48,0,0,0,0,HashSet<String>,0
+byte-backed,5,translator.leading_fetch_index,translator,leading_fetch_index,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"OnceLock<HashMap<String, Vec<LeadingFetchCode>>>",0
+byte-backed,5,translator.bounded_upstream_script_cache,translator,bounded_upstream_script_cache,heap_owned_guarded,session_or_process_heap,7200,0,0,0,0,Mutex<VecDeque<BoundedUpstreamScriptCacheEntry>>,0
+byte-backed,5,translator.prefix_fallback_window_cache,translator,prefix_fallback_window_cache,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,0
+byte-backed,5,prism.double_array_units,prism,double_array_units,mmap_file_backed,file_mapping,7168,0,0,1792,7168,byte_backed:mmap,0
+byte-backed,5,prism.spelling_map,prism,spelling_map,mmap_file_backed,file_mapping,24244,0,0,1166,24244,byte_backed:mmap,0
+byte-backed,5,prism.corrections_tolerance,prism,corrections_tolerance,heap_owned_required,session_or_process_heap,48,0,0,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,0
+byte-backed,5,prism.tips_payload,prism,tips_payload,mmap_file_backed,file_mapping,0,0,0,0,0,byte_backed:mmap,0
+byte-backed,5,translator.upstream_sentence_model_build_source,translator,upstream_sentence_model_build_source,heap_owned_guarded,session_or_process_heap,0,0,0,0,0,"Option<Vec<(String, Candidate)>>",0
+byte-backed,5,translator.upstream_sentence_model_preset_vocabulary_recipe,translator,upstream_sentence_model_preset_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,18047883,0,0,442712,0,Vec<PresetVocabularyEntry>,0
+byte-backed,5,translator.upstream_sentence_model_abbreviation_vocabulary_recipe,translator,upstream_sentence_model_abbreviation_vocabulary_recipe,heap_owned_guarded,session_or_process_heap,469,0,0,11,0,Vec<PresetVocabularyEntry>,0
+byte-backed,5,poet.entries_by_code,poet,entries_by_code,mmap_file_backed,file_mapping,3041842,0,0,70805,3041842,poet_bin:byte_backed:mmap,0
+byte-backed,5,poet.prefix_index,poet,prefix_index,mmap_file_backed,file_mapping,2875064,0,0,84852,2875064,poet_bin:byte_backed:mmap,0
+byte-backed,5,poet.vocabulary,poet,vocabulary,mmap_file_backed,file_mapping,22698030,0,0,401200,22698030,poet_bin:byte_backed:mmap,0
+byte-backed,5,poet.abbreviation_vocabulary,poet,abbreviation_vocabulary,mmap_file_backed,file_mapping,713,0,0,11,713,poet_bin:byte_backed:mmap,0
+byte-backed,5,schema.config,schema,config,overlap_estimate,logical_overlap,1955,0,1955,2,0,schema_reload_signature,0
+byte-backed,5,schema.processors,schema,processors,heap_owned_guarded,session_or_process_heap,2599,0,0,2,0,SessionState processors,0
+byte-backed,5,session.userdb,session,userdb,heap_owned_guarded,session_or_process_heap,24,0,0,0,0,UserDb,0
+byte-backed,5,runtime.session_state,runtime,session_state,heap_owned_guarded,session_or_process_heap,3222,0,0,1,0,SessionState,0
+byte-backed,5,process.owner_snapshot_private_bytes,process,owner_snapshot_private_bytes,unclassified,process_memory_proxy,83386368,0,83386368,1,0,process_memory,0
+byte-backed,5,process.after_ready_working_set_unclassified_lower_bound,process,after_ready_working_set_unclassified_lower_bound,unclassified,process_memory_proxy,109463154,0,109463154,1,0,process_memory,0
+byte-backed,5,process.peak_working_set_high_water,process,peak_working_set_high_water,unclassified,process_memory_proxy,115986432,0,115986432,1,0,process_memory,0
+byte-backed,5,process.private_bytes_proxy,process,private_bytes_proxy,unclassified,process_memory_proxy,68612096,0,68612096,1,0,process_memory,0
+byte-backed,5,process.peak_pagefile_high_water,process,peak_pagefile_high_water,unclassified,process_memory_proxy,75984896,0,75984896,1,0,process_memory,0

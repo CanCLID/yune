@@ -277,9 +277,12 @@ fn lifecycle_safety_notification_handler_replacement_and_clearing_are_determinis
 }
 
 #[test]
-fn lifecycle_safety_records_multithreaded_frontend_behavior_as_out_of_scope() {
+fn lifecycle_safety_records_process_global_service_and_narrow_threading_contract() {
     let _guard = test_guard();
     let conventions = include_str!("../../../../docs/conventions.md");
-    assert!(conventions.contains("Process-global single RIME service"));
-    assert!(conventions.contains("multiple concurrent engines/schemas in one instance are out"));
+    let support_contract = include_str!("../../../../docs/contracts/engine-support-contract.md");
+    assert!(conventions.contains("Process-global service"));
+    assert!(conventions.contains("one active RIME service per WASM instance"));
+    assert!(support_contract.contains("cross-thread calls using valid session"));
+    assert!(support_contract.contains("does not promise parallel progress"));
 }

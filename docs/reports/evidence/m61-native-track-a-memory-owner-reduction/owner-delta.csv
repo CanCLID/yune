@@ -1,0 +1,6 @@
+owner_id,owned_status,owned_median_bytes,byte_backed_status,byte_backed_median_bytes,owned_minus_byte_backed_bytes
+compact_table.syllabary_codes,present,3073,present,3073,0
+compact_table.syllable_ids_by_code,present,15757,present,15757,0
+poet.abbreviation_vocabulary,present,1433,absent,,
+poet.entries_by_code,present,18694662,absent,,
+poet.vocabulary,present,28147,absent,,

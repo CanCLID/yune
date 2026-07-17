@@ -1,0 +1,3 @@
+Command: python3 -B scripts/check-public-evidence-privacy.py --paths-from <external pre-review evidence path list> --forbid-literal-file <external private deny file>
+Pre-review result: PASS; 56 public evidence files were readable and clear of all 6 forbidden literals.
+The final 58-file rerun is preserved externally because this receipt is outside the allowed post-review delta.

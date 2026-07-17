@@ -1,0 +1,10 @@
+curated-evidence-integrity: pass
+retry=retry-1-array-count
+diagnostic_rounds=11
+mode_counts=owned:5,byte-backed-exploratory:1,byte-backed:5
+signed_rows_per_complete_set=32
+individual_observations_per_complete_set=160
+owner_budget_rows=425
+byte_backed_poet_mapped_owners_per_round=4
+forbidden_fifth_owner_rows=0
+exact_raw_copies=owner-budget.csv,owner-delta.csv,process-summary.csv,owner-reconciliation-verdict.txt

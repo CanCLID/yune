@@ -1,0 +1,4 @@
+Command: python3 -B scripts/verify-packet-manifest.py docs/reports/evidence/m61-native-track-a-memory-owner-reduction/packet-manifest.csv
+Validator source: 01a62f2a6cd2b3d668545a110de8c7c3fc2fbb10
+Pre-review result: PASS; exact 55-file manifest membership, byte sizes, and SHA-256 values verified from the working tree.
+Final worktree and committed-tree reruns are preserved externally because this receipt is outside the allowed post-review delta.

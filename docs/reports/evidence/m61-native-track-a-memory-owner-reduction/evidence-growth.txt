@@ -1,0 +1,3 @@
+Command: python3 -B scripts/check-evidence-growth.py --repo-root . --paths-from <external pre-review evidence path list>
+Pre-review result: PASS; evidence growth guard accepted all 56 explicit packet paths.
+The final 58-file candidate and committed-range reruns are preserved externally because this receipt is outside the allowed post-review delta.

@@ -1332,10 +1332,11 @@ fn assert_profile_target_reachable_at_oracle_rank(
         !initial.iter().take(6).any(|candidate| *candidate == target),
         "current yune-web profile must not promote {target} into the first page for {input}; initial candidates were {initial:?}"
     );
+    engine.ensure_complete_candidate_list();
     assert!(
-        initial.len() > oracle_index,
-        "initial bounded product refresh should retain the TypeDuck/profile first-page oracle span for {input}; needed index {oracle_index}, got {} rows",
-        initial.len()
+        engine.context().candidates.len() > oracle_index,
+        "the explicit all-pages refresh should retain the TypeDuck/profile oracle span for {input}; needed index {oracle_index}, got {} rows",
+        engine.context().candidates.len()
     );
     assert_eq!(
         engine.context().candidates[oracle_index].text, target,
@@ -1550,6 +1551,7 @@ fn m21_nri_prefix_fallback_matches_typeduck_v112_real_dictionary_goldens() {
 
     let mut default_engine = typeduck_jyut6ping3_mobile_engine(false);
     default_engine.set_input("nri");
+    default_engine.ensure_complete_candidate_list();
     let default_texts = default_engine
         .context()
         .candidates
@@ -1833,6 +1835,7 @@ fn m21_prediction_count_matches_typeduck_v112_real_dictionary_goldens() {
     for input in ["santai", "sigin", "gwongdung", "hoenggong"] {
         let expected = m21_prediction_case(&fixture, input);
         engine.set_input(input);
+        engine.ensure_complete_candidate_list();
         let actual_texts = engine
             .context()
             .candidates
@@ -1869,6 +1872,7 @@ fn m21_closeout_rows_match_typeduck_v112_real_dictionary_goldens() {
     for input in ["nei", "ngo", "m", "mgoi", "ngohaigo", "hou", "neivv"] {
         let expected = m21_closeout_case(&fixture, "default_combined", input);
         engine.set_input(input);
+        engine.ensure_complete_candidate_list();
         let compare_count = candidate_count(expected).min(5);
         let actual_texts = engine
             .context()

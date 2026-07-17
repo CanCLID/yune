@@ -1,0 +1,5 @@
+shape=PASS
+exact_inputs=16/17
+mismatches=zhongdengchangdu
+verdict=FAIL
+exit_code=1

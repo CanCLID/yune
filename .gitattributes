@@ -67,3 +67,8 @@ docs/reports/evidence/m59-canonical-jyutping-reachability-parity/final-closeout/
 # aggregate provenance binds the original Windows receipts and rejected-run
 # diagnostics, so Git must not normalize this raw evidence subtree.
 docs/reports/evidence/m59-canonical-jyutping-reachability-parity/source-current-performance-revalidation-2026-07-13/** -text whitespace=-blank-at-eol,-blank-at-eof
+
+# Preserve the M61 compact packet byte-for-byte. Its manifest binds imported
+# Windows receipts as well as curated UTF-8 text, so candidate and commit trees
+# must retain the same bytes verified in the working tree.
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/** -text whitespace=-blank-at-eol,-blank-at-eof

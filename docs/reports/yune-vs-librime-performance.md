@@ -1,6 +1,6 @@
 # Yune Performance Dashboard
 
-Updated: 2026-07-15
+Updated: 2026-07-16
 
 This is the single current performance report for Yune. It covers native
 Windows, native macOS, the Track B product guard, the browser peer lane, the
@@ -16,6 +16,11 @@ measurements and longer source-bound investigations are kept in
 - **Native memory is still the clearest native deficit.** Track A peak working
   set is about `8.9x` same-run librime on Windows and `11.8x` same-run librime
   RSS on macOS. The platform counters are not interchangeable.
+- **M61 closed as a measured native-memory no-go.** Its correction-source
+  byte-backed diagnostic reduced working-set and private-byte observations, but
+  named-owner reconciliation covered only `74.61%` of the private delta and
+  missed the residual bound. The correction was explicitly reverted; no current
+  default memory win or supplemental-ratchet acceptance follows.
 - **The iOS-budget lane remains a Windows proxy, not an iOS result.** The
   comments-intact keyboard profile is `67.4 MB` steady / `80.1 MB` peak with
   `22.5 MB` private; on-device `phys_footprint` is still unmeasured.
@@ -27,12 +32,11 @@ measurements and longer source-bound investigations are kept in
   latest fair same-schema peer run, Yune is `1.577x` on ready time, `4.000x` on
   WASM memory, and `3.471x` on unique encoded resources. First-input and commit
   latency are below peer parity at `0.779x` and `0.899x`.
-- **One deterministic behavior difference remains in this 17-input diagnostic.**
-  `zhongdengchangdu` differs at candidate positions 2–4 on both Windows and
-  macOS, with all 15 cited Windows 4c/4d/4e observations preserved in the
-  [cross-platform evidence table](./evidence/m59-current-source-macos-20260714/aggregate/windows-zhongdengchangdu-evidence.csv).
-  Both 37- and 59-character pages are exact. The mismatch is not a demonstrated
-  latency cause or a macOS-only defect.
+- **The current Windows 17-input prerequisite is exact.** The corrected M61
+  preflight and every owned and byte-backed correction-source round passed
+  `17/17`. The older macOS packet remains source-bound to its historical
+  `16/17` result and was not rerun; no combined current-source platform claim is
+  made.
 - **No current platform-speed attribution is valid.** Windows measures Yune
   `443cc636`; macOS measures Yune `0111cf47`. The same pinned librime is used,
   but the Yune sources are not matched and the Mac run contains material UI
@@ -148,6 +152,15 @@ claim follows from it. The Windows and macOS memory ratios may identify the
 same broad footprint problem, but their absolute byte counters are not a valid
 cross-platform comparison.
 
+M61's source-bound diagnostic at `91f59696` is separate from the production
+scorecard above. Owned versus byte-backed medians were `154,030,080 B` versus
+`116,162,560 B` for Track A peak working set and `108,482,560 B` versus
+`83,386,368 B` for the zero-key owner-snapshot private counter. The
+`25,096,192 B` private delta was not accepted because named owners explained
+only `18,724,242 B` (`0.746098930` coverage) and the `6,371,950 B` residual
+exceeded the `5,019,238 B` limit. The byte-backed correction was reverted, so
+these are diagnostic values, not current-default results.
+
 ## Track B product guard
 
 Track B uses
@@ -261,23 +274,26 @@ not a substitute for the binding loopback profile.
 | --- | --- | --- | --- |
 | Native Track A key latency | all Windows and Mac median/worst ratios below `1.000x` | not the current performance bottleneck | preserve the unchanged ratchet; investigate only if a real red appears |
 | Native startup/session | Windows is around parity and run-sensitive; Mac is below parity but noisy | monitor; no platform conclusion | source-matched quiet-machine Windows/Mac run |
-| Native memory | about `8.9x` peer on Windows and `11.8x` peer RSS on Mac | current native bottleneck; no memory-win claim | owner-level retained/mapped attribution plus Apple `phys_footprint` where relevant |
+| Native memory | M61 diagnostic moved peak working set and private bytes, but failed frozen owner reconciliation | M61 closed measured no-go; no memory-win claim | a separately approved future plan with a new source-bound owner hypothesis |
 | iOS-budget product proxy | comments-intact `67.4 MB` steady / `80.1 MB` peak / `22.5 MB` private on Windows | portable scope complete; iOS budget unproven | on-device `phys_footprint` |
 | Browser interaction | source-current local binding gate, Cloudflare deployment, and deployed canary pass at `ef485b10` | WEB03-11 closed; keep as maintenance | rerun only when the owning product path or gate contract changes |
 | Browser startup | latest fair peer ratio `1.577x` | current peer deficit | refreshed same-run same-schema browser peer capture |
 | Browser WASM/payload | latest fair peer ratios `4.000x` / `3.471x`; `0111cf47` Yune heap observed at `128 MiB` | clearest browser bottleneck | refreshed peer run plus resource/heap owner attribution |
-| Candidate behavior | 16/17 exact; deterministic `zhongdengchangdu` difference | correctness discrepancy, not established performance cause | fix only under explicit behavior scope, then rerun the owning guard |
+| Candidate behavior | current Windows M61 prerequisite and correction-source rounds are `17/17`; historical Mac packet remains `16/17` at its older source | Windows prerequisite corrected; no source-matched cross-platform claim | preserve the Windows gate; rerun Mac only in a separately scoped source-matched lane |
 | Platform attribution | current native sources do not match; Mac includes UI noise | unproven | exact-source paired run on quiet machines |
 
 The evidence does not support a new engine performance fix merely because a
-ratio differs by platform. The current priorities are browser footprint and
-startup, native memory ownership, and a source-matched platform run if causal
-attribution becomes necessary.
+ratio differs by platform. The M61 native-memory owner branch is closed; any
+further native-memory attempt requires a new plan and fresh owner evidence.
+Browser footprint/startup and any source-matched platform run remain separate
+lanes with their own acceptance contracts.
 
 ## Evidence and reproducibility
 
 - Windows current packet:
   [`source-current-performance-revalidation-2026-07-13/`](./evidence/m59-canonical-jyutping-reachability-parity/source-current-performance-revalidation-2026-07-13/)
+- M61 Windows measured-no-go packet:
+  [`m61-native-track-a-memory-owner-reduction/`](./evidence/m61-native-track-a-memory-owner-reduction/)
 - Standing signed Windows ceiling registry:
   [`m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
 - Reviewed current-source Mac packet and portable report:
@@ -312,6 +328,9 @@ python3 docs/reports/evidence/current-ratio-visuals-2026-07-14/build_visuals.py
 - macOS RSS is not Apple `phys_footprint`, and Windows process counters are not
   portable to macOS.
 - Track B is a Yune-only product guard with no librime peer.
+- M61's byte-backed values bind only to unaccepted correction source
+  `91f59696`; revert `01a62f2a` restored the prior runtime tree, so those
+  values do not describe a current production default.
 - The browser peer snapshot is dated 2026-06-28 and needs a current refresh.
 - No current Linux-native or on-device iOS performance packet exists.
 - The full release-stress web receipt is local loopback; the durable Cloudflare

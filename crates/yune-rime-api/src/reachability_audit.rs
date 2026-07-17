@@ -133,21 +133,23 @@ fn require_within(root: &Path, path: &Path, label: &str) -> Result<(), String> {
 
 fn safe_relative_path(path: &Path, label: &str) -> Result<PathBuf, String> {
     if path.as_os_str().is_empty() || path.is_absolute() {
-        return Err(format!("{label} must be a non-empty repository-relative path"));
+        return Err(format!(
+            "{label} must be a non-empty repository-relative path"
+        ));
     }
     if path.components().any(|component| {
         !matches!(component, Component::Normal(_))
-            || matches!(component, Component::ParentDir | Component::RootDir | Component::Prefix(_))
+            || matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
     }) {
         return Err(format!("{label} {} is unsafe", path.display()));
     }
     Ok(path.to_path_buf())
 }
 
-fn audit_schema_asset(
-    roots: &AuditRoots,
-    schema_asset: &Path,
-) -> Result<Vec<JsonValue>, String> {
+fn audit_schema_asset(roots: &AuditRoots, schema_asset: &Path) -> Result<Vec<JsonValue>, String> {
     let source = roots.repo.join(schema_asset);
     let canonical_source = source.canonicalize().map_err(|error| {
         format!(
@@ -162,7 +164,10 @@ fn audit_schema_asset(
             path_to_forward_slashes(schema_asset)
         ));
     }
-    if source.symlink_metadata().is_ok_and(|metadata| metadata.file_type().is_symlink()) {
+    if source
+        .symlink_metadata()
+        .is_ok_and(|metadata| metadata.file_type().is_symlink())
+    {
         return Err(format!(
             "schema asset {} must not be a symbolic link",
             path_to_forward_slashes(schema_asset)
@@ -179,18 +184,14 @@ fn audit_schema_asset(
         ));
     }
 
-    let (deployed, directive_trace) = deployed_config_root_with_trace(
-        &canonical_source,
-        file_name,
-        &roots.shared,
-        &roots.user,
-    )
-    .ok_or_else(|| {
-        format!(
-            "schema asset {} has an unresolved or unsupported deployment directive",
-            path_to_forward_slashes(schema_asset)
-        )
-    })?;
+    let (deployed, directive_trace) =
+        deployed_config_root_with_trace(&canonical_source, file_name, &roots.shared, &roots.user)
+            .ok_or_else(|| {
+            format!(
+                "schema asset {} has an unresolved or unsupported deployment directive",
+                path_to_forward_slashes(schema_asset)
+            )
+        })?;
     let schema_id = find_config_value(&deployed, "schema/schema_id")
         .and_then(Value::as_str)
         .filter(|schema_id| !schema_id.is_empty())
@@ -312,7 +313,7 @@ fn runtime_arm(deployed: &Value, component_name: &str, namespace: &str) -> &'sta
         "script_translator" | "r10n_translator"
             if enable_sentence
                 && standard
-                && explicit.as_deref().is_none_or(|value| value == "upstream_script") =>
+                && matches!(explicit.as_deref(), None | Some("upstream_script")) =>
         {
             "upstream-script"
         }
@@ -339,11 +340,7 @@ fn source_trace_and_assets(
 
     for event in directive_trace {
         let target = if event.kind == "custom-patch" {
-            resource_asset(
-                roots,
-                &event.referenced_resource_id,
-                AssetOrigin::User,
-            )?
+            resource_asset(roots, &event.referenced_resource_id, AssetOrigin::User)?
         } else if event.referenced_resource_id == event.source_resource_id {
             resource_assets
                 .get(&event.source_resource_id)
@@ -354,11 +351,7 @@ fn source_trace_and_assets(
                     AssetOrigin::Shared,
                 )?)
         } else {
-            resource_asset(
-                roots,
-                &event.referenced_resource_id,
-                AssetOrigin::Shared,
-            )?
+            resource_asset(roots, &event.referenced_resource_id, AssetOrigin::Shared)?
         };
         if target.absolute.is_file() {
             assets.insert(target.clone());
@@ -388,11 +381,7 @@ fn resource_asset(
         AssetOrigin::Shared => &roots.shared,
         AssetOrigin::User => &roots.user,
     };
-    audit_asset(
-        roots,
-        root.join(format!("{resource_id}.yaml")),
-        origin,
-    )
+    audit_asset(roots, root.join(format!("{resource_id}.yaml")), origin)
 }
 
 fn audit_asset(
@@ -419,7 +408,10 @@ fn asset_hashes(assets: &BTreeSet<AuditAsset>) -> Result<Vec<JsonValue>, String>
                 format!("audit asset {} is unavailable: {error}", asset.emitted)
             })?;
             if !metadata.file_type().is_file() {
-                return Err(format!("audit asset {} is not a regular file", asset.emitted));
+                return Err(format!(
+                    "audit asset {} is not a regular file",
+                    asset.emitted
+                ));
             }
             let bytes = fs::read(&asset.absolute)
                 .map_err(|error| format!("audit asset {} is unreadable: {error}", asset.emitted))?;
@@ -460,31 +452,36 @@ fn find_setting_asset(
     let probe_source = probe.shared.join(source_relative);
     let mut owners = Vec::new();
     for asset in assets {
-        let original = fs::read(&asset.absolute)
-            .map_err(|error| format!("could not read {} for source probe: {error}", asset.emitted))?;
-        let mut yaml = serde_yaml::from_slice::<Value>(&original)
-            .map_err(|error| format!("could not parse {} for source probe: {error}", asset.emitted))?;
+        let original = fs::read(&asset.absolute).map_err(|error| {
+            format!("could not read {} for source probe: {error}", asset.emitted)
+        })?;
+        let mut yaml = serde_yaml::from_slice::<Value>(&original).map_err(|error| {
+            format!(
+                "could not parse {} for source probe: {error}",
+                asset.emitted
+            )
+        })?;
         if replace_reachability_scalars(&mut yaml) == 0 {
             continue;
         }
         let probe_path = probe_asset_path(roots, &probe, asset)?;
-        let marked = serde_yaml::to_string(&yaml)
-            .map_err(|error| format!("could not serialize {} source probe: {error}", asset.emitted))?;
+        let marked = serde_yaml::to_string(&yaml).map_err(|error| {
+            format!(
+                "could not serialize {} source probe: {error}",
+                asset.emitted
+            )
+        })?;
         fs::write(&probe_path, marked)
             .map_err(|error| format!("could not write {} source probe: {error}", asset.emitted))?;
-        let marker_wins = deployed_config_root_with_trace(
-            &probe_source,
-            file_name,
-            &probe.shared,
-            &probe.user,
-        )
-        .is_some_and(|(deployed, _)| {
-            find_config_value(&deployed, config_path)
-                .and_then(Value::as_str)
-                == Some(PROBE_MARKER)
-        });
-        fs::write(&probe_path, &original)
-            .map_err(|error| format!("could not restore {} source probe: {error}", asset.emitted))?;
+        let marker_wins =
+            deployed_config_root_with_trace(&probe_source, file_name, &probe.shared, &probe.user)
+                .is_some_and(|(deployed, _)| {
+                    find_config_value(&deployed, config_path).and_then(Value::as_str)
+                        == Some(PROBE_MARKER)
+                });
+        fs::write(&probe_path, &original).map_err(|error| {
+            format!("could not restore {} source probe: {error}", asset.emitted)
+        })?;
         if marker_wins {
             owners.push(asset.emitted.clone());
         }
@@ -529,11 +526,17 @@ fn create_probe_tree(
         let destination = probe_asset_path(roots, &probe, asset)?;
         if let Some(parent) = destination.parent() {
             fs::create_dir_all(parent).map_err(|error| {
-                format!("could not create source-probe directory for {}: {error}", asset.emitted)
+                format!(
+                    "could not create source-probe directory for {}: {error}",
+                    asset.emitted
+                )
             })?;
         }
         fs::copy(&asset.absolute, &destination).map_err(|error| {
-            format!("could not copy {} into source probe: {error}", asset.emitted)
+            format!(
+                "could not copy {} into source probe: {error}",
+                asset.emitted
+            )
         })?;
     }
     Ok(probe)
@@ -559,10 +562,7 @@ fn probe_asset_path(
 
 fn replace_reachability_scalars(value: &mut Value) -> usize {
     match value {
-        Value::Sequence(sequence) => sequence
-            .iter_mut()
-            .map(replace_reachability_scalars)
-            .sum(),
+        Value::Sequence(sequence) => sequence.iter_mut().map(replace_reachability_scalars).sum(),
         Value::Mapping(mapping) => {
             let mut replaced = 0;
             for (key, value) in mapping {

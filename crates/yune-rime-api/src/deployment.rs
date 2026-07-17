@@ -23,13 +23,14 @@ use crate::{
     apply_config_directives, apply_config_directives_traced, apply_custom_patch,
     apply_custom_patch_traced, apply_legacy_preset_config_plugins, bool_from, config_scalar_string,
     cstring_from_lossless_str, find_config_value, load_runtime_config_root,
-    normalize_config_resource_id, optional_c_string, path_join, ConfigDirectiveTraceEvent,
+    normalize_config_resource_id, optional_c_string, path_join,
     resource_id::validate_data_resource_id,
     runtime_paths, runtime_user_data_sync_dir,
     schema_install::{clear_dictionary_translator_cache, has_typeduck_lookup_source_rows},
     service_started, set_build_info, set_config_value, source_modified_secs,
-    source_uses_auto_custom_patch, sync_all_user_dicts, user_dict_upgrade, Bool, ConfigOpenKind,
-    RimeCleanupAllSessions, RimeSetup, RimeTraits, FALSE, RIME_VERSION_BYTES, TRUE,
+    source_uses_auto_custom_patch, sync_all_user_dicts, user_dict_upgrade, Bool,
+    ConfigDirectiveTraceEvent, ConfigOpenKind, RimeCleanupAllSessions, RimeSetup, RimeTraits,
+    FALSE, RIME_VERSION_BYTES, TRUE,
 };
 
 /// Initializes the runtime using the same trait handling as `RimeSetup`.
@@ -1645,7 +1646,7 @@ fn deployed_config_root_with_build_info(
             .ok()
             .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
         {
-            if let Some(trace) = trace.as_deref_mut() {
+            if let Some(trace) = trace {
                 apply_custom_patch_traced(
                     &mut root,
                     &custom_root,

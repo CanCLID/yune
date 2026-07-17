@@ -2,8 +2,7 @@ use super::*;
 
 use yune_rime_api::schema_reachability_audit_json;
 
-const FIXTURE_ROOT: &str =
-    "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit";
+const FIXTURE_ROOT: &str = "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit";
 const AUDIT_SCHEMA: &str = concat!(
     "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/",
     "shared/audit.schema.yaml"
@@ -16,9 +15,8 @@ const UNRESOLVED_SCHEMA: &str = concat!(
     "crates/yune-rime-api/tests/fixtures/m60-schema-reachability-audit/",
     "shared/unresolved.schema.yaml"
 );
-const EXPECTED: &str = include_str!(
-    "../fixtures/m60-schema-reachability-audit/expected-tuples.json"
-);
+const EXPECTED: &str =
+    include_str!("../fixtures/m60-schema-reachability-audit/expected-tuples.json");
 
 #[test]
 fn m60_namespaced_reachability_audit_matches_real_deploy() {
@@ -40,7 +38,11 @@ fn m60_namespaced_reachability_audit_matches_real_deploy() {
     let actual_tuples = audited["tuples"]
         .as_array()
         .expect("audit output should contain tuples");
-    assert_eq!(actual_tuples.len(), 5, "fixture should audit all dictionary arms");
+    assert_eq!(
+        actual_tuples.len(),
+        5,
+        "fixture should audit all dictionary arms"
+    );
     let expected_schemas = expected["schemas"]
         .as_array()
         .expect("expected fixture should contain schemas");
@@ -52,7 +54,10 @@ fn m60_namespaced_reachability_audit_matches_real_deploy() {
             .iter()
             .filter(|tuple| tuple["schemaAsset"] == schema_asset)
             .collect::<Vec<_>>();
-        assert!(!actual.is_empty(), "{schema_asset} should emit at least one tuple");
+        assert!(
+            !actual.is_empty(),
+            "{schema_asset} should emit at least one tuple"
+        );
         assert!(actual.iter().all(|tuple| {
             tuple["schemaId"] == expected_schema["schemaId"]
                 && tuple["assetHashes"] == expected_schema["assetHashes"]

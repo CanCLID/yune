@@ -3873,7 +3873,7 @@ impl StaticTableTranslator {
                             scratch,
                         );
                     }
-                } else if let Some(scratch) = sentence_scratch.as_deref_mut() {
+                } else if let Some(scratch) = sentence_scratch {
                     scratch.clear_sentence_state_preserving_surface_partitions();
                     return model
                         .candidates_for_weighted_surface_code_spans_with_limit_excluding_and_scratch(

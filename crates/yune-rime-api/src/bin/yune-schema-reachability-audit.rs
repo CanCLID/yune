@@ -54,8 +54,7 @@ fn parse_args() -> Result<Args, String> {
         repo_root: repo_root.ok_or_else(|| "--repo-root is required".to_owned())?,
         shared_data_dir: shared_data_dir
             .ok_or_else(|| "--shared-data-dir is required".to_owned())?,
-        user_data_dir: user_data_dir
-            .ok_or_else(|| "--user-data-dir is required".to_owned())?,
+        user_data_dir: user_data_dir.ok_or_else(|| "--user-data-dir is required".to_owned())?,
         schema_assets,
     })
 }

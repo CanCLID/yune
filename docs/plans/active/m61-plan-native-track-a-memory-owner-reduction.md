@@ -5,7 +5,9 @@
 > `luna_pinyin` acceptance lane. **Created:** 2026-07-15; **independently
 > reviewed and corrected:** 2026-07-15; **source-bound finalization:**
 > 2026-07-16; **Windows candidate-parity prerequisite amendment:** 2026-07-16;
-> **Windows Track B prerequisite amendment:** 2026-07-16. **Type:**
+> **Windows Track B prerequisite amendment:** 2026-07-16;
+> **post-diagnostic disposition-B and quality-gate amendment:** 2026-07-16.
+> **Type:**
 > attribution-first measurement and conditional reduction plan.
 
 ## Outcome
@@ -24,13 +26,11 @@ not a default flip.
 
 M61 closes successfully only if all of these conditions hold:
 
-1. one exact clean M61 measurement commit, descended from the source-current
-   post-M60 kickoff base through the immutable measurement-tooling boundary,
-   contains exactly the reviewed Phase 0A candidate-parity correction and the
-   reviewed Phase 0B Track B packed-syllabary prerequisite correction authorized
-   below, contains no Track A POET/default-flip optimization, and is reproduced
-   in five fixed-binary Windows owned-mode rounds and five fixed-binary
-   byte-backed diagnostic rounds;
+1. the exact pushed Phase 0B source is reproduced in five fixed-binary Windows
+   owned-mode rounds, its one exploratory byte-backed measured red is preserved,
+   and the one disposition-B correction selected by that red is reproduced from
+   a new exact clean source in five fresh fixed-binary owned-mode rounds and five
+   fresh fixed-binary byte-backed diagnostic rounds;
 2. current process counters and non-overlapping owner rows name a reducible
    owner and reconcile the observed movement rather than relying on M47/M55
    historical bytes;
@@ -151,12 +151,12 @@ not close the milestone and leaves the requirements planned.
 | Requirement | Accepted disposition A/B/C | Disposition D — measured partial/no-go |
 | --- | --- | --- |
 | `M61-BASELINE-01` | Complete | Complete with measured no-go after a green five-round owned set and the plan-prescribed diagnostic stopping point |
-| `M61-ATTR-01` | Complete | Complete with measured no-go: the evidence proves that no owner/reconciliation eligible for implementation exists |
-| `M61-BRANCH-01` | Complete | Complete: disposition D is selected and no production branch follows |
+| `M61-ATTR-01` | Complete | Complete with measured no-go: no safe owner branch clears the required attribution, reconciliation, and compatibility gates |
+| `M61-BRANCH-01` | Complete | Complete: disposition D is selected and no production reduction remains after the explicit revert path |
 | `M61-REDUCE-01` | Complete | Closed by no-go; no production reduction is claimed |
-| `M61-COMPAT-01` | Complete | Complete: the green owned baseline and unchanged production source preserve the compatibility boundary |
+| `M61-COMPAT-01` | Complete | Complete: the green owned baseline plus explicit reverts to the pushed quality-repair runtime tree preserve the compatibility boundary |
 | `M61-RATCHET-01` | Complete | Closed by no-go; the frozen supplemental ratchet remains unclaimed and the historical registry remains unchanged |
-| `M61-EVIDENCE-01` | Complete | Complete, including the measured-red/no-owner disposition and both reviews |
+| `M61-EVIDENCE-01` | Complete | Complete, including the measured-red/no-accepted-branch disposition and both reviews |
 
 ## Acceptance Contract
 
@@ -183,22 +183,30 @@ All baseline, diagnostic, and final acceptance rounds use:
   schema, and POET presence/hash inventory for every round; the source inputs
   behind those isolated copies remain byte-identical.
 
-The owned/byte-backed A/B source is the exact pushed Phase 0B-corrected M61
-measurement commit, not either M60 boundary or an earlier tooling/parity source.
-Its implementation parent boundary is the source-current kickoff base
-`bc0df36a`; record the formal M60 closeout, post-closeout correction,
-plan-finalization commit, immutable tooling commit, Phase 0 tooling repairs,
-Phase 0A amendment/correction, source-clean helper repair, POET-rebind tooling
-repair through `f18b0df2d0149bc2a28cd9bd2c075c34030b5568` (tree
-`e4ba5201eab8b8fd8cb24ae14dd49a8c9959aa10`), this Phase 0B plan-only
+The initial owned/byte-backed A/B source is the exact pushed Phase 0B-corrected
+M61 measurement commit `67d32a2bea36a391a8a11ea4e725dbfebe118252`
+(tree `7e2157b5de2575728f2632fad184a05403342a13`), not either M60 boundary or
+an earlier tooling/parity source. Its implementation parent boundary is the
+source-current kickoff base `bc0df36a`; record the formal M60 closeout,
+post-closeout correction, plan-finalization commit, immutable tooling commit,
+Phase 0 tooling repairs, Phase 0A amendment/correction, source-clean helper
+repair, POET-rebind tooling repair through
+`f18b0df2d0149bc2a28cd9bd2c075c34030b5568` (tree
+`e4ba5201eab8b8fd8cb24ae14dd49a8c9959aa10`), the Phase 0B plan-only
 amendment, and its correction separately. After excluding plan/review changes,
 the non-documentation implementation diff from `bc0df36a` may contain only the
 original M61 measurement tooling, Phase 0A's stale-raw-edge correction and
 owning proof, the source-clean/POET-rebind tooling repairs, and Phase 0B's exact
 packed-syllabary representation correction plus owning tests. Phase 0B is a
 Track B prerequisite and does not consume `M61-BRANCH-01`; no Track A POET
-storage/default optimization is present. The final production candidate
-receives its own exact-source five-round set.
+storage/default optimization is present there.
+
+The preserved `67d32a2b` exploratory measured red activates the
+post-diagnostic amendment below. Its correction-only local commit, not
+`67d32a2b`, becomes the source for a wholly new complete owned/byte-backed A/B.
+No `67d32a2b` round is reused in that replacement set. The final production
+candidate descends from the accepted correction source and receives its own
+exact-source five-round set.
 
 All binding owned, byte-backed, and final sets must run on the same physical
 Windows machine with the same OS build, power policy, and materially equivalent
@@ -625,8 +633,13 @@ $PHASE0_SOURCE_CLEAN_SHA = "a39c4d868820063dc3deaa42f7fdc9b3aee5e7a6"
 $PHASE0_POET_REBIND_SHA = "f18b0df2d0149bc2a28cd9bd2c075c34030b5568"
 $PHASE0_TRACK_B_AMENDMENT_SHA = "<pushed reviewed Phase 0B plan amendment SHA>"
 $PHASE0_TRACK_B_CORRECTION_SHA = "<pushed reviewed Track B correction SHA>"
-$EXPECTED_MEASUREMENT_SHA = $PHASE0_TRACK_B_CORRECTION_SHA
-$EXPECTED_MEASUREMENT_TREE = "<pushed reviewed Track B correction tree>"
+$POST_DIAGNOSTIC_AMENDMENT_SHA = "<pushed reviewed post-diagnostic amendment SHA>"
+$QUALITY_GATE_REPAIR_SHA = "<pushed reviewed quality-gate repair SHA>"
+$QUALITY_GATE_REPAIR_TREE = "<pushed reviewed quality-gate repair tree>"
+$DISPOSITION_B_CORRECTION_SHA = "<local disposition-B correction SHA>"
+$DISPOSITION_B_CORRECTION_TREE = "<local disposition-B correction tree>"
+$EXPECTED_MEASUREMENT_SHA = $DISPOSITION_B_CORRECTION_SHA
+$EXPECTED_MEASUREMENT_TREE = $DISPOSITION_B_CORRECTION_TREE
 $EXPECTED_LIBRIME_SHA = "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
 $MEASUREMENT_SHA = (& git -C $REPO rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $MEASUREMENT_SHA -ne $EXPECTED_MEASUREMENT_SHA) {
@@ -643,16 +656,35 @@ foreach ($ANCESTOR in @(
     $PHASE0_SOURCE_CLEAN_SHA,
     $PHASE0_POET_REBIND_SHA,
     $PHASE0_TRACK_B_AMENDMENT_SHA,
-    $PHASE0_TRACK_B_CORRECTION_SHA
+    $PHASE0_TRACK_B_CORRECTION_SHA,
+    $POST_DIAGNOSTIC_AMENDMENT_SHA,
+    $QUALITY_GATE_REPAIR_SHA,
+    $DISPOSITION_B_CORRECTION_SHA
 )) {
     & git -C $REPO merge-base --is-ancestor $ANCESTOR $MEASUREMENT_SHA
     if ($LASTEXITCODE -ne 0) {
         throw "measurement source does not descend from required M61 boundary: $ANCESTOR"
     }
 }
-$CORRECTION_PARENT = (& git -C $REPO rev-parse "$PHASE0_TRACK_B_CORRECTION_SHA^").Trim()
-if ($LASTEXITCODE -ne 0 -or $CORRECTION_PARENT -ne $PHASE0_TRACK_B_AMENDMENT_SHA) {
-    throw "Track B correction parent mismatch: expected $PHASE0_TRACK_B_AMENDMENT_SHA, got $CORRECTION_PARENT"
+$TRACK_B_CORRECTION_PARENT = (& git -C $REPO rev-parse "$PHASE0_TRACK_B_CORRECTION_SHA^").Trim()
+if ($LASTEXITCODE -ne 0 -or $TRACK_B_CORRECTION_PARENT -ne $PHASE0_TRACK_B_AMENDMENT_SHA) {
+    throw "Track B correction parent mismatch: expected $PHASE0_TRACK_B_AMENDMENT_SHA, got $TRACK_B_CORRECTION_PARENT"
+}
+$POST_DIAGNOSTIC_PARENT = (& git -C $REPO rev-parse "$POST_DIAGNOSTIC_AMENDMENT_SHA^").Trim()
+if ($LASTEXITCODE -ne 0 -or $POST_DIAGNOSTIC_PARENT -ne $PHASE0_TRACK_B_CORRECTION_SHA) {
+    throw "post-diagnostic amendment parent mismatch: expected $PHASE0_TRACK_B_CORRECTION_SHA, got $POST_DIAGNOSTIC_PARENT"
+}
+$QUALITY_GATE_REPAIR_PARENT = (& git -C $REPO rev-parse "$QUALITY_GATE_REPAIR_SHA^").Trim()
+if ($LASTEXITCODE -ne 0 -or $QUALITY_GATE_REPAIR_PARENT -ne $POST_DIAGNOSTIC_AMENDMENT_SHA) {
+    throw "quality-gate repair parent mismatch: expected $POST_DIAGNOSTIC_AMENDMENT_SHA, got $QUALITY_GATE_REPAIR_PARENT"
+}
+$ACTUAL_QUALITY_GATE_REPAIR_TREE = (& git -C $REPO rev-parse "$QUALITY_GATE_REPAIR_SHA^{tree}").Trim()
+if ($LASTEXITCODE -ne 0 -or $ACTUAL_QUALITY_GATE_REPAIR_TREE -ne $QUALITY_GATE_REPAIR_TREE) {
+    throw "quality-gate repair tree mismatch: expected $QUALITY_GATE_REPAIR_TREE, got $ACTUAL_QUALITY_GATE_REPAIR_TREE"
+}
+$DISPOSITION_B_CORRECTION_PARENT = (& git -C $REPO rev-parse "$DISPOSITION_B_CORRECTION_SHA^").Trim()
+if ($LASTEXITCODE -ne 0 -or $DISPOSITION_B_CORRECTION_PARENT -ne $QUALITY_GATE_REPAIR_SHA) {
+    throw "disposition-B correction parent mismatch: expected $QUALITY_GATE_REPAIR_SHA, got $DISPOSITION_B_CORRECTION_PARENT"
 }
 $MEASUREMENT_STATUS = @(
     & git -C $REPO status --porcelain=v1 --untracked-files=all
@@ -833,6 +865,8 @@ $ErrorActionPreference = "Stop"
 $REPO = (Resolve-Path .).Path
 $EXPECTED_CANDIDATE_SHA = "<local M61 production-candidate SHA>"
 $EXPECTED_CANDIDATE_TREE = "<local M61 production-candidate tree>"
+$EXPECTED_QUALITY_GATE_REPAIR_SHA = "<pushed reviewed quality-gate repair SHA>"
+$EXPECTED_DISPOSITION_B_CORRECTION_SHA = "<local accepted disposition-B correction SHA>"
 $EXPECTED_LIBRIME_SHA = "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
 $CANDIDATE_SHA = (& git -C $REPO rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $CANDIDATE_SHA -ne $EXPECTED_CANDIDATE_SHA) {
@@ -841,6 +875,23 @@ if ($LASTEXITCODE -ne 0 -or $CANDIDATE_SHA -ne $EXPECTED_CANDIDATE_SHA) {
 $CANDIDATE_TREE = (& git -C $REPO rev-parse "HEAD^{tree}").Trim()
 if ($LASTEXITCODE -ne 0 -or $CANDIDATE_TREE -ne $EXPECTED_CANDIDATE_TREE) {
     throw "candidate tree mismatch: expected $EXPECTED_CANDIDATE_TREE, got $CANDIDATE_TREE"
+}
+$DISPOSITION_B_PARENT = (& git -C $REPO rev-parse "$EXPECTED_DISPOSITION_B_CORRECTION_SHA^").Trim()
+if ($LASTEXITCODE -ne 0 -or $DISPOSITION_B_PARENT -ne $EXPECTED_QUALITY_GATE_REPAIR_SHA) {
+    throw "disposition-B parent mismatch: expected $EXPECTED_QUALITY_GATE_REPAIR_SHA, got $DISPOSITION_B_PARENT"
+}
+$CANDIDATE_PARENT = (& git -C $REPO rev-parse "$EXPECTED_CANDIDATE_SHA^").Trim()
+if ($LASTEXITCODE -ne 0 -or $CANDIDATE_PARENT -ne $EXPECTED_DISPOSITION_B_CORRECTION_SHA) {
+    throw "production candidate parent mismatch: expected $EXPECTED_DISPOSITION_B_CORRECTION_SHA, got $CANDIDATE_PARENT"
+}
+foreach ($ANCESTOR in @(
+    $EXPECTED_QUALITY_GATE_REPAIR_SHA,
+    $EXPECTED_DISPOSITION_B_CORRECTION_SHA
+)) {
+    & git -C $REPO merge-base --is-ancestor $ANCESTOR $CANDIDATE_SHA
+    if ($LASTEXITCODE -ne 0) {
+        throw "production candidate does not descend from required M61 boundary: $ANCESTOR"
+    }
 }
 $CANDIDATE_STATUS = @(& git -C $REPO status --porcelain=v1 --untracked-files=all)
 if ($LASTEXITCODE -ne 0 -or $CANDIDATE_STATUS.Count -ne 0) {
@@ -971,37 +1022,44 @@ if ($LASTEXITCODE -ne 0) {
 
 ### Runs
 
-- [ ] Create a disposable clean detached clone of the exact pushed Phase 0B
-      Track B-corrected measurement commit. Do not switch an existing tree,
-      create a branch, or use the main checkout as measurement evidence. Record
-      the M60 parent boundary and clean status before and after every accepted
-      set, record the intervening plan-only commit chain, and remove the clone
-      only after the external packet is secured.
-- [ ] Before building, require `git rev-parse HEAD` to equal the recorded pushed
-      M61 Phase 0B-corrected measurement SHA/tree, prove every frozen Phase 0
-      source named in the binding command is an ancestor, require `git status
-      --porcelain` to be empty, and record `git ls-remote origin
-      refs/heads/main` plus containment/equality at measurement start. A
-      mismatch is a setup failure, not usable evidence.
-- [ ] Build the benchmark and Yune library once; record SHA-256 values.
-- [ ] Run five wholly new `owned` rounds. Require the unchanged signed registry,
-      candidate/model identities, Track B guards, and fixed binary hashes to be
-      green before treating memory work as eligible. The preserved `f18b0df2`
-      runs contribute no round. Phase 0B is the sole correction exception to the
-      earlier owned-baseline stop; any red at the corrected source stops M61,
-      exhausts that exception, and cannot be retried or converted to disposition
-      D without another owner decision.
-- [ ] Run one explicitly named exploratory byte-backed round. A measured red is
-      preserved and skips the five-round byte-backed set. It may select only
-      disposition B or D, and only if its owner evidence is sufficient. Any
-      correction receives a new source and a complete fresh diagnostic set.
-- [ ] After a green exploratory round, run five complete `byte-backed` rounds.
+- [x] From a disposable clean detached clone of the exact pushed Phase 0B
+      Track B-corrected source `67d32a2b`, record the complete source chain,
+      clean status, remote equality, fixed hashes, five wholly new owned rounds,
+      and the separately named exploratory byte-backed run. The owned set is
+      green; the exploratory measured owner-shape red is preserved and its
+      remaining five-round byte-backed set is skipped.
+- [ ] After the post-diagnostic amendment and quality-gate repair are pushed and
+      remote-equal, create the disposition-B correction as the exact local child
+      of the repair. Create a new disposable detached clone at that local commit;
+      do not switch an existing tree, create a branch, registered worktree, or
+      use the main checkout as measurement evidence. Record the M60/Phase 0
+      chain and clean status before and after every accepted set, and remove the
+      clone only after the external packet is secured.
+- [ ] Before building the replacement A/B, require `git rev-parse HEAD` and
+      `HEAD^{tree}` to equal the recorded local disposition-B correction
+      SHA/tree, prove every frozen source named in the revised binding command
+      is an ancestor with the exact direct-parent chain, and require `git status
+      --porcelain` to be empty. Record `git ls-remote origin refs/heads/main` and
+      require it to equal the pushed quality-gate repair SHA; the local
+      correction must descend from that remote tip but is intentionally not yet
+      contained by it. A mismatch is a setup failure, not usable evidence.
+- [ ] Build the replacement benchmark and Yune library once; record SHA-256
+      values. Run five wholly new `owned` rounds and require the unchanged signed
+      registry, candidate/model identities, Track B guards, and fixed binary
+      hashes to be green. No `67d32a2b` or `f18b0df2` round contributes.
+- [ ] Run one new explicitly named exploratory byte-backed round at the
+      disposition-B correction. A measured red is preserved, skips the
+      five-round byte-backed set, exhausts the one B correction, and selects
+      disposition D through the explicit revert path above.
+- [ ] After a green replacement exploratory round, run five complete
+      `byte-backed` rounds.
       Record run order, set-boundary thermal state, and elapsed time so
       time/thermal bias remains visible.
 - [ ] Preserve any setup failure under an explicit retry name. Preserve every
       measured red; never replace or cherry-pick it.
 - [ ] Verify fixed binary hashes and source/tree identity across every completed
-      round: ten binding rounds when both complete five-round sets run.
+      replacement round: ten aggregate-binding rounds when both five-round sets
+      run, plus the separately preserved exploratory round.
 - [ ] Require each wrapper round to emit a hashed
       `candidate-parity-verdict.txt` with `17/17` PASS before aggregation; the
       aggregator rejects a missing, red, changed, or source/input-mismatched
@@ -1098,6 +1156,131 @@ Before changing runtime behavior:
 Allocator work is not selectable from the optional cross-process diagnostic.
 M47 RED-09/10/11 work is not imported by analogy; those rows belong to a
 different product profile and counter.
+
+### Post-diagnostic disposition-B amendment
+
+The pushed Phase 0B correction source
+`67d32a2bea36a391a8a11ea4e725dbfebe118252` (tree
+`7e2157b5de2575728f2632fad184a05403342a13`) completed five wholly new owned
+rounds at `32/32` signed rows per round with `17/17` candidate parity and green
+Track B guards. The aggregate is `32/32` and all 160 individual observations
+pass. Those rounds remain the eligibility baseline; they are not reusable in a
+later source set.
+
+The separately named `byte-backed-exploratory/run-1` completed timing and
+candidate capture with `17/17` parity, then produced the plan-prescribed
+measured owner-shape red. The four required mapped `YUNE-POET/3` owners were
+present, but one fifth POET row remained:
+
+```text
+poet.normal_character_code_index
+retained_estimate_bytes=11538
+byte_class=heap_owned_guarded
+non_overlapping_reducible_bytes=0
+mapping_mode=sorted Box<[String]>
+```
+
+The run's Track A peak was `116,314,112 B`, below the frozen `125,000,000 B`
+supplemental cap and below the owned five-run median `154,251,264 B`. Its
+candidate result was green, so this is not a setup failure and must never be
+retried, replaced, or relabeled. Skip the remaining byte-backed rounds at that
+source. Preserve the complete raw root at
+`C:\yune-m61\67d32a2bea36a391a8a11ea4e725dbfebe118252`.
+
+This evidence selects **disposition B** provisionally and consumes the one
+owner branch authorized by `M61-BRANCH-01`. The only correction is bounded
+borrowed membership access for the mapped character-code sections: owned POET
+storage retains its existing sorted normal-character-code index and behavior;
+byte-backed storage must stop reconstructing that retained `Box<[String]>`,
+must answer `has_normal_character_code` from already validated `YUNE-POET/3`
+bytes without a retained replacement index, and must emit exactly the existing
+four mapped POET owner rows. Do not change artifact bytes/version, candidate
+behavior, owned fallback, default selection, deployment, wrappers, thresholds,
+cadence, ABI, schema/profile IDs, browser payloads, or the exact-four owner
+assertion in this correction.
+
+The correction-only implementation allowlist is exactly:
+
+```text
+crates/yune-core/src/poet/mod.rs
+crates/yune-core/src/poet/storage.rs
+crates/yune-core/src/tests/poet.rs
+```
+
+Create one path-limited correction commit directly on local `main`, but do not
+push it yet. From a disposable clean detached clone of that exact commit, run a
+wholly new source-bound diagnostic sequence under a create-new external root:
+
+1. five new owned rounds and aggregate;
+2. one explicitly named exploratory byte-backed round;
+3. only if that exploratory round is green, five new byte-backed rounds and the
+   signed plus supplemental aggregates; and
+4. the complete owner reconciliation in Phase 2, including stable eligible
+   owner sets, positive deltas, the `0.80..=1.20` coverage interval, residual
+   bound, `10,000,000 B` named-owner floor, private-byte corroboration, and
+   separate mapped-byte reporting.
+
+All fixed binary, source/tree, oracle, product, model, input, cadence, parity,
+and Track B requirements remain unchanged. The first measured red at the
+correction source exhausts disposition B: preserve it, create an explicit local
+revert commit without rewriting history, select disposition D, and close with
+no production-default change. The correction and revert commits remain in the
+eventual direct-main history so the red source is auditable. If the complete
+corrected A/B and reconciliation are green, keep the correction commit local as
+the parent of a separate production-default candidate commit. Neither commit is
+pushed until the exact production-default acceptance set is green.
+
+A measured red in the production-default five-round set is preserved and
+unconditionally selects disposition D. Create two explicit local revert commits,
+first reverting the production-default candidate and then the disposition-B
+correction, so the resulting runtime tree equals the pushed quality-gate repair
+tree while every correction/revert SHA remains in history. Do not retry, rewrite,
+or discard a red source. After a fully green final set, push the disposition-B
+correction and production-default candidate chain, require `origin/main` to
+equal that accepted implementation SHA, and only then build the
+evidence/documentation pre-review tree for final closeout reviews.
+
+### Baseline quality-gate restoration amendment
+
+The exact pushed `67d32a2b` source also exposes pre-existing source-quality reds
+that are independent of the measured Track A owner branch: current rustfmt
+output differs in four M60 Rust files, strict workspace clippy finds two
+last-use `Option<&mut T>` reborrow patterns and one use of `Option::is_none_or`
+outside the repository's Rust 1.76 MSRV. The final plan already requires
+`cargo fmt --check` and `cargo clippy --workspace --all-targets -- -D warnings`;
+leaving those reds in the production candidate is not permitted.
+
+Restore those gates in a separate nonsemantic commit before creating the local
+disposition-B correction. This repair does not consume `M61-BRANCH-01` and may
+not change benchmark tooling, thresholds, cadence, artifacts, runtime behavior,
+ABI, schemas, or tests beyond formatting. Its source allowlist is exactly:
+
+```text
+crates/yune-core/src/translator/mod.rs
+crates/yune-rime-api/src/bin/yune-schema-reachability-audit.rs
+crates/yune-rime-api/src/deployment.rs
+crates/yune-rime-api/src/reachability_audit.rs
+crates/yune-rime-api/tests/yune_web/m60_reachability.rs
+```
+
+The only semantic-token substitutions are:
+
+- replace the last-use `sentence_scratch.as_deref_mut()` in
+  `translator/mod.rs` with direct `sentence_scratch`;
+- retain the earlier reusable `trace.as_deref_mut()` in `deployment.rs`, but
+  replace its last-use reborrow with direct `trace`; and
+- replace `Option::is_none_or` in `reachability_audit.rs` with the equivalent
+  MSRV-safe `matches!(..., None | Some("upstream_script"))` predicate.
+
+Apply current rustfmt output only to the four files reported by
+`cargo fmt --check`; do not change formatting configuration, lint allowances,
+the MSRV, or toolchain policy. Run `cargo fmt --check`, strict workspace clippy,
+the focused upstream Luna, deployment, and M60 reachability tests, plus
+`git diff --check`. Freeze the repair tree, obtain two independent reviews, add
+only the two repair review receipts named below, commit and push the reviewed
+repair separately, and prove `origin/main` equality before the local
+disposition-B correction is created. The final candidate reruns the binding
+workspace tests; no duplicate repair-source workspace run is required.
 
 ## Phase 3 — Conditional Production Candidate
 
@@ -1221,21 +1404,39 @@ amended before implementation. No hidden behavior tradeoff is authorized.
    M61 with the Phase 0B exception exhausted. If red, push an exact correction
    revert, prove remote equality at the revert, preserve both commits and the
    red, and stop with no unaccepted prerequisite correction left on `main`.
-10. **External A/B and owner decision.** Preserve all raw results outside Git.
-   No production code change follows a no-go.
-11. **Conditional implementation commit.** Commit directly to local `main` only
-   after focused correctness/owner tests pass, but do not push it before the
-   exact-source acceptance set is green. Use a disposable clean detached clone
-   for measurement rather than a branch or registered worktree. A measured-red
-   default is preserved externally and resolved by an explicit local revert or
-   fix-forward disposition before any push; do not rewrite history to hide it.
-12. **Five-round final acceptance and reviews.** A completed red stops closeout.
-   Both reviews name the exact implementation commit/tree and the proposed
-   final evidence/documentation tree. After review, only the review receipts
-   and their manifest entries may change; any other delta requires re-review.
-13. **Closeout commit and push.** Curate only compact receipts, update current
-   docs, move the plan, verify exact committed tree and remote identity, and
-   preserve the fingerprinted unrelated staged/unstaged/untracked state exactly.
+10. **Initial A/B, measured red, and post-diagnostic amendment.** Preserve all
+    `67d32a2b` raw results outside Git, skip its remaining byte-backed rounds,
+    freeze disposition B plus the separate quality-gate repair in this plan,
+    review the plan-only tree twice, add only its two receipts, commit, push, and
+    prove remote equality.
+11. **Baseline quality-gate repair.** Make only the five frozen nonsemantic
+    source edits, run the focused gates, freeze and review the repair tree twice,
+    add only its two receipts, commit directly on the amendment parent, push,
+    and prove remote equality.
+12. **Disposition-B correction and replacement A/B.** Commit only the three
+    frozen POET paths directly to local `main`; do not push. From a disposable
+    clean detached clone of that exact source, run five fresh owned rounds, the
+    exploratory byte-backed round, then five byte-backed rounds only if it is
+    green. Complete owner reconciliation. A measured red selects D and the
+    explicit correction revert path; do not rewrite history.
+13. **Production-default candidate.** Only after the replacement A/B and owner
+    reconciliation are green, create a separate direct-parent local commit that
+    makes validated native POET storage the default while preserving the owned
+    override/fallback and WASM boundary. Freeze the actual sorted path list and
+    run focused correctness/owner tests before final measurement.
+14. **Five-round final acceptance and implementation push.** Use a disposable
+    clean detached clone of the exact local production candidate. A measured red
+    takes the explicit two-revert disposition above without retry. After a wholly
+    green set, push the disposition-B correction plus production-default
+    candidate chain and prove `origin/main` equals the accepted implementation
+    SHA.
+15. **Final reviews and closeout commit.** Curate only the compact packet and
+    current-document updates on top of the pushed implementation. Both reviews
+    name that exact implementation commit/tree and the proposed pre-review
+    evidence/documentation tree. After review, only the two receipts and
+    regenerated packet manifest may change. Move the plan, verify exact
+    committed tree and remote identity, push the closeout separately, and
+    preserve the fingerprinted unrelated state exactly.
 
 ## Finalization Review Record
 
@@ -1337,6 +1538,53 @@ pre-review tree, exact implementation paths, and verification. Any other
 post-review delta requires both correction reviews again. Neither Phase 0B
 review pair replaces the two final closeout reviews or changes their exact
 three-path post-review delta.
+
+### Post-diagnostic amendment and quality-repair review record
+
+Before the disposition-B correction or baseline quality repair, review this
+plan-only amendment independently for:
+
+1. measured-red classification, disposition-B owner sufficiency, the exact
+   bounded correction, fresh diagnostic/reconciliation contract, and production
+   acceptance lineage; and
+2. change isolation, preserved owner-shape/threshold/cadence rules, the separate
+   nonsemantic quality repair, candidate-tree discipline, and runtime/ABI/browser
+   boundaries.
+
+Both amendment receipts name the exact preserved plan-only pre-review tree. The
+only post-review additions are:
+
+```text
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/planning-post-diagnostic-amendment-review-isolation.md
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/planning-post-diagnostic-amendment-review-requirements.md
+```
+
+The complete amendment commit contains exactly those two receipts plus:
+
+```text
+docs/plans/active/m61-plan-native-track-a-memory-owner-reduction.md
+```
+
+Use bytewise-sorted path lists, an isolated index, intent-to-add for only the two
+new receipts, a path-limited commit, exact candidate-tree/commit-tree equality,
+an empty real index, direct push to `main`, and remote equality. Any other
+post-review path or plan edit invalidates both reviews.
+
+The separately scoped quality-gate repair repeats the same pre-review-tree
+discipline. Its pre-review candidate contains exactly the five frozen source
+paths in the quality-gate amendment above. Its only post-review additions are:
+
+```text
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/quality-gate-repair-review-isolation.md
+docs/reports/evidence/m61-native-track-a-memory-owner-reduction/quality-gate-repair-review-requirements.md
+```
+
+Both repair receipts name the amendment parent, preserved pre-review repair
+tree, exact path list, focused verification, and nonsemantic diff. The repair
+commit contains exactly the five source paths plus those two receipts. Any
+other post-review path requires both repair reviews again. Neither review pair
+replaces the final two closeout reviews or changes their exact three-path
+post-review delta.
 
 The planning finalization itself uses this literal five-path isolated-index
 procedure. The three-path pre-review list contains this plan,
@@ -1594,12 +1842,16 @@ REMOTE=$(git ls-remote --exit-code origin refs/heads/main | awk 'NR==1{print $1}
 test "$LOCAL" = "$REMOTE"
 ```
 
-For the pushed measurement-tooling source, create a disposable clone, detach at
-`$LOCAL`, require the clone's `HEAD` to equal that expected SHA, and require
-`git status --porcelain=v1 --untracked-files=all` to be empty before and after
-the complete A/B set. The conditional production candidate remains local until
-its exact-source acceptance set is green; its local detached clone and receipts
-must label it unpushed. Push and run the remote proof only after acceptance.
+For the pushed Phase 0B source, create a disposable clone, detach at `$LOCAL`,
+and require its clean `HEAD` to equal that expected SHA for the initial owned
+set and preserved exploratory red. After the reviewed post-diagnostic amendment
+and quality repair are separately pushed and remote-equal, create the local
+disposition-B correction as their exact direct child. Its disposable detached
+clone must be clean and must label the complete replacement A/B source unpushed.
+The separate production candidate is the correction's exact direct child and
+also remains local until its exact-source acceptance set is green. After green
+acceptance, push both local implementation commits, rerun the remote proof at
+the production candidate, and require equality before final evidence reviews.
 
 ## Load-Bearing Verification
 

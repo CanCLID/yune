@@ -47,7 +47,7 @@ export class YuneWebRuntime {
       web06Observation,
       "init",
       "abi-call",
-      "minimal",
+      "full",
       () => bindings.init(options.sharedDataDir, options.userDataDir, options.schemaId),
     );
     if (statePtr === 0) {
@@ -137,7 +137,7 @@ export class YuneWebRuntime {
       this.#web06Observation,
       operation,
       "abi-call",
-      "minimal",
+      "full",
       action,
     );
   }

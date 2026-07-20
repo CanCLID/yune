@@ -45,8 +45,21 @@ export interface Web06RuntimeResponseJsonCopy {
 export interface Web06RuntimeObservationFailure {
   operation: Web06RuntimeOperation;
   stage: Web06RuntimeStage;
-  hook: "clock-start" | "clock-finish" | "span" | "response-json-copy";
+  hook:
+    | "clock-start"
+    | "clock-finish"
+    | "span"
+    | "response-json-copy"
+    | "response-json-copy-missing"
+    | "failure-sink-missing"
+    | "failure-sink-threw";
   error: unknown;
+}
+
+export interface Web06RuntimeObservationFailureSnapshot {
+  totalCount: number;
+  overflowCount: number;
+  retained: readonly Web06RuntimeObservationFailure[];
 }
 
 export interface Web06RuntimeObservation {
@@ -79,13 +92,49 @@ export interface Web06ActiveRuntimeObservation {
   readonly onSpan: (span: Web06RuntimeSpan) => void;
   readonly onResponseJsonCopy?: (copy: Web06RuntimeResponseJsonCopy) => void;
   readonly onFailure?: (failure: Web06RuntimeObservationFailure) => void;
+  readonly failureLedger: Web06RuntimeObservationFailureLedger;
 }
+
+interface Web06RuntimeObservationFailureLedger {
+  totalCount: number;
+  overflowCount: number;
+  retained: Web06RuntimeObservationFailure[];
+}
+
+const WEB06_RUNTIME_OBSERVATION_FAILURE_CAPACITY = 256;
+const failureLedgers = new WeakMap<
+  Web06RuntimeObservation,
+  Web06RuntimeObservationFailureLedger
+>();
 
 export function activateWeb06RuntimeObservation(
   observation: Web06RuntimeObservation | undefined,
 ): Web06ActiveRuntimeObservation | undefined {
   if (observation === undefined || observation.mode === "off") {
+    if (observation !== undefined) {
+      failureLedgers.set(observation, createFailureLedger());
+    }
     return undefined;
+  }
+
+  const failureLedger = createFailureLedger();
+  failureLedgers.set(observation, failureLedger);
+
+  if (observation.mode === "full" && observation.onResponseJsonCopy === undefined) {
+    appendFailure(failureLedger, {
+      operation: "init",
+      stage: "response-byte-extraction",
+      hook: "response-json-copy-missing",
+      error: new Error("WEB-06 full runtime observation requires onResponseJsonCopy"),
+    });
+  }
+  if (observation.mode === "full" && observation.onFailure === undefined) {
+    appendFailure(failureLedger, {
+      operation: "init",
+      stage: "abi-call",
+      hook: "failure-sink-missing",
+      error: new Error("WEB-06 full runtime observation requires onFailure"),
+    });
   }
 
   return {
@@ -98,6 +147,22 @@ export function activateWeb06RuntimeObservation(
     ...(observation.onFailure === undefined
       ? {}
       : { onFailure: observation.onFailure.bind(observation) }),
+    failureLedger,
+  };
+}
+
+/** @internal WEB-06 measurement-only failure state. */
+export function snapshotWeb06RuntimeObservationFailures(
+  observation: Web06RuntimeObservation,
+): Web06RuntimeObservationFailureSnapshot {
+  const ledger = failureLedgers.get(observation);
+  if (ledger === undefined) {
+    return { totalCount: 0, overflowCount: 0, retained: [] };
+  }
+  return {
+    totalCount: ledger.totalCount,
+    overflowCount: ledger.overflowCount,
+    retained: [...ledger.retained],
   };
 }
 
@@ -209,11 +274,34 @@ function reportFailure(
   observation: Web06ActiveRuntimeObservation,
   failure: Web06RuntimeObservationFailure,
 ): void {
+  appendFailure(observation.failureLedger, failure);
   try {
     observation.onFailure?.(failure);
-  } catch {
+  } catch (error) {
+    appendFailure(observation.failureLedger, {
+      operation: failure.operation,
+      stage: failure.stage,
+      hook: "failure-sink-threw",
+      error,
+    });
     // Measurement failures are out-of-band and must not replace the runtime's
-    // result or error. The owning collector is responsible for failing the
-    // evidence lane when its failure callback itself is unavailable.
+    // result or error. The internal ledger remains queryable even when the
+    // caller-owned failure sink is missing or broken.
+  }
+}
+
+function createFailureLedger(): Web06RuntimeObservationFailureLedger {
+  return { totalCount: 0, overflowCount: 0, retained: [] };
+}
+
+function appendFailure(
+  ledger: Web06RuntimeObservationFailureLedger,
+  failure: Web06RuntimeObservationFailure,
+): void {
+  ledger.totalCount += 1;
+  if (ledger.retained.length < WEB06_RUNTIME_OBSERVATION_FAILURE_CAPACITY) {
+    ledger.retained.push(failure);
+  } else {
+    ledger.overflowCount += 1;
   }
 }

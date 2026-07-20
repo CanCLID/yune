@@ -7,6 +7,7 @@ import type {
   Web06RuntimeResponseJsonCopy,
   Web06RuntimeSpan,
 } from "../src/observation.js";
+import { snapshotWeb06RuntimeObservationFailures } from "../src/observation.js";
 import { YuneWebResponseError } from "../src/response.js";
 import { YuneWebRuntime } from "../src/runtime.js";
 import { FakeYuneWebModule } from "./fake-module.js";
@@ -162,18 +163,50 @@ describe("WEB-06 runtime observation modes", () => {
     expect(runs.off.capture.spans).toEqual([]);
     expect(runs.off.capture.jsonCopies).toEqual([]);
     expect(runs.off.capture.clockCalls()).toBe(0);
+    expect(runs.minimal.capture.spans).toEqual([]);
     expect(runs.minimal.capture.jsonCopies).toEqual([]);
-    expect(runs.minimal.capture.spans.map(({ operation, stage }) => [operation, stage])).toEqual([
+    expect(runs.minimal.capture.clockCalls()).toBe(0);
+    expect(runs.full.capture.spans.map(({ operation, stage }) => [operation, stage])).toEqual([
       ["init", "abi-call"],
       ["process-key", "abi-call"],
+      ["process-key", "response-json-accessor"],
+      ["process-key", "response-byte-extraction"],
+      ["process-key", "response-json-parse"],
+      ["process-key", "response-shape-decode"],
+      ["process-key", "response-handled-accessor"],
+      ["process-key", "response-free"],
       ["select-candidate", "abi-call"],
+      ["select-candidate", "response-json-accessor"],
+      ["select-candidate", "response-byte-extraction"],
+      ["select-candidate", "response-json-parse"],
+      ["select-candidate", "response-shape-decode"],
+      ["select-candidate", "response-handled-accessor"],
+      ["select-candidate", "response-free"],
       ["delete-candidate", "abi-call"],
+      ["delete-candidate", "response-json-accessor"],
+      ["delete-candidate", "response-byte-extraction"],
+      ["delete-candidate", "response-json-parse"],
+      ["delete-candidate", "response-shape-decode"],
+      ["delete-candidate", "response-handled-accessor"],
+      ["delete-candidate", "response-free"],
       ["flip-page", "abi-call"],
+      ["flip-page", "response-json-accessor"],
+      ["flip-page", "response-byte-extraction"],
+      ["flip-page", "response-json-parse"],
+      ["flip-page", "response-shape-decode"],
+      ["flip-page", "response-handled-accessor"],
+      ["flip-page", "response-free"],
       ["deploy", "abi-call"],
       ["customize", "abi-call"],
       ["set-option", "abi-call"],
       ["set-ai-enabled", "abi-call"],
       ["stage-ai", "abi-call"],
+      ["stage-ai", "response-json-accessor"],
+      ["stage-ai", "response-byte-extraction"],
+      ["stage-ai", "response-json-parse"],
+      ["stage-ai", "response-shape-decode"],
+      ["stage-ai", "response-handled-accessor"],
+      ["stage-ai", "response-free"],
       ["cleanup", "abi-call"],
     ]);
     expect(runs.full.capture.jsonCopies.map(({ json }) => json)).toEqual(
@@ -229,7 +262,8 @@ describe("WEB-06 runtime observation modes", () => {
     capture.observation.mode = "full";
     runtime.processKey(65);
 
-    expect(capture.spans.map(({ stage }) => stage)).toEqual(["abi-call", "abi-call"]);
+    expect(capture.spans).toEqual([]);
+    expect(capture.clockCalls()).toBe(0);
     expect(capture.jsonCopies).toEqual([]);
   });
 });
@@ -450,6 +484,54 @@ describe("WEB-06 observer failure isolation", () => {
 
     expect(() => runtime.processKey(65)).toThrow(nativeError);
     expect(fake.freedResponses()).toEqual([responsePtr]);
+    const failureState = snapshotWeb06RuntimeObservationFailures(capture.observation);
+    expect(failureState.totalCount).toBeGreaterThan(0);
+    expect(failureState.retained.some(({ hook }) => hook === "failure-sink-threw")).toBe(true);
+  });
+
+  it("durably invalidates full mode when required callbacks are absent", () => {
+    const fake = new FakeYuneWebModule();
+    const observation: Web06RuntimeObservation = {
+      mode: "full",
+      now: () => 1,
+      onSpan: () => undefined,
+    };
+    const runtime = initializedRuntime(fake, observation);
+
+    runtime.cleanup();
+    const failureState = snapshotWeb06RuntimeObservationFailures(observation);
+    expect(failureState.totalCount).toBe(2);
+    expect(failureState.overflowCount).toBe(0);
+    expect(failureState.retained.map(({ hook }) => hook).sort()).toEqual([
+      "failure-sink-missing",
+      "response-json-copy-missing",
+    ]);
+  });
+
+  it("bounds durable observer failures while retaining the exact total", () => {
+    const fake = new FakeYuneWebModule();
+    const capture = captureObservation("full", {
+      onSpan() {
+        throw new Error("span collector failed");
+      },
+      onFailure() {
+        throw new Error("failure collector failed");
+      },
+    });
+    const runtime = initializedRuntime(fake, capture.observation);
+    for (let index = 0; index < 40; index += 1) {
+      fake.processKeyResult = fake.response(responsePayload({ commits: [String(index)] }));
+      runtime.processKey(65);
+    }
+
+    const failureState = snapshotWeb06RuntimeObservationFailures(capture.observation);
+    expect(failureState.totalCount).toBeGreaterThan(256);
+    expect(failureState.retained).toHaveLength(256);
+    expect(failureState.overflowCount).toBe(
+      failureState.totalCount - failureState.retained.length,
+    );
+    expect(failureState.retained.some(({ hook }) => hook === "span")).toBe(true);
+    expect(failureState.retained.some(({ hook }) => hook === "failure-sink-threw")).toBe(true);
   });
 
   it("reports broken clocks out of band while preserving results and ownership", () => {

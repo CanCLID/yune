@@ -12,6 +12,7 @@ import {
   expandScenarioExpectedTimeline,
   isSha256,
 } from "./web06-metric-contract.mjs";
+import { createHash } from "node:crypto";
 
 const COMMIT_SHA_RE = /^[0-9a-f]{40}$/;
 const FORBIDDEN_KEY_RE = /(?:ptr|pointer|address|authorization|cookie|password|secret|stack|browserProfile|userDataDir|(?:access|auth|bearer|api)Token)/i;
@@ -25,6 +26,14 @@ const ALLOWED_OUTCOMES = new Set([
   "barrier-completed",
   "failure",
 ]);
+const INTERNAL_RECEIPT_MODES = new Set([
+  "BASE_MINIMAL",
+  "BASE_FULL",
+  "FINAL_MINIMAL",
+  "FINAL_FULL",
+]);
+const FULL_RECEIPT_MODES = new Set(["BASE_FULL", "FINAL_FULL"]);
+const MINIMAL_RECEIPT_MODES = new Set(["BASE_MINIMAL", "FINAL_MINIMAL"]);
 
 function sameJson(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
@@ -91,6 +100,14 @@ function validateIdentity(receipt, setupErrors) {
   pushIf(setupErrors, typeof receipt.attemptId !== "string" || !receipt.attemptId, "SETUP_ATTEMPT_ID_INVALID");
 }
 
+function validateInternalMode(receipt, setupErrors) {
+  if (!INTERNAL_RECEIPT_MODES.has(receipt.mode)) {
+    setupErrors.push(receipt.mode === "PRODUCT"
+      ? "SETUP_PRODUCT_INTERNAL_RECEIPT_FORBIDDEN"
+      : "SETUP_INTERNAL_MODE_INVALID");
+  }
+}
+
 function validateEventClock(receipt, setupErrors, behaviorErrors) {
   const probe = receipt.eventClockProbe;
   if (!probe || !finite(probe.beforeDispatchAt) || !finite(probe.eventTimestamp) || !finite(probe.afterDispatchAt)) {
@@ -112,6 +129,221 @@ function validateEventClock(receipt, setupErrors, behaviorErrors) {
   }
 }
 
+function expectedCommonSamples(row, expected) {
+  let logicalInput = "";
+  const samples = [];
+  for (const step of row.steps) {
+    for (const mapped of step.actions) {
+      if (mapped.kind === "processKey") {
+        const raw = mapped.args[0];
+        const key = typeof raw === "string" && raw.startsWith("{") && raw.endsWith("}")
+          ? raw.slice(1, -1)
+          : "";
+        if (key === "BackSpace") logicalInput = logicalInput.slice(0, -1);
+        else if (key === "Escape" || key === "space" || key === "Return") logicalInput = "";
+        else if (!["Page_Down", "Page_Up", "Down", "Up"].includes(key) && key.length === 1) logicalInput += key;
+      } else if (mapped.kind === "selectCandidate") {
+        logicalInput = "";
+      }
+    }
+    if (step.source === "browser-lifecycle") logicalInput = "";
+    if (step.sample === "none") continue;
+    const expectedActions = expected.actions.filter((action) => action.stepId === step.id);
+    const owner = step.sample === "terminal"
+      ? terminalOwnerForStep(step, expected.actions)
+      : expectedActions[0];
+    samples.push({
+      stepId: step.id,
+      sampleKind: step.sample,
+      eventSequenceId: owner?.eventSequenceId,
+      expectedInput: logicalInput,
+      stressDeadline: owner?.stressDeadline === true,
+    });
+  }
+  return samples;
+}
+
+function validateCommonEventClock(receipt, setupErrors, behaviorErrors) {
+  const probe = receipt.eventClockProbe;
+  if (!probe || !finite(probe.beforeDispatchAt) || !finite(probe.eventTimestamp) || !finite(probe.afterDispatchAt)) {
+    setupErrors.push("SETUP_INVALID_EVENT_CLOCK_PROBE");
+  } else if (probe.eventTimestamp < probe.beforeDispatchAt || probe.eventTimestamp > probe.afterDispatchAt) {
+    setupErrors.push("SETUP_INVALID_EVENT_CLOCK_ORIGIN");
+  }
+  let previous = -Infinity;
+  for (const event of receipt.events ?? []) {
+    if (!finite(event.eventTimestamp) || event.eventTimestamp < 0 || event.normalizedEventAt !== event.eventTimestamp) {
+      setupErrors.push(`SETUP_INVALID_EVENT_TIMESTAMP:${event.eventSequenceId}`);
+      continue;
+    }
+    if (event.eventTimestamp < previous) setupErrors.push(`SETUP_DECREASING_EVENT_TIMESTAMP:${event.eventSequenceId}`);
+    previous = event.eventTimestamp;
+    if (!finite(event.sentinelObservedAt) || event.sentinelObservedAt < event.normalizedEventAt) {
+      behaviorErrors.push(`COMMON_EVENT_SAME_REALM_ORDER:${event.eventSequenceId}`);
+    }
+  }
+}
+
+/**
+ * PRODUCT has no internal WEB-06 protocol. This parser deliberately validates
+ * only evidence observed by the identical Playwright sentinel in every mode.
+ */
+export function validateCommonSurfaceReceipt(receipt) {
+  const setupErrors = [];
+  const behaviorErrors = [];
+  validateIdentity(receipt, setupErrors);
+  const row = SCENARIO_REGISTRY[receipt.scenarioId];
+  if (!row) setupErrors.push("SETUP_UNKNOWN_SCENARIO");
+  behaviorErrors.push(...validatePointerFreePrivacy(receipt).errors);
+  if (!row) return { status: "SETUP_INVALID", setupErrors, behaviorErrors };
+
+  const expected = expandScenarioExpectedTimeline(row.id);
+  const events = receipt.events ?? [];
+  if (events.length !== row.expectedDomEventCount) {
+    behaviorErrors.push(`COMMON_EVENT_COUNT:${events.length}!=${row.expectedDomEventCount}`);
+  }
+  validateContiguousIds(events, "eventSequenceId", 1, "COMMON_EVENT", behaviorErrors);
+  for (let index = 0; index < Math.min(events.length, expected.events.length); index += 1) {
+    const actual = events[index];
+    const frozen = expected.events[index];
+    if (actual.stepId !== frozen.stepId || actual.type !== frozen.type) behaviorErrors.push(`COMMON_EVENT_REORDERED:${index + 1}`);
+    if (actual.key !== frozen.key || actual.code !== frozen.code) behaviorErrors.push(`COMMON_EVENT_IDENTITY:${index + 1}`);
+  }
+  validateCommonEventClock(receipt, setupErrors, behaviorErrors);
+
+  let driverCalibration;
+  try {
+    driverCalibration = buildClockCalibration(
+      receipt.calibration?.driver?.pre,
+      receipt.calibration?.driver?.post,
+      "driver-page",
+    );
+  } catch (error) {
+    setupErrors.push(error instanceof Error ? error.message : "SETUP_INVALID_CLOCK_CALIBRATION");
+  }
+
+  const frozenSamples = expectedCommonSamples(row, expected);
+  const samples = receipt.commonSamples ?? [];
+  if (samples.length !== frozenSamples.length) {
+    behaviorErrors.push(`COMMON_SAMPLE_COUNT:${samples.length}!=${frozenSamples.length}`);
+  }
+  const metrics = [];
+  for (let index = 0; index < Math.min(samples.length, frozenSamples.length); index += 1) {
+    const sample = samples[index];
+    const frozen = frozenSamples[index];
+    const event = events.find((candidate) => candidate.eventSequenceId === frozen.eventSequenceId);
+    if (sample.stepId !== frozen.stepId || sample.sampleKind !== frozen.sampleKind
+      || sample.eventSequenceId !== frozen.eventSequenceId) {
+      behaviorErrors.push(`COMMON_SAMPLE_IDENTITY:${index + 1}`);
+    }
+    if (!event || !finite(sample.observedAt) || sample.observedAt < event?.normalizedEventAt) {
+      behaviorErrors.push(`COMMON_SAMPLE_TIME:${frozen.stepId}`);
+      continue;
+    }
+    const isCovering = frozen.sampleKind === "covering";
+    const validOutcome = isCovering
+      ? sample.outcome === "painted" || sample.outcome === "superseded"
+      : sample.outcome === "terminal";
+    if (!validOutcome) behaviorErrors.push(`COMMON_SAMPLE_OUTCOME:${frozen.stepId}`);
+    let covering = sample;
+    if (sample.outcome === "superseded") {
+      const targetIndex = frozenSamples.findIndex((candidate) => candidate.stepId === sample.supersededByStepId);
+      const target = samples[targetIndex];
+      const targetFrozen = frozenSamples[targetIndex];
+      if (targetIndex <= index || targetIndex - index > WEB06_THRESHOLDS.sustained.supersessionSequenceLag.max
+        || target?.outcome !== "painted" || target?.observedAt !== sample.observedAt
+        || targetFrozen?.sampleKind !== "covering"
+        || !targetFrozen.expectedInput.startsWith(frozen.expectedInput)
+        || targetFrozen.expectedInput === frozen.expectedInput) {
+        behaviorErrors.push(`COMMON_SUPERSESSION_INVALID:${frozen.stepId}`);
+      } else {
+        covering = target;
+      }
+    }
+    if (sample.stableDoubleRaf !== true || covering.stableDoubleRaf !== true
+      || covering.domObserved?.input !== (sample.outcome === "superseded"
+        ? frozenSamples.find((candidate) => candidate.stepId === sample.supersededByStepId)?.expectedInput
+        : frozen.expectedInput)) {
+      behaviorErrors.push(`COMMON_DOM_ENDPOINT:${frozen.stepId}`);
+    }
+    if (isCovering && !(covering.domObserved?.candidates?.length > 0)) {
+      behaviorErrors.push(`COMMON_CANDIDATE_ENDPOINT:${frozen.stepId}`);
+    }
+    if (!finite(event.actualDriverDispatchAt) || !finite(event.requestedDriverDispatchAt)) {
+      behaviorErrors.push(`COMMON_DRIVER_DISPATCH:${frozen.stepId}`);
+      continue;
+    }
+    let correctedDriver;
+    try {
+      correctedDriver = driverCalibration
+        ? correctDriverTimestamp(event.actualDriverDispatchAt, driverCalibration, event.actualDriverDispatchAt)
+        : undefined;
+    } catch (error) {
+      setupErrors.push(`${error instanceof Error ? error.message : "SETUP_INVALID_CLOCK_CALIBRATION"}:${frozen.stepId}`);
+      continue;
+    }
+    if (correctedDriver.correctedAt + correctedDriver.uncertainty > event.normalizedEventAt) {
+      setupErrors.push(`SETUP_INVALID_CLOCK_CALIBRATION:driver-event-order:${frozen.stepId}`);
+    }
+    metrics.push({
+      ...frozen,
+      eventToObservationMs: sample.observedAt - event.normalizedEventAt,
+      driverDispatchToObservationUpperBoundMs:
+        sample.observedAt - correctedDriver.correctedAt + correctedDriver.uncertainty,
+    });
+  }
+
+  const cadence = cadenceVerdict(receipt, row, behaviorErrors, setupErrors);
+  const frames = frameVerdict(receipt, row, behaviorErrors, setupErrors);
+  const violations = [];
+  const binding = row.binding === true || row.binding === "branch-b-only";
+  if (binding) {
+    const covering = metrics.filter((sample) => sample.sampleKind === "covering");
+    const terminal = metrics.filter((sample) => sample.sampleKind === "terminal");
+    for (const sample of covering) {
+      if (sample.eventToObservationMs > WEB06_THRESHOLDS.sustained.eventToCoveringPaintMs.max) violations.push("common-covering-max");
+      if (sample.driverDispatchToObservationUpperBoundMs > WEB06_THRESHOLDS.sustained.driverDispatchToCoveringPaintUpperBoundMs.max) {
+        violations.push("common-driver-covering-max");
+      }
+    }
+    if (["rapid-jyutping", "rapid-long-jyutping", "rapid-luna", "burst-jyutping", "burst-luna"].includes(row.id)
+      && covering.length) {
+      violations.push(...evaluateThresholdDistribution(
+        covering.map((sample) => sample.eventToObservationMs),
+        WEB06_THRESHOLDS.sustained.eventToCoveringPaintMs,
+        "common-covering",
+      ).violations);
+    }
+    for (const sample of terminal) {
+      const ceiling = sample.stressDeadline
+        ? WEB06_THRESHOLDS.terminal.persistenceStressCompletionMs.max
+        : WEB06_THRESHOLDS.terminal.eventToTerminalObservationMs.max;
+      if (sample.eventToObservationMs > ceiling) violations.push("common-terminal-max");
+      if (!sample.stressDeadline
+        && sample.driverDispatchToObservationUpperBoundMs > WEB06_THRESHOLDS.terminal.driverDispatchToTerminalUpperBoundMs.max) {
+        violations.push("common-driver-terminal-max");
+      }
+    }
+  }
+  const hardRed = behaviorErrors.length > 0 || violations.length > 0 || frames.frameRed || frames.longTaskRed;
+  let status;
+  if (setupErrors.length) status = "SETUP_INVALID";
+  else if (cadence === "TOO_SHORT") status = behaviorErrors.length ? "RED_BEHAVIOR" : "NO_VERDICT_INVALID_CADENCE";
+  else if (cadence === "TOO_LONG") status = hardRed ? "RED" : "NO_VERDICT_INVALID_CADENCE";
+  else status = hardRed ? "RED" : "PASS";
+  return {
+    status,
+    setupErrors,
+    behaviorErrors,
+    cadence,
+    frameRed: frames.frameRed,
+    longTaskRed: frames.longTaskRed,
+    thresholdViolations: violations,
+    metrics: { samples: metrics },
+    calibration: { driver: driverCalibration },
+  };
+}
+
 function validateTimelineShape(receipt, row, behaviorErrors) {
   const expected = expandScenarioExpectedTimeline(row.id);
   const events = receipt.events ?? [];
@@ -121,13 +353,16 @@ function validateTimelineShape(receipt, row, behaviorErrors) {
   validateContiguousIds(events, "eventSequenceId", 1, "EVENT", behaviorErrors);
   validateContiguousIds(actions, "sequenceId", 1, "ACTION", behaviorErrors);
   if (new Set(actions.map((item) => item.actionId)).size !== actions.length) behaviorErrors.push("ACTION_DUPLICATE_ACTION_ID");
+  validateWireIdentityNormalization(receipt, behaviorErrors);
 
   for (let index = 0; index < Math.min(events.length, expected.events.length); index += 1) {
     const actual = events[index];
     const frozen = expected.events[index];
     if (actual.stepId !== frozen.stepId || actual.type !== frozen.type) behaviorErrors.push(`EVENT_REORDERED:${index + 1}`);
     if (actual.key !== frozen.key || actual.code !== frozen.code) behaviorErrors.push(`EVENT_IDENTITY:${index + 1}`);
-    if (actual.classification !== frozen.classification) behaviorErrors.push(`EVENT_CLASSIFICATION:${index + 1}`);
+    if (actual.classification !== frozen.classification || actual.reason !== frozen.reason) {
+      behaviorErrors.push(`EVENT_CLASSIFICATION:${index + 1}`);
+    }
     if (!sameJson(actual.mappedActionIds, frozen.mappedActionIds)) behaviorErrors.push(`EVENT_ACTION_CARDINALITY:${index + 1}`);
   }
   for (let index = 0; index < Math.min(actions.length, expected.actions.length); index += 1) {
@@ -137,10 +372,124 @@ function validateTimelineShape(receipt, row, behaviorErrors) {
       behaviorErrors.push(`ACTION_REORDERED:${index + 1}`);
     }
     if (actual.kind !== frozen.kind || actual.classification !== frozen.classification) behaviorErrors.push(`ACTION_CLASSIFICATION:${index + 1}`);
+    if (actual.originKind !== frozen.originKind || actual.originReason !== frozen.originReason
+      || actual.causedByActionId !== frozen.causedByActionId
+      || actual.causedBySequenceId !== frozen.causedBySequenceId
+      || actual.causedByEventSequenceId !== frozen.causedByEventSequenceId) {
+      behaviorErrors.push(`ACTION_ORIGIN:${index + 1}`);
+    }
     if (!sameJson(actual.args, frozen.args)) behaviorErrors.push(`ACTION_ARGUMENTS:${index + 1}`);
     if (!ACTION_REGISTRY[actual.kind]) behaviorErrors.push(`ACTION_UNCLASSIFIED:${index + 1}`);
   }
   return expected;
+}
+
+function wireId(prefix, sequenceId) {
+  return `web06-${prefix}-${String(sequenceId).padStart(8, "0")}`;
+}
+
+export function normalizeWireActionArgs(kind, wireArgs) {
+  if (!Array.isArray(wireArgs)) throw new Error("WEB06_WIRE_ACTION_ARGS_INVALID");
+  if (kind === "importUserdb") {
+    if (wireArgs.length !== 1 || typeof wireArgs[0] !== "string") {
+      throw new Error("WEB06_IMPORT_USERDB_ARGS_INVALID");
+    }
+    return [`sha256:${createHash("sha256").update(wireArgs[0], "utf8").digest("hex")}`];
+  }
+  return structuredClone(wireArgs);
+}
+
+function validateNormalizedArgs(action, behaviorErrors) {
+  if (!Array.isArray(action.wireArgs)) {
+    behaviorErrors.push(`WIRE_ACTION_ARGS_MISSING:${action.sequenceId}`);
+    return;
+  }
+  let normalized;
+  try {
+    normalized = normalizeWireActionArgs(action.kind, action.wireArgs);
+  } catch {
+    behaviorErrors.push(`WIRE_ACTION_ARGS_NORMALIZATION:${action.sequenceId}`);
+    return;
+  }
+  if (!sameJson(normalized, action.args)) {
+    behaviorErrors.push(`WIRE_ACTION_ARGS_NORMALIZATION:${action.sequenceId}`);
+  }
+}
+
+function validateWireIdentityNormalization(receipt, behaviorErrors) {
+  const eventStart = receipt.protocolWindow?.receiptWindowStartEventSequenceId;
+  const actionStart = receipt.protocolWindow?.receiptWindowStartActionSequenceId;
+  if (!Number.isSafeInteger(eventStart) || eventStart < 1
+    || !Number.isSafeInteger(actionStart) || actionStart < 1) {
+    behaviorErrors.push("WIRE_WINDOW_START_INVALID");
+    return;
+  }
+  const actionByLocalId = new Map((receipt.actions ?? []).map((action) => [action.actionId, action]));
+  for (const event of receipt.events ?? []) {
+    const sequenceId = eventStart + event.eventSequenceId - 1;
+    const eventId = wireId("event", sequenceId);
+    if (event.wireEventSequenceId !== sequenceId || event.wireEventId !== eventId
+      || event.wireIdentity?.eventSequenceId !== sequenceId || event.wireIdentity?.eventId !== eventId) {
+      behaviorErrors.push(`WIRE_EVENT_OFFSET:${event.eventSequenceId}`);
+    }
+    for (const field of ["type", "key", "code", "classification", "reason"]) {
+      if (event.wireIdentity?.[field] !== event[field]) behaviorErrors.push(`WIRE_EVENT_IDENTITY:${event.eventSequenceId}:${field}`);
+    }
+    if (event.wireIdentity?.timeStamp !== event.eventTimestamp
+      || event.wireIdentity?.eventDeliveredAt !== event.eventDeliveredAt) {
+      behaviorErrors.push(`WIRE_EVENT_TIMESTAMPS:${event.eventSequenceId}`);
+    }
+    const expectedWireActions = (event.mappedActionIds ?? []).map((localId) => actionByLocalId.get(localId)?.wireActionId);
+    if (!sameJson(event.wireLinkedActionIds, expectedWireActions)) {
+      behaviorErrors.push(`WIRE_EVENT_ACTION_LINKS:${event.eventSequenceId}`);
+    }
+  }
+  for (const action of receipt.actions ?? []) {
+    const sequenceId = actionStart + action.sequenceId - 1;
+    const actionId = wireId("action", sequenceId);
+    const wireEventSequenceId = action.eventSequenceId === undefined
+      ? undefined
+      : eventStart + action.eventSequenceId - 1;
+    const wireEventId = wireEventSequenceId === undefined ? undefined : wireId("event", wireEventSequenceId);
+    const wireCauseSequenceId = action.causedBySequenceId === undefined
+      ? undefined
+      : actionStart + action.causedBySequenceId - 1;
+    const wireCauseActionId = wireCauseSequenceId === undefined ? undefined : wireId("action", wireCauseSequenceId);
+    const wireCauseEventSequenceId = action.causedByEventSequenceId === undefined
+      ? undefined
+      : eventStart + action.causedByEventSequenceId - 1;
+    const wireCauseEventId = wireCauseEventSequenceId === undefined ? undefined : wireId("event", wireCauseEventSequenceId);
+    if (action.wireSequenceId !== sequenceId || action.wireActionId !== actionId
+      || action.wireIdentity?.sequenceId !== sequenceId || action.wireIdentity?.actionId !== actionId
+      || action.wireIdentity?.eventSequenceId !== wireEventSequenceId || action.wireIdentity?.eventId !== wireEventId
+      || action.wireIdentity?.causedBySequenceId !== wireCauseSequenceId
+      || action.wireIdentity?.causedByActionId !== wireCauseActionId
+      || action.wireIdentity?.causedByEventSequenceId !== wireCauseEventSequenceId
+      || action.wireIdentity?.causedByEventId !== wireCauseEventId) {
+      behaviorErrors.push(`WIRE_ACTION_OFFSET:${action.sequenceId}`);
+    }
+    if (!action.returnedWireIdentity || !sameJson(action.wireIdentity, action.returnedWireIdentity)) {
+      behaviorErrors.push(`WIRE_RETURNED_IDENTITY:${action.sequenceId}`);
+    }
+    const fields = [
+      ["compositionEpochId", "compositionEpochId"],
+      ["supersessionSubRunId", "supersessionSubRunId"],
+      ["actionClass", "classification"],
+      ["supersedable", "supersedable"],
+      ["actionEnqueuedAt", "actionEnqueuedAt"],
+      ["mainQueueDepthAtEnqueue", "mainQueueDepth"],
+      ["workerSentAt", "workerSentAt"],
+      ["workerDispatchDepth", "workerDispatchDepth"],
+      ["originKind", "originKind"],
+      ["originReason", "originReason"],
+    ];
+    for (const [wireField, localField] of fields) {
+      if (action.wireIdentity?.[wireField] !== action[localField]) {
+        behaviorErrors.push(`WIRE_ACTION_IDENTITY:${action.sequenceId}:${wireField}`);
+      }
+    }
+    validateNormalizedArgs(action, behaviorErrors);
+  }
 }
 
 function calibrationFor(receipt, setupErrors) {
@@ -183,8 +532,18 @@ function crossContextAction(action, calibrations, setupErrors) {
   }
 }
 
-function validateWorkerSpans(action, behaviorErrors) {
+function validateWorkerSpans(action, mode, behaviorErrors) {
   const spanRecord = action.workerSpans ?? {};
+  if (MINIMAL_RECEIPT_MODES.has(mode)) {
+    if (Object.values(spanRecord).some((span) => span !== null && span !== undefined)) {
+      behaviorErrors.push(`MINIMAL_RAW_WORKER_SPAN_PRESENT:${action.sequenceId}`);
+    }
+    if (action.persistenceRan !== undefined) {
+      behaviorErrors.push(`MINIMAL_RAW_PERSISTENCE_DISPOSITION_PRESENT:${action.sequenceId}`);
+    }
+    return;
+  }
+  if (!FULL_RECEIPT_MODES.has(mode)) return;
   for (const required of ["abi", "responseExtract", "jsonParse", "adapterTranslate", "persistence"]) {
     if (!Object.hasOwn(spanRecord, required)) behaviorErrors.push(`WORKER_SPAN_DECLARATION_MISSING:${action.sequenceId}:${required}`);
   }
@@ -227,6 +586,15 @@ function validateSameRealmAction(action, event, behaviorErrors) {
   for (const [field, previous] of ordered) {
     if (!finite(action[field]) || action[field] < previous) behaviorErrors.push(`ACTION_SAME_REALM_ORDER:${action.sequenceId}:${field}`);
   }
+  if (action.outcome === "painted") {
+    for (const field of ["stateUpdateScheduledAt", "stateCommittedAt", "paintObservedAt"]) {
+      if (!finite(action[field])) behaviorErrors.push(`PAINT_CHAIN_MISSING:${action.sequenceId}:${field}`);
+    }
+    if (finite(action.stateCommittedAt) && finite(action.paintObservedAt)
+      && action.paintObservedAt < action.stateCommittedAt) {
+      behaviorErrors.push(`ACTION_SAME_REALM_ORDER:${action.sequenceId}:paintObservedAt`);
+    }
+  }
   if (!finite(event.actualDriverDispatchAt) || !finite(event.requestedDriverDispatchAt)
     || action.driverDispatchAt !== event.actualDriverDispatchAt) {
     behaviorErrors.push(`ACTION_DRIVER_IDENTITY:${action.sequenceId}`);
@@ -235,12 +603,41 @@ function validateSameRealmAction(action, event, behaviorErrors) {
   pushIf(behaviorErrors, !Number.isInteger(action.workerDispatchDepth) || action.workerDispatchDepth < 0, `ACTION_WORKER_DEPTH:${action.sequenceId}`);
 }
 
-function validateFingerprints(action, behaviorErrors) {
-  const raw = action.engineRaw;
-  if (!raw || raw.actionKind !== action.kind || raw.compositionEpochId !== action.compositionEpochId || raw.supersessionSubRunId !== action.supersessionSubRunId) {
-    behaviorErrors.push(`ENGINE_RAW_IDENTITY:${action.sequenceId}`);
+function rawActionSequence(action) {
+  return action.rawActionSequence ?? action.engineRaw?.rawActionSequence;
+}
+
+function logicalInput(action) {
+  return action.logicalInput ?? action.engineRaw?.logicalInput ?? action.presentationExpected?.input;
+}
+
+function validateFingerprints(action, mode, behaviorErrors) {
+  if (!Array.isArray(rawActionSequence(action))) {
+    behaviorErrors.push(`ACTION_RAW_SEQUENCE:${action.sequenceId}`);
   }
-  if (!Array.isArray(raw?.rawActionSequence)) behaviorErrors.push(`ENGINE_RAW_ACTION_SEQUENCE:${action.sequenceId}`);
+  const raw = action.engineRaw;
+  if (MINIMAL_RECEIPT_MODES.has(mode)) {
+    if (raw !== undefined) behaviorErrors.push(`MINIMAL_ENGINE_RAW_PRESENT:${action.sequenceId}`);
+  } else if (FULL_RECEIPT_MODES.has(mode)) {
+    if (!raw || raw.actionKind !== action.kind || raw.compositionEpochId !== action.compositionEpochId || raw.supersessionSubRunId !== action.supersessionSubRunId) {
+      behaviorErrors.push(`ENGINE_RAW_IDENTITY:${action.sequenceId}`);
+    }
+    if (!Array.isArray(raw?.rawActionSequence)) behaviorErrors.push(`ENGINE_RAW_ACTION_SEQUENCE:${action.sequenceId}`);
+    if (typeof raw?.rawResponseJson !== "string" || !isSha256(raw?.rawResponseSha256)
+      || (typeof raw?.rawResponseJson === "string"
+        && createHash("sha256").update(raw.rawResponseJson, "utf8").digest("hex") !== raw.rawResponseSha256)) {
+      behaviorErrors.push(`ENGINE_RAW_PREPROJECTION_BYTES:${action.sequenceId}`);
+    } else {
+      try {
+        JSON.parse(raw.rawResponseJson);
+      } catch {
+        behaviorErrors.push(`ENGINE_RAW_PREPROJECTION_JSON:${action.sequenceId}`);
+      }
+    }
+    if (Array.isArray(action.rawActionSequence) && !sameJson(action.rawActionSequence, raw?.rawActionSequence)) {
+      behaviorErrors.push(`ENGINE_RAW_SEQUENCE_DISAGREES:${action.sequenceId}`);
+    }
+  }
   if (["painted", "committed", "barrier-completed"].includes(action.outcome)) {
     if (!action.presentationExpected || !action.domObserved || !sameJson(action.presentationExpected, action.domObserved)) {
       behaviorErrors.push(`PRESENTATION_DOM_MISMATCH:${action.sequenceId}`);
@@ -256,7 +653,7 @@ function validateFingerprints(action, behaviorErrors) {
   }
 }
 
-function validateOutcomes(actions, expected, row, behaviorErrors) {
+function validateOutcomes(actions, expected, row, mode, behaviorErrors) {
   for (let index = 0; index < Math.min(actions.length, expected.actions.length); index += 1) {
     const action = actions[index];
     const frozen = expected.actions[index];
@@ -266,7 +663,7 @@ function validateOutcomes(actions, expected, row, behaviorErrors) {
     if (frozen.supersedable === true && !["painted", "superseded"].includes(action.outcome)) {
       behaviorErrors.push(`PRINTABLE_OUTCOME_INVALID:${action.sequenceId}`);
     }
-    if (step?.sample === "terminal"
+    if (step?.sample === "terminal" && isTerminalOwner(step, frozen, expected.actions)
       && !["painted", "committed", "barrier-completed", "failure"].includes(action.outcome)) {
       behaviorErrors.push(`TERMINAL_OUTCOME_INVALID:${action.sequenceId}`);
     }
@@ -285,8 +682,31 @@ function validateOutcomes(actions, expected, row, behaviorErrors) {
     if (action.outcome === "superseded" && !frozen.supersedable) {
       behaviorErrors.push(`NONPRINTABLE_SUPERSEDED:${action.sequenceId}`);
     }
-    validateFingerprints(action, behaviorErrors);
+    validateFingerprints(action, mode, behaviorErrors);
   }
+}
+
+function terminalOwnerForStep(step, expectedActions) {
+  const actions = expectedActions.filter((action) => action.stepId === step.id);
+  if (actions.length === 0) return undefined;
+  const foreground = actions.filter((action) => action.background !== true);
+  if (foreground.length !== actions.length) return foreground[0] ?? actions[0];
+  return foreground.at(-1);
+}
+
+function isTerminalOwner(step, action, expectedActions) {
+  return terminalOwnerForStep(step, expectedActions)?.sequenceId === action.sequenceId;
+}
+
+export function terminalOwnerSequenceId(scenarioId, stepId) {
+  const row = SCENARIO_REGISTRY[scenarioId];
+  if (!row) throw new Error(`WEB06_UNKNOWN_SCENARIO:${scenarioId}`);
+  const step = row.steps.find((candidate) => candidate.id === stepId);
+  if (!step || step.sample !== "terminal") throw new Error(`WEB06_UNKNOWN_TERMINAL_STEP:${stepId}`);
+  const expected = expandScenarioExpectedTimeline(scenarioId);
+  const owner = terminalOwnerForStep(step, expected.actions);
+  if (!owner) throw new Error(`WEB06_TERMINAL_OWNER_MISSING:${stepId}`);
+  return owner.sequenceId;
 }
 
 function resolveSupersession(actions, action, behaviorErrors) {
@@ -302,8 +722,8 @@ function resolveSupersession(actions, action, behaviorErrors) {
   if (target.classification !== "native-key" || target.supersedable !== true) {
     behaviorErrors.push(`SUPERSESSION_TARGET_IS_BARRIER:${action.sequenceId}`);
   }
-  if (!strictPrefix(action.engineRaw?.rawActionSequence, target.engineRaw?.rawActionSequence)
-    || !String(target.engineRaw?.logicalInput ?? "").startsWith(String(action.engineRaw?.logicalInput ?? ""))) {
+  if (!strictPrefix(rawActionSequence(action), rawActionSequence(target))
+    || !String(logicalInput(target) ?? "").startsWith(String(logicalInput(action) ?? ""))) {
     behaviorErrors.push(`SUPERSESSION_NON_PREFIX:${action.sequenceId}`);
   }
   const between = actions.filter((candidate) => candidate.sequenceId > action.sequenceId && candidate.sequenceId < target.sequenceId);
@@ -315,7 +735,7 @@ function resolveSupersession(actions, action, behaviorErrors) {
     && candidate.compositionEpochId === action.compositionEpochId
     && candidate.supersessionSubRunId === action.supersessionSubRunId
     && candidate.outcome === "painted"
-    && strictPrefix(action.engineRaw?.rawActionSequence, candidate.engineRaw?.rawActionSequence));
+    && strictPrefix(rawActionSequence(action), rawActionSequence(candidate)));
   if (firstExactPaint && firstExactPaint.sequenceId !== target.sequenceId) behaviorErrors.push(`SUPERSESSION_NOT_EARLIEST_COVERING_PAINT:${action.sequenceId}`);
   const lag = target.sequenceId - action.sequenceId;
   if (lag > WEB06_THRESHOLDS.sustained.supersessionSequenceLag.max) behaviorErrors.push(`SUPERSESSION_LAG:${action.sequenceId}:${lag}`);
@@ -339,10 +759,10 @@ function recomputeActions(receipt, row, expected, calibrations, setupErrors, beh
   for (let index = 0; index < receipt.actions.length; index += 1) {
     const action = receipt.actions[index];
     const frozen = expected.actions[index];
-    const event = eventById.get(action.eventSequenceId);
+    const event = eventById.get(action.eventSequenceId ?? action.causedByEventSequenceId);
     if (!event) continue;
     validateSameRealmAction(action, event, behaviorErrors);
-    validateWorkerSpans(action, behaviorErrors);
+    validateWorkerSpans(action, receipt.mode, behaviorErrors);
     const corrected = crossContextAction(action, calibrations, setupErrors);
     if (!corrected) continue;
     if (corrected.driver && corrected.driver.correctedAt + corrected.driver.uncertainty > event.normalizedEventAt) {
@@ -377,8 +797,12 @@ function recomputeActions(receipt, row, expected, calibrations, setupErrors, beh
         + values.workerRoundtripMs + values.mainResponseDispatchMs + values.responseMappingMs
         + values.stateScheduleMs + values.reactCommitMs + values.paintProxyMs;
       values.timelineResidualMs = values.eventToCurrentPaintMs - sum;
-      if (action.outcome === "painted" && Math.abs(values.timelineResidualMs) > WEB06_THRESHOLDS.metric.timelineResidualAbsoluteMaxMs) {
-        behaviorErrors.push(`TIMELINE_RESIDUAL:${action.sequenceId}:${values.timelineResidualMs}`);
+      if (action.outcome === "painted") {
+        if (!finite(values.timelineResidualMs)) {
+          behaviorErrors.push(`TIMELINE_RESIDUAL_NONFINITE:${action.sequenceId}`);
+        } else if (Math.abs(values.timelineResidualMs) > WEB06_THRESHOLDS.metric.timelineResidualAbsoluteMaxMs) {
+          behaviorErrors.push(`TIMELINE_RESIDUAL:${action.sequenceId}:${values.timelineResidualMs}`);
+        }
       }
     }
     if (finite(action.terminalObservedAt)) {
@@ -444,22 +868,47 @@ function cadenceVerdict(receipt, row, behaviorErrors, setupErrors) {
 
 function frameVerdict(receipt, row, behaviorErrors, setupErrors) {
   const idle = receipt.idleFrameIntervalsMs ?? [];
+  if (idle.some((value) => !finite(value) || value <= 0)) setupErrors.push("SETUP_NONFINITE_IDLE_FRAME_INTERVAL");
   if (idle.length < WEB06_THRESHOLDS.frame.requiredIdleIntervals) setupErrors.push("SETUP_IDLE_FRAME_COUNT");
-  if (idle.length) {
+  if (idle.length && idle.every((value) => finite(value) && value > 0)) {
     const median = distributionSummary(idle).median;
     if (median < WEB06_THRESHOLDS.frame.idleMedianMs.min || median > WEB06_THRESHOLDS.frame.idleMedianMs.max) {
       setupErrors.push(`SETUP_IDLE_REFRESH_LANE:${median}`);
     }
   }
-  if (receipt.longTaskObserverSupported !== true) setupErrors.push("SETUP_LONG_TASK_OBSERVER_UNAVAILABLE");
-  if ((receipt.focusVisibilitySamples ?? []).some((sample) => !sample.focused || sample.visibilityState !== "visible")) {
+  const windows = receipt.interactionWindows ?? [];
+  if (!windows.length || windows.some((window) =>
+    !finite(window.startedAt) || !finite(window.endedAt) || window.endedAt < window.startedAt)) {
+    setupErrors.push("SETUP_INTERACTION_WINDOW_INVALID");
+  }
+  const observer = receipt.longTaskObserver;
+  const firstWindowAt = windows.length ? Math.min(...windows.map((window) => window.startedAt)) : undefined;
+  if (observer?.supported !== true || !finite(observer.installedAt)
+    || !finite(firstWindowAt) || observer.installedAt > firstWindowAt) {
+    setupErrors.push("SETUP_LONG_TASK_OBSERVER_UNAVAILABLE");
+  }
+  const focusSamples = receipt.focusVisibilitySamples ?? [];
+  if (!focusSamples.length || focusSamples.some((sample) =>
+    !finite(sample.recordedAt) || !sample.focused || sample.visibilityState !== "visible")) {
     setupErrors.push("SETUP_PAGE_NOT_FOREGROUND");
+  } else if (windows.length) {
+    const lastWindowAt = Math.max(...windows.map((window) => window.endedAt));
+    const recorded = focusSamples.map((sample) => sample.recordedAt);
+    if (Math.min(...recorded) > firstWindowAt || Math.max(...recorded) < lastWindowAt) {
+      setupErrors.push("SETUP_FOREGROUND_PROOF_DOES_NOT_SPAN_WINDOW");
+    }
   }
   const frames = receipt.interactionFrameIntervalsMs ?? [];
   if (!frames.length) setupErrors.push("SETUP_INTERACTION_FRAMES_MISSING");
+  if (frames.some((value) => !finite(value) || value <= 0)) setupErrors.push("SETUP_NONFINITE_INTERACTION_FRAME_INTERVAL");
+  if ((receipt.longTasks ?? []).some((task) =>
+    !finite(task.startTime) || !finite(task.durationMs) || task.durationMs < 0)) {
+    setupErrors.push("SETUP_NONFINITE_LONG_TASK");
+  }
   const binding = row.binding === true || row.binding === "branch-b-only";
-  const frameRed = binding && (frames.some((value) => value >= WEB06_THRESHOLDS.frame.rejectIntervalAtOrAboveMs)
-    || (frames.length && distributionSummary(frames).p99 > WEB06_THRESHOLDS.frame.p99Ms.max));
+  const finiteFrames = frames.filter((value) => finite(value) && value > 0);
+  const frameRed = binding && (finiteFrames.some((value) => value >= WEB06_THRESHOLDS.frame.rejectIntervalAtOrAboveMs)
+    || (finiteFrames.length && distributionSummary(finiteFrames).p99 > WEB06_THRESHOLDS.frame.p99Ms.max));
   const longTaskRed = binding && (receipt.longTasks ?? []).some((task) =>
     task.overlapsInteractionWindow && task.durationMs >= WEB06_THRESHOLDS.frame.rejectLongTaskAtOrAboveMs);
   if ((receipt.assetsRequestedDuringWindow ?? []).length) behaviorErrors.push("ASSET_REQUEST_DURING_WINDOW");
@@ -482,7 +931,8 @@ function thresholdVerdict(receipt, row, derivedActions, behaviorErrors) {
       }
     }
     if (step.sample === "terminal") {
-      const primary = stepActions[0];
+      const owner = terminalOwnerForStep(step, stepActions.map((action) => action.frozen));
+      const primary = stepActions.find((action) => action.sequenceId === owner?.sequenceId);
       if (!primary || !finite(primary.metrics.eventToTerminalObservationMs) || !finite(primary.metrics.driverDispatchToTerminalUpperBoundMs)) {
         behaviorErrors.push(`TERMINAL_SAMPLE_MISSING:${step.id}`);
       } else terminal.push({ ...primary.metrics, stressDeadline: primary.frozen.stressDeadline === true });
@@ -556,6 +1006,7 @@ export function validateAndRecomputeReceipt(receipt) {
   const setupErrors = [];
   const behaviorErrors = [];
   validateIdentity(receipt, setupErrors);
+  validateInternalMode(receipt, setupErrors);
   const row = SCENARIO_REGISTRY[receipt.scenarioId];
   if (!row) setupErrors.push("SETUP_UNKNOWN_SCENARIO");
   const privacy = validatePointerFreePrivacy(receipt);
@@ -564,7 +1015,7 @@ export function validateAndRecomputeReceipt(receipt) {
   const expected = validateTimelineShape(receipt, row, behaviorErrors);
   validateEventClock(receipt, setupErrors, behaviorErrors);
   const calibrations = calibrationFor(receipt, setupErrors);
-  validateOutcomes(receipt.actions ?? [], expected, row, behaviorErrors);
+  validateOutcomes(receipt.actions ?? [], expected, row, receipt.mode, behaviorErrors);
   let derivedActions = [];
   if (calibrations) {
     derivedActions = recomputeActions(receipt, row, expected, calibrations, setupErrors, behaviorErrors);
@@ -607,18 +1058,51 @@ export function evaluateFiveRoundPool(receipts) {
   const row = SCENARIO_REGISTRY[scenarioId];
   const pooledCovering = parsed.flatMap((result) => result.metrics.covering.map((sample) => sample.eventToCoveringPaintMs));
   const pooledPreService = parsed.flatMap((result) => result.metrics.covering.map((sample) => sample.preServiceWaitUpperBoundMs));
+  const pooledDriverCovering = parsed.flatMap((result) =>
+    result.metrics.covering.map((sample) => sample.driverDispatchToCoveringPaintUpperBoundMs));
+  const pooledTerminalSamples = parsed.flatMap((result) => result.metrics.terminal);
+  const pooledTerminal = pooledTerminalSamples.map((sample) => sample.eventToTerminalObservationMs);
+  const pooledDriverTerminal = parsed.flatMap((result) =>
+    result.metrics.terminal.filter((sample) => !sample.stressDeadline)
+      .map((sample) => sample.driverDispatchToTerminalUpperBoundMs));
+  const pooledFrames = receipts.flatMap((receipt) => receipt.interactionFrameIntervalsMs ?? []);
   const violations = [];
   if (["rapid-jyutping", "rapid-long-jyutping", "rapid-luna", "burst-jyutping", "burst-luna"].includes(row.id)) {
     violations.push(...evaluateThresholdDistribution(pooledCovering, WEB06_THRESHOLDS.sustained.eventToCoveringPaintMs, "pooled-covering").violations);
   }
-  if (row.binding === true && pooledPreService.length) {
+  if ((row.binding === true || row.binding === "branch-b-only") && pooledPreService.length) {
     violations.push(...evaluateThresholdDistribution(pooledPreService, WEB06_THRESHOLDS.sustained.preServiceWaitUpperBoundMs, "pooled-pre-service").violations);
+  }
+  if (row.binding === true || row.binding === "branch-b-only") {
+    if (pooledDriverCovering.some((value) => value > WEB06_THRESHOLDS.sustained.driverDispatchToCoveringPaintUpperBoundMs.max)) {
+      violations.push("pooled-driver-covering:max");
+    }
+    if (pooledTerminalSamples.some((sample) => sample.eventToTerminalObservationMs
+      > (sample.stressDeadline
+        ? WEB06_THRESHOLDS.terminal.persistenceStressCompletionMs.max
+        : WEB06_THRESHOLDS.terminal.eventToTerminalObservationMs.max))) {
+      violations.push("pooled-terminal:max");
+    }
+    if (pooledDriverTerminal.some((value) => value > WEB06_THRESHOLDS.terminal.driverDispatchToTerminalUpperBoundMs.max)) {
+      violations.push("pooled-driver-terminal:max");
+    }
+    if (pooledFrames.some((value) => value >= WEB06_THRESHOLDS.frame.rejectIntervalAtOrAboveMs)) {
+      violations.push("pooled-frame:max");
+    }
+    if (pooledFrames.length && distributionSummary(pooledFrames).p99 > WEB06_THRESHOLDS.frame.p99Ms.max) {
+      violations.push("pooled-frame:p99");
+    }
   }
   return {
     pass: parsed.every((result) => result.status === "PASS") && violations.length === 0,
     parsed,
     pooledCovering: pooledCovering.length ? distributionSummary(pooledCovering) : null,
     pooledPreService: pooledPreService.length ? distributionSummary(pooledPreService) : null,
+    pooledDriverCovering: pooledDriverCovering.length ? distributionSummary(pooledDriverCovering) : null,
+    pooledTerminal: pooledTerminal.length ? distributionSummary(pooledTerminal) : null,
+    pooledDriverTerminal: pooledDriverTerminal.length ? distributionSummary(pooledDriverTerminal) : null,
+    pooledFrames: pooledFrames.length ? distributionSummary(pooledFrames) : null,
+    pooledLongTaskCount: receipts.reduce((sum, receipt) => sum + (receipt.longTasks ?? []).filter((task) => task.overlapsInteractionWindow).length, 0),
     violations,
   };
 }

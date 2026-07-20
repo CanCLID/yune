@@ -10,6 +10,7 @@ import {
   WEB06_OBSERVER_COUNTERBALANCE,
   WEB06_THRESHOLDS,
   buildClockCalibration,
+  browserCodeForKey,
   classifyAttempt,
   computeDriverPageExchange,
   computeMainWorkerExchange,
@@ -57,11 +58,11 @@ test("frozen scenario counts, first-key rule, and action coverage are exact", ()
     correction: [5, 3, 8],
     "selection-paging": [10, 3, 13],
     "burst-action-map": [3, 5, 19],
-    "fifo-pressure-barriers": [16, 4, 20],
+    "fifo-pressure-barriers": [16, 7, 23],
     "learned-row": [11, 1, 13],
     "fair-peer-short": [2, 1, 3],
     "peer-sustained": [59, 1, 60],
-    "extended-scheduler-barriers": [5, 5, 10],
+    "extended-scheduler-barriers": [5, 10, 40],
   });
   for (const row of Object.values(SCENARIO_REGISTRY)) {
     assert.equal(row.firstKeyIncluded, true);
@@ -88,11 +89,45 @@ test("frozen scenario counts, first-key rule, and action coverage are exact", ()
   assert.deepEqual(Object.keys(ACTION_REGISTRY).sort(), [...ALL_ACTION_NAMES].sort());
   assert.equal(ACTION_REGISTRY.stageAi.classification, "adapter-only");
   const peerTimeline = expandScenarioExpectedTimeline("fair-peer-short");
-  assert.deepEqual(peerTimeline.actions.map((item) => item.args), [["{n}"], ["{i}"], [0]]);
+  assert.deepEqual(peerTimeline.actions.map((item) => item.args), [["{n}"], ["{i}"], ["{space}"]]);
+  assert.deepEqual(
+    peerTimeline.events.filter((item) => item.stepId === "peer-short-commit").map(({ type, key, code }) => ({ type, key, code })),
+    [
+      { type: "keydown", key: " ", code: "Space" },
+      { type: "keyup", key: " ", code: "Space" },
+    ],
+  );
   const pagingTimeline = expandScenarioExpectedTimeline("selection-paging");
   assert.ok(pagingTimeline.actions.some((item) => item.args[0] === "{Page_Down}"));
   assert.ok(pagingTimeline.actions.some((item) => item.args[0] === "{Page_Up}"));
   assert.deepEqual(expandScenarioExpectedTimeline("peer-sustained").actions.at(-1).args, ["{space}"]);
+
+  const fifo = SCENARIO_REGISTRY["fifo-pressure-barriers"];
+  assert.deepEqual(
+    fifo.steps.filter((step) => step.id.endsWith("-reset")).map((step) => step.id),
+    ["fifo-commit-reset", "fifo-select-reset", "fifo-page-reset"],
+  );
+  const fifoImport = fifo.steps.find((step) => step.id === "fifo-userdb-import");
+  assert.equal(fifoImport.domEventType, "change");
+  assert.match(fifoImport.actions[0].args[0], /^sha256:[0-9a-f]{64}$/);
+
+  const extended = SCENARIO_REGISTRY["extended-scheduler-barriers"];
+  const optionTarget = extended.steps.find((step) => step.id === "extended-option-target");
+  assert.equal(optionTarget.domEventType, "change");
+  assert.equal(optionTarget.actions.length, 12);
+  assert.deepEqual(optionTarget.actions.at(-2).args, ["extended_charset", true]);
+  const schemaTarget = extended.steps.find((step) => step.id === "extended-schema-target");
+  assert.deepEqual(schemaTarget.actions.slice(0, 4).map((action) => action.kind), ["selectSchema", "customize", "setOption", "deploy"]);
+  assert.deepEqual(schemaTarget.actions[2].args, ["soft_cursor", true]);
+  assert.equal(schemaTarget.actions.length, 15);
+  assert.equal(extended.steps.find((step) => step.id === "extended-deploy-target").publicDemoAvailability, "blocked-hidden-control");
+  assert.equal(extended.steps.find((step) => step.id === "extended-error-target").publicDemoAvailability, "blocked-hidden-control");
+
+  const deleteRule = EVENT_ACTION_RULES.find((rule) => rule.actions.includes("deleteCandidate"));
+  assert.deepEqual(
+    { event: deleteRule.event, condition: deleteRule.condition },
+    { event: "pointerdown", condition: "800ms hold without move/cancel" },
+  );
 });
 
 test("event expansion preserves exact zero/one/many mappings and Shift fan-out", () => {
@@ -101,9 +136,13 @@ test("event expansion preserves exact zero/one/many mappings and Shift fan-out",
   assert.equal(timeline.actions.length, 19);
   const shiftUp = timeline.events.find((event) => event.stepId === "action-map-shift-tap" && event.type === "keyup");
   const shiftDown = timeline.events.find((event) => event.stepId === "action-map-shift-tap" && event.type === "keydown");
-  assert.equal(shiftDown.classification, "frontend-consumed(pending-ascii-shift-tap)");
+  assert.deepEqual(
+    { classification: shiftDown.classification, reason: shiftDown.reason },
+    { classification: "frontend-consumed", reason: "ascii-mode-shift-keydown" },
+  );
   assert.deepEqual(shiftDown.mappedActionIds, []);
   assert.equal(shiftUp.classification, "mapped-action(s)");
+  assert.equal(shiftUp.reason, "ascii-mode-shift-tap");
   assert.equal(shiftUp.mappedActionIds.length, 12);
   assert.deepEqual(
     timeline.actions.filter((action) => action.eventSequenceId === shiftUp.eventSequenceId).map((action) => action.kind),
@@ -123,6 +162,25 @@ test("event expansion preserves exact zero/one/many mappings and Shift fan-out",
     ["extended_charset", false],
     ["disabled", false],
   ]);
+});
+
+test("browser key/code identity is frozen for letters, digits, Space, and specials", () => {
+  assert.equal(browserCodeForKey("n"), "KeyN");
+  assert.equal(browserCodeForKey("2"), "Digit2");
+  assert.equal(browserCodeForKey(" "), "Space");
+  assert.equal(browserCodeForKey("Backspace"), "Backspace");
+  assert.equal(browserCodeForKey("PageDown"), "PageDown");
+  assert.throws(() => browserCodeForKey("UnreviewedKey"), /UNFROZEN_BROWSER_KEY_CODE/);
+
+  const selection = expandScenarioExpectedTimeline("selection-paging");
+  const digit = selection.events.find((event) => event.stepId === "selection-ni-digit-2" && event.type === "keydown");
+  assert.deepEqual(
+    { key: digit.key, code: digit.code, classification: digit.classification, reason: digit.reason },
+    { key: "2", code: "Digit2", classification: "mapped-action(s)", reason: "composition-digit-selection" },
+  );
+  const correction = expandScenarioExpectedTimeline("correction");
+  const space = correction.events.find((event) => event.stepId === "correction-commit" && event.type === "keydown");
+  assert.deepEqual({ key: space.key, code: space.code }, { key: " ", code: "Space" });
 });
 
 test("nearest-rank arithmetic uses ceil((n - 1) * p) without interpolation", () => {

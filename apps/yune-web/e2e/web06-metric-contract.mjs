@@ -121,8 +121,18 @@ function action(kind, args = [], extra = {}) {
   };
 }
 
+export function browserCodeForKey(key) {
+  if (/^[A-Za-z]$/.test(key)) return `Key${key.toUpperCase()}`;
+  if (/^[0-9]$/.test(key)) return `Digit${key}`;
+  if (key === " ") return "Space";
+  if (["Backspace", "Delete", "Escape", "PageDown", "PageUp", "ArrowDown", "ArrowUp", "Enter", "Tab"].includes(key)) {
+    return key;
+  }
+  throw new Error(`WEB06_UNFROZEN_BROWSER_KEY_CODE:${JSON.stringify(key)}`);
+}
+
 function keyboardStep(id, key, {
-  code = key.length === 1 ? `Key${key.toUpperCase()}` : key,
+  code = browserCodeForKey(key),
   actions,
   sample = "none",
   cadence = "sustained60",
@@ -184,6 +194,7 @@ function digitSelectStep(id, digit = "1", {
     actions.push(action("getUserdbSnapshot", [], {
       inputClass: "commit-triggered-userdb-refresh",
       background: true,
+      originReason: "commit-triggered-userdb-refresh",
     }));
   }
   return keyboardStep(id, digit, {
@@ -194,21 +205,39 @@ function digitSelectStep(id, digit = "1", {
   });
 }
 
-function directActionStep(id, kind, args, {
+function directActionsStep(id, actions, {
   sample = "terminal",
   subcase,
   inputClass = "control-barrier",
   stressDeadline = false,
+  domEventType,
+  control,
+  publicDemoAvailability = "available",
 } = {}) {
+  if (!["change", "click", "submit"].includes(domEventType)) {
+    throw new Error(`WEB06_CONTROL_DOM_EVENT_REQUIRED:${id}`);
+  }
   return {
     id,
     source: "control",
+    domEventType,
+    control,
+    publicDemoAvailability,
     domEventCount: 1,
     cadence: "same-task-pressure",
     sample,
     subcase,
-    actions: [action(kind, args, { inputClass, stressDeadline })],
+    actions: actions.map((item) => action(item.kind, item.args, {
+      inputClass: item.inputClass ?? inputClass,
+      stressDeadline: item.stressDeadline ?? stressDeadline,
+      background: item.background,
+    })),
   };
+}
+
+
+function directActionStep(id, kind, args, options) {
+  return directActionsStep(id, [{ kind, args }], options);
 }
 
 function repeatPhrase(prefix, text, cadence) {
@@ -262,6 +291,7 @@ function scenario(id, definition) {
 const PRIMARY_JYUTPING = "ngodeigungsijigaahaidoumaaigangeihaaijansougeoi";
 const LONG_JYUTPING = "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng";
 const RAPID_LUNA = "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong";
+export const EMPTY_USERDB_FIXTURE_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
 const CORRECTION_STEPS = [
   ...printableSteps("correction-pre", "nri", "sustained60", "pre-delete"),
@@ -312,16 +342,21 @@ const FIFO_PRESSURE_STEPS = [
   ...printableSteps("fifo-commit-prefix", "ni", "same-task-pressure", "commit-then-type"),
   specialKeyStep("fifo-commit", " ", "space", { cadence: "same-task-pressure", subcase: "commit-then-type" }),
   ...printableSteps("fifo-commit-later", "h", "same-task-pressure", "commit-then-type"),
+  specialKeyStep("fifo-commit-reset", "Escape", "Escape", { cadence: "after-exact-final-paint", subcase: "commit-then-type" }),
   ...printableSteps("fifo-select-prefix", "ni", "same-task-pressure", "digit-select-then-type"),
   digitSelectStep("fifo-select", "1", { cadence: "same-task-pressure", subcase: "digit-select-then-type" }),
   ...printableSteps("fifo-select-later", "h", "same-task-pressure", "digit-select-then-type"),
+  specialKeyStep("fifo-select-reset", "Escape", "Escape", { cadence: "after-exact-final-paint", subcase: "digit-select-then-type" }),
   ...printableSteps("fifo-page-prefix", "zhongguo", "same-task-pressure", "page-then-type"),
   specialKeyStep("fifo-page", "PageDown", "Page_Down", { cadence: "same-task-pressure", subcase: "page-then-type" }),
   ...printableSteps("fifo-page-later", "h", "same-task-pressure", "page-then-type"),
-  directActionStep("fifo-userdb-import", "importUserdb", ["sha256:fixed-empty-userdb-fixture"], {
+  specialKeyStep("fifo-page-reset", "Escape", "Escape", { cadence: "after-exact-final-paint", subcase: "page-then-type" }),
+  directActionStep("fifo-userdb-import", "importUserdb", [`sha256:${EMPTY_USERDB_FIXTURE_SHA256}`], {
     subcase: "persistence-then-type",
     inputClass: "persistence-stress",
     stressDeadline: true,
+    domEventType: "change",
+    control: "[data-yune-userdb-import-input]",
   }),
   ...printableSteps("fifo-userdb-later", "n", "same-task-pressure", "persistence-then-type"),
 ];
@@ -341,16 +376,86 @@ const LEARNED_STEPS = [
   ...printableSteps("learned-probe", "ngo", "sustained60", "post-reload-rapid-probe"),
 ];
 
+const DEFAULT_DEPLOY_PREFERENCES = deepFreeze({
+  pageSize: 6,
+  enableCompletion: true,
+  enableCorrection: false,
+  enableSentence: true,
+  enableLearning: true,
+  combineCandidates: true,
+  predictionNeverFirst: true,
+  predictionThreshold: 0,
+  dictionaryExclude: [],
+  isCangjie5: true,
+});
+
+function liveOptionDescriptors({ asciiMode = false, extendedCharset = false } = {}) {
+  return SHIFT_TAP_LIVE_OPTION_ACTIONS.map(([option, defaultValue]) => ({
+    kind: "setOption",
+    args: [
+      option,
+      option === "ascii_mode" ? asciiMode
+        : option === "extended_charset" ? extendedCharset
+          : defaultValue,
+    ],
+    inputClass: "live-option-fanout-barrier",
+  }));
+}
+
 const EXTENDED_BARRIERS = [
-  ["option", "setOption", ["ascii_mode", false]],
-  ["schema", "selectSchema", ["luna_pinyin"]],
-  ["deploy", "deploy", []],
-  ["persistence", "importUserdb", ["sha256:fixed-empty-userdb-fixture"]],
-  ["error", "customizeValue", ["default", "web06/injected_error", "true"]],
-].flatMap(([name, kind, args]) => [
-  ...printableSteps(`extended-${name}-earlier`, "n", "same-task-pressure", `${name}-barrier`),
-  directActionStep(`extended-${name}-target`, kind, args, { subcase: `${name}-barrier` }),
-]);
+  ...printableSteps("extended-option-earlier", "n", "same-task-pressure", "option-barrier"),
+  directActionsStep("extended-option-target", liveOptionDescriptors({ extendedCharset: true }), {
+    subcase: "option-barrier",
+    domEventType: "change",
+    control: "[data-yune-section='live'] input[type='checkbox']",
+  }),
+  specialKeyStep("extended-option-reset", "Escape", "Escape", { cadence: "after-exact-final-paint", subcase: "option-barrier" }),
+
+  ...printableSteps("extended-schema-earlier", "n", "same-task-pressure", "schema-barrier"),
+  directActionsStep("extended-schema-target", (() => {
+    const liveOptions = liveOptionDescriptors();
+    return [
+      { kind: "selectSchema", args: ["luna_pinyin"], inputClass: "schema-change-barrier" },
+      { kind: "customize", args: [DEFAULT_DEPLOY_PREFERENCES], inputClass: "schema-deploy-preference-barrier" },
+      liveOptions[0],
+      { kind: "deploy", args: [], inputClass: "schema-deploy-barrier" },
+      ...liveOptions.slice(1),
+    ];
+  })(), {
+    subcase: "schema-barrier",
+    domEventType: "change",
+    control: "[data-yune-schema-switcher] select",
+  }),
+  specialKeyStep("extended-schema-reset", "Escape", "Escape", { cadence: "after-exact-final-paint", subcase: "schema-barrier" }),
+
+  ...printableSteps("extended-deploy-earlier", "n", "same-task-pressure", "deploy-barrier"),
+  directActionStep("extended-deploy-target", "deploy", [], {
+    subcase: "deploy-barrier",
+    domEventType: "click",
+    control: "[data-yune-control-redeploy]",
+    publicDemoAvailability: "blocked-hidden-control",
+  }),
+  specialKeyStep("extended-deploy-reset", "Escape", "Escape", { cadence: "after-exact-final-paint", subcase: "deploy-barrier" }),
+
+  ...printableSteps("extended-persistence-earlier", "n", "same-task-pressure", "persistence-barrier"),
+  directActionStep("extended-persistence-target", "importUserdb", [`sha256:${EMPTY_USERDB_FIXTURE_SHA256}`], {
+    subcase: "persistence-barrier",
+    inputClass: "persistence-stress",
+    stressDeadline: true,
+    domEventType: "change",
+    control: "[data-yune-userdb-import-input]",
+  }),
+  specialKeyStep("extended-persistence-reset", "Escape", "Escape", { cadence: "after-exact-final-paint", subcase: "persistence-barrier" }),
+
+  ...printableSteps("extended-error-earlier", "n", "same-task-pressure", "error-barrier"),
+  directActionStep("extended-error-target", "customizeValue", ["default", "web06/injected_error", "true"], {
+    subcase: "error-barrier",
+    domEventType: "submit",
+    control: "[data-yune-control-customize-value-form]",
+    publicDemoAvailability: "blocked-hidden-control",
+  }),
+  specialKeyStep("extended-error-reset", "Escape", "Escape", { cadence: "after-exact-final-paint", subcase: "error-barrier" }),
+];
 
 export const SCENARIO_REGISTRY = deepFreeze({
   "existing-normal-guard": scenario("existing-normal-guard", {
@@ -467,7 +572,7 @@ export const SCENARIO_REGISTRY = deepFreeze({
     cadence: "sustained60",
     steps: [
       ...printableSteps("peer-short", "ni", "sustained60", "candidate"),
-      digitSelectStep("peer-short-commit", "1", { subcase: "commit" }),
+      specialKeyStep("peer-short-commit", " ", "space", { cadence: "after-exact-final-paint", subcase: "commit" }),
     ],
   }),
   "peer-sustained": scenario("peer-sustained", {
@@ -504,7 +609,7 @@ export const EVENT_ACTION_RULES = deepFreeze([
   { id: "modifier-release-keyup", event: "keyup", condition: "composition-active-and-not-shift-tap", classification: "mapped-action(s)", actions: ["processKey"] },
   { id: "escape-cancel-keydown", event: "keydown", classification: "mapped-action(s)", actions: ["processKey"] },
   { id: "candidate-click", event: "click", classification: "mapped-action(s)", actions: ["selectCandidate"] },
-  { id: "candidate-delete", event: "contextmenu", classification: "mapped-action(s)", actions: ["deleteCandidate"] },
+  { id: "candidate-delete-long-press", event: "pointerdown", condition: "800ms hold without move/cancel", classification: "mapped-action(s) after long-press", actions: ["deleteCandidate"] },
   { id: "page-button", event: "click", classification: "mapped-action(s)", actions: ["flipPage"] },
   { id: "live-option-control", event: "change", classification: "mapped-action(s)", actions: ["setOption"] },
   { id: "schema-control", event: "change", classification: "mapped-action(s)", actions: ["selectSchema"] },
@@ -518,6 +623,38 @@ export const EVENT_ACTION_RULES = deepFreeze([
   { id: "deploy-cache-invalidate-control", event: "click", classification: "mapped-action(s)", actions: ["invalidateDeployCache"] },
   { id: "injected-assets-read-background", event: "background", classification: "mapped-action(s)", actions: ["injectedAssetsManifest"] },
 ]);
+
+function keyboardEventExpectation(step, type) {
+  if (step.code.startsWith("Shift")) {
+    return type === "keydown"
+      ? { classification: "frontend-consumed", reason: "ascii-mode-shift-keydown" }
+      : { classification: "mapped-action(s)", reason: "ascii-mode-shift-tap" };
+  }
+  const primary = step.actions[0];
+  if (type === "keyup") {
+    return /^[0-9]$/.test(step.key) && primary?.kind === "selectCandidate"
+      ? { classification: "frontend-consumed", reason: "composition-digit-keyup-follows-keydown" }
+      : { classification: "browser-pass-through", reason: "unmapped-keyup" };
+  }
+  if (primary?.kind === "selectCandidate") {
+    return { classification: "mapped-action(s)", reason: "composition-digit-selection" };
+  }
+  if (primary?.kind === "processKey") {
+    if (primary.supersedable) return { classification: "mapped-action(s)", reason: "printable-key" };
+    const rimeKey = String(primary.args[0] ?? "").replace(/^\{|\}$/g, "");
+    const boundary = rimeKey === "BackSpace" || rimeKey === "Delete"
+      ? "correction"
+      : rimeKey === "Page_Down" || rimeKey === "Page_Up" || rimeKey === "Down" || rimeKey === "Up"
+        ? "paging"
+        : rimeKey === "space" || rimeKey === "Return"
+          ? "commit"
+          : rimeKey === "Escape"
+            ? "cancel"
+            : "none";
+    return { classification: "mapped-action(s)", reason: `rime-key:${boundary}` };
+  }
+  return { classification: "browser-pass-through", reason: "unmapped-keydown" };
+}
 
 export function expandScenarioExpectedTimeline(scenarioId) {
   const row = SCENARIO_REGISTRY[scenarioId];
@@ -533,15 +670,16 @@ export function expandScenarioExpectedTimeline(scenarioId) {
       const actionEventSequenceId = step.code === "ShiftLeft" || step.code === "ShiftRight"
         ? eventIds[1]
         : eventIds[0];
+      const keydown = keyboardEventExpectation(step, "keydown");
+      const keyup = keyboardEventExpectation(step, "keyup");
       events.push({
         eventSequenceId: eventIds[0],
         stepId: step.id,
         type: "keydown",
         key: step.key,
         code: step.code,
-        classification: step.code.startsWith("Shift")
-          ? "frontend-consumed(pending-ascii-shift-tap)"
-          : step.actions.length ? "mapped-action(s)" : "browser-pass-through",
+        classification: keydown.classification,
+        reason: keydown.reason,
         mappedActionIds: [],
       });
       events.push({
@@ -550,33 +688,59 @@ export function expandScenarioExpectedTimeline(scenarioId) {
         type: "keyup",
         key: step.key,
         code: step.code,
-        classification: step.code.startsWith("Shift")
-          ? "mapped-action(s)"
-          : /^[0-9]$/.test(step.key) && step.actions[0]?.kind === "selectCandidate"
-            ? "frontend-consumed(digit-release)"
-            : "browser-pass-through",
+        classification: keyup.classification,
+        reason: keyup.reason,
         mappedActionIds: [],
       });
       for (const expected of step.actions) {
         sequenceId += 1;
         const actionId = `a${sequenceId}`;
-        actions.push({ ...expected, actionId, sequenceId, eventSequenceId: actionEventSequenceId, stepId: step.id });
-        events[actionEventSequenceId - 1].mappedActionIds.push(actionId);
+        const causedBy = expected.background === true
+          ? [...actions].reverse().find(candidate => candidate.stepId === step.id && candidate.background !== true)
+          : undefined;
+        actions.push({
+          ...expected,
+          actionId,
+          sequenceId,
+          eventSequenceId: expected.background === true ? undefined : actionEventSequenceId,
+          originKind: expected.background === true ? "background" : "dom-event",
+          originReason: expected.background === true ? expected.originReason : events[actionEventSequenceId - 1].reason,
+          causedByActionId: causedBy?.actionId,
+          causedBySequenceId: causedBy?.sequenceId,
+          causedByEventSequenceId: expected.background === true ? actionEventSequenceId : undefined,
+          stepId: step.id,
+        });
+        if (expected.background !== true) events[actionEventSequenceId - 1].mappedActionIds.push(actionId);
       }
     } else {
       const id = ++eventSequenceId;
       events.push({
         eventSequenceId: id,
         stepId: step.id,
-        type: step.source,
+        type: step.domEventType ?? step.source,
         classification: step.actions.length ? "mapped-action(s)" : "browser-pass-through",
+        reason: step.eventReason ?? step.id,
         mappedActionIds: [],
       });
       for (const expected of step.actions) {
         sequenceId += 1;
         const actionId = `a${sequenceId}`;
-        actions.push({ ...expected, actionId, sequenceId, eventSequenceId: id, stepId: step.id });
-        events[id - 1].mappedActionIds.push(actionId);
+        const causedBy = expected.background === true
+          ? [...actions].reverse().find(candidate => candidate.stepId === step.id && candidate.background !== true)
+          : undefined;
+        actions.push({
+          ...expected,
+          actionId,
+          sequenceId,
+          eventSequenceId: expected.background === true ? undefined : id,
+          originKind: expected.background === true ? "background" : "dom-event",
+          originReason: expected.background === true ? expected.originReason : events[id - 1].reason,
+          causedByActionId: causedBy?.actionId,
+          causedBySequenceId: causedBy?.sequenceId,
+          causedByEventSequenceId: expected.background === true ? id : undefined,
+          stepId: step.id,
+        });
+        if (expected.background !== true) events[id - 1].mappedActionIds.push(actionId);
       }
     }
   }
@@ -608,11 +772,11 @@ export function validateFrozenContract() {
     correction: [5, 3],
     "selection-paging": [10, 3],
     "burst-action-map": [3, 5],
-    "fifo-pressure-barriers": [16, 4],
+    "fifo-pressure-barriers": [16, 7],
     "learned-row": [11, 1],
     "fair-peer-short": [2, 1],
     "peer-sustained": [59, 1],
-    "extended-scheduler-barriers": [5, 5],
+    "extended-scheduler-barriers": [5, 10],
   };
   for (const [id, [covering, terminal]] of Object.entries(exactCounts)) {
     const row = SCENARIO_REGISTRY[id];

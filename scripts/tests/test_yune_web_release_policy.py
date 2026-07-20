@@ -57,6 +57,8 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
             "apps/yune-web/e2e/playwright.web06.config.ts",
             "apps/yune-web/e2e/run-public-web06-gate.mjs",
             "apps/yune-web/e2e/run-public-web06-gate.test.mjs",
+            "apps/yune-web/e2e/verify_archive_dist_identity.py",
+            "apps/yune-web/e2e/test_verify_archive_dist_identity.py",
             "apps/yune-web/public-demo/certify-public-release.sh",
         ):
             with self.subTest(path=path):
@@ -111,6 +113,13 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
         self.assertEqual(certify.count(web06), 1)
         self.assertLess(certify.index(web03), certify.index(web06))
         self.assertIn('ln -s "$certified_dist_root" "$DEFAULT_DIST"', certify)
+        self.assertIn("verify_archive_dist_identity.py", certify)
+        self.assertIn('--archive "$configured_archive"', certify)
+        self.assertIn('--dist "$certified_dist_input"', certify)
+        self.assertIn(
+            '--expected-archive-sha256 "$certified_archive_sha256"', certify
+        )
+        self.assertIn("archive-dist-identity.json", certify)
         self.assertLess(
             certify.index('mv -- "$DEFAULT_DIST" "$alias_temp/build-output-dist"'),
             certify.index("aliased_default_dist=true"),
@@ -119,15 +128,24 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
             certify.index("aliased_default_dist=true"),
             certify.index('ln -s "$certified_dist_root" "$DEFAULT_DIST"'),
         )
-        self.assertIn('export YUNE_WEB_WEB06_DIST_ROOT="$certified_dist_root"', certify)
+        self.assertNotIn('export YUNE_WEB_WEB06_DIST_ROOT="$certified_dist_root"', certify)
+        self.assertIn('export YUNE_WEB_CERTIFIED_ARCHIVE="$configured_archive"', certify)
+        self.assertIn(
+            'export YUNE_WEB_CERTIFIED_ARCHIVE_SHA256="$certified_archive_sha256"',
+            certify,
+        )
         self.assertNotIn("build-public-release.sh", certify)
 
-    def test_preview_canary_precedes_same_archive_production_hash_verification(self):
+    def test_preview_stops_and_manual_production_reuses_prior_run_bytes(self):
         workflow = (
             REPO_ROOT / ".github" / "workflows" / "deploy-yune-web.yml"
         ).read_text(encoding="utf-8")
         preview_canary = workflow_job(workflow, "preview-canary")
+        classify = workflow_job(workflow, "classify")
         authorize_production = workflow_job(workflow, "authorize-production")
+        validate_approved_preview = workflow_job(
+            workflow, "validate-approved-preview"
+        )
         deploy_preview = workflow_job(workflow, "deploy-preview")
         deploy_production = workflow_job(workflow, "deploy-production")
         verify_production = workflow_job(workflow, "verify-production")
@@ -145,9 +163,7 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
         self.assertIn(
             "name: ${{ needs.build-certify.outputs.artifact_name }}", preview_canary
         )
-        self.assertIn(
-            "YUNE_WEB_WEB06_DIST_ROOT=%s/preview-certified-dist", preview_canary
-        )
+        self.assertNotIn("YUNE_WEB_WEB06_DIST_ROOT", preview_canary)
         self.assertIn(
             "YUNE_WEB_CERTIFIED_ARCHIVE=%s/preview-release/yune-web-dist.tar.gz",
             preview_canary,
@@ -159,23 +175,103 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
                 "Run unchanged WEB03 and frozen WEB06 preview canaries once"
             ),
         )
-        self.assertIn("needs: preview-canary", authorize_production)
+        self.assertNotIn("needs: preview-canary", authorize_production)
+        self.assertIn(
+            "if: github.event_name == 'push' || inputs.operation == 'setup-retry'",
+            classify,
+        )
+        self.assertIn(
+            "if: github.event_name == 'workflow_dispatch' && inputs.operation == 'production-promotion'",
+            authorize_production,
+        )
+        self.assertIn("PROMOTE_EXACT_PREVIEW_BYTES", authorize_production)
+        self.assertIn("must contain non-whitespace text", authorize_production)
+        self.assertIn("production_approval_record", workflow)
+        self.assertIn(
+            'gh api "repos/$GITHUB_REPOSITORY/actions/runs/$APPROVED_PREVIEW_RUN_ID"',
+            authorize_production,
+        )
+        self.assertIn('.conclusion == "success"', authorize_production)
+        self.assertIn('.run_attempt == 1', authorize_production)
+        self.assertIn('.head_sha == $sha', authorize_production)
+        self.assertIn('.path == $workflow_path', authorize_production)
+        self.assertIn(
+            "artifact_name=yune-web-release-%s-%s-1", authorize_production
+        )
+        self.assertIn(
+            "canary_artifact_name=yune-web-preview-canary-%s-%s-1",
+            authorize_production,
+        )
+        self.assertIn(
+            "preview_deployment_artifact_name=yune-web-preview-deployment-%s-%s-1",
+            authorize_production,
+        )
+
+        self.assertIn("needs: authorize-production", validate_approved_preview)
+        self.assertEqual(validate_approved_preview.count("run-id:"), 3)
+        self.assertIn("approved-preview-deployment/deployment.json", validate_approved_preview)
+        self.assertIn("approved-preview-deployment/project-interlock.json", validate_approved_preview)
+        self.assertIn(
+            "web06-preview-reconciliation-status.json", validate_approved_preview
+        )
+        self.assertIn("web06-public-gate-status.json", validate_approved_preview)
+        self.assertIn('web03Status == "passed"', validate_approved_preview)
+        self.assertIn(
+            'web06ExistingNormalGuardRapidJyutpingStatus == "passed"',
+            validate_approved_preview,
+        )
+        self.assertIn("node apps/yune-web/e2e/verify-local-artifact.mjs", validate_approved_preview)
         self.assertIn("environment: yune-web-production", deploy_production)
 
+        self.assertIn(
+            "name: ${{ needs.build-certify.outputs.artifact_name }}", deploy_preview
+        )
+        self.assertIn(
+            "EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}",
+            deploy_preview,
+        )
+        self.assertIn("- validate-approved-preview", deploy_production)
+        self.assertNotIn("- build-certify", deploy_production)
+        self.assertIn(
+            "name: ${{ needs.authorize-production.outputs.artifact_name }}",
+            deploy_production,
+        )
+        self.assertIn(
+            "EXPECTED_ARCHIVE_SHA256: ${{ needs.authorize-production.outputs.archive_sha256 }}",
+            deploy_production,
+        )
+        self.assertIn(
+            "run-id: ${{ needs.authorize-production.outputs.preview_run_id }}",
+            deploy_production,
+        )
+        self.assertNotIn(
+            "${{ inputs.production_approval_record }}",
+            deploy_production[deploy_production.index("    steps:") :],
+        )
         for deployment in (deploy_preview, deploy_production):
-            self.assertIn(
-                "name: ${{ needs.build-certify.outputs.artifact_name }}", deployment
-            )
-            self.assertIn(
-                "EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}",
-                deployment,
-            )
             self.assertNotIn("build-public-release.sh", deployment)
 
         for production in (deploy_production, verify_production):
             self.assertNotIn("playwright", production.lower())
             self.assertNotIn("test:e2e", production)
         self.assertIn("node apps/yune-web/e2e/verify-deployed-artifact.mjs", verify_production)
+
+    def test_local_fallback_retains_archive_and_evidence_outside_worktrees(self):
+        certify = (
+            REPO_ROOT
+            / "apps"
+            / "yune-web"
+            / "public-demo"
+            / "certify-public-release.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn("new_persistent_external_root", certify)
+        self.assertIn("evidence-output-path.py default", certify)
+        self.assertIn("evidence-output-path.py validate", certify)
+        self.assertIn("YUNE_WEB_CERTIFICATION_ROOT", certify)
+        self.assertIn("Retained WEB06 certification archive and evidence", certify)
+        self.assertNotIn("certification_temp", certify)
+        cleanup = certify[certify.index("cleanup() {") : certify.index("trap cleanup EXIT")]
+        self.assertNotIn("persistent_certification_root", cleanup)
 
     def test_classifier_credentials_and_cloudflare_interlocks_remain_partitioned(self):
         workflow = (
@@ -220,6 +316,10 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
             scripts["test:e2e:web06:preview-canary"],
             "node run-public-web06-gate.mjs --scope preview-canary",
         )
+        self.assertEqual(
+            scripts["test:web06-release-plumbing"],
+            "node --test run-public-web06-gate.test.mjs public-artifact-verifier.test.mjs && python3 -B -m unittest test_verify_archive_dist_identity.py",
+        )
 
         runner = (
             REPO_ROOT / "apps" / "yune-web" / "e2e" / "run-public-web06-gate.mjs"
@@ -229,14 +329,18 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
         self.assertIn('expectedPreviewScenarios: "existing-normal-guard,rapid-jyutping"', runner)
         self.assertIn('"playwright.web06.config.ts"', runner)
         self.assertIn('"yune-web06-smoothness.spec.ts"', runner)
-        self.assertIn('requiredString(environment, "YUNE_WEB_WEB06_DIST_ROOT")', runner)
+        self.assertIn("supplied artifact roots are forbidden", runner)
         self.assertIn('requiredString(environment, "YUNE_WEB_CERTIFIED_ARCHIVE")', runner)
         self.assertIn("validateArchive", runner)
+        self.assertIn("extractCertifiedArchive", runner)
+        self.assertIn("safeExtractionProgram", runner)
         self.assertIn("validateLocalBundle", runner)
         self.assertIn("reconcileRemoteBundle", runner)
         self.assertIn("validateRemoteMetadata", runner)
         self.assertIn("validateRemoteFile", runner)
         self.assertIn("evidence-output-path.py", runner)
+        self.assertIn("assertNoSymlinkComponents", runner)
+        self.assertIn("assertStrictDescendant", runner)
         for forbidden in ("build-public-release.sh", "build:public", "wasm-build"):
             self.assertNotIn(forbidden, runner)
 

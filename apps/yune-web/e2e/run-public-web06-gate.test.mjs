@@ -1,24 +1,31 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  lstat,
   mkdir,
   mkdtemp,
   readFile,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 import {
   gateScopes,
   main,
+  prepareOutputPaths,
   resolveGateContract,
   validateArchive,
   validateRemoteFile,
   validateRemoteBuildInfo,
   validateRemoteMetadata,
 } from "./run-public-web06-gate.mjs";
+
+const execFileAsync = promisify(execFile);
 
 const sourceCommit = "0123456789abcdef0123456789abcdef01234567";
 const archiveSha256 = "a".repeat(64);
@@ -85,16 +92,15 @@ function baseEnvironment() {
   };
 }
 
-test("full scope requires and binds an extracted artifact root", () => {
+test("full scope binds the archive and reserves a runner-owned extraction root", () => {
   const contract = resolveGateContract({
     ...baseEnvironment(),
-    YUNE_WEB_WEB06_DIST_ROOT: "/tmp/yune-web06-dist",
     YUNE_WEB_WEB06_PREVIEW_PORT: "4317",
   });
   assert.equal(contract.scope, "full");
   assert.equal(contract.grep, "@web06-full");
   assert.equal(contract.appUrl, "http://127.0.0.1:4317/");
-  assert.equal(contract.distRoot, "/tmp/yune-web06-dist");
+  assert.equal(contract.distRoot, null);
   assert.equal(contract.archiveSha256, archiveSha256);
   assert.equal(contract.archivePath, "/tmp/yune-web06-dist.tar.gz");
 });
@@ -104,13 +110,12 @@ test("preview canary is the frozen existing-normal-guard/rapid-jyutping scope", 
     {
       ...baseEnvironment(),
       YUNE_WEB_APP_URL: "https://preview.example.invalid/candidate/",
-      YUNE_WEB_WEB06_DIST_ROOT: "/tmp/yune-web06-sealed-dist",
     },
     ["--scope", "preview-canary"],
   );
   assert.equal(contract.scope, "preview-canary");
   assert.equal(contract.grep, "@web06-preview-canary");
-  assert.equal(contract.distRoot, "/tmp/yune-web06-sealed-dist");
+  assert.equal(contract.distRoot, null);
   assert.equal(contract.appUrl, "https://preview.example.invalid/candidate/");
   assert.equal(
     contract.expectedPreviewScenarios,
@@ -122,7 +127,6 @@ test("preview canary is the frozen existing-normal-guard/rapid-jyutping scope", 
         {
           ...baseEnvironment(),
           YUNE_WEB_APP_URL: "http://preview.example.invalid/",
-          YUNE_WEB_WEB06_DIST_ROOT: "/tmp/yune-web06-sealed-dist",
         },
         ["--scope", "preview-canary"],
       ),
@@ -135,7 +139,6 @@ test("preview reconciliation preflight has no measurement scope", () => {
     {
       ...baseEnvironment(),
       YUNE_WEB_APP_URL: "https://preview.example.invalid/",
-      YUNE_WEB_WEB06_DIST_ROOT: "/tmp/yune-web06-sealed-dist",
     },
     ["--scope=preview-canary", "--verify-only"],
   );
@@ -146,7 +149,6 @@ test("preview reconciliation preflight has no measurement scope", () => {
       resolveGateContract(
         {
           ...baseEnvironment(),
-          YUNE_WEB_WEB06_DIST_ROOT: "/tmp/yune-web06-sealed-dist",
         },
         ["--verify-only"],
       ),
@@ -157,8 +159,12 @@ test("preview reconciliation preflight has no measurement scope", () => {
 test("scope contracts remain disjoint and fail closed", () => {
   assert.deepEqual(Object.keys(gateScopes), ["full", "preview-canary"]);
   assert.throws(
-    () => resolveGateContract(baseEnvironment()),
-    /YUNE_WEB_WEB06_DIST_ROOT is required/,
+    () =>
+      resolveGateContract({
+        ...baseEnvironment(),
+        YUNE_WEB_WEB06_DIST_ROOT: "/tmp/untrusted-dist",
+      }),
+    /runner-owned.*forbidden/,
   );
   assert.throws(
     () =>
@@ -177,7 +183,6 @@ test("scope contracts remain disjoint and fail closed", () => {
         {
           ...baseEnvironment(),
           YUNE_WEB_APP_URL: "https://preview.example.invalid/",
-          YUNE_WEB_WEB06_DIST_ROOT: "/tmp/dist",
           YUNE_WEB_WEB06_GATE_SCOPE: "full",
         },
         ["--scope=preview-canary"],
@@ -192,7 +197,6 @@ test("source and archive identity must be complete lowercase hashes", () => {
       resolveGateContract({
         ...baseEnvironment(),
         YUNE_WEB_EXPECTED_SOURCE_COMMIT: sourceCommit.toUpperCase(),
-        YUNE_WEB_WEB06_DIST_ROOT: "/tmp/dist",
       }),
     /40-character SHA/,
   );
@@ -201,7 +205,6 @@ test("source and archive identity must be complete lowercase hashes", () => {
       resolveGateContract({
         ...baseEnvironment(),
         YUNE_WEB_CERTIFIED_ARCHIVE_SHA256: "a".repeat(63),
-        YUNE_WEB_WEB06_DIST_ROOT: "/tmp/dist",
       }),
     /64-character SHA/,
   );
@@ -221,21 +224,78 @@ test("archive bytes and sibling digest must share the frozen identity", async ()
       validateArchive({ archivePath, archiveSha256: digest }),
       /do not match their frozen SHA-256 identity/,
     );
+    await writeFile(archivePath, bytes);
+    const digestTarget = path.join(root, "digest.txt");
+    await writeFile(digestTarget, `${digest}\n`);
+    await rm(`${archivePath}.sha256`);
+    await symlink(digestTarget, `${archivePath}.sha256`);
+    await assert.rejects(
+      validateArchive({ archivePath, archiveSha256: digest }),
+      /sibling digest must be a plain file/,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 });
 
-test("Playwright output cannot escape the external evidence root", () => {
+test("Playwright output must be a strict lexical descendant of evidence", () => {
   assert.throws(
     () =>
       resolveGateContract({
         ...baseEnvironment(),
-        YUNE_WEB_WEB06_DIST_ROOT: "/tmp/dist",
         YUNE_WEB_WEB06_OUTPUT_DIR: "/tmp/unrelated-output",
       }),
-    /must remain inside the external evidence root/,
+    /strict descendant of the external evidence root/,
   );
+  assert.throws(
+    () =>
+      resolveGateContract({
+        ...baseEnvironment(),
+        YUNE_WEB_WEB06_OUTPUT_DIR: "/tmp/yune-web06-evidence",
+      }),
+    /strict descendant of the external evidence root/,
+  );
+});
+
+test("Playwright output rejects a symlink component before any cleanup", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "yune-web06-output-"));
+  try {
+    const evidenceDir = path.join(root, "evidence");
+    const outside = path.join(root, "outside");
+    await mkdir(evidenceDir);
+    await mkdir(outside);
+    await symlink(outside, path.join(evidenceDir, "playwright"), "dir");
+    const contract = resolveGateContract({
+      ...baseEnvironment(),
+      YUNE_WEB_WEB06_EVIDENCE_DIR: evidenceDir,
+    });
+    await assert.rejects(
+      prepareOutputPaths(contract),
+      /Playwright output traverses a symbolic link/,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("evidence root rejects a caller-supplied symlink before canonicalization", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "yune-web06-evidence-link-"));
+  try {
+    const outside = path.join(root, "outside");
+    const evidenceLink = path.join(root, "evidence-link");
+    await mkdir(outside);
+    await symlink(outside, evidenceLink, "dir");
+    const contract = resolveGateContract({
+      ...baseEnvironment(),
+      YUNE_WEB_WEB06_EVIDENCE_DIR: evidenceLink,
+    });
+    await assert.rejects(
+      prepareOutputPaths(contract),
+      /evidence root traverses a symbolic link/,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("preview identity requires the exact clean source and manifest hash", () => {
@@ -308,9 +368,13 @@ test("preview reconciliation preflight verifies the archive, local root, and eve
   try {
     const fixture = await releaseFixture(root);
     const archivePath = path.join(root, "yune-web-dist.tar.gz");
-    const archiveBytes = Buffer.from("frozen archive bytes\n");
+    await execFileAsync(
+      "tar",
+      ["-C", fixture.distRoot, "-czf", archivePath, "."],
+      { env: { ...process.env, COPYFILE_DISABLE: "1" } },
+    );
+    const archiveBytes = await readFile(archivePath);
     const digest = createHash("sha256").update(archiveBytes).digest("hex");
-    await writeFile(archivePath, archiveBytes);
     await writeFile(`${archivePath}.sha256`, `${digest}\n`);
     const served = new Map([
       ["build-info.json", fixture.buildInfoBytes],
@@ -333,7 +397,6 @@ test("preview reconciliation preflight verifies the archive, local root, and eve
         YUNE_WEB_EXPECTED_SOURCE_COMMIT: sourceCommit,
         YUNE_WEB_CERTIFIED_ARCHIVE: archivePath,
         YUNE_WEB_CERTIFIED_ARCHIVE_SHA256: digest,
-        YUNE_WEB_WEB06_DIST_ROOT: fixture.distRoot,
         YUNE_WEB_WEB06_EVIDENCE_DIR: evidenceDir,
       },
       ["--scope=preview-canary", "--verify-only"],
@@ -348,8 +411,86 @@ test("preview reconciliation preflight verifies the archive, local root, and eve
     assert.equal(status.measurementStarted, false);
     assert.equal(status.archiveSha256, digest);
     assert.equal(status.artifactFileCount, 5);
+    assert.equal(status.extractedArtifactRetained, false);
+    await assert.rejects(
+      lstat(
+        path.join(
+          evidenceDir,
+          ".web06-sealed-artifact-preview-reconciliation",
+        ),
+      ),
+      { code: "ENOENT" },
+    );
+    const statusPath = path.join(
+      evidenceDir,
+      "web06-preview-reconciliation-status.json",
+    );
+    const preservedStatus = await readFile(statusPath);
+    await assert.rejects(
+      main(
+        {
+          ...process.env,
+          YUNE_WEB_APP_URL: "https://preview.example.invalid/",
+          YUNE_WEB_EXPECTED_SOURCE_COMMIT: sourceCommit,
+          YUNE_WEB_CERTIFIED_ARCHIVE: archivePath,
+          YUNE_WEB_CERTIFIED_ARCHIVE_SHA256: digest,
+          YUNE_WEB_WEB06_EVIDENCE_DIR: evidenceDir,
+        },
+        ["--scope=preview-canary", "--verify-only"],
+      ),
+      { code: "EEXIST" },
+    );
+    assert.deepEqual(await readFile(statusPath), preservedStatus);
   } finally {
     globalThis.fetch = originalFetch;
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("an unrelated archive cannot borrow a separately supplied good dist", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "yune-web06-fake-archive-"));
+  try {
+    const unrelated = path.join(root, "unrelated");
+    await mkdir(unrelated);
+    await writeFile(path.join(unrelated, "not-yune.txt"), "unrelated\n");
+    const archivePath = path.join(root, "unrelated.tar.gz");
+    await execFileAsync(
+      "tar",
+      ["-C", unrelated, "-czf", archivePath, "."],
+      { env: { ...process.env, COPYFILE_DISABLE: "1" } },
+    );
+    const archiveBytes = await readFile(archivePath);
+    const digest = createHash("sha256").update(archiveBytes).digest("hex");
+    await writeFile(`${archivePath}.sha256`, `${digest}\n`);
+    const evidenceDir = path.join(root, "evidence");
+
+    await assert.rejects(
+      main(
+        {
+          ...process.env,
+          YUNE_WEB_APP_URL: "https://preview.example.invalid/",
+          YUNE_WEB_EXPECTED_SOURCE_COMMIT: sourceCommit,
+          YUNE_WEB_CERTIFIED_ARCHIVE: archivePath,
+          YUNE_WEB_CERTIFIED_ARCHIVE_SHA256: digest,
+          YUNE_WEB_WEB06_EVIDENCE_DIR: evidenceDir,
+        },
+        ["--scope=preview-canary", "--verify-only"],
+      ),
+      /build-info\.json|ENOENT/,
+    );
+    const status = JSON.parse(
+      await readFile(
+        path.join(evidenceDir, "web06-preview-reconciliation-status.json"),
+        "utf8",
+      ),
+    );
+    assert.equal(status.status, "failed");
+    assert.equal(status.extractedArtifactRetained, true);
+    assert.match(
+      status.retainedExtractedArtifactRoot,
+      /\.web06-sealed-artifact-preview-reconciliation$/,
+    );
+  } finally {
     await rm(root, { recursive: true, force: true });
   }
 });

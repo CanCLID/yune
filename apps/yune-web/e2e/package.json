@@ -11,7 +11,7 @@
     "test:e2e:web06:public": "node run-public-web06-gate.mjs",
     "test:e2e:web06:preview-reconcile": "node run-public-web06-gate.mjs --scope preview-canary --verify-only",
     "test:e2e:web06:preview-canary": "node run-public-web06-gate.mjs --scope preview-canary",
-    "test:web06-release-plumbing": "node --test run-public-web06-gate.test.mjs public-artifact-verifier.test.mjs"
+    "test:web06-release-plumbing": "node --test run-public-web06-gate.test.mjs public-artifact-verifier.test.mjs && python3 -B -m unittest test_verify_archive_dist_identity.py"
   },
   "devDependencies": {
     "@playwright/test": "1.61.0"

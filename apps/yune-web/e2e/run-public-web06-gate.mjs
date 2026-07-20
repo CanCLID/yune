@@ -1,7 +1,15 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { lstat, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import {
+  lstat,
+  mkdir,
+  readFile,
+  realpath,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
@@ -140,15 +148,20 @@ export function resolveGateContract(environment, arguments_ = []) {
   );
   const outputRelative = path.relative(evidenceDir, outputDir);
   if (
+    outputRelative === "" ||
     outputRelative === ".." ||
     outputRelative.startsWith(`..${path.sep}`) ||
     path.isAbsolute(outputRelative)
   ) {
-    throw new Error("YUNE_WEB_WEB06_OUTPUT_DIR must remain inside the external evidence root");
+    throw new Error(
+      "YUNE_WEB_WEB06_OUTPUT_DIR must be a strict descendant of the external evidence root",
+    );
   }
-  const distRoot = path.resolve(
-    requiredString(environment, "YUNE_WEB_WEB06_DIST_ROOT"),
-  );
+  if (environment.YUNE_WEB_WEB06_DIST_ROOT?.trim()) {
+    throw new Error(
+      "YUNE_WEB_WEB06_DIST_ROOT is runner-owned; supplied artifact roots are forbidden",
+    );
+  }
 
   if (scopeContract.servesLocalArtifact) {
     const portValue = environment.YUNE_WEB_WEB06_PREVIEW_PORT?.trim() || "4174";
@@ -164,7 +177,7 @@ export function resolveGateContract(environment, arguments_ = []) {
       archivePath,
       evidenceDir,
       outputDir,
-      distRoot,
+      distRoot: null,
       appUrl: `http://127.0.0.1:${port}/`,
       port,
       expectedPreviewScenarios: null,
@@ -181,7 +194,7 @@ export function resolveGateContract(environment, arguments_ = []) {
     archivePath,
     evidenceDir,
     outputDir,
-    distRoot,
+    distRoot: null,
     appUrl: checkedRemoteUrl(requiredString(environment, "YUNE_WEB_APP_URL")),
     port: null,
     expectedPreviewScenarios: "existing-normal-guard,rapid-jyutping",
@@ -261,6 +274,73 @@ async function validateExternalEvidenceDir(evidenceDir) {
   return path.normalize(validated);
 }
 
+async function assertNoSymlinkComponents(absolutePath, label) {
+  const resolved = path.resolve(absolutePath);
+  const parsed = path.parse(resolved);
+  let probe = parsed.root;
+  const darwinRootAliases =
+    process.platform === "darwin" ? new Set(["/etc", "/tmp", "/var"]) : new Set();
+  for (const component of resolved.slice(parsed.root.length).split(path.sep)) {
+    if (!component) continue;
+    probe = path.join(probe, component);
+    let metadata;
+    try {
+      metadata = await lstat(probe);
+    } catch (error) {
+      if (error?.code === "ENOENT") return;
+      throw error;
+    }
+    if (metadata.isSymbolicLink()) {
+      if (darwinRootAliases.has(probe)) continue;
+      throw new Error(`${label} traverses a symbolic link: ${probe}`);
+    }
+  }
+}
+
+function assertStrictDescendant(root, candidate, label) {
+  const relative = path.relative(root, candidate);
+  if (
+    relative === "" ||
+    relative === ".." ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
+    throw new Error(`${label} must be a strict descendant of ${root}`);
+  }
+}
+
+export async function prepareOutputPaths(contract) {
+  const outputRelative = path.relative(contract.evidenceDir, contract.outputDir);
+  await assertNoSymlinkComponents(contract.evidenceDir, "WEB06 evidence root");
+  await assertNoSymlinkComponents(contract.outputDir, "WEB06 Playwright output");
+  contract.evidenceDir = await validateExternalEvidenceDir(contract.evidenceDir);
+  contract.outputDir = path.join(contract.evidenceDir, outputRelative);
+  assertStrictDescendant(
+    contract.evidenceDir,
+    contract.outputDir,
+    "YUNE_WEB_WEB06_OUTPUT_DIR",
+  );
+
+  await assertNoSymlinkComponents(contract.evidenceDir, "WEB06 evidence root");
+  await mkdir(contract.evidenceDir, { recursive: true });
+  await assertNoSymlinkComponents(contract.evidenceDir, "WEB06 evidence root");
+  await assertNoSymlinkComponents(contract.outputDir, "WEB06 Playwright output");
+  await mkdir(contract.outputDir, { recursive: true });
+  await assertNoSymlinkComponents(contract.outputDir, "WEB06 Playwright output");
+
+  const [realEvidenceDir, realOutputDir] = await Promise.all([
+    realpath(contract.evidenceDir),
+    realpath(contract.outputDir),
+  ]);
+  if (
+    path.normalize(realEvidenceDir) !== path.normalize(contract.evidenceDir) ||
+    path.normalize(realOutputDir) !== path.normalize(contract.outputDir)
+  ) {
+    throw new Error("WEB06 output canonicalization changed after directory creation");
+  }
+  assertStrictDescendant(realEvidenceDir, realOutputDir, "WEB06 Playwright output");
+}
+
 async function sha256File(file) {
   return new Promise((resolve, reject) => {
     const hash = createHash("sha256");
@@ -272,9 +352,15 @@ async function sha256File(file) {
 }
 
 export async function validateArchive(contract) {
-  const metadata = await lstat(contract.archivePath);
+  const [metadata, siblingMetadata] = await Promise.all([
+    lstat(contract.archivePath),
+    lstat(`${contract.archivePath}.sha256`),
+  ]);
   if (!metadata.isFile() || metadata.isSymbolicLink()) {
     throw new Error("YUNE_WEB_CERTIFIED_ARCHIVE must be a plain archive file");
+  }
+  if (!siblingMetadata.isFile() || siblingMetadata.isSymbolicLink()) {
+    throw new Error("Certified archive sibling digest must be a plain file");
   }
   const [actual, siblingBytes] = await Promise.all([
     sha256File(contract.archivePath),
@@ -287,6 +373,65 @@ export async function validateArchive(contract) {
   if (actual !== contract.archiveSha256 || actual !== sibling) {
     throw new Error("Certified archive bytes do not match their frozen SHA-256 identity");
   }
+}
+
+const safeExtractionProgram = String.raw`
+import os
+import pathlib
+import tarfile
+
+archive = pathlib.Path(os.environ["YUNE_WEB_ARCHIVE_TO_EXTRACT"])
+destination = pathlib.Path(os.environ["YUNE_WEB_ARCHIVE_DESTINATION"])
+destination.mkdir(parents=True, exist_ok=False)
+seen = set()
+with tarfile.open(archive, "r:gz") as bundle:
+    members = bundle.getmembers()
+    for member in members:
+        relative = pathlib.PurePosixPath(member.name)
+        normalized = relative.as_posix()
+        if normalized == "." and member.isdir():
+            continue
+        if (
+            relative.is_absolute()
+            or ".." in relative.parts
+            or "\\" in member.name
+            or not (member.isfile() or member.isdir())
+            or normalized == "."
+            or normalized in seen
+        ):
+            raise SystemExit(f"unsafe archive member: {member.name!r}")
+        seen.add(normalized)
+    bundle.extractall(destination, members=members, filter="data")
+`;
+
+function extractionDestination(contract) {
+  const suffix = contract.verifyOnly ? "preview-reconciliation" : contract.scope;
+  return path.join(contract.evidenceDir, `.web06-sealed-artifact-${suffix}`);
+}
+
+async function extractCertifiedArchive(contract, destination) {
+  await assertNoSymlinkComponents(destination, "WEB06 archive extraction root");
+  await runCommand("python3", ["-c", safeExtractionProgram], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      PYTHONDONTWRITEBYTECODE: "1",
+      YUNE_WEB_ARCHIVE_TO_EXTRACT: contract.archivePath,
+      YUNE_WEB_ARCHIVE_DESTINATION: destination,
+    },
+    stdio: "pipe",
+  });
+  await assertNoSymlinkComponents(destination, "WEB06 archive extraction root");
+  const canonical = await realpath(destination);
+  if (path.normalize(canonical) !== path.normalize(destination)) {
+    throw new Error("WEB06 archive extraction root escaped its canonical path");
+  }
+  assertStrictDescendant(
+    contract.evidenceDir,
+    canonical,
+    "WEB06 archive extraction root",
+  );
+  return canonical;
 }
 
 async function fetchBuildInfo(appUrl, expectedSourceCommit) {
@@ -382,9 +527,16 @@ async function reconcileRemoteBundle(appUrl, local, expectedSourceCommit) {
   return remoteBuildInfo;
 }
 
-async function writeStatus(contract, values) {
+async function writeStatus(contract, values, { createNew = false } = {}) {
+  const statusPath = path.join(contract.evidenceDir, contract.statusName);
+  if (!createNew) {
+    const metadata = await lstat(statusPath);
+    if (!metadata.isFile() || metadata.isSymbolicLink()) {
+      throw new Error("WEB06 status receipt must remain a plain file");
+    }
+  }
   await writeFile(
-    path.join(contract.evidenceDir, contract.statusName),
+    statusPath,
     `${JSON.stringify(
       {
         sourceCommit: contract.expectedSourceCommit,
@@ -396,6 +548,7 @@ async function writeStatus(contract, values) {
       null,
       2,
     )}\n`,
+    { flag: createNew ? "wx" : "w" },
   );
 }
 
@@ -466,22 +619,27 @@ function startPreview(contract) {
 
 export async function main(environment = process.env, arguments_ = process.argv.slice(2)) {
   const contract = resolveGateContract(environment, arguments_);
-  const outputRelative = path.relative(contract.evidenceDir, contract.outputDir);
-  contract.evidenceDir = await validateExternalEvidenceDir(contract.evidenceDir);
-  contract.outputDir = path.join(contract.evidenceDir, outputRelative);
-  await mkdir(contract.evidenceDir, { recursive: true });
-  await mkdir(contract.outputDir, { recursive: true });
-  await writeStatus(contract, {
-    generatedAt: new Date().toISOString(),
-    measurementStarted: false,
-    status: "setup-pending",
-  });
+  await prepareOutputPaths(contract);
+  await writeStatus(
+    contract,
+    {
+      generatedAt: new Date().toISOString(),
+      measurementStarted: false,
+      status: "setup-pending",
+    },
+    { createNew: true },
+  );
 
   let preview = null;
   let artifactManifestSha256 = null;
   let artifactFileCount = null;
   let measurementStarted = false;
   try {
+    await validateArchive(contract);
+    contract.distRoot = extractionDestination(contract);
+    contract.distRoot = await extractCertifiedArchive(contract, contract.distRoot);
+    // Catch any mutation between the pre-extraction digest and the bytes that
+    // Python opened. The runner never measures a root unless both checks agree.
     await validateArchive(contract);
     if (!contract.verifyOnly) {
       await Promise.all([stat(playwrightCli), stat(web06Config), stat(web06Spec)]);
@@ -512,10 +670,13 @@ export async function main(environment = process.env, arguments_ = process.argv.
     }
 
     if (contract.verifyOnly) {
+      await rm(contract.distRoot, { recursive: true });
+      contract.distRoot = null;
       await writeStatus(contract, {
         generatedAt: new Date().toISOString(),
         artifactManifestSha256,
         artifactFileCount,
+        extractedArtifactRetained: false,
         measurementStarted: false,
         status: "reconciled",
       });
@@ -567,18 +728,34 @@ export async function main(environment = process.env, arguments_ = process.argv.
       await preview.stop();
       preview = null;
     }
+    await rm(contract.distRoot, { recursive: true });
+    contract.distRoot = null;
     await writeStatus(contract, {
       generatedAt: new Date().toISOString(),
       artifactManifestSha256,
       artifactFileCount,
+      extractedArtifactRetained: false,
       measurementStarted: true,
       status: "passed",
     });
   } catch (error) {
+    let extractedArtifactRetained = false;
+    if (contract.distRoot !== null) {
+      try {
+        await lstat(contract.distRoot);
+        extractedArtifactRetained = true;
+      } catch (metadataError) {
+        if (metadataError?.code !== "ENOENT") throw metadataError;
+      }
+    }
     await writeStatus(contract, {
       generatedAt: new Date().toISOString(),
       artifactManifestSha256,
       artifactFileCount,
+      extractedArtifactRetained,
+      retainedExtractedArtifactRoot: extractedArtifactRetained
+        ? contract.distRoot
+        : null,
       measurementStarted,
       status: "failed",
       failure: error instanceof Error ? error.message : String(error),

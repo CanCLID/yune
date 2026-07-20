@@ -14,7 +14,7 @@ if [ ! -f "$DEFAULT_DIST/build-info.json" ]; then
 	exit 1
 fi
 
-certification_temp=
+persistent_certification_root=
 alias_temp=
 aliased_default_dist=false
 cleanup() {
@@ -36,19 +36,31 @@ cleanup() {
 	if [ -n "$alias_temp" ] && [ "$cleanup_failed" = false ]; then
 		rm -rf -- "$alias_temp"
 	fi
-	if [ -n "$certification_temp" ]; then
-		if [ "$exit_status" -eq 0 ] && [ "$cleanup_failed" = false ]; then
-			rm -rf -- "$certification_temp"
-		else
-			printf 'Preserved WEB06 certification failure artifacts at %s\n' "$certification_temp" >&2
-		fi
-	fi
 	if [ "$cleanup_failed" = true ] && [ "$exit_status" -eq 0 ]; then
 		exit_status=1
 	fi
 	exit "$exit_status"
 }
 trap cleanup EXIT
+
+new_persistent_external_root() {
+	requested_root=$1
+	kind=$2
+	if [ -n "$requested_root" ]; then
+		resolved_root=$(PYTHONDONTWRITEBYTECODE=1 python3 scripts/evidence-output-path.py validate \
+			--repo-root "$YUNE_WEB_REPO_ROOT" --path "$requested_root")
+	else
+		resolved_root=$(PYTHONDONTWRITEBYTECODE=1 python3 scripts/evidence-output-path.py default \
+			--repo-root "$YUNE_WEB_REPO_ROOT" --kind "$kind")
+	fi
+	if [ -e "$resolved_root" ]; then
+		printf 'Persistent WEB06 certification root already exists: %s\n' "$resolved_root" >&2
+		return 1
+	fi
+	mkdir -p "$(dirname -- "$resolved_root")"
+	mkdir "$resolved_root"
+	printf '%s\n' "$resolved_root"
+}
 
 archive_sha256() {
 	node -e 'const fs=require("node:fs");const crypto=require("node:crypto");const hash=crypto.createHash("sha256");hash.update(fs.readFileSync(process.argv[1]));process.stdout.write(`${hash.digest("hex")}\n`);' "$1"
@@ -113,18 +125,25 @@ if [ -n "$configured_archive" ] || [ -n "$configured_archive_sha256" ] || [ -n "
 		printf 'Certified extracted artifact does not exist: %s\n' "$configured_dist_root" >&2
 		exit 1
 	}
+	certified_dist_input=$configured_dist_root
 	certified_dist_root=$(CDPATH= cd -- "$configured_dist_root" && pwd -P)
 	certified_archive_sha256=$actual_archive_sha256
 else
 	# The local compatibility entrypoint also follows the seal-once contract.
-	# CI supplies the already-sealed archive and never enters this fallback.
-	certification_temp=$(mktemp -d "${TMPDIR:-/tmp}/yune-web06-certify.XXXXXX")
-	configured_archive="$certification_temp/yune-web-dist.tar.gz"
-	tar -C "$DEFAULT_DIST" -czf "$configured_archive" .
+	# CI supplies the already-sealed archive and never enters this fallback. A
+	# local fallback uses a persistent external root so a green or red run never
+	# deletes the only sealed archive or its evidence.
+	persistent_certification_root=$(new_persistent_external_root \
+		"${YUNE_WEB_CERTIFICATION_ROOT:-}" web06-release-certification)
+	printf 'WEB06 local certification will retain artifacts at %s\n' \
+		"$persistent_certification_root" >&2
+	configured_archive="$persistent_certification_root/yune-web-dist.tar.gz"
+	COPYFILE_DISABLE=1 tar -C "$DEFAULT_DIST" -czf "$configured_archive" .
 	certified_archive_sha256=$(archive_sha256 "$configured_archive")
 	printf '%s\n' "$certified_archive_sha256" > "$configured_archive.sha256"
-	safe_extract "$configured_archive" "$certification_temp/extracted-dist"
-	certified_dist_root=$(CDPATH= cd -- "$certification_temp/extracted-dist" && pwd -P)
+	safe_extract "$configured_archive" "$persistent_certification_root/extracted-dist"
+	certified_dist_input=$persistent_certification_root/extracted-dist
+	certified_dist_root=$(CDPATH= cd -- "$persistent_certification_root/extracted-dist" && pwd -P)
 fi
 
 expected_source_commit=${YUNE_WEB_EXPECTED_SOURCE_COMMIT:-$(git rev-parse HEAD)}
@@ -134,16 +153,30 @@ printf '%s\n' "$expected_source_commit" | grep -Eq '^[0-9a-f]{40}$' || {
 }
 
 if [ -z "${YUNE_WEB_WEB06_EVIDENCE_DIR:-}" ]; then
-	if [ -z "$certification_temp" ]; then
-		certification_temp=$(mktemp -d "${TMPDIR:-/tmp}/yune-web06-certify.XXXXXX")
+	if [ -z "$persistent_certification_root" ]; then
+		persistent_certification_root=$(new_persistent_external_root \
+			"${YUNE_WEB_CERTIFICATION_ROOT:-}" web06-release-certification)
+		printf 'WEB06 local certification will retain evidence at %s\n' \
+			"$persistent_certification_root" >&2
 	fi
-	export YUNE_WEB_WEB06_EVIDENCE_DIR="$certification_temp/web06-evidence"
+	export YUNE_WEB_WEB06_EVIDENCE_DIR="$persistent_certification_root/web06-evidence"
 fi
+YUNE_WEB_WEB06_EVIDENCE_DIR=$(PYTHONDONTWRITEBYTECODE=1 python3 scripts/evidence-output-path.py validate \
+	--repo-root "$YUNE_WEB_REPO_ROOT" --path "$YUNE_WEB_WEB06_EVIDENCE_DIR")
+export YUNE_WEB_WEB06_EVIDENCE_DIR
 mkdir -p "$YUNE_WEB_WEB06_EVIDENCE_DIR"
 
 export YUNE_WEB_EXPECTED_DIST="$certified_dist_root"
 export YUNE_WEB_EXPECTED_SOURCE_COMMIT="$expected_source_commit"
 export YUNE_WEB_LOCAL_ARTIFACT_RECEIPT=${YUNE_WEB_LOCAL_ARTIFACT_RECEIPT:-"$YUNE_WEB_WEB06_EVIDENCE_DIR/local-artifact-verification.json"}
+# WEB03 still consumes an extracted directory. Prove that directory is exactly
+# the configured archive's file tree before either browser gate can use it.
+PYTHONDONTWRITEBYTECODE=1 python3 \
+	apps/yune-web/e2e/verify_archive_dist_identity.py \
+	--archive "$configured_archive" \
+	--dist "$certified_dist_input" \
+	--expected-archive-sha256 "$certified_archive_sha256" \
+	--receipt "$YUNE_WEB_WEB06_EVIDENCE_DIR/archive-dist-identity.json"
 node apps/yune-web/e2e/verify-local-artifact.mjs
 
 # WEB03's public runner intentionally remains unchanged and resolves the fixed
@@ -169,10 +202,14 @@ export YUNE_WEB_LATENCY_P95_MS=750
 export YUNE_WEB_LATENCY_MAX_MS=1000
 npm --prefix apps/yune-web/e2e run test:e2e:input-latency:public
 
-# WEB06 is a distinct focused gate. It receives the plain extracted root, not
-# the temporary WEB03 alias, and its runner rejects a missing archive identity.
+# WEB06 is a distinct focused gate. Its runner independently extracts and
+# validates this exact archive and never accepts the WEB03 alias as input.
 export YUNE_WEB_CERTIFIED_ARCHIVE="$configured_archive"
 export YUNE_WEB_CERTIFIED_ARCHIVE_SHA256="$certified_archive_sha256"
-export YUNE_WEB_WEB06_DIST_ROOT="$certified_dist_root"
 export YUNE_WEB_WEB06_GATE_SCOPE=full
 npm --prefix apps/yune-web/e2e run test:e2e:web06:public
+
+if [ -n "$persistent_certification_root" ]; then
+	printf 'Retained WEB06 certification archive and evidence at %s\n' \
+		"$persistent_certification_root" >&2
+fi

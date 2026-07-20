@@ -7,6 +7,7 @@ import type {
 import { YUNE_WEB_EXPORTS } from "../src/module";
 
 type CallMap = Record<string, unknown[][]>;
+type FakeCallable = YuneWebExport | "UTF8ToString";
 
 interface FakeResponse {
   jsonPtr: number;
@@ -20,6 +21,8 @@ export class FakeYuneWebModule implements EmscriptenYuneWebModule {
   #responses = new Map<number, FakeResponse>();
   #exports = new Map<string, EmscriptenWrappedFunction>();
   #calls: CallMap = {};
+  #callTrace: Array<{ symbol: string; args: unknown[] }> = [];
+  #failures = new Map<FakeCallable, unknown>();
 
   initResult = 1;
   processKeyResult = 0;
@@ -49,6 +52,8 @@ export class FakeYuneWebModule implements EmscriptenYuneWebModule {
   }
 
   UTF8ToString(ptr: number): string {
+    this.record("UTF8ToString", [ptr]);
+    this.throwIfConfigured("UTF8ToString");
     const value = this.#strings.get(ptr);
     if (value === undefined) {
       throw new Error(`Unexpected missing fake string pointer: ${ptr}`);
@@ -62,6 +67,10 @@ export class FakeYuneWebModule implements EmscriptenYuneWebModule {
 
   remove(symbol: YuneWebExport): void {
     this.#exports.delete(symbol);
+  }
+
+  fail(symbol: FakeCallable, error: unknown): void {
+    this.#failures.set(symbol, error);
   }
 
   response(json: unknown, handled = true): number {
@@ -92,6 +101,10 @@ export class FakeYuneWebModule implements EmscriptenYuneWebModule {
     return this.#calls[symbol] ?? [];
   }
 
+  callTrace(): Array<{ symbol: string; args: unknown[] }> {
+    return this.#callTrace.map(({ symbol, args }) => ({ symbol, args: [...args] }));
+  }
+
   private registerDefaultExports(): void {
     for (const symbol of YUNE_WEB_EXPORTS) {
       this.#calls[symbol] = [];
@@ -99,59 +112,73 @@ export class FakeYuneWebModule implements EmscriptenYuneWebModule {
 
     this.register("yune_web_init", (...args) => {
       this.record("yune_web_init", args);
+      this.throwIfConfigured("yune_web_init");
       return this.initResult;
     });
     this.register("yune_web_process_key", (...args) => {
       this.record("yune_web_process_key", args);
+      this.throwIfConfigured("yune_web_process_key");
       return this.processKeyResult;
     });
     this.register("yune_web_select_candidate", (...args) => {
       this.record("yune_web_select_candidate", args);
+      this.throwIfConfigured("yune_web_select_candidate");
       return this.selectCandidateResult;
     });
     this.register("yune_web_delete_candidate", (...args) => {
       this.record("yune_web_delete_candidate", args);
+      this.throwIfConfigured("yune_web_delete_candidate");
       return this.deleteCandidateResult;
     });
     this.register("yune_web_flip_page", (...args) => {
       this.record("yune_web_flip_page", args);
+      this.throwIfConfigured("yune_web_flip_page");
       return this.flipPageResult;
     });
     this.register("yune_web_deploy", (...args) => {
       this.record("yune_web_deploy", args);
+      this.throwIfConfigured("yune_web_deploy");
       return this.deployResult;
     });
     this.register("yune_web_customize", (...args) => {
       this.record("yune_web_customize", args);
+      this.throwIfConfigured("yune_web_customize");
       return this.customizeResult;
     });
     this.register("yune_web_set_option", (...args) => {
       this.record("yune_web_set_option", args);
+      this.throwIfConfigured("yune_web_set_option");
       return this.setOptionResult;
     });
     this.register("yune_web_set_ai_enabled", (...args) => {
       this.record("yune_web_set_ai_enabled", args);
+      this.throwIfConfigured("yune_web_set_ai_enabled");
       return this.setAiEnabledResult;
     });
     this.register("yune_web_stage_ai", (...args) => {
       this.record("yune_web_stage_ai", args);
+      this.throwIfConfigured("yune_web_stage_ai");
       return this.stageAiResult;
     });
     this.register("yune_web_cleanup", (...args) => {
       this.record("yune_web_cleanup", args);
+      this.throwIfConfigured("yune_web_cleanup");
     });
     this.register("yune_web_response_json", (...args) => {
       this.record("yune_web_response_json", args);
+      this.throwIfConfigured("yune_web_response_json");
       const [ptr] = args as [number];
       return this.#responses.get(ptr)?.jsonPtr ?? 0;
     });
     this.register("yune_web_response_handled", (...args) => {
       this.record("yune_web_response_handled", args);
+      this.throwIfConfigured("yune_web_response_handled");
       const [ptr] = args as [number];
       return this.#responses.get(ptr)?.handled === true ? 1 : 0;
     });
     this.register("yune_web_free_response", (...args) => {
       this.record("yune_web_free_response", args);
+      this.throwIfConfigured("yune_web_free_response");
       const [ptr] = args as [number];
       const response = this.#responses.get(ptr);
       if (response !== undefined) {
@@ -168,5 +195,12 @@ export class FakeYuneWebModule implements EmscriptenYuneWebModule {
 
   private record(symbol: string, args: unknown[]): void {
     (this.#calls[symbol] ??= []).push(args);
+    this.#callTrace.push({ symbol, args: [...args] });
+  }
+
+  private throwIfConfigured(symbol: FakeCallable): void {
+    if (this.#failures.has(symbol)) {
+      throw this.#failures.get(symbol);
+    }
   }
 }

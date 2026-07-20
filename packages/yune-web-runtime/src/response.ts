@@ -1,4 +1,10 @@
 import type { YuneWebBindings } from "./module.js";
+import {
+  emitWeb06ResponseJsonCopy,
+  observeWeb06RuntimeStage,
+  type Web06ActiveRuntimeObservation,
+  type Web06RuntimeOperation,
+} from "./observation.js";
 
 export interface YuneWebCandidate {
   text: string;
@@ -99,24 +105,64 @@ export class YuneWebResponseError extends Error {
 export function readYuneWebResponse(
   responsePtr: number,
   bindings: YuneWebBindings,
+  operation: Web06RuntimeOperation = "direct-response-read",
+  web06Observation?: Web06ActiveRuntimeObservation,
 ): YuneWebResponse {
   if (responsePtr === 0) {
     throw new YuneWebResponseError("YuneWeb adapter returned null response");
   }
 
   try {
-    const jsonPtr = bindings.responseJson(responsePtr);
+    const jsonPtr = observeWeb06RuntimeStage(
+      web06Observation,
+      operation,
+      "response-json-accessor",
+      "full",
+      () => bindings.responseJson(responsePtr),
+    );
     if (jsonPtr === 0) {
       throw new YuneWebResponseError("YuneWeb adapter returned null response JSON");
     }
 
-    const text = bindings.module.UTF8ToString(jsonPtr);
-    const parsed = parseResponseJson(text);
-    const response = parseYuneWebResponse(parsed);
-    response.handled = bindings.responseHandled(responsePtr) !== 0;
+    const text = observeWeb06RuntimeStage(
+      web06Observation,
+      operation,
+      "response-byte-extraction",
+      "full",
+      () => bindings.module.UTF8ToString(jsonPtr),
+    );
+    emitWeb06ResponseJsonCopy(web06Observation, operation, text);
+    const parsed = observeWeb06RuntimeStage(
+      web06Observation,
+      operation,
+      "response-json-parse",
+      "full",
+      () => parseResponseJson(text),
+    );
+    const response = observeWeb06RuntimeStage(
+      web06Observation,
+      operation,
+      "response-shape-decode",
+      "full",
+      // Typed shape decoding is this package's adapter-projection boundary.
+      () => parseYuneWebResponse(parsed),
+    );
+    response.handled = observeWeb06RuntimeStage(
+      web06Observation,
+      operation,
+      "response-handled-accessor",
+      "full",
+      () => bindings.responseHandled(responsePtr) !== 0,
+    );
     return response;
   } finally {
-    bindings.freeResponse(responsePtr);
+    observeWeb06RuntimeStage(
+      web06Observation,
+      operation,
+      "response-free",
+      "full",
+      () => bindings.freeResponse(responsePtr),
+    );
   }
 }
 

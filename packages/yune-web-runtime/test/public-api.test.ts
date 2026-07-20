@@ -1,3 +1,10 @@
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import * as publicRuntime from "../src/index.js";
@@ -30,8 +37,45 @@ const BASELINE_VALUE_EXPORTS = [
   "yuneWebBuildDir",
 ] as const;
 
+const BASELINE_DECLARATION_SHA256 = {
+  "index.d.ts": "5ad752d4ed121754068efb778105261b4a98c62eaf62957d9292551e5664d306",
+  "response.d.ts": "cbc54178ac87b3c107b8f5bff12d2955cd9c9a1b5464789676a1c8437a7df43e",
+  "runtime.d.ts": "89ca5f0eae2ee039384eefb19c583a6d60abaaebd506f7f853abf2742f15ad2b",
+} as const;
+
+function sha256(bytes: Buffer): string {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
 describe("public runtime value exports", () => {
   it("matches the frozen pre-WEB-06 package surface", () => {
     expect(Object.keys(publicRuntime).sort()).toEqual(BASELINE_VALUE_EXPORTS);
+  });
+
+  it("byte-matches the frozen emitted declarations", () => {
+    const packageRoot = fileURLToPath(new URL("../", import.meta.url));
+    const outputRoot = mkdtempSync(path.join(tmpdir(), "yune-web06-runtime-api-"));
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          path.join(packageRoot, "node_modules", "typescript", "bin", "tsc"),
+          "-p",
+          path.join(packageRoot, "tsconfig.json"),
+          "--outDir",
+          outputRoot,
+        ],
+        { stdio: "pipe" },
+      );
+      const actual = Object.fromEntries(
+        Object.keys(BASELINE_DECLARATION_SHA256).map((file) => [
+          file,
+          sha256(readFileSync(path.join(outputRoot, file))),
+        ]),
+      );
+      expect(actual).toEqual(BASELINE_DECLARATION_SHA256);
+    } finally {
+      rmSync(outputRoot, { force: true, recursive: true });
+    }
   });
 });

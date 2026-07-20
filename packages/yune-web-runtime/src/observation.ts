@@ -120,24 +120,7 @@ export function activateWeb06RuntimeObservation(
   const failureLedger = createFailureLedger();
   failureLedgers.set(observation, failureLedger);
 
-  if (observation.mode === "full" && observation.onResponseJsonCopy === undefined) {
-    appendFailure(failureLedger, {
-      operation: "init",
-      stage: "response-byte-extraction",
-      hook: "response-json-copy-missing",
-      error: new Error("WEB-06 full runtime observation requires onResponseJsonCopy"),
-    });
-  }
-  if (observation.mode === "full" && observation.onFailure === undefined) {
-    appendFailure(failureLedger, {
-      operation: "init",
-      stage: "abi-call",
-      hook: "failure-sink-missing",
-      error: new Error("WEB-06 full runtime observation requires onFailure"),
-    });
-  }
-
-  return {
+  const active: Web06ActiveRuntimeObservation = {
     mode: observation.mode,
     now: observation.now.bind(observation),
     onSpan: observation.onSpan.bind(observation),
@@ -149,6 +132,25 @@ export function activateWeb06RuntimeObservation(
       : { onFailure: observation.onFailure.bind(observation) }),
     failureLedger,
   };
+
+  if (observation.mode === "full" && observation.onResponseJsonCopy === undefined) {
+    reportFailure(active, {
+      operation: "init",
+      stage: "response-byte-extraction",
+      hook: "response-json-copy-missing",
+      error: new Error("WEB-06 full runtime observation requires onResponseJsonCopy"),
+    });
+  }
+  if (observation.mode === "full" && observation.onFailure === undefined) {
+    reportFailure(active, {
+      operation: "init",
+      stage: "abi-call",
+      hook: "failure-sink-missing",
+      error: new Error("WEB-06 full runtime observation requires onFailure"),
+    });
+  }
+
+  return active;
 }
 
 /** @internal WEB-06 measurement-only failure state. */

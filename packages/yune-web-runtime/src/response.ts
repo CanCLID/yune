@@ -105,6 +105,10 @@ export class YuneWebResponseError extends Error {
 export function readYuneWebResponse(
   responsePtr: number,
   bindings: YuneWebBindings,
+): YuneWebResponse;
+export function readYuneWebResponse(
+  responsePtr: number,
+  bindings: YuneWebBindings,
   operation: Web06RuntimeOperation = "direct-response-read",
   web06Observation?: Web06ActiveRuntimeObservation,
 ): YuneWebResponse {

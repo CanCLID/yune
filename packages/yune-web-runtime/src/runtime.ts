@@ -13,9 +13,18 @@ export interface YuneWebInitOptions {
   sharedDataDir: string;
   userDataDir: string;
   schemaId: string;
-  /** @internal WEB-06 measurement-only observer. */
-  web06Observation?: Web06RuntimeObservation;
 }
+
+interface Web06ObservedInitOptions extends YuneWebInitOptions {
+  readonly web06Observation?: Web06RuntimeObservation;
+}
+
+type Web06ObservedResponseReader = (
+  responsePtr: number,
+  bindings: YuneWebBindings,
+  operation: Web06RuntimeOperation,
+  observation: Web06ActiveRuntimeObservation | undefined,
+) => YuneWebResponse;
 
 export class YuneWebLifecycleError extends Error {
   constructor(message: string) {
@@ -42,7 +51,9 @@ export class YuneWebRuntime {
 
   static init(module: EmscriptenYuneWebModule, options: YuneWebInitOptions): YuneWebRuntime {
     const bindings = bindYuneWebModule(module);
-    const web06Observation = activateWeb06RuntimeObservation(options.web06Observation);
+    const web06Observation = activateWeb06RuntimeObservation(
+      (options as Web06ObservedInitOptions).web06Observation,
+    );
     const statePtr = observeWeb06RuntimeStage(
       web06Observation,
       "init",
@@ -58,7 +69,7 @@ export class YuneWebRuntime {
 
   processKey(keycode: number, mask = 0): YuneWebResponse {
     const statePtr = this.requireLiveState();
-    return this.readResponse("process-key", () =>
+    return this.#readResponse("process-key", () =>
       this.#bindings.processKey(statePtr, keycode, mask),
     );
   }
@@ -70,54 +81,54 @@ export class YuneWebRuntime {
 
   selectCandidate(index: number): YuneWebResponse {
     const statePtr = this.requireLiveState();
-    return this.readResponse("select-candidate", () =>
+    return this.#readResponse("select-candidate", () =>
       this.#bindings.selectCandidate(statePtr, index),
     );
   }
 
   deleteCandidate(index: number): YuneWebResponse {
     const statePtr = this.requireLiveState();
-    return this.readResponse("delete-candidate", () =>
+    return this.#readResponse("delete-candidate", () =>
       this.#bindings.deleteCandidate(statePtr, index),
     );
   }
 
   flipPage(backward = false): YuneWebResponse {
     const statePtr = this.requireLiveState();
-    return this.readResponse("flip-page", () =>
+    return this.#readResponse("flip-page", () =>
       this.#bindings.flipPage(statePtr, backward ? 1 : 0),
     );
   }
 
   deploy(): boolean {
     const statePtr = this.requireLiveState();
-    return this.observeAbi("deploy", () => this.#bindings.deploy(statePtr)) !== 0;
+    return this.#observeAbi("deploy", () => this.#bindings.deploy(statePtr)) !== 0;
   }
 
   customize(configId: string, key: string, value: string): boolean {
     const statePtr = this.requireLiveState();
-    return this.observeAbi("customize", () =>
+    return this.#observeAbi("customize", () =>
       this.#bindings.customize(statePtr, configId, key, value),
     ) !== 0;
   }
 
   setOption(option: string, value: boolean): boolean {
     const statePtr = this.requireLiveState();
-    return this.observeAbi("set-option", () =>
+    return this.#observeAbi("set-option", () =>
       this.#bindings.setOption(statePtr, option, value ? 1 : 0),
     ) !== 0;
   }
 
   setAiEnabled(enabled: boolean): boolean {
     const statePtr = this.requireLiveState();
-    return this.observeAbi("set-ai-enabled", () =>
+    return this.#observeAbi("set-ai-enabled", () =>
       this.#bindings.setAiEnabled(statePtr, enabled ? 1 : 0),
     ) !== 0;
   }
 
   stageAi(): YuneWebResponse {
     const statePtr = this.requireLiveState();
-    return this.readResponse("stage-ai", () => this.#bindings.stageAi(statePtr));
+    return this.#readResponse("stage-ai", () => this.#bindings.stageAi(statePtr));
   }
 
   cleanup(): void {
@@ -128,11 +139,11 @@ export class YuneWebRuntime {
     const ptr = this.#statePtr;
     this.#statePtr = 0;
     if (ptr !== 0) {
-      this.observeAbi("cleanup", () => this.#bindings.cleanup(ptr));
+      this.#observeAbi("cleanup", () => this.#bindings.cleanup(ptr));
     }
   }
 
-  private observeAbi<T>(operation: Web06RuntimeOperation, action: () => T): T {
+  #observeAbi<T>(operation: Web06RuntimeOperation, action: () => T): T {
     return observeWeb06RuntimeStage(
       this.#web06Observation,
       operation,
@@ -142,12 +153,12 @@ export class YuneWebRuntime {
     );
   }
 
-  private readResponse(
+  #readResponse(
     operation: Web06RuntimeOperation,
     action: () => number,
   ): YuneWebResponse {
-    const responsePtr = this.observeAbi(operation, action);
-    return readYuneWebResponse(
+    const responsePtr = this.#observeAbi(operation, action);
+    return (readYuneWebResponse as Web06ObservedResponseReader)(
       responsePtr,
       this.#bindings,
       operation,

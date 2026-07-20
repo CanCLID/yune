@@ -9,7 +9,7 @@ import type {
 } from "../src/observation.js";
 import { snapshotWeb06RuntimeObservationFailures } from "../src/observation.js";
 import { YuneWebResponseError } from "../src/response.js";
-import { YuneWebRuntime } from "../src/runtime.js";
+import { YuneWebRuntime, type YuneWebInitOptions } from "../src/runtime.js";
 import { FakeYuneWebModule } from "./fake-module.js";
 
 const modes = ["off", "minimal", "full"] as const satisfies readonly Web06RuntimeObservationMode[];
@@ -72,12 +72,13 @@ function initializedRuntime(
   fake: FakeYuneWebModule,
   observation: Web06RuntimeObservation,
 ): YuneWebRuntime {
-  return YuneWebRuntime.init(fake, {
+  const options: YuneWebInitOptions & { web06Observation: Web06RuntimeObservation } = {
     sharedDataDir: "/rime/shared",
     userDataDir: "/rime/user",
     schemaId: "yune_web_luna",
     web06Observation: observation,
-  });
+  };
+  return YuneWebRuntime.init(fake, options);
 }
 
 function callSymbols(fake: FakeYuneWebModule): string[] {
@@ -506,6 +507,25 @@ describe("WEB-06 observer failure isolation", () => {
       "failure-sink-missing",
       "response-json-copy-missing",
     ]);
+  });
+
+  it("reports a missing full-mode JSON callback through the supplied failure sink", () => {
+    const fake = new FakeYuneWebModule();
+    const failures: Web06RuntimeObservationFailure[] = [];
+    const observation: Web06RuntimeObservation = {
+      mode: "full",
+      now: () => 1,
+      onSpan: () => undefined,
+      onFailure(failure) {
+        failures.push(failure);
+      },
+    };
+    const runtime = initializedRuntime(fake, observation);
+
+    runtime.cleanup();
+    expect(failures.map(({ hook }) => hook)).toEqual(["response-json-copy-missing"]);
+    expect(snapshotWeb06RuntimeObservationFailures(observation).retained.map(({ hook }) => hook))
+      .toEqual(["response-json-copy-missing"]);
   });
 
   it("bounds durable observer failures while retaining the exact total", () => {

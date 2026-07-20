@@ -1,5 +1,6 @@
 import { test, expect, chromium, type Page } from "@playwright/test";
 
+import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { mkdir, readFile, rm, stat } from "node:fs/promises";
@@ -8,11 +9,38 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  summarizeComparatorRatios,
   writeComparatorEvidence,
   type ComparatorResource,
   type ComparatorSample,
   type ComparatorWorkerMemory,
 } from "./startup-benchmark/comparator-metrics";
+import {
+  comparatorDomTupleDigest,
+  comparatorPeerLogicalInputIds,
+  comparatorPeerCadenceMs,
+  comparatorPeerPageSize,
+  comparatorPinnedMyRimeCommit,
+  comparatorSelectorManifest,
+  parseComparatorIdentityManifest,
+  validateCandidateObservation,
+  validateEndpointEvidence,
+  type ComparatorEndpointEvidence,
+  type ComparatorIdentityManifest,
+  type ComparatorDomTuple,
+  type ComparatorPageSizeSetup,
+  type ComparatorStableObservation,
+} from "./startup-benchmark/comparator-endpoint";
+import {
+  comparatorEventCount,
+  comparatorEventsSince,
+  ensureYuneComparatorMeasurementPageSize,
+  ensureYuneComparatorPageSize,
+  exactYuneDiagnostic,
+  installComparatorEndpointObserver,
+  waitForStableCandidateEndpoint,
+  waitForStableCommitEndpoint,
+} from "./startup-benchmark/comparator-browser-endpoint";
 import { appSchemaId, type StartupSchema } from "./startup-benchmark/scenarios";
 import type { WasmMemorySnapshot } from "./startup-benchmark/metrics";
 
@@ -29,7 +57,11 @@ const trackedDist = path.join(appRoot, "dist");
 const publicDist = path.join(appRoot, "public-demo", "dist");
 const includeMyRime = process.env.YUNE_WEB_COMPARATOR_INCLUDE_MY_RIME === "1";
 const myRimeUrl = process.env.YUNE_WEB_COMPARATOR_MY_RIME_URL ?? "https://my-rime.vercel.app/";
-const sampleCount = Math.max(1, Math.floor(Number(process.env.YUNE_WEB_COMPARATOR_SAMPLES ?? "3")));
+const myRimeBuild = process.env.YUNE_WEB_COMPARATOR_MY_RIME_BUILD ?? "unverified-live";
+const myRimeScenarioId = process.env.YUNE_WEB_COMPARATOR_MY_RIME_SCENARIO_ID
+  ?? (myRimeBuild === "unverified-live" ? "my-rime-live-unverified" : "my-rime-pinned");
+const identityManifestPath = process.env.YUNE_WEB_COMPARATOR_IDENTITY_MANIFEST;
+const sampleCount = Math.max(1, Math.floor(Number(process.env.YUNE_WEB_COMPARATOR_SAMPLES ?? "5")));
 const readyTimeoutMs = 120_000;
 
 interface ComparatorScenario {
@@ -81,16 +113,16 @@ const yuneScenarios: ComparatorScenario[] = [
 
 const myRimeScenarios: ComparatorScenario[] = [
   {
-    id: "my-rime-live",
+    id: myRimeScenarioId,
     app: "my-rime",
-    build: "vercel-live-c73ea17",
+    build: myRimeBuild,
     schema: "luna_pinyin",
     input: "ni",
   },
   {
-    id: "my-rime-live",
+    id: myRimeScenarioId,
     app: "my-rime",
-    build: "vercel-live-c73ea17",
+    build: myRimeBuild,
     schema: "jyutping",
     input: "nei",
   },
@@ -103,6 +135,7 @@ test.describe("YUNE WEB COMPARATOR benchmark", () => {
   test("YUNE WEB COMPARATOR browser baseline", async () => {
     await assertDistExists(trackedDist, "tracked apps/yune-web dist");
     await assertDistExists(publicDist, "public-demo dist");
+    const identityManifest = await loadComparatorIdentityManifest();
     const trackedServer = await startStaticServer(trackedDist);
     const publicServer = await startStaticServer(publicDist);
     const samples: ComparatorSample[] = [];
@@ -114,13 +147,20 @@ test.describe("YUNE WEB COMPARATOR benchmark", () => {
             index,
             scenario.publicDemo ? publicServer.url : trackedServer.url,
             scenario.publicDemo ? publicDist : trackedDist,
+            identityForScenario(identityManifest?.manifest, scenario),
+            identityManifest?.sha256,
           ));
         }
       }
       if (includeMyRime) {
         for (const scenario of myRimeScenarios) {
           for (let index = 0; index < sampleCount; index += 1) {
-            samples.push(await runMyRimeScenarioSample(scenario, index));
+            samples.push(await runMyRimeScenarioSample(
+              scenario,
+              index,
+              identityForScenario(identityManifest?.manifest, scenario),
+              identityManifest?.sha256,
+            ));
           }
         }
       }
@@ -133,11 +173,673 @@ test.describe("YUNE WEB COMPARATOR benchmark", () => {
   });
 });
 
+test.describe("WEB06 comparator endpoint and alignment contract", () => {
+  test.describe.configure({ timeout: 60_000 });
+
+  test("uses the reviewed My RIME editable selector", () => {
+    expect(comparatorSelectorManifest["my-rime"].editable).toBe("#container textarea");
+  });
+
+  test("does not resolve complete ni on the earlier n and 那 render", () => {
+    const earlierN = candidateObservation("yune-web", "n", "那");
+    const failures = validateCandidateObservation(earlierN, "ni");
+    expect(failures).toContain("candidate-composition-is-not-complete-input");
+    expect(failures).toContain("yune-final-input-diagnostic-is-not-coherent-with-dom");
+  });
+
+  test("external browser observer rejects the old body heuristic and waits past n", async ({ page }) => {
+    await page.route("http://comparator.test/**", async route => {
+      await route.fulfill({
+        contentType: "text/html",
+        body: [
+          "<style>textarea,.n-popover,.n-menu,.n-menu-item,button{display:block;width:200px;height:24px}</style>",
+          "<aside data-unrelated-copy>ni</aside>",
+          "<div id='container'><textarea></textarea></div>",
+          "<div class='n-popover'>",
+          "<span class='preedit'>n</span>",
+          "<div class='n-menu'>",
+          "<div class='n-menu-item'><div class='n-menu-item-content--selected'>1 那</div></div>",
+          "<div class='n-menu-item'>2 倪</div><div class='n-menu-item'>3 尼</div>",
+          "<div class='n-menu-item'>4 泥</div><div class='n-menu-item'>5 擬</div>",
+          "<div class='n-menu-item'>6 妳</div>",
+          "</div>",
+          "<button disabled>previous</button><button>next</button>",
+          "</div>",
+        ].join(""),
+      });
+    });
+    await page.goto("http://comparator.test/?schemaId=luna_pinyin");
+    await installComparatorEndpointObserver(page, "my-rime");
+    const oldBodyHeuristicWouldStop = await page.evaluate(() => {
+      const body = document.body.innerText;
+      return body.includes("ni") && /(?:^|\n)\s*1\s+\S+/.test(body);
+    });
+    expect(oldBodyHeuristicWouldStop).toBe(true);
+    const input = page.locator("#container textarea");
+    await input.focus();
+    const beforeEvent = await comparatorEventCount(page);
+    await page.keyboard.type("ni", { delay: comparatorPeerCadenceMs });
+    await page.evaluate(() => {
+      setTimeout(() => {
+        const preedit = document.querySelector(".preedit");
+        const candidate = document.querySelector(".n-menu-item-content--selected");
+        if (preedit) {
+          preedit.textContent = "ni";
+        }
+        if (candidate) {
+          candidate.textContent = "1 你";
+        }
+      }, 25);
+    });
+    const endpoint = await waitForStableCandidateEndpoint(
+      page,
+      "my-rime",
+      "ni",
+      beforeEvent,
+    );
+    const inputEvents = await comparatorEventsSince(page, beforeEvent);
+    expect(endpoint.secondRaf.composition).toBe("ni");
+    expect(endpoint.secondRaf.candidates[0]?.text).toBe("你");
+    expect(endpoint.initial.revision).toBeGreaterThan(endpoint.event.revisionBeforeEvent);
+    expect(inputEvents.map(event => event.key).join("")).toBe("ni");
+    expect((inputEvents[1]?.timeStamp ?? 0) - (inputEvents[0]?.timeStamp ?? 0))
+      .toBeGreaterThanOrEqual(48);
+  });
+
+  test("Yune diagnostic cross-check does not define the common external stop", async ({ page }) => {
+    await page.route("http://yune-comparator.test/**", async route => {
+      const row = (index: number, text: string, highlighted = false) =>
+        "<div class='candidate-row" + (highlighted ? " highlighted" : "") + "'>"
+        + "<span class='candidate-index'>" + index + "</span>"
+        + "<span class='candidate-text'>" + text + "</span>"
+        + "<span class='candidate-note'></span></div>";
+      await route.fulfill({
+        contentType: "text/html",
+        body: [
+          "<style>textarea,.candidate-panel,.candidates,.candidate-row,button,[data-yune-status]{display:block;width:200px;height:24px}</style>",
+          "<textarea class='yd-input-area'></textarea>",
+          "<div class='candidate-panel'><div class='candidate-preedit'>n</div>",
+          "<div class='candidates'>",
+          row(1, "那", true), row(2, "倪"), row(3, "尼"),
+          row(4, "泥"), row(5, "擬"), row(6, "妳"),
+          "</div><button class='page-nav' disabled>previous</button><button class='page-nav'>next</button></div>",
+          "<section data-yune-status><span data-yune-status-schema data-yune-status-schema-id='luna_pinyin'></span>",
+          "<span data-yune-status-composing='true'></span></section>",
+        ].join(""),
+      });
+    });
+    await page.goto("http://yune-comparator.test/?schemaId=luna_pinyin");
+    await installComparatorEndpointObserver(page, "yune-web");
+    const input = page.locator("textarea.yd-input-area");
+    await input.focus();
+    const beforeEvent = await comparatorEventCount(page);
+    await page.keyboard.type("ni", { delay: comparatorPeerCadenceMs });
+    await page.evaluate(() => {
+      setTimeout(() => {
+        const preedit = document.querySelector(".candidate-preedit");
+        const candidate = document.querySelector(".candidate-row.highlighted .candidate-text");
+        if (preedit) {
+          preedit.textContent = "ni";
+        }
+        if (candidate) {
+          candidate.textContent = "你";
+        }
+      }, 25);
+      setTimeout(() => {
+        (window as Window & { diagnosticInstalledAt?: number }).diagnosticInstalledAt = performance.now();
+        document.documentElement.dataset.yunePerfDiagnostics = JSON.stringify([{
+          input: "ni",
+          renderedInput: "ni",
+          renderRevision: 1,
+          candidateCount: 6,
+          totalCandidateCount: 6,
+          firstCandidateText: "你",
+        }]);
+      }, 200);
+    });
+    const endpoint = await waitForStableCandidateEndpoint(
+      page,
+      "yune-web",
+      "ni",
+      beforeEvent,
+      0,
+    );
+    const diagnosticInstalledAt = await page.evaluate(
+      () => (window as Window & { diagnosticInstalledAt?: number }).diagnosticInstalledAt,
+    );
+    const currentEndpointRevision = await page.evaluate(
+      () => (window as Window & { __web06ComparatorObserver?: { revision: number } })
+        .__web06ComparatorObserver?.revision,
+    );
+    expect(endpoint.secondRaf.composition).toBe("ni");
+    expect(endpoint.yuneDiagnostic?.firstCandidateText).toBe("你");
+    expect(endpoint.secondRaf.observedAt).toBeLessThan(diagnosticInstalledAt ?? 0);
+    expect(currentEndpointRevision).toBe(endpoint.secondRaf.revision);
+  });
+
+  test("requires a byte-identical tuple through both post-event animation frames", () => {
+    const unstable = candidateObservation("my-rime", "ni", "你");
+    unstable.firstRaf = { ...unstable.firstRaf, digest: "changed-between-frames" };
+    expect(validateCandidateObservation(unstable, "ni"))
+      .toContain("dom-digest-changed-during-double-raf");
+  });
+
+  test("freezes n KeyN then i KeyI and a post-endpoint Space barrier", () => {
+    const sample = comparatorContractSample(
+      "my-rime",
+      "my-rime-peer",
+      "peer-dist",
+      comparatorIdentity(),
+      50,
+      35,
+    );
+    expect(validateEndpointEvidence(sample.endpoint, "ni", "你", "my-rime")).toEqual([]);
+    if (!sample.endpoint) {
+      throw new Error("test fixture endpoint missing");
+    }
+    sample.endpoint.commit.event = {
+      ...sample.endpoint.commit.event,
+      key: "1",
+      code: "Digit1",
+      timeStamp: sample.endpoint.candidate.secondRaf.observedAt - 1,
+    };
+    const failures = validateEndpointEvidence(sample.endpoint, "ni", "你", "my-rime");
+    expect(failures).toContain("commit-event-is-not-space-key-code");
+    expect(failures).toContain("commit-event-precedes-coherent-candidate-endpoint");
+  });
+
+  test("requires clean source provenance and real compiled table prism and reverse hashes", () => {
+    const invalid = structuredClone(comparatorIdentity()) as unknown as {
+      peer: {
+        artifactSourceCommit: string;
+        artifactSourceTree?: string;
+        repositoryCommit: string;
+        sourceTreeState: string;
+        compiledHashes: Record<string, string>;
+      };
+    };
+    delete invalid.peer.artifactSourceTree;
+    invalid.peer.repositoryCommit = "6".repeat(40);
+    invalid.peer.sourceTreeState = "dirty";
+    invalid.peer.compiledHashes.reverse = "none";
+    expect(() => parseComparatorIdentityManifest(JSON.stringify(invalid)))
+      .toThrow(
+        /peer-artifact-source-tree.*peer-repository-commit-is-not-artifact-source-commit.*peer-source-tree-state.*peer-compiled-reverse/,
+      );
+  });
+
+  test("omits ratios when the essay identity negative control is incomplete", () => {
+    const identity = comparatorIdentity();
+    identity.logicalInputs = identity.logicalInputs.filter(input => input.id !== "essay");
+    const rows = summarizeComparatorRatios([
+      comparatorContractSample("yune-web", "yune-tracked", "tracked-dist", identity, 40, 30),
+      comparatorContractSample("my-rime", "my-rime-peer", "peer-dist", identity, 50, 35),
+    ]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.packageAlignment).toBe("DATA_CONFOUNDED");
+    expect(rows[0]?.ratioStatus).toBe("OMITTED");
+    expect(rows[0]?.reasons.some(reason => reason.includes("essay"))).toBe(true);
+    expect(rows[0]).not.toHaveProperty("p95InputToCandidateRatio");
+    expect(rows[0]).not.toHaveProperty("p95CommitRatio");
+  });
+
+  test("publishes ratios only for complete aligned endpoint and data identities", () => {
+    const identity = comparatorIdentity();
+    const yuneSamples = Array.from({ length: 5 }, (_, sampleIndex) => comparatorContractSample(
+      "yune-web",
+      "yune-tracked",
+      "tracked-dist",
+      identity,
+      40,
+      30,
+      sampleIndex,
+    ));
+    const peerSamples = Array.from({ length: 5 }, (_, sampleIndex) => comparatorContractSample(
+      "my-rime",
+      "my-rime-peer",
+      "peer-dist",
+      identity,
+      50,
+      35,
+      sampleIndex,
+    ));
+    const rows = summarizeComparatorRatios([
+      ...yuneSamples,
+      ...peerSamples,
+    ]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.packageAlignment).toBe("PROVED");
+    expect(rows[0]?.endpointAlignment).toBe("PROVED");
+    expect(rows[0]?.ratioStatus).toBe("PUBLISHED");
+    expect(rows[0]?.p95InputToCandidateRatio).toBe(0.8);
+    expect(rows[0]?.p95CommitRatio).toBeCloseTo(30 / 35);
+  });
+
+  test("omits an otherwise complete ratio with fewer than five fresh-profile rounds", () => {
+    const identity = comparatorIdentity();
+    const rows = summarizeComparatorRatios([
+      comparatorContractSample("yune-web", "yune-tracked", "tracked-dist", identity, 40, 30),
+      comparatorContractSample("my-rime", "my-rime-peer", "peer-dist", identity, 50, 35),
+    ]);
+    expect(rows[0]?.ratioStatus).toBe("OMITTED");
+    expect(rows[0]?.reasons).toContain(
+      "yune-binding-rounds-are-not-exactly-five-contiguous-fresh-profile-samples",
+    );
+    expect(rows[0]?.reasons).toContain(
+      "peer-binding-rounds-are-not-exactly-five-contiguous-fresh-profile-samples",
+    );
+  });
+
+  test("refuses a ratio without the recorded Yune six-row UI deploy proof", () => {
+    const identity = comparatorIdentity();
+    const yuneSamples = Array.from({ length: 5 }, (_, sampleIndex) => comparatorContractSample(
+      "yune-web", "yune-tracked", "tracked-dist", identity, 40, 30, sampleIndex,
+    ));
+    yuneSamples[2]!.pageSizeSetup = undefined;
+    const peerSamples = Array.from({ length: 5 }, (_, sampleIndex) => comparatorContractSample(
+      "my-rime", "my-rime-peer", "peer-dist", identity, 50, 35, sampleIndex,
+    ));
+    const rows = summarizeComparatorRatios([...yuneSamples, ...peerSamples]);
+    expect(rows[0]?.ratioStatus).toBe("OMITTED");
+    expect(rows[0]?.reasons).toContain(
+      "endpoint:endpoint-yune-six-row-setup-provenance-is-missing-or-invalid",
+    );
+  });
+
+  test("refuses a ratio without the pinned peer source and observed frozen selector contract", () => {
+    const identity = comparatorIdentity();
+    identity.peer.upstreamPinnedCommit = "2".repeat(40);
+    const peer = comparatorContractSample(
+      "my-rime",
+      "my-rime-peer",
+      "peer-dist",
+      identity,
+      50,
+      35,
+    );
+    for (const tuple of [
+      peer.endpoint?.candidate.initial,
+      peer.endpoint?.candidate.firstRaf,
+      peer.endpoint?.candidate.secondRaf,
+    ]) {
+      if (tuple) {
+        tuple.selectorManifestId = "unreviewed-peer-selector";
+        tuple.digest = comparatorDomTupleDigest(tuple);
+      }
+    }
+    const rows = summarizeComparatorRatios([
+      comparatorContractSample("yune-web", "yune-tracked", "tracked-dist", identity, 40, 30),
+      peer,
+    ]);
+    expect(rows[0]?.ratioStatus).toBe("OMITTED");
+    expect(rows[0]?.reasons).toContain("endpoint:endpoint-peer-source-is-not-the-pinned-my-rime-commit");
+    expect(rows[0]?.reasons).toContain("endpoint:endpoint-frozen-selector-manifest-not-proved");
+  });
+});
+
+function comparatorContractSample(
+  app: "yune-web" | "my-rime",
+  scenarioId: string,
+  build: string,
+  identity: ComparatorIdentityManifest,
+  inputToCandidateMs: number,
+  commitMs: number,
+  sampleIndex = 0,
+): ComparatorSample {
+  const candidate = candidateObservation(app, "ni", "你");
+  return {
+    scenarioId,
+    app,
+    build,
+    schema: "luna_pinyin",
+    schemaInput: "ni",
+    sampleIndex,
+    url: "http://127.0.0.1/comparator",
+    readyToInputMs: 1,
+    cadenceMs: comparatorPeerCadenceMs,
+    inputToCandidateMs,
+    commitMs,
+    firstCandidateText: "你",
+    committedValue: "你",
+    endpoint: {
+      inputEvents: [
+        {
+          ordinal: 1,
+          type: "keydown",
+          key: "n",
+          code: "KeyN",
+          timeStamp: candidate.event.timeStamp - comparatorPeerCadenceMs,
+          revisionBeforeEvent: 0,
+        },
+        candidate.event,
+      ],
+      candidate,
+      commit: commitObservation(app, "你"),
+    },
+    ...(app === "yune-web" ? { pageSizeSetup: pageSizeSetupProof() } : {}),
+    identity,
+    identityManifestSha256: "d".repeat(64),
+    resources: [],
+    workerUrls: [],
+    consoleErrors: [],
+  };
+}
+
+function pageSizeSetupProof(): ComparatorPageSizeSetup {
+  return {
+    contractVersion: "web06-page-size-setup-v1",
+    requiredRows: 6,
+    initial: {
+      uiValue: "6",
+      localStorageValue: "6",
+      persistedConfigValue: "6",
+      deployStatus: "idle",
+      persistenceDiagnosticCount: 4,
+    },
+    actions: [
+      {
+        ordinal: 1,
+        fromUiValue: "6",
+        targetUiValue: "7",
+        interaction: {
+          kind: "keyboard",
+          key: "ArrowRight",
+          control: "preferences-page-size-range",
+        },
+        deployStatus: "success",
+        loadingComplete: true,
+        localStorageValue: "7",
+        persistedConfigValue: "7",
+        persistenceDiagnosticIndex: 5,
+        engineProbe: {
+          input: "ni",
+          candidateRows: 7,
+          candidates: ["你", "擬", "尼", "泥", "呢", "妳", "妮"],
+          pageIndex: 0,
+          buttonCount: 2,
+          previousDisabled: true,
+          nextDisabled: false,
+          resetKey: "Escape",
+          resetEmpty: true,
+        },
+      },
+      {
+        ordinal: 2,
+        fromUiValue: "7",
+        targetUiValue: "6",
+        interaction: {
+          kind: "keyboard",
+          key: "ArrowLeft",
+          control: "preferences-page-size-range",
+        },
+        deployStatus: "success",
+        loadingComplete: true,
+        localStorageValue: "6",
+        persistedConfigValue: "6",
+        persistenceDiagnosticIndex: 6,
+        engineProbe: {
+          input: "ni",
+          candidateRows: 6,
+          candidates: ["你", "擬", "尼", "泥", "呢", "妳"],
+          pageIndex: 0,
+          buttonCount: 2,
+          previousDisabled: true,
+          nextDisabled: false,
+          resetKey: "Escape",
+          resetEmpty: true,
+        },
+      },
+    ],
+    final: {
+      uiValue: "6",
+      localStorageValue: "6",
+      persistedConfigValue: "6",
+      deployStatus: "success",
+      loadingComplete: true,
+    },
+    measurementPage: {
+      initial: {
+        uiValue: "6",
+        localStorageValue: "6",
+        persistedConfigValue: "6",
+        deployStatus: "idle",
+        persistenceDiagnosticCount: 4,
+      },
+      actions: [
+        {
+          ordinal: 1,
+          fromUiValue: "6",
+          targetUiValue: "7",
+          interaction: {
+            kind: "keyboard",
+            key: "ArrowRight",
+            control: "preferences-page-size-range",
+          },
+          deployStatus: "success",
+          loadingComplete: true,
+          localStorageValue: "7",
+          persistedConfigValue: "7",
+          persistenceDiagnosticIndex: 5,
+        },
+        {
+          ordinal: 2,
+          fromUiValue: "7",
+          targetUiValue: "6",
+          interaction: {
+            kind: "keyboard",
+            key: "ArrowLeft",
+            control: "preferences-page-size-range",
+          },
+          deployStatus: "success",
+          loadingComplete: true,
+          localStorageValue: "6",
+          persistedConfigValue: "6",
+          persistenceDiagnosticIndex: 6,
+        },
+      ],
+      final: {
+        uiValue: "6",
+        localStorageValue: "6",
+        persistedConfigValue: "6",
+        deployStatus: "success",
+        loadingComplete: true,
+      },
+    },
+    engineProof: {
+      candidateRows: 6,
+      pageIndex: 0,
+      buttonCount: 2,
+      previousDisabled: true,
+      nextDisabled: false,
+    },
+  };
+}
+
+function candidateObservation(
+  app: "yune-web" | "my-rime",
+  composition: string,
+  candidateText: string,
+): ComparatorStableObservation {
+  const tuple = comparatorTuple(app, {
+    revision: 2,
+    observedAt: 80,
+    composition,
+    candidates: [
+      { label: "1", text: candidateText, comment: "" },
+      { label: "2", text: "倪", comment: "" },
+      { label: "3", text: "尼", comment: "" },
+      { label: "4", text: "泥", comment: "" },
+      { label: "5", text: "擬", comment: "" },
+      { label: "6", text: "妳", comment: "" },
+    ],
+    candidateSurfaceCount: 1,
+    page: { index: 0, buttonCount: 2, previousDisabled: true, nextDisabled: false },
+    highlightedIndex: 0,
+    caret: {
+      selectorCount: 1,
+      value: "",
+      selectionStart: 0,
+      selectionEnd: 0,
+      selectionDirection: "none",
+      active: true,
+      visible: true,
+      disabled: false,
+    },
+    status: {
+      schemaId: "luna_pinyin",
+      composing: true,
+      surfaceVisible: true,
+      digest: "candidate-status",
+    },
+  });
+  return {
+    event: {
+      ordinal: 2,
+      type: "keydown",
+      key: composition.at(-1) ?? "",
+      code: "KeyI",
+      timeStamp: 70,
+      revisionBeforeEvent: 1,
+    },
+    initial: tuple,
+    firstRaf: { ...tuple, observedAt: 90 },
+    secondRaf: { ...tuple, observedAt: 100 },
+    ...(app === "yune-web" ? {
+      yuneDiagnostic: {
+        index: 1,
+        input: composition,
+        renderedInput: composition,
+        renderRevision: 2,
+        candidateCount: 6,
+        totalCandidateCount: 6,
+        firstCandidateText: candidateText,
+      },
+    } : {}),
+  };
+}
+
+function commitObservation(
+  app: "yune-web" | "my-rime",
+  committedValue: string,
+): ComparatorStableObservation {
+  const tuple = comparatorTuple(app, {
+    revision: 4,
+    observedAt: 120,
+    composition: "",
+    candidates: [],
+    candidateSurfaceCount: 0,
+    page: { index: null, buttonCount: 0, previousDisabled: null, nextDisabled: null },
+    highlightedIndex: -1,
+    caret: {
+      selectorCount: 1,
+      value: committedValue,
+      selectionStart: committedValue.length,
+      selectionEnd: committedValue.length,
+      selectionDirection: "none",
+      active: true,
+      visible: true,
+      disabled: false,
+    },
+    status: {
+      schemaId: "luna_pinyin",
+      composing: false,
+      surfaceVisible: false,
+      digest: "commit-status",
+    },
+  });
+  return {
+    event: {
+      ordinal: 3,
+      type: "keydown",
+      key: " ",
+      code: "Space",
+      timeStamp: 110,
+      revisionBeforeEvent: 3,
+    },
+    initial: tuple,
+    firstRaf: { ...tuple, observedAt: 130 },
+    secondRaf: { ...tuple, observedAt: 140 },
+  };
+}
+
+function comparatorTuple(
+  app: "yune-web" | "my-rime",
+  tuple: Omit<ComparatorDomTuple, "contractVersion" | "selectorManifestId" | "digest">,
+): ComparatorDomTuple {
+  const result: ComparatorDomTuple = {
+    contractVersion: "web06-comparator-endpoint-v1",
+    selectorManifestId: comparatorSelectorManifest[app].id,
+    ...tuple,
+    digest: "",
+  };
+  result.digest = comparatorDomTupleDigest(result);
+  return result;
+}
+
+function comparatorIdentity(): ComparatorIdentityManifest {
+  const yunePackageHash = "a".repeat(64);
+  const peerPackageHash = "b".repeat(64);
+  const logicalHash = "c".repeat(64);
+  const reproducibleSide = (side: "yune" | "peer") => {
+    const packageHash = side === "yune" ? yunePackageHash : peerPackageHash;
+    const artifactSourceCommit = side === "yune" ? "1".repeat(40) : "2".repeat(40);
+    return {
+      repositoryCommit: artifactSourceCommit,
+      upstreamPinnedCommit: side === "yune" ? artifactSourceCommit : comparatorPinnedMyRimeCommit,
+      artifactSourceCommit,
+      artifactSourceTree: "5".repeat(40),
+      sourceTreeState: "clean" as const,
+      artifactSha256: packageHash,
+      generatedManifestSha256: packageHash,
+      completeArtifactManifestSha256: packageHash,
+      buildCommand: "sealed-" + side + "-build-v1",
+      packageManager: {
+        name: (side === "yune" ? "npm" : "pnpm") as "npm" | "pnpm",
+        version: "10.0.0",
+        lockSha256: packageHash,
+        integrityManifestSha256: packageHash,
+      },
+      toolchain: {
+        nodeVersion: "v22.0.0",
+        emscriptenVersion: "4.0.23",
+        emscriptenCommit: "3".repeat(40),
+        compilerVersion: "clang 21",
+      },
+      resolvedRecipes: [{
+        id: "luna-package",
+        repository: "https://example.test/luna",
+        commit: "4".repeat(40),
+        logicalBytesSha256: logicalHash,
+      }],
+      compiledHashes: {
+        table: packageHash,
+        prism: packageHash,
+        reverse: packageHash,
+        "data-model": "none",
+        runtime: packageHash,
+      },
+    };
+  };
+  return {
+    version: "web06-peer-data-v1",
+    yune: reproducibleSide("yune"),
+    peer: reproducibleSide("peer"),
+    logicalInputs: comparatorPeerLogicalInputIds.map(id => id === "grammar-model"
+      ? { id, yuneSha256: "none", peerSha256: "none", explicitNone: true }
+      : { id, yuneSha256: logicalHash, peerSha256: logicalHash }),
+    effectiveConfiguration: { yuneSha256: logicalHash, peerSha256: logicalHash },
+    freshEmptyUserdb: true,
+    sameEndpointObserver: true,
+  };
+}
+
 async function runYuneScenarioSample(
   scenario: ComparatorScenario,
   sampleIndex: number,
   baseUrl: string,
   distRoot: string,
+  identity: ComparatorIdentityManifest | undefined,
+  identityManifestSha256: string | undefined,
 ): Promise<ComparatorSample> {
   const userDataDir = await freshUserDataDir(scenario, sampleIndex);
   const context = await chromium.launchPersistentContext(userDataDir, {
@@ -150,44 +852,74 @@ async function runYuneScenarioSample(
       localStorage.setItem("activeSchema", schema);
       localStorage.setItem("uiLanguage", "en");
       localStorage.setItem("enableAI", "false");
+      localStorage.setItem("pageSize", "6");
     }, { schema: appSchemaId(scenario.runtimeSchema ?? "luna_pinyin") });
-    const page = await context.newPage();
-    const consoleErrors = captureConsoleErrors(page);
     const url = `${baseUrl}/?benchmark=yune-web-comparator&schema=${encodeURIComponent(scenario.runtimeSchema ?? "luna_pinyin")}&scenario=${encodeURIComponent(scenario.id)}&sample=${sampleIndex}`;
-    const startedAt = Date.now();
-    await loadAndWaitYuneReady(page, url, scenario.runtimeSchema ?? "luna_pinyin");
-    const readyAt = Date.now();
-    const readyStartup = await yuneStartupMarker(page);
-    const input = page.locator("input[type='text'], textarea").first();
-    await input.fill("");
-    const beforePerfCount = await yunePerfCount(page);
-    const inputStartedAt = Date.now();
-    await input.click();
-    await page.keyboard.type(scenario.input, { delay: 5 });
-    await page.waitForFunction(
-      minCount => {
-        const diagnostics = JSON.parse(document.documentElement.dataset.yunePerfDiagnostics ?? "[]") as Array<{
-          candidateCount?: number;
-          totalCandidateCount?: number;
-        }>;
-        return diagnostics.slice(Number(minCount)).some(entry =>
-          (entry.candidateCount ?? entry.totalCandidateCount ?? 0) > 0
-        );
-      },
-      beforePerfCount,
-      { timeout: 30_000 },
+    const setupPage = await context.newPage();
+    const setupConsoleErrors = captureConsoleErrors(setupPage);
+    await loadAndWaitYuneReady(
+      setupPage,
+      url + "&phase=page-size-setup",
+      scenario.runtimeSchema ?? "luna_pinyin",
     );
-    const candidateAt = Date.now();
-    const candidatePerf = await latestYunePerf(page);
-    const firstCandidateText = await firstYuneCandidateText(page);
-    const commitStartedAt = Date.now();
+    const pageSizeSetupBeforeReload = await ensureYuneComparatorPageSize(setupPage);
+    await setupPage.close();
+
+    const page = await context.newPage();
+    const measurementConsoleErrors = captureConsoleErrors(page);
+    const startedAt = Date.now();
+    await loadAndWaitYuneReady(
+      page,
+      url + "&phase=measurement",
+      scenario.runtimeSchema ?? "luna_pinyin",
+    );
+    const readyAt = Date.now();
+    const measurementPageSize = await ensureYuneComparatorMeasurementPageSize(page);
+    if (measurementPageSize.final.uiValue !== String(comparatorPeerPageSize)
+        || measurementPageSize.final.localStorageValue !== String(comparatorPeerPageSize)
+        || measurementPageSize.final.persistedConfigValue !== String(comparatorPeerPageSize)
+        || !measurementPageSize.final.loadingComplete) {
+      throw new Error("Yune comparator measurement page did not reload at the frozen six-row setting");
+    }
+    const readyStartup = await yuneStartupMarker(page);
+    const input = page.locator("textarea.yd-input-area");
+    await input.fill("");
+    await installComparatorEndpointObserver(page, "yune-web");
+    const beforePerfCount = await yunePerfCount(page);
+    const beforeInputEventCount = await comparatorEventCount(page);
+    await input.click();
+    await page.keyboard.type(scenario.input, { delay: comparatorPeerCadenceMs });
+    const candidateEndpoint = await waitForStableCandidateEndpoint(
+      page,
+      "yune-web",
+      scenario.input,
+      beforeInputEventCount,
+      beforePerfCount,
+    );
+    const candidateDiagnosticIndex = candidateEndpoint.yuneDiagnostic?.index;
+    const inputEvents = await comparatorEventsSince(page, beforeInputEventCount);
+    if (candidateDiagnosticIndex === undefined) {
+      throw new Error("Yune comparator candidate endpoint did not retain its exact final-input diagnostic");
+    }
+    const candidatePerf = await exactYuneDiagnostic(page, candidateDiagnosticIndex);
+    const firstCandidateText = candidateEndpoint.secondRaf.candidates[0]?.text;
+    const selectedCandidateText = candidateEndpoint.secondRaf.candidates[
+      candidateEndpoint.secondRaf.highlightedIndex
+    ]?.text;
+    if (!selectedCandidateText) {
+      throw new Error("Yune comparator candidate endpoint did not expose a highlighted candidate");
+    }
+    const beforeCommitEventCount = await comparatorEventCount(page);
     await page.keyboard.press("Space");
-    await expect.poll(async () => {
-      const value = await readInputValue(page);
-      return value.length > 0 && value !== scenario.input ? value : "";
-    }, { timeout: 30_000 }).not.toBe("");
-    const commitAt = Date.now();
-    const committedValue = await readInputValue(page);
+    const commitEndpoint = await waitForStableCommitEndpoint(
+      page,
+      "yune-web",
+      selectedCandidateText,
+      beforeCommitEventCount,
+    );
+    const committedValue = commitEndpoint.secondRaf.caret.value;
+    const endpoint = { inputEvents, candidate: candidateEndpoint, commit: commitEndpoint };
+    assertMeasuredEndpoint(endpoint, scenario, committedValue);
     const commitPerf = await latestYunePerf(page);
     let resources = [
       ...await collectPageResources(page),
@@ -203,10 +935,25 @@ async function runYuneScenarioSample(
       sampleIndex,
       url,
       readyToInputMs: readyAt - startedAt,
-      inputToCandidateMs: candidateAt - inputStartedAt,
-      commitMs: commitAt - commitStartedAt,
+      cadenceMs: comparatorPeerCadenceMs,
+      inputToCandidateMs: candidateEndpoint.secondRaf.observedAt - candidateEndpoint.event.timeStamp,
+      commitMs: commitEndpoint.secondRaf.observedAt - commitEndpoint.event.timeStamp,
       firstCandidateText,
       committedValue,
+      endpoint,
+      pageSizeSetup: {
+        ...pageSizeSetupBeforeReload,
+        measurementPage: measurementPageSize,
+        engineProof: {
+          candidateRows: candidateEndpoint.secondRaf.candidates.length,
+          pageIndex: candidateEndpoint.secondRaf.page.index,
+          buttonCount: candidateEndpoint.secondRaf.page.buttonCount,
+          previousDisabled: candidateEndpoint.secondRaf.page.previousDisabled,
+          nextDisabled: candidateEndpoint.secondRaf.page.nextDisabled,
+        },
+      },
+      identity,
+      identityManifestSha256,
       wasmMemory: {
         ready: readyStartup?.wasmMemory,
         candidate: yuneWasmFromPerf(candidatePerf),
@@ -222,7 +969,7 @@ async function runYuneScenarioSample(
       resources,
       storageEstimate: await storageEstimate(page),
       workerUrls: page.workers().map(worker => worker.url()),
-      consoleErrors,
+      consoleErrors: [...setupConsoleErrors, ...measurementConsoleErrors],
     };
   } finally {
     await context.close();
@@ -233,6 +980,8 @@ async function runYuneScenarioSample(
 async function runMyRimeScenarioSample(
   scenario: ComparatorScenario,
   sampleIndex: number,
+  identity: ComparatorIdentityManifest | undefined,
+  identityManifestSha256: string | undefined,
 ): Promise<ComparatorSample> {
   const userDataDir = await freshUserDataDir(scenario, sampleIndex);
   const context = await chromium.launchPersistentContext(userDataDir, {
@@ -241,6 +990,9 @@ async function runMyRimeScenarioSample(
     locale: "zh-HK",
   });
   try {
+    await context.addInitScript(() => {
+      localStorage.setItem("pageSize", "6");
+    });
     const page = await context.newPage();
     const consoleErrors = captureConsoleErrors(page);
     const url = myRimeScenarioUrl(scenario, sampleIndex);
@@ -254,18 +1006,36 @@ async function runMyRimeScenarioSample(
     const readyMemory = await myRimeWorkerMemory(page);
     const input = await editableInput(page);
     await clearEditable(input);
-    const inputStartedAt = Date.now();
+    await installComparatorEndpointObserver(page, "my-rime");
+    const beforeInputEventCount = await comparatorEventCount(page);
     await input.click();
-    await page.keyboard.type(scenario.input, { delay: 5 });
-    await waitForMyRimeCandidate(page, scenario.input);
-    const candidateAt = Date.now();
+    await page.keyboard.type(scenario.input, { delay: comparatorPeerCadenceMs });
+    const candidateEndpoint = await waitForStableCandidateEndpoint(
+      page,
+      "my-rime",
+      scenario.input,
+      beforeInputEventCount,
+    );
     const candidateMemory = await myRimeWorkerMemory(page);
-    const firstCandidateText = await firstMyRimeCandidateText(page);
-    const commitStartedAt = Date.now();
+    const inputEvents = await comparatorEventsSince(page, beforeInputEventCount);
+    const firstCandidateText = candidateEndpoint.secondRaf.candidates[0]?.text;
+    const selectedCandidateText = candidateEndpoint.secondRaf.candidates[
+      candidateEndpoint.secondRaf.highlightedIndex
+    ]?.text;
+    if (!selectedCandidateText) {
+      throw new Error("My RIME comparator candidate endpoint did not expose a highlighted candidate");
+    }
+    const beforeCommitEventCount = await comparatorEventCount(page);
     await page.keyboard.press("Space");
-    await expect.poll(async () => readEditableValue(input), { timeout: 30_000 }).not.toBe("");
-    const commitAt = Date.now();
-    const committedValue = await readEditableValue(input);
+    const commitEndpoint = await waitForStableCommitEndpoint(
+      page,
+      "my-rime",
+      selectedCandidateText,
+      beforeCommitEventCount,
+    );
+    const committedValue = commitEndpoint.secondRaf.caret.value;
+    const endpoint = { inputEvents, candidate: candidateEndpoint, commit: commitEndpoint };
+    assertMeasuredEndpoint(endpoint, scenario, committedValue);
     const commitMemory = await myRimeWorkerMemory(page);
     return {
       scenarioId: scenario.id,
@@ -276,10 +1046,14 @@ async function runMyRimeScenarioSample(
       sampleIndex,
       url,
       readyToInputMs: readyAt - startedAt,
-      inputToCandidateMs: candidateAt - inputStartedAt,
-      commitMs: commitAt - commitStartedAt,
+      cadenceMs: comparatorPeerCadenceMs,
+      inputToCandidateMs: candidateEndpoint.secondRaf.observedAt - candidateEndpoint.event.timeStamp,
+      commitMs: commitEndpoint.secondRaf.observedAt - commitEndpoint.event.timeStamp,
       firstCandidateText,
       committedValue,
+      endpoint,
+      identity,
+      identityManifestSha256,
       wasmMemory: {
         ready: workerMemorySnapshot(readyMemory),
         candidate: workerMemorySnapshot(candidateMemory),
@@ -311,12 +1085,55 @@ async function freshUserDataDir(scenario: ComparatorScenario, sampleIndex: numbe
   return dir;
 }
 
+async function loadComparatorIdentityManifest(): Promise<{
+  manifest: ComparatorIdentityManifest;
+  sha256: string;
+} | undefined> {
+  if (!identityManifestPath) {
+    return undefined;
+  }
+  const manifestFile = path.resolve(identityManifestPath);
+  const text = await readFile(manifestFile, "utf8");
+  return {
+    manifest: parseComparatorIdentityManifest(text),
+    sha256: createHash("sha256").update(text).digest("hex"),
+  };
+}
+
+function identityForScenario(
+  manifest: ComparatorIdentityManifest | undefined,
+  scenario: ComparatorScenario,
+): ComparatorIdentityManifest | undefined {
+  if (!manifest || scenario.schema !== "luna_pinyin" || scenario.input !== "ni") {
+    return undefined;
+  }
+  if (scenario.app === "yune-web") {
+    const yuneBuild = process.env.YUNE_WEB_COMPARATOR_IDENTITY_YUNE_BUILD ?? "tracked-dist";
+    return scenario.build === yuneBuild ? manifest : undefined;
+  }
+  return scenario.build === myRimeBuild ? manifest : undefined;
+}
+
+function assertMeasuredEndpoint(
+  endpoint: ComparatorEndpointEvidence,
+  scenario: ComparatorScenario,
+  committedValue: string,
+): void {
+  const failures = validateEndpointEvidence(endpoint, scenario.input, committedValue, scenario.app);
+  if (failures.length > 0) {
+    throw new Error(
+      "WEB06 comparator rejected the measured " + scenario.app
+      + " selector/composition/page/commit endpoint: " + failures.join("; "),
+    );
+  }
+}
+
 async function loadAndWaitYuneReady(page: Page, url: string, schema: StartupSchema): Promise<void> {
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(
     ({ expectedSchema, appSchema }) => {
       const root = document.documentElement;
-      const textarea = document.querySelector("textarea") as HTMLTextAreaElement | null;
+      const textarea = document.querySelector("textarea.yd-input-area") as HTMLTextAreaElement | null;
       const diagnostics = JSON.parse(root.dataset.yunePersistenceDiagnostics ?? "[]") as Array<{
         source?: string;
         marker?: { phase?: string };
@@ -345,7 +1162,7 @@ async function loadAndWaitMyRimeReady(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(
     () => {
-      const editable = document.querySelector("textarea, input[type='text'], [contenteditable='true']");
+      const editable = document.querySelector("#container textarea");
       const copyLinkButton = [...document.querySelectorAll("button")]
         .find(button => button.getAttribute("title") === "Copy link for current IME") as HTMLButtonElement | undefined;
       return editable !== null
@@ -359,7 +1176,7 @@ async function loadAndWaitMyRimeReady(page: Page, url: string): Promise<void> {
 }
 
 async function editableInput(page: Page) {
-  const input = page.locator("textarea, input[type='text'], [contenteditable='true']").first();
+  const input = page.locator("#container textarea");
   await expect(input).toBeVisible({ timeout: readyTimeoutMs });
   return input;
 }
@@ -374,19 +1191,6 @@ async function clearEditable(locator: ReturnType<Page["locator"]>): Promise<void
     element.textContent = "";
     element.dispatchEvent(new Event("input", { bubbles: true }));
   });
-}
-
-async function readEditableValue(locator: ReturnType<Page["locator"]>): Promise<string> {
-  return await locator.evaluate((element) => {
-    if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-      return element.value;
-    }
-    return element.textContent ?? "";
-  });
-}
-
-async function readInputValue(page: Page): Promise<string> {
-  return await page.locator("input[type='text'], textarea").first().inputValue();
 }
 
 async function yunePerfCount(page: Page): Promise<number> {
@@ -412,56 +1216,6 @@ async function latestYunePerf(page: Page): Promise<{
     }>;
     return diagnostics.at(-1);
   });
-}
-
-async function firstYuneCandidateText(page: Page): Promise<string | undefined> {
-  return await page.locator(".candidate-panel .candidates tbody").first()
-    .getAttribute("data-candidate-text")
-    .then(value => value ?? undefined)
-    .catch(() => undefined);
-}
-
-async function firstMyRimeCandidateText(page: Page): Promise<string | undefined> {
-  return await page.evaluate(() => {
-    const lines = document.body.innerText.split(/\n+/).map(line => line.trim()).filter(Boolean);
-    for (const line of lines) {
-      const match = line.match(/^(?:\d+\s+)(\S+)/);
-      if (match?.[1]) {
-        return match[1];
-      }
-    }
-    return lines.find(line => line.includes("\u4f60"))?.trim();
-  });
-}
-
-async function waitForMyRimeCandidate(page: Page, input: string): Promise<void> {
-  try {
-    await page.waitForFunction(
-      expectedInput => {
-        const body = document.body.innerText;
-        return body.includes(String(expectedInput))
-          && /(?:^|\n)\s*1\s+\S+/.test(body);
-      },
-      input,
-      { timeout: 30_000 },
-    );
-  } catch (error) {
-    const snapshot = await page.evaluate(() => ({
-      activeTag: document.activeElement?.tagName,
-      activeClass: document.activeElement?.getAttribute("class"),
-      activeValue: document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement
-        ? document.activeElement.value
-        : document.activeElement?.textContent,
-      bodyTail: document.body.innerText.slice(-1200),
-      editables: [...document.querySelectorAll("textarea, input[type='text'], [contenteditable='true']")].map(element => ({
-        tag: element.tagName,
-        className: element.getAttribute("class"),
-        disabled: (element as HTMLInputElement | HTMLTextAreaElement).disabled ?? false,
-        value: element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement ? element.value : element.textContent,
-      })),
-    }));
-    throw new Error(`Timed out waiting for My RIME candidate for input ${input}: ${JSON.stringify(snapshot)}; ${String(error)}`);
-  }
 }
 
 async function yuneStartupMarker(page: Page): Promise<{

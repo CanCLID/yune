@@ -1,12 +1,15 @@
 import { OUTPUT_STANDARD_BY_ID, OUTPUT_STANDARD_OPTIONS, normalizeOutputStandard } from "./consts";
 import { Segment } from "./Inputs";
+import { declareWeb06ControlFanout, withWeb06ControlEvent } from "./rime";
 import SchemaSwitcher from "./SchemaSwitcher";
 import { schemaText, uiText } from "./uiText";
 
 import type { OutputStandard } from "./consts";
 import type { RimeSchemaId } from "./types";
+import type { Web06FanoutAction } from "./types";
 import type { UiLanguage } from "./uiText";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, MouseEvent, SetStateAction } from "react";
+import { web06LiveOptionFanout } from "./yune-integration/web06-app-action-map";
 
 function ModeButton({
 	ariaLabel,
@@ -23,7 +26,7 @@ function ModeButton({
 	inactiveGlyph: string;
 	activeLabel: string;
 	inactiveLabel: string;
-	onClick(): void;
+	onClick(event: MouseEvent<HTMLButtonElement>): void;
 }) {
 	return <button
 		type="button"
@@ -69,6 +72,10 @@ export default function Toolbar({
 	setActiveSchema,
 	isCangjie5,
 	setIsCangjie5,
+	isExtendedCharset,
+	isDisabled,
+	web06SchemaChangePlan,
+	web06DeployPreferencePlan,
 	uiLanguage,
 }: {
 	isAsciiMode: boolean;
@@ -81,16 +88,42 @@ export default function Toolbar({
 	setActiveSchema: Dispatch<SetStateAction<RimeSchemaId>>;
 	isCangjie5: boolean;
 	setIsCangjie5: Dispatch<SetStateAction<boolean>>;
+	isExtendedCharset: boolean;
+	isDisabled: boolean;
+	web06SchemaChangePlan(nextSchema: RimeSchemaId): Web06FanoutAction[];
+	web06DeployPreferencePlan(patch: { isCangjie5: boolean }): Web06FanoutAction[];
 	uiLanguage: UiLanguage;
 }) {
 	const outputStandardValue = normalizeOutputStandard(outputStandard, "hong_kong_traditional");
 	const currentOutputStandard = OUTPUT_STANDARD_BY_ID[outputStandardValue];
 	const text = uiText[uiLanguage].toolbar;
-	function cycleOutputStandard() {
+	function liveOptionPlan(patch: Partial<{
+		isAsciiMode: boolean;
+		isFullShape: boolean;
+		outputStandard: OutputStandard;
+	}>): Web06FanoutAction[] {
+		return web06LiveOptionFanout({
+			isAsciiMode,
+			isFullShape,
+			outputStandard: outputStandardValue,
+			activeSchema,
+			isExtendedCharset,
+			isDisabled,
+			...patch,
+		});
+	}
+	function cycleOutputStandard(event: MouseEvent<HTMLButtonElement>) {
+		withWeb06ControlEvent(event, () => {
 		setOutputStandard(currentValue => {
 			const normalizedCurrentValue = normalizeOutputStandard(currentValue, "hong_kong_traditional");
 			const currentIndex = OUTPUT_STANDARD_OPTIONS.findIndex(option => option.id === normalizedCurrentValue);
-			return OUTPUT_STANDARD_OPTIONS[(currentIndex + 1) % OUTPUT_STANDARD_OPTIONS.length].id;
+			const nextValue = OUTPUT_STANDARD_OPTIONS[(currentIndex + 1) % OUTPUT_STANDARD_OPTIONS.length].id;
+			declareWeb06ControlFanout(
+				"toolbar-output-standard-change",
+				liveOptionPlan({ outputStandard: nextValue }),
+			);
+			return nextValue;
+		});
 		});
 	}
 
@@ -99,6 +132,7 @@ export default function Toolbar({
 			<SchemaSwitcher
 				activeSchema={activeSchema}
 				setActiveSchema={setActiveSchema}
+				web06ChangePlan={web06SchemaChangePlan}
 				uiLanguage={uiLanguage}
 				compact />
 			<div className="yd-top-field yd-mode-choice" data-yune-control="mode-buttons">
@@ -111,7 +145,15 @@ export default function Toolbar({
 						inactiveGlyph="英"
 						activeLabel={text.chinese}
 						inactiveLabel={text.ascii}
-						onClick={() => setIsAsciiMode(value => !value)} />
+						onClick={event => withWeb06ControlEvent(event, () =>
+							setIsAsciiMode(value => {
+								declareWeb06ControlFanout(
+									"toolbar-ascii-mode-change",
+									liveOptionPlan({ isAsciiMode: !value }),
+								);
+								return !value;
+							})
+						)} />
 					<ModeButton
 						ariaLabel={text.outputStandard}
 						active
@@ -127,7 +169,15 @@ export default function Toolbar({
 						inactiveGlyph="半"
 						activeLabel={text.fullShapeValue}
 						inactiveLabel={text.halfShape}
-						onClick={() => setIsFullShape(value => !value)} />
+						onClick={event => withWeb06ControlEvent(event, () =>
+							setIsFullShape(value => {
+								declareWeb06ControlFanout(
+									"toolbar-full-shape-change",
+									liveOptionPlan({ isFullShape: !value }),
+								);
+								return !value;
+							})
+						)} />
 				</div>
 			</div>
 		</div>
@@ -138,8 +188,14 @@ export default function Toolbar({
 			<div className="yd-top-field yd-cangjie-choice" data-yune-control="cangjie-version">
 				<span className="yd-top-label">{text.cangjieLookup}</span>
 				<div className="yd-segment-group" role="radiogroup" aria-label={text.cangjieLookup}>
-					<Segment name="cangjieVersion" label={text.cangjie3} state={isCangjie5} setState={setIsCangjie5} value={false} />
-					<Segment name="cangjieVersion" label={text.cangjie5} state={isCangjie5} setState={setIsCangjie5} value={true} />
+					<Segment name="cangjieVersion" label={text.cangjie3} state={isCangjie5} setState={value => {
+						declareWeb06ControlFanout("toolbar-cangjie-version-change", web06DeployPreferencePlan({ isCangjie5: value }));
+						setIsCangjie5(value);
+					}} value={false} />
+					<Segment name="cangjieVersion" label={text.cangjie5} state={isCangjie5} setState={value => {
+						declareWeb06ControlFanout("toolbar-cangjie-version-change", web06DeployPreferencePlan({ isCangjie5: value }));
+						setIsCangjie5(value);
+					}} value={true} />
 				</div>
 			</div>
 		</div>

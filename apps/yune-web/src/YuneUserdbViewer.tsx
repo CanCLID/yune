@@ -1,6 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { uiText } from "./uiText";
+import {
+	declareWeb06ControlFanout,
+	invalidateWeb06Measurement,
+	resolveWeb06DeferredFanoutAction,
+	withWeb06ControlEvent,
+} from "./rime";
+import {
+	WEB06_IMPORT_CONTINUATION_EVENT,
+	web06ControlAction,
+	web06EnqueueThenSignal,
+} from "./yune-integration/private-protocol";
+import {
+	WEB06_ACTION_OWNER,
+	web06SingleActionFanout,
+} from "./yune-integration/web06-app-action-map";
 
 import type { YuneWebUserdbRow, YuneWebUserdbSnapshot } from "./types";
 import type { UiLanguage } from "./uiText";
@@ -148,19 +163,61 @@ export default function YuneUserdbViewer({
 		}
 	}
 	function openImportPicker(event: MouseEvent<HTMLButtonElement>) {
-		event.preventDefault();
-		event.stopPropagation();
-		importInput.current?.click();
+		withWeb06ControlEvent(event, () => {
+			event.preventDefault();
+			event.stopPropagation();
+			importInput.current?.click();
+		});
 	}
 	async function importUserdbFile(event: ChangeEvent<HTMLInputElement>) {
 		const file = event.currentTarget.files?.[0];
 		event.currentTarget.value = "";
 		if (!file) {
+			withWeb06ControlEvent(event, () => undefined);
 			return;
 		}
+		let importEventIdentity: ReturnType<typeof declareWeb06ControlFanout> | undefined;
+		withWeb06ControlEvent(event, () => {
+			importEventIdentity = declareWeb06ControlFanout(
+				"userdb-import-file-change",
+				web06SingleActionFanout(
+					WEB06_ACTION_OWNER.userdb,
+					web06ControlAction("importUserdb", ["<pending-file-text>"]),
+				),
+			);
+		});
 		setIsImporting(true);
 		try {
-			await onImport(await file.text());
+			const rawText = await file.text();
+			if (importEventIdentity === undefined) {
+				invalidateWeb06Measurement(
+					"IMPORT_EVENT_IDENTITY_MISSING",
+					"The userdb file-change event did not produce a WEB-06 identity",
+				);
+			}
+			else {
+				resolveWeb06DeferredFanoutAction(importEventIdentity, 0, [rawText]);
+			}
+			const { result: importResult, signalAccepted: markerAccepted } = web06EnqueueThenSignal(
+				() => onImport(rawText),
+				() => document.dispatchEvent(new CustomEvent(
+					WEB06_IMPORT_CONTINUATION_EVENT,
+					{
+						detail: {
+							protocolVersion: "web06-private-v1",
+							eventId: importEventIdentity?.eventId,
+							eventSequenceId: importEventIdentity?.eventSequenceId,
+						},
+					},
+				)),
+			);
+			if (!markerAccepted) {
+				invalidateWeb06Measurement(
+					"IMPORT_CONTINUATION_MARKER_CANCELLED",
+					"The WEB-06 import continuation marker was cancelled",
+				);
+			}
+			await importResult;
 		} finally {
 			setIsImporting(false);
 		}
@@ -173,7 +230,16 @@ export default function YuneUserdbViewer({
 				className="yd-small-button"
 				data-yune-userdb-refresh
 				disabled={isLoading}
-				onClick={() => void onRefresh()}>
+				onClick={event => withWeb06ControlEvent(event, () => {
+					declareWeb06ControlFanout(
+						"userdb-refresh-click",
+						web06SingleActionFanout(
+							WEB06_ACTION_OWNER.userdb,
+							web06ControlAction("getUserdbSnapshot", []),
+						),
+					);
+					void onRefresh();
+				})}>
 				{isLoading ? text.refreshing : `↻ ${text.refresh}`}
 			</button>
 		</div>

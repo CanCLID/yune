@@ -4,7 +4,12 @@ import CandidatePanel from "./CandidatePanel";
 import { NO_AUTO_FILL, OUTPUT_STANDARD_ENGINE_OPTIONS, normalizeOutputStandard, outputOptionForStandard } from "./consts";
 import { useLoading, usePreferences, useRimeOption } from "./hooks";
 import Preferences from "./Preferences";
-import Rime, { subscribe } from "./rime";
+import Rime, {
+	declareWeb06ControlFanout,
+	subscribe,
+	withWeb06ControlEvent,
+	withWeb06OwnedAction,
+} from "./rime";
 import ThemeSwitcher from "./ThemeSwitcher";
 import Toolbar from "./Toolbar";
 import { notify, setToastLanguage, ToastViewport } from "./toast";
@@ -14,6 +19,13 @@ import YuneControlSurface from "./YuneControlSurface";
 import YuneInspector from "./YuneInspector";
 import YuneStatusStrip from "./YuneStatusStrip";
 import YuneUserdbViewer from "./YuneUserdbViewer";
+import {
+	WEB06_ACTION_OWNER,
+	web06DeployPreferenceFanout,
+	web06SchemaChangeFanout,
+	web06SingleActionFanout,
+} from "./yune-integration/web06-app-action-map";
+import { web06ControlAction } from "./yune-integration/private-protocol";
 
 import type {
 	RimePreferences,
@@ -23,6 +35,9 @@ import type {
 	YuneStatusSnapshot,
 	RimeDeployStatus,
 	RimeResult,
+	RimeSchemaId,
+	Web06ActionIdentity,
+	Web06FanoutAction,
 } from "./types";
 import type { UiLanguage } from "./uiText";
 
@@ -262,10 +277,15 @@ export default function App() {
 				: merged;
 		});
 	}, []);
-	const [userdbRefreshStatus, refreshUserdbAfterCommit] = useReducer(
+	const [userdbRefreshStatus, bumpUserdbRefreshStatus] = useReducer(
 		(n: number) => n + 1,
 		0,
 	);
+	const userdbRefreshCause = useRef<Web06ActionIdentity>();
+	const refreshUserdbAfterCommit = useCallback((identity?: Web06ActionIdentity) => {
+		userdbRefreshCause.current = identity;
+		bumpUserdbRefreshStatus();
+	}, []);
 	const [userdbSnapshot, setUserdbSnapshot] = useState<
 		YuneWebUserdbSnapshot | undefined
 	>();
@@ -330,7 +350,14 @@ export default function App() {
 			}
 			let type: "warning" | "error" | undefined;
 			try {
-				if (!(await Rime.selectSchema(activeSchema))) {
+					if (!(await withWeb06OwnedAction(
+						WEB06_ACTION_OWNER.schema,
+						"selectSchema",
+						[activeSchema],
+						"schema-effect",
+						undefined,
+						() => Rime.selectSchema(activeSchema),
+					))) {
 					type = "warning";
 				}
 				setInspectorDebug(undefined);
@@ -399,8 +426,23 @@ export default function App() {
 			}
 			let type: "warning" | "error" | undefined;
 			try {
-				const success = await Rime.customize(deployPreferences);
-				if (!((await Rime.deploy()) && success)) {
+					const success = await withWeb06OwnedAction(
+						WEB06_ACTION_OWNER.deployPreferences,
+						"customize",
+						[deployPreferences],
+						"deploy-preferences-effect",
+						undefined,
+						() => Rime.customize(deployPreferences),
+					);
+					const deployed = await withWeb06OwnedAction(
+						WEB06_ACTION_OWNER.deployPreferences,
+						"deploy",
+						[],
+						"deploy-preferences-effect",
+						undefined,
+						() => Rime.deploy(),
+					);
+					if (!(deployed && success)) {
 					type = "warning";
 				}
 			} catch {
@@ -438,20 +480,28 @@ export default function App() {
 		runAsyncTask(async () => {
 			let type: "warning" | "error" | undefined;
 			try {
-				await Rime.setOption("soft_cursor", true);
-				await Rime.setOption("ascii_mode", isAsciiMode);
-				await Rime.setOption("full_shape", isFullShape);
-				await Rime.setOption("traditionalization", false);
+					const setLiveOption = (option: string, value: boolean) => withWeb06OwnedAction(
+						WEB06_ACTION_OWNER.liveOptions,
+						"setOption",
+						[option, value],
+						"live-options-effect",
+						undefined,
+						() => Rime.setOption(option, value),
+					);
+					await setLiveOption("soft_cursor", true);
+					await setLiveOption("ascii_mode", isAsciiMode);
+					await setLiveOption("full_shape", isFullShape);
+					await setLiveOption("traditionalization", false);
 				const activeOutputOption = outputOptionForStandard(outputStandardValue, activeSchema);
 				document.documentElement.dataset["yuneActiveOutputOption"] = activeOutputOption ?? "none";
 				const appliedOutputOptions: string[] = [];
 				for (const optionName of OUTPUT_STANDARD_ENGINE_OPTIONS) {
-					await Rime.setOption(optionName, optionName === activeOutputOption);
+						await setLiveOption(optionName, optionName === activeOutputOption);
 					appliedOutputOptions.push(`${optionName}:${optionName === activeOutputOption}`);
 				}
 				document.documentElement.dataset["yuneAppliedOutputOptions"] = appliedOutputOptions.join(",");
-				await Rime.setOption("extended_charset", isExtendedCharset);
-				await Rime.setOption("disabled", isDisabled);
+					await setLiveOption("extended_charset", isExtendedCharset);
+					await setLiveOption("disabled", isDisabled);
 			} catch {
 				type = "error";
 			}
@@ -496,7 +546,14 @@ export default function App() {
 		runAsyncTask(async () => {
 			let type: "error" | undefined;
 			try {
-				await Rime.setOption("yune_inspector", isInspectorEnabled);
+					await withWeb06OwnedAction(
+						WEB06_ACTION_OWNER.inspector,
+						"setOption",
+						["yune_inspector", isInspectorEnabled],
+						"inspector-effect",
+						undefined,
+						() => Rime.setOption("yune_inspector", isInspectorEnabled),
+					);
 				if (!isInspectorEnabled) {
 					setInspectorDebug(undefined);
 				}
@@ -517,7 +574,14 @@ export default function App() {
 		async function applyAiSettings() {
 			let type: "warning" | "error" | undefined;
 			try {
-				if (!(await Rime.customize({ enableAI }))) {
+					if (!(await withWeb06OwnedAction(
+						WEB06_ACTION_OWNER.aiSettings,
+						"customize",
+						[{ enableAI }],
+						"ai-settings-effect",
+						undefined,
+						() => Rime.customize({ enableAI }),
+					))) {
 					type = "warning";
 				}
 			} catch {
@@ -540,7 +604,16 @@ export default function App() {
 		setIsUserdbLoading(true);
 		setUserdbError(undefined);
 		try {
-			setUserdbSnapshot(await Rime.getUserdbSnapshot());
+			const cause = userdbRefreshCause.current;
+			userdbRefreshCause.current = undefined;
+			setUserdbSnapshot(await withWeb06OwnedAction(
+				WEB06_ACTION_OWNER.userdb,
+				"getUserdbSnapshot",
+				[],
+				cause === undefined ? "userdb-refresh-effect" : "commit-userdb-refresh",
+				cause,
+				() => Rime.getUserdbSnapshot(),
+			));
 		} catch (error) {
 			setUserdbError(
 				error instanceof Error
@@ -556,7 +629,14 @@ export default function App() {
 		setIsUserdbLoading(true);
 		setUserdbError(undefined);
 		try {
-			setUserdbSnapshot(await Rime.importUserdb(rawText));
+			setUserdbSnapshot(await withWeb06OwnedAction(
+				WEB06_ACTION_OWNER.userdb,
+				"importUserdb",
+				[rawText],
+				"userdb-import",
+				undefined,
+				() => Rime.importUserdb(rawText),
+			));
 		} catch (error) {
 			setUserdbError(
 				error instanceof Error
@@ -588,6 +668,77 @@ export default function App() {
 	const inputOverlayMessage = engineStartupState === "failed"
 		? text.compose.startupFailed
 		: text.compose.loading;
+	const web06DeployPreferencePlan = useCallback((patch: Partial<DeployPreferenceSet>): Web06FanoutAction[] =>
+		web06DeployPreferenceFanout({
+			pageSize,
+			enableCompletion,
+			enableCorrection,
+			enableSentence,
+			enableLearning,
+			combineCandidates,
+			predictionNeverFirst,
+			predictionThreshold,
+			dictionaryExclude,
+			isCangjie5,
+			...patch,
+		}), [
+		pageSize,
+		enableCompletion,
+		enableCorrection,
+		enableSentence,
+		enableLearning,
+		combineCandidates,
+		predictionNeverFirst,
+		predictionThreshold,
+		dictionaryExclude,
+		isCangjie5,
+	]);
+	const web06SchemaChangePlan = useCallback((nextSchema: RimeSchemaId): Web06FanoutAction[] => {
+		const deployPreferences: DeployPreferenceSet = {
+			pageSize,
+			enableCompletion,
+			enableCorrection,
+			enableSentence,
+			enableLearning,
+			combineCandidates,
+			predictionNeverFirst,
+			predictionThreshold,
+			dictionaryExclude,
+			isCangjie5,
+		};
+		return web06SchemaChangeFanout({
+			nextSchema,
+			deployPreferences,
+			liveOptions: {
+				isAsciiMode,
+				isFullShape,
+				outputStandard: outputStandardValue,
+				activeSchema: nextSchema,
+				isExtendedCharset,
+				isDisabled,
+			},
+			applyDeployPreferences: !(
+				isDefaultDeployPreferenceSet(deployPreferences)
+				&& nextSchema === "jyut6ping3"
+			),
+		});
+	}, [
+		pageSize,
+		enableCompletion,
+		enableCorrection,
+		enableSentence,
+		enableLearning,
+		combineCandidates,
+		predictionNeverFirst,
+		predictionThreshold,
+		dictionaryExclude,
+		isCangjie5,
+		isAsciiMode,
+		isFullShape,
+		outputStandardValue,
+		isExtendedCharset,
+		isDisabled,
+	]);
 
 	return (
 		<div
@@ -626,8 +777,12 @@ export default function App() {
 						setIsFullShape={preferences.setIsFullShape}
 						activeSchema={preferences.activeSchema}
 						setActiveSchema={preferences.setActiveSchema}
-						isCangjie5={preferences.isCangjie5}
-						setIsCangjie5={preferences.setIsCangjie5}
+							isCangjie5={preferences.isCangjie5}
+							setIsCangjie5={preferences.setIsCangjie5}
+							isExtendedCharset={preferences.isExtendedCharset}
+							isDisabled={preferences.isDisabled}
+							web06SchemaChangePlan={web06SchemaChangePlan}
+							web06DeployPreferencePlan={web06DeployPreferencePlan}
 						uiLanguage={uiLanguage}
 					/>
 					<div className="yd-playground-grid">
@@ -697,9 +852,16 @@ export default function App() {
 									className="yd-check yd-toggle"
 									checked={isInspectorEnabled}
 									aria-label={text.inspector.traceAria}
-									onChange={(event) =>
-										setIsInspectorEnabled(event.currentTarget.checked)
-									}
+									onChange={event => withWeb06ControlEvent(event, () => {
+										declareWeb06ControlFanout(
+											"inspector-toggle",
+											web06SingleActionFanout(
+												WEB06_ACTION_OWNER.inspector,
+												web06ControlAction("setOption", ["yune_inspector", event.currentTarget.checked]),
+											),
+										);
+										setIsInspectorEnabled(event.currentTarget.checked);
+									})}
 								/>
 								<span>{isInspectorEnabled ? text.inspector.traceOn : text.inspector.traceOff}</span>
 							</label>

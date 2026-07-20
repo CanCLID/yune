@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { IS_PUBLIC_DEMO, NO_AUTO_FILL } from "./consts";
-import Rime from "./rime";
+import Rime, {
+	declareWeb06ControlFanout,
+	web06ActionIdentityFor,
+	withWeb06ControlEvent,
+	withWeb06OwnedAction,
+} from "./rime";
 import { uiText } from "./uiText";
 
 import type {
@@ -10,6 +15,12 @@ import type {
 	RimeDeployStatus,
 } from "./types";
 import type { UiLanguage } from "./uiText";
+import type { MouseEvent } from "react";
+import { web06ControlAction } from "./yune-integration/private-protocol";
+import {
+	WEB06_ACTION_OWNER,
+	web06SingleActionFanout,
+} from "./yune-integration/web06-app-action-map";
 
 type DiagnosticPayload = {
 	source?: string;
@@ -112,7 +123,7 @@ export default function YuneControlSurface({
 		setDiagnostics(readDiagnosticsSnapshot());
 	}, []);
 
-	const refreshRemoteState = useCallback(async () => {
+	const refreshRemoteState = useCallback(async (cause?: ReturnType<typeof web06ActionIdentityFor>) => {
 		if (!isEngineReady) {
 			return;
 		}
@@ -121,8 +132,22 @@ export default function YuneControlSurface({
 		}
 		try {
 			const [nextCache, nextAssets] = await Promise.all([
-				Rime.deployCacheSnapshot(),
-				Rime.injectedAssetsManifest(),
+				withWeb06OwnedAction(
+					"control-snapshot-background",
+					"deployCacheSnapshot",
+					[],
+					"control-snapshot-refresh",
+					cause,
+					() => Rime.deployCacheSnapshot(),
+				),
+				withWeb06OwnedAction(
+					"control-snapshot-background",
+					"injectedAssetsManifest",
+					[],
+					"control-snapshot-refresh",
+					cause,
+					() => Rime.injectedAssetsManifest(),
+				),
 			]);
 			setCache(nextCache);
 			setAssets(nextAssets);
@@ -148,20 +173,59 @@ export default function YuneControlSurface({
 		return () => window.clearInterval(timer);
 	}, [refreshDiagnostics]);
 
-	async function redeployNow() {
+	async function redeployNow(event: MouseEvent<HTMLButtonElement>) {
+		let promise: ReturnType<typeof Rime.deploy> | undefined;
+		withWeb06ControlEvent(event, () => {
+			declareWeb06ControlFanout(
+				"control-redeploy-click",
+				web06SingleActionFanout(
+					WEB06_ACTION_OWNER.control,
+					web06ControlAction("deploy", []),
+				),
+			);
+			promise = withWeb06OwnedAction(
+				WEB06_ACTION_OWNER.control,
+				"deploy",
+				[],
+				"control-redeploy-click",
+				undefined,
+				() => Rime.deploy(),
+			);
+		});
 		try {
-			await Rime.deploy();
+			await promise;
 		}
 		catch {
 			// Error details are recorded by rime.ts diagnostics.
 		}
 		onDeployMutation();
-		await refreshRemoteState();
+		await refreshRemoteState(promise === undefined ? undefined : web06ActionIdentityFor(promise));
 	}
 
-	async function invalidateCache() {
+	async function invalidateCache(event: MouseEvent<HTMLButtonElement>) {
 		try {
-			const snapshot = await Rime.invalidateDeployCache();
+			let promise: ReturnType<typeof Rime.invalidateDeployCache> | undefined;
+			withWeb06ControlEvent(event, () => {
+				declareWeb06ControlFanout(
+					"control-invalidate-cache-click",
+					web06SingleActionFanout(
+						WEB06_ACTION_OWNER.control,
+						web06ControlAction("invalidateDeployCache", []),
+					),
+				);
+				promise = withWeb06OwnedAction(
+					WEB06_ACTION_OWNER.control,
+					"invalidateDeployCache",
+					[],
+					"control-invalidate-cache-click",
+					undefined,
+						() => Rime.invalidateDeployCache(),
+					);
+				});
+				if (promise === undefined) {
+					throw new Error("Deploy-cache invalidation was not enqueued");
+				}
+				const snapshot = await promise;
 			setCache(snapshot);
 			document.documentElement.dataset["yuneDeployCacheFresh"] = String(snapshot.cacheFresh);
 			onDeployMutation();
@@ -172,9 +236,29 @@ export default function YuneControlSurface({
 		refreshDiagnostics();
 	}
 
-	async function applyFreeformOption() {
+	async function applyFreeformOption(event: MouseEvent<HTMLButtonElement>) {
+		const name = optionName.trim();
+		const value = optionValue === "true";
 		try {
-			await Rime.setOption(optionName.trim(), optionValue === "true");
+			let promise: ReturnType<typeof Rime.setOption> | undefined;
+			withWeb06ControlEvent(event, () => {
+				declareWeb06ControlFanout(
+					"control-freeform-option-click",
+					web06SingleActionFanout(
+						WEB06_ACTION_OWNER.control,
+						web06ControlAction("setOption", [name, value]),
+					),
+				);
+				promise = withWeb06OwnedAction(
+					WEB06_ACTION_OWNER.control,
+					"setOption",
+					[name, value],
+					"control-freeform-option-click",
+					undefined,
+					() => Rime.setOption(name, value),
+				);
+			});
+			await promise;
 		}
 		catch {
 			// Error details are recorded by rime.ts diagnostics.
@@ -182,13 +266,28 @@ export default function YuneControlSurface({
 		refreshDiagnostics();
 	}
 
-	async function applyFreeformCustomize() {
+	async function applyFreeformCustomize(event: MouseEvent<HTMLButtonElement>) {
+		const args = [customizeConfigId.trim(), customizeKey.trim(), customizeValue] as const;
 		try {
-			await Rime.customizeValue(
-				customizeConfigId.trim(),
-				customizeKey.trim(),
-				customizeValue,
-			);
+			let promise: ReturnType<typeof Rime.customizeValue> | undefined;
+			withWeb06ControlEvent(event, () => {
+				declareWeb06ControlFanout(
+					"control-freeform-customize-click",
+					web06SingleActionFanout(
+						WEB06_ACTION_OWNER.control,
+						web06ControlAction("customizeValue", [...args]),
+					),
+				);
+				promise = withWeb06OwnedAction(
+					WEB06_ACTION_OWNER.control,
+					"customizeValue",
+					[...args],
+					"control-freeform-customize-click",
+					undefined,
+					() => Rime.customizeValue(...args),
+				);
+			});
+			await promise;
 		}
 		catch {
 			// Error details are recorded by rime.ts diagnostics.
@@ -240,7 +339,7 @@ export default function YuneControlSurface({
 							className="yd-button"
 							data-yune-control-redeploy
 							disabled={!isEngineReady}
-							onClick={() => void redeployNow()}>
+							onClick={event => void redeployNow(event)}>
 							{text.redeploy}
 						</button>
 						<button
@@ -248,7 +347,7 @@ export default function YuneControlSurface({
 							className="yd-button yd-button-danger"
 							data-yune-control-invalidate-deploy-cache
 							disabled={!isEngineReady}
-							onClick={() => void invalidateCache()}>
+							onClick={event => void invalidateCache(event)}>
 							{text.invalidateCache}
 						</button>
 					</div>
@@ -303,7 +402,7 @@ export default function YuneControlSurface({
 								className="yd-button yd-inline-form-submit"
 								data-yune-freeform-set-option-submit
 								disabled={!isEngineReady}
-								onClick={() => void applyFreeformOption()}>
+								onClick={event => void applyFreeformOption(event)}>
 								{text.apply}
 							</button>
 						</div>
@@ -346,7 +445,7 @@ export default function YuneControlSurface({
 								className="yd-button"
 								data-yune-freeform-customize-submit
 								disabled={!isEngineReady}
-								onClick={() => void applyFreeformCustomize()}>
+								onClick={event => void applyFreeformCustomize(event)}>
 								{text.apply}
 							</button>
 						</div>

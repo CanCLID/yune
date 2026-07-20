@@ -30,6 +30,7 @@ import {
 } from "@yune-ime/yune-web-runtime";
 
 import { translateResponse, type RimeResult } from "./response.js";
+import type { Web06CollectionMode, Web06ComponentSpan } from "../types";
 
 /**
  * Upstream Actions interface from src/types.ts
@@ -87,6 +88,20 @@ let currentPrepareOptions: PrepareYuneWebFilesystemOptions | null = null;
 let currentExtraSharedAssets: YuneWebExtraSharedAsset[] = [];
 let currentAssetVersion = "unstamped";
 let lastKeyResult: RimeResult = { isComposing: false, success: true };
+let currentWeb06Observation: Web06AdapterObservation | undefined;
+let currentWeb06RuntimeObservation: {
+  mode: Web06CollectionMode;
+  now(): number;
+  onSpan(span: {
+    operation: string;
+    stage: string;
+    startedAt: number;
+    finishedAt: number;
+    outcome: "returned" | "threw";
+  }): void;
+  onResponseJsonCopy(copy: { operation: string; json: string }): void;
+  onFailure(failure: unknown): void;
+} | undefined;
 const neutralKeyResult: RimeResult = { isComposing: false, success: true };
 const passThroughModifierKeys = new Set([
   "Alt",
@@ -105,6 +120,14 @@ const passThroughModifierKeys = new Set([
   "Super_L",
   "Super_R",
 ]);
+
+export interface Web06AdapterObservation {
+  mode: Web06CollectionMode;
+  now(): number;
+  onSpan(span: Web06ComponentSpan): void;
+  onEngineRawJson(copy: { operation: string; json: string }): void;
+  onFailure(failure: unknown): void;
+}
 
 type BooleanRimePreference =
   | "enableCompletion"
@@ -227,10 +250,11 @@ export async function initYuneRuntime(
   extraSharedAssets: YuneWebExtraSharedAsset[] = [],
   preserveDeployedAssets = false,
   assetVersion = "unstamped",
+  web06Observation?: Web06AdapterObservation,
 ): Promise<void> {
   // Cleanup previous runtime if exists (one-active-runtime constraint)
   if (currentRuntime !== null) {
-    currentRuntime.cleanup();
+    callWeb06Runtime("cleanup-before-init", () => currentRuntime!.cleanup());
     currentRuntime = null;
   }
 
@@ -238,6 +262,7 @@ export async function initYuneRuntime(
   currentFs = fs;
   currentSchemaId = options.schemaId;
   currentAssetVersion = assetVersion;
+  currentWeb06Observation = web06Observation;
   lastKeyResult = { isComposing: false, success: true };
 
   // Prepare filesystem with explicit assets per D-06
@@ -281,7 +306,37 @@ export async function initYuneRuntime(
 
   // Initialize runtime
   emitPersistenceDiagnostic(fs, prepareOptions, "rime:init:start", "after-init");
-  currentRuntime = YuneWebRuntime.init(module, options);
+  currentWeb06RuntimeObservation = web06Observation === undefined
+    ? undefined
+    : {
+      mode: web06Observation.mode,
+      now: web06Observation.now,
+      onSpan(span) {
+        emitWeb06AdapterCallback(() => web06Observation.onSpan({
+          component: "runtime",
+          operation: span.operation,
+          stage: span.stage,
+          startedAt: span.startedAt,
+          finishedAt: span.finishedAt,
+          outcome: span.outcome === "returned" ? "success" : "error",
+        }), span.operation, "runtime-span");
+      },
+      onResponseJsonCopy(copy) {
+        emitWeb06AdapterCallback(
+          () => web06Observation.onEngineRawJson(copy),
+          copy.operation,
+          "engine-raw-json",
+        );
+      },
+      onFailure(failure) {
+        web06Observation.onFailure(failure);
+      },
+    };
+  const runtimeOptions = {
+    ...options,
+    web06Observation: currentWeb06RuntimeObservation,
+  };
+  currentRuntime = callWeb06Runtime("init", () => YuneWebRuntime.init(module, runtimeOptions));
   emitPersistenceDiagnostic(fs, prepareOptions, "rime:init:finish", "after-init");
   emitPersistenceDiagnostic(fs, prepareOptions, "runtime:init", "after-init");
 
@@ -297,7 +352,7 @@ export async function initYuneRuntime(
  */
 export function cleanupYuneRuntime(): void {
   if (currentRuntime !== null) {
-    currentRuntime.cleanup();
+    callWeb06Runtime("cleanup", () => currentRuntime!.cleanup());
     currentRuntime = null;
   }
   currentModule = null;
@@ -306,6 +361,8 @@ export function cleanupYuneRuntime(): void {
   currentPrepareOptions = null;
   currentExtraSharedAssets = [];
   currentAssetVersion = "unstamped";
+  currentWeb06Observation = undefined;
+  currentWeb06RuntimeObservation = undefined;
   lastKeyResult = { isComposing: false, success: true };
 }
 
@@ -386,10 +443,13 @@ export async function processKey(input: string): Promise<RimeResult> {
   }
 
   // Delegate to Yune runtime via keyEventToRimeKey per D-04
-  const response = currentRuntime.processKeyboardEvent(eventLike);
+  const response = callWeb06Runtime(
+    "process-key",
+    () => currentRuntime!.processKeyboardEvent(eventLike),
+  );
 
   // Translate to upstream RimeResult
-  const result = translateResponse(response);
+  const result = translateObservedResponse("process-key", response);
   lastKeyResult = result;
 
   // Sync persistence after commit
@@ -405,8 +465,8 @@ export async function stageAi(): Promise<RimeResult> {
     throw new Error("Yune runtime not initialized");
   }
 
-  const response = currentRuntime.stageAi();
-  const result = translateResponse(response);
+  const response = callWeb06Runtime("stage-ai", () => currentRuntime!.stageAi());
+  const result = translateObservedResponse("stage-ai", response);
   lastKeyResult = result;
   return result;
 }
@@ -421,8 +481,11 @@ export async function selectCandidate(index: number): Promise<RimeResult> {
     throw new Error("Yune runtime not initialized");
   }
 
-  const response = currentRuntime.selectCandidate(index);
-  const result = translateResponse(response);
+  const response = callWeb06Runtime(
+    "select-candidate",
+    () => currentRuntime!.selectCandidate(index),
+  );
+  const result = translateObservedResponse("select-candidate", response);
 
   // Sync persistence after commit
   if (result.committed && currentFs !== null) {
@@ -442,13 +505,16 @@ export async function deleteCandidate(index: number): Promise<RimeResult> {
     throw new Error("Yune runtime not initialized");
   }
 
-  const response = currentRuntime.deleteCandidate(index);
-  const result = translateResponse(response);
+  const response = callWeb06Runtime(
+    "delete-candidate",
+    () => currentRuntime!.deleteCandidate(index),
+  );
+  const result = translateObservedResponse("delete-candidate", response);
 
   // Sync persistence after user data change
   if (currentFs !== null && currentPrepareOptions !== null) {
     emitPersistenceDiagnostic(currentFs, currentPrepareOptions, "syncToPersistenceAfterMutation:start", "delete-candidate");
-    await syncAfterUserDataChange(currentFs);
+    await observeWeb06Persistence("delete-candidate", () => syncAfterUserDataChange(currentFs!));
     emitPersistenceDiagnostic(currentFs, currentPrepareOptions, "syncToPersistenceAfterMutation:pass", "delete-candidate");
   }
 
@@ -465,8 +531,86 @@ export async function flipPage(backward: boolean): Promise<RimeResult> {
     throw new Error("Yune runtime not initialized");
   }
 
-  const response = currentRuntime.flipPage(backward);
-  return translateResponse(response);
+  const response = callWeb06Runtime("flip-page", () => currentRuntime!.flipPage(backward));
+  return translateObservedResponse("flip-page", response);
+}
+
+function translateObservedResponse(
+  operation: string,
+  response: Parameters<typeof translateResponse>[0],
+): RimeResult {
+  return observeWeb06AdapterStage(operation, "adapter-translation", () => translateResponse(response));
+}
+
+function observeWeb06AdapterStage<T>(operation: string, stage: string, action: () => T): T {
+  const observation = currentWeb06Observation;
+  if (observation === undefined || observation.mode === "off") {
+    return action();
+  }
+  const startedAt = observation.now();
+  let outcome: Web06ComponentSpan["outcome"] = "success";
+  try {
+    return action();
+  } catch (error) {
+    outcome = "error";
+    throw error;
+  } finally {
+    const finishedAt = observation.now();
+    emitWeb06AdapterCallback(() => observation.onSpan({
+      component: "adapter",
+      operation,
+      stage,
+      startedAt,
+      finishedAt,
+      outcome,
+    }), operation, stage);
+  }
+}
+
+async function observeWeb06Persistence<T>(operation: string, action: () => Promise<T>): Promise<T> {
+  const observation = currentWeb06Observation;
+  if (observation === undefined || observation.mode === "off") {
+    return action();
+  }
+  const startedAt = observation.now();
+  let outcome: Web06ComponentSpan["outcome"] = "success";
+  try {
+    return await action();
+  } catch (error) {
+    outcome = "error";
+    throw error;
+  } finally {
+    const finishedAt = observation.now();
+    emitWeb06AdapterCallback(() => observation.onSpan({
+      component: "persistence",
+      operation,
+      stage: "sync",
+      startedAt,
+      finishedAt,
+      outcome,
+    }), operation, "persistence-sync");
+  }
+}
+
+function emitWeb06AdapterCallback(callback: () => void, operation: string, stage: string): void {
+  const observation = currentWeb06Observation;
+  if (observation === undefined || observation.mode === "off") {
+    return;
+  }
+  try {
+    callback();
+  } catch (error) {
+    try {
+      observation.onFailure({ operation, stage, error });
+    } catch {
+      // Observer failures are out-of-band and cannot replace product results.
+    }
+  }
+}
+
+function callWeb06Runtime<T>(operation: string, action: () => T): T {
+  void operation;
+  return action();
 }
 
 /**
@@ -493,7 +637,7 @@ export async function deploy(): Promise<boolean> {
 
   emitPersistenceDiagnostic(currentFs, currentPrepareOptions, "deploy:cache-miss", "deploy");
   invalidateDeployedSchema(currentFs, currentPrepareOptions);
-  const deployed = currentRuntime.deploy();
+  const deployed = callWeb06Runtime("deploy", () => currentRuntime!.deploy());
   if (deployed) {
     writeDeployStamp(currentFs, currentPrepareOptions, currentExtraSharedAssets, currentAssetVersion);
   }
@@ -546,7 +690,10 @@ export async function customize(preferences: RimePreferences): Promise<boolean> 
   const customPatchEntries: CustomPatchEntry[] = [];
 
   if (preferences.enableAI !== undefined) {
-    success = runtime.setAiEnabled(preferences.enableAI) && success;
+    success = callWeb06Runtime(
+      "set-ai-enabled",
+      () => runtime.setAiEnabled(preferences.enableAI!),
+    ) && success;
   }
 
   const customizeSetting = (
@@ -558,7 +705,10 @@ export async function customize(preferences: RimePreferences): Promise<boolean> 
     if (persistedCustomizationMatches(fs, prepareOptions, key, value)) {
       return;
     }
-    const customized = runtime.customize(`${schemaId}.schema`, key, value);
+    const customized = callWeb06Runtime(
+      "customize",
+      () => runtime.customize(`${schemaId}.schema`, key, value),
+    );
     success = success && customized;
     customizedAny = true;
   };
@@ -638,7 +788,10 @@ export async function customizeValue(configId: string, key: string, value: strin
   if (configId.trim().length === 0 || key.trim().length === 0) {
     throw new Error("Yune customizeValue requires a config ID and key");
   }
-  const success = currentRuntime.customize(configId, key, value);
+  const success = callWeb06Runtime(
+    "customize-value",
+    () => currentRuntime!.customize(configId, key, value),
+  );
   if (success && currentFs !== null && currentPrepareOptions !== null) {
     await syncCurrentStateToPersistence("customize");
   }
@@ -709,7 +862,7 @@ export async function setOption(option: string, value: boolean): Promise<void> {
   if (currentRuntime === null) {
     throw new Error("Yune runtime not initialized");
   }
-  if (!currentRuntime.setOption(option, value)) {
+  if (!callWeb06Runtime("set-option", () => currentRuntime!.setOption(option, value))) {
     throw new Error(`Yune setOption failed: ${option}`);
   }
 }
@@ -1037,7 +1190,7 @@ async function syncToPersistenceWithDiagnostic(
   reason: PersistenceSyncReason,
 ): Promise<void> {
   emitPersistenceDiagnostic(fs, prepareOptions, "syncToPersistenceAfterMutation:start", reason);
-  await syncToPersistenceAfterMutation(fs);
+  await observeWeb06Persistence(reason, () => syncToPersistenceAfterMutation(fs));
   emitPersistenceDiagnostic(fs, prepareOptions, "syncToPersistenceAfterMutation:pass", reason);
 }
 

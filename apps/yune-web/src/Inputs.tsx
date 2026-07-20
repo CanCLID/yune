@@ -1,4 +1,5 @@
 import { NO_AUTO_FILL } from "./consts";
+import { withWeb06ControlEvent } from "./rime";
 
 import type { Dispatch, ReactNode } from "react";
 
@@ -49,7 +50,7 @@ export function Toggle({ label, checked, setChecked, description }: CheckboxProp
 			className="yd-check yd-toggle"
 			{...NO_AUTO_FILL}
 			checked={checked}
-			onChange={event => setChecked(event.target.checked)} />
+			onChange={event => withWeb06ControlEvent(event, () => setChecked(event.target.checked))} />
 	</label>;
 }
 
@@ -60,7 +61,7 @@ export function Checkbox({ label, checked, setChecked, description }: CheckboxPr
 			className="yd-check"
 			{...NO_AUTO_FILL}
 			checked={checked}
-			onChange={event => setChecked(event.target.checked)} />
+			onChange={event => withWeb06ControlEvent(event, () => setChecked(event.target.checked))} />
 		<span className="yd-field-copy">
 			<span className="yd-field-label">{label}</span>
 			{description && <span className="yd-field-description">{description}</span>}
@@ -84,7 +85,7 @@ export function Range({ label, min, max, step, value, setValue, description }: R
 			max={max}
 			step={step}
 			value={value}
-			onChange={event => setValue(Number(event.target.value))} />
+			onChange={event => withWeb06ControlEvent(event, () => setValue(Number(event.target.value)))} />
 	</label>;
 }
 
@@ -97,7 +98,7 @@ export function Radio<T>({ name, label, state, setState, value, description }: R
 			{...NO_AUTO_FILL}
 			value={String(value)}
 			checked={state === value}
-			onChange={() => setState(value)} />
+			onChange={event => withWeb06ControlEvent(event, () => setState(value))} />
 		<span className="yd-field-copy">
 			<span className="yd-field-label">{label}</span>
 			{description && <span className="yd-field-description">{description}</span>}
@@ -115,7 +116,7 @@ export function Segment<T>({ name, label, state, setState, value }: RadioProps<T
 			{...NO_AUTO_FILL}
 			value={String(value)}
 			checked={state === value}
-			onChange={() => setState(value)} />
+			onChange={event => withWeb06ControlEvent(event, () => setState(value))} />
 		{label}
 	</label>;
 }

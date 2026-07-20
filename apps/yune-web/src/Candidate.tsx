@@ -4,42 +4,56 @@ import CandidateInfo from "./CandidateInfo";
 import { ShowRomanization } from "./consts";
 import { useLongPress } from "./hooks";
 import { uiText } from "./uiText";
+import { cancelWeb06EventFanout } from "./rime";
 
-import type { InterfacePreferences } from "./types";
-import type { MouseEvent } from "react";
+import type { InterfacePreferences, Web06DomEventIdentity } from "./types";
+import type { MouseEvent, TouchEvent } from "react";
 
-export default function Candidate({ isHighlighted, info, selectCandidate, deleteCandidate, showDictionary, hideDictionary, prefs }: {
+export default function Candidate({ isHighlighted, info, selectCandidate, deleteCandidate, prepareDeleteCandidate, showDictionary, hideDictionary, prefs }: {
 	isHighlighted: boolean;
 	info: CandidateInfo;
-	selectCandidate(): void;
+	selectCandidate(event: MouseEvent): void;
 	deleteCandidate(): void;
+	prepareDeleteCandidate(event: MouseEvent | TouchEvent): Web06DomEventIdentity;
 	showDictionary(): void;
 	hideDictionary(): void;
 	prefs: InterfacePreferences;
 }) {
 	const justDeletedCandidate = useRef(false);
+	const pendingDeleteEvent = useRef<Web06DomEventIdentity>();
 	function _deleteCandidate() {
 		deleteCandidate();
+		pendingDeleteEvent.current = undefined;
 		justDeletedCandidate.current = true;
 	}
 	const {
 		onMouseDown: startLongPress,
-		onMouseUp: cancelLongPress,
 		onTouchStart: startTouchLongPress,
-		onTouchEnd: cancelTouchLongPress,
 		cancel: cancelLongPressTimer,
 	} = useLongPress(_deleteCandidate, 800);
+	function beginDeleteCandidate(event: MouseEvent | TouchEvent) {
+		pendingDeleteEvent.current = prepareDeleteCandidate(event);
+		if (event.type === "mousedown") startLongPress(event as MouseEvent);
+		else startTouchLongPress(event as TouchEvent);
+	}
+	function cancelDeleteCandidate() {
+		cancelLongPressTimer();
+		if (pendingDeleteEvent.current !== undefined) {
+			cancelWeb06EventFanout(pendingDeleteEvent.current, "candidate-long-press-cancelled");
+			pendingDeleteEvent.current = undefined;
+		}
+	}
 	const numOfMoves = useRef(0);
 	useEffect(() => {
 		numOfMoves.current = 0;
 	}, [info]);
-	function _selectCandidate() {
+	function _selectCandidate(event: MouseEvent) {
 		if (justDeletedCandidate.current) {
 			justDeletedCandidate.current = false;
 		}
 		else {
-			cancelLongPressTimer();
-			selectCandidate();
+			cancelDeleteCandidate();
+			selectCandidate(event);
 		}
 	}
 	function _showDictionary(event: MouseEvent) {
@@ -48,7 +62,7 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
 		showDictionary();
 	}
 	function _hideDictionary() {
-		cancelLongPressTimer();
+		cancelDeleteCandidate();
 		hideDictionary();
 	}
 	const showJyutping = prefs.showRomanization === ShowRomanization.Always || prefs.showRomanization === ShowRomanization.ReverseOnly && info.isReverseLookup;
@@ -71,14 +85,15 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
 		onMouseEnter={_showDictionary}
 		onMouseMove={_showDictionary}
 		onMouseLeave={_hideDictionary}
-		onMouseDown={startLongPress}
+		onMouseDown={beginDeleteCandidate}
+		onMouseUp={cancelDeleteCandidate}
 		onTouchStart={event => {
-			startTouchLongPress(event);
+			beginDeleteCandidate(event);
 			showDictionary();
 		}}
 		onTouchMove={showDictionary}
 		onTouchEnd={() => {
-			cancelTouchLongPress();
+			cancelDeleteCandidate();
 			_hideDictionary();
 		}}
 		onTouchCancel={_hideDictionary}>

@@ -6,7 +6,24 @@
  * and message handling logic.
  */
 
-import type { Actions, ListenerArgsMap, Message, RimeResult, RimePreferences, RimeNotification, RimeDeployStatus, RimeSchemaId, YuneWebMemorySnapshot, YuneWebUserdbParseError, YuneWebUserdbRow, YuneWebUserdbSnapshot } from "./types";
+import type {
+  Actions,
+  ListenerArgsMap,
+  RimeResult,
+  RimePreferences,
+  RimeNotification,
+  RimeDeployStatus,
+  RimeSchemaId,
+  Web06WorkerActionEnvelope,
+  Web06WorkerReceipt,
+  Web06WorkerRequestEnvelope,
+  YuneWebMemorySnapshot,
+  YuneWebUserdbParseError,
+  YuneWebUserdbRow,
+  YuneWebUserdbSnapshot,
+} from "./types";
+import { WEB06_PRIVATE_PROTOCOL_VERSION } from "./types";
+import { web06CollectionMode } from "./yune-integration/private-protocol";
 import {
   OCTAGRAM_MODEL_BYTES,
   grammarDiagnosticForSchema,
@@ -30,6 +47,7 @@ import {
   deployCacheSnapshot,
   invalidateDeployCache,
   setOption,
+  type Web06AdapterObservation,
   type YunePersistenceDiagnostic,
 } from "./yune-integration/adapter.js";
 
@@ -396,6 +414,91 @@ const YUNE_WEB_M27_EVIDENCE_VERSION = "m27-startup-v1";
 const YUNE_WEB_M31_EVIDENCE_VERSION = "web03-three-schema-launch-v1";
 const YUNE_PUBLIC_DEMO = typeof YUNE_PUBLIC_DEMO_BUILD !== "undefined" && YUNE_PUBLIC_DEMO_BUILD === true;
 const LATENCY_WORKER_ACTION_MULTIPLIER = latencyWorkerActionMultiplier();
+const WEB06_COLLECTION_MODE = web06CollectionMode(location.search);
+let activeWeb06WorkerReceipt: Web06WorkerReceipt | null = null;
+let web06ExpectedActionSequenceId = 1;
+const web06SeenActionIds = new Set<string>();
+const web06SeenActionIdOrder: string[] = [];
+
+const web06AdapterObservation: Web06AdapterObservation = {
+  mode: WEB06_COLLECTION_MODE,
+  now: () => performance.now(),
+  onSpan(span) {
+    recordWeb06CollectorCallback(`span:${span.component}:${span.stage}`, () => {
+      const receipt = activeWeb06WorkerReceipt;
+      if (receipt === null) return;
+      switch (span.component) {
+        case "runtime":
+          receipt.runtimeSpans.push(span);
+          break;
+        case "adapter":
+          receipt.adapterSpans.push(span);
+          break;
+        case "persistence":
+          receipt.persistenceSpans.push(span);
+          break;
+        case "collector":
+          receipt.collectorSpans.push(span);
+          break;
+      }
+    });
+  },
+  onEngineRawJson(copy) {
+    recordWeb06CollectorCallback(`engine-raw:${copy.operation}`, () => {
+      const receipt = activeWeb06WorkerReceipt;
+      if (receipt === null) return;
+      if (receipt.engineRawJson !== undefined) {
+        receipt.observerFailures.push(`duplicate engineRaw JSON for ${copy.operation}`);
+        return;
+      }
+      receipt.engineRawJson = copy.json;
+    });
+  },
+  onFailure(failure) {
+    try {
+      const detail = stringifyWeb06Failure(failure);
+      if (activeWeb06WorkerReceipt !== null) {
+        activeWeb06WorkerReceipt.observerFailures.push(detail);
+      }
+      else {
+        postMessage({ type: "diagnostic", source: "web06-observer-failure", marker: detail });
+      }
+    } catch {
+      // Measurement failure cannot replace the runtime product result/error.
+    }
+  },
+};
+
+function recordWeb06CollectorCallback(operation: string, callback: () => void): void {
+  const receipt = activeWeb06WorkerReceipt;
+  const startedAt = performance.now();
+  try {
+    callback();
+  } catch (error) {
+    receipt?.observerFailures.push(`${operation}: ${stringifyWeb06Failure(error)}`);
+  } finally {
+    const finishedAt = performance.now();
+    receipt?.collectorSpans.push({
+      component: "collector",
+      operation,
+      stage: "callback",
+      startedAt,
+      finishedAt,
+      outcome: "success",
+    });
+  }
+}
+
+function stringifyWeb06Failure(value: unknown): string {
+  if (value instanceof Error) {
+    return `${value.name}: ${value.message}`;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
 
 function latencyWorkerActionMultiplier() {
   const raw = new URLSearchParams(location.search).get("latencyWorkerActionMultiplier");
@@ -410,7 +513,7 @@ function latencyWorkerActionMultiplier() {
   return value;
 }
 
-function latencyMultiplierForAction(name: keyof Actions, args: Message["args"]) {
+function latencyMultiplierForAction(name: keyof Actions, args: unknown[]) {
   const input = name === "processKey" ? args[0] : undefined;
   return typeof input === "string" && /^\{[A-Za-z]\}$/.test(input)
     ? LATENCY_WORKER_ACTION_MULTIPLIER
@@ -1154,9 +1257,10 @@ async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets =
     },
     assets,
     schema.dictionaryId,
-    perSchemaExtraSharedAssets,
-    preserveDeployedAssets,
-    YUNE_WEB_ASSET_VERSION,
+      perSchemaExtraSharedAssets,
+      preserveDeployedAssets,
+      YUNE_WEB_ASSET_VERSION,
+      web06AdapterObservation,
   );
   activeSchemaId = schemaId;
   const activeGrammarDiagnostic = {
@@ -1174,28 +1278,122 @@ async function schemaAssetSource(path: string): Promise<AssetSource> {
   return { type: "content", content: await loadPublicSchemaAsset(path) };
 }
 
-addEventListener("message", async ({ data: { name, args } }: MessageEvent<Message>) => {
+addEventListener("message", async (event: MessageEvent<Web06WorkerRequestEnvelope>) => {
+  const workerMessageReceivedAt = performance.now();
+  const { data } = event;
+  if (data.kind === "clock-ping") {
+    const workerSentAt = performance.now();
+    postMessage({
+      protocolVersion: WEB06_PRIVATE_PROTOCOL_VERSION,
+      kind: "clock-echo",
+      pingId: data.pingId,
+      mainSentAt: data.mainSentAt,
+      workerReceivedAt: workerMessageReceivedAt,
+      workerSentAt,
+    });
+    return;
+  }
+  await handleWeb06WorkerAction(data, workerMessageReceivedAt);
+});
+
+async function handleWeb06WorkerAction(
+  envelope: Web06WorkerActionEnvelope,
+  workerMessageReceivedAt: number,
+): Promise<void> {
+  const protocolFailures: string[] = [];
+  if (envelope.protocolVersion !== WEB06_PRIVATE_PROTOCOL_VERSION) {
+    protocolFailures.push(`protocol ${envelope.protocolVersion}`);
+  }
+  if (envelope.mode !== WEB06_COLLECTION_MODE) {
+    protocolFailures.push(`mode ${envelope.mode}, expected ${WEB06_COLLECTION_MODE}`);
+  }
+  if (web06SeenActionIds.has(envelope.identity.actionId)) {
+    protocolFailures.push(`duplicate actionId ${envelope.identity.actionId}`);
+  }
+  if (envelope.identity.sequenceId !== web06ExpectedActionSequenceId) {
+    protocolFailures.push(
+      `sequence ${envelope.identity.sequenceId}, expected ${web06ExpectedActionSequenceId}`,
+    );
+  }
+  web06SeenActionIds.add(envelope.identity.actionId);
+  web06SeenActionIdOrder.push(envelope.identity.actionId);
+  if (web06SeenActionIdOrder.length > 8_192) {
+    protocolFailures.push("worker action-ID ring exceeded 8192 records");
+    const evicted = web06SeenActionIdOrder.shift();
+    if (evicted !== undefined) web06SeenActionIds.delete(evicted);
+  }
+  web06ExpectedActionSequenceId = Math.max(
+    web06ExpectedActionSequenceId,
+    envelope.identity.sequenceId + 1,
+  );
+
   if (loading) await loadRime;
+  const workerActionStartedAt = performance.now();
   const workerStartedAt = nowMs();
+  const receipt: Web06WorkerReceipt = {
+    workerMessageReceivedAt,
+    workerActionStartedAt,
+    workerFinishedAt: workerActionStartedAt,
+    runtimeSpans: [],
+    adapterSpans: [],
+    persistenceSpans: [],
+    collectorSpans: [],
+    observerFailures: protocolFailures,
+  };
+  if (activeWeb06WorkerReceipt !== null) {
+    receipt.observerFailures.push("worker received an action while another receipt was active");
+  }
+  activeWeb06WorkerReceipt = receipt;
   try {
-    // @ts-expect-error Unactionable
-    const result = await actions[name](...args);
+    // The private envelope is stripped here. The public action receives only
+    // its original arguments and returns its original result shape.
+    // @ts-expect-error The discriminated action tuple is validated by the main-thread registry.
+    const result = await actions[envelope.name](...envelope.args);
     const amplification = amplifyWorkerAction(
       workerStartedAt,
-      latencyMultiplierForAction(name, args),
+      latencyMultiplierForAction(envelope.name, envelope.args),
     );
     const workerFinishedAt = nowMs();
-    postMessage({ type: "success", result, elapsedMs: Math.round(workerFinishedAt - workerStartedAt), workerStartedAt, workerFinishedAt, ...amplification });
+    receipt.workerFinishedAt = performance.now();
+    postMessage({
+      protocolVersion: WEB06_PRIVATE_PROTOCOL_VERSION,
+      kind: "action-result",
+      mode: WEB06_COLLECTION_MODE,
+      identity: envelope.identity,
+      resultType: "success",
+      result,
+      receipt,
+      elapsedMs: Math.round(workerFinishedAt - workerStartedAt),
+      workerStartedAt,
+      workerFinishedAt,
+      ...amplification,
+    });
   }
   catch (error) {
     const amplification = amplifyWorkerAction(
       workerStartedAt,
-      latencyMultiplierForAction(name, args),
+      latencyMultiplierForAction(envelope.name, envelope.args),
     );
     const workerFinishedAt = nowMs();
-    postMessage({ type: "error", error, elapsedMs: Math.round(workerFinishedAt - workerStartedAt), workerStartedAt, workerFinishedAt, ...amplification });
+    receipt.workerFinishedAt = performance.now();
+    postMessage({
+      protocolVersion: WEB06_PRIVATE_PROTOCOL_VERSION,
+      kind: "action-result",
+      mode: WEB06_COLLECTION_MODE,
+      identity: envelope.identity,
+      resultType: "error",
+      error,
+      receipt,
+      elapsedMs: Math.round(workerFinishedAt - workerStartedAt),
+      workerStartedAt,
+      workerFinishedAt,
+      ...amplification,
+    });
   }
-});
+  finally {
+    activeWeb06WorkerReceipt = null;
+  }
+}
 
 // Cleanup on worker termination
 addEventListener("unload", () => {

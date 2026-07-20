@@ -160,13 +160,275 @@ interface NamedMessage<K extends keyof Actions> {
 	reject: (reason: unknown) => void;
 	enqueuedAt?: number;
 	sentAt?: number;
+	web06: Web06ActionIdentity;
 }
 
 export type Message = NamedMessage<keyof Actions>;
 
+/**
+ * WEB-06 metadata is private to the yune-web main/worker transport. It never
+ * enters the public Actions arguments or the runtime/native response payload.
+ */
+export const WEB06_PRIVATE_PROTOCOL_VERSION = "web06-private-v1" as const;
+
+export type Web06CollectionMode = "off" | "minimal" | "full";
+export type Web06ActionClass = "native-key" | "adapter-only" | "read-only" | "stateful-barrier";
+export type Web06EventClassification = "mapped-action(s)" | "frontend-consumed" | "browser-pass-through";
+export type Web06TerminalOutcome =
+	| "painted"
+	| "superseded"
+	| "committed"
+	| "processed-no-visual-change"
+	| "barrier-completed"
+	| "failure";
+
+export type Web06BoundaryKind =
+	| "none"
+	| "correction"
+	| "selection"
+	| "paging"
+	| "commit"
+	| "modifier-release"
+	| "cancel"
+	| "focus-loss"
+	| "schema"
+	| "option"
+	| "deploy"
+	| "persistence"
+	| "error";
+
+export interface Web06DomEventSnapshot {
+	type: "keydown" | "keyup" | "blur" | "click" | "change" | "mousedown" | "touchstart";
+	code: string;
+	key: string;
+	timeStamp: number;
+	repeat: boolean;
+	ctrlKey: boolean;
+	metaKey: boolean;
+	altKey: boolean;
+	shiftKey: boolean;
+}
+
+export interface Web06MappedAction {
+	name: keyof Actions;
+	args: unknown[];
+	actionClass: Web06ActionClass;
+	supersedable: boolean;
+	boundary: Web06BoundaryKind;
+	deferred?: boolean;
+}
+
+export interface Web06FanoutAction {
+	owner: string;
+	action: Web06MappedAction;
+}
+
+export interface Web06ControlEventLike {
+	type: string;
+	timeStamp: number;
+	ctrlKey?: boolean;
+	metaKey?: boolean;
+	altKey?: boolean;
+	shiftKey?: boolean;
+	nativeEvent?: Web06ControlEventLike;
+}
+
+export interface Web06EventMapResult {
+	classification: Web06EventClassification;
+	reason: string;
+	preventDefault: boolean;
+	actions: Web06MappedAction[];
+	shiftEffect?: "start" | "mark-chorded" | "finish-toggle" | "finish-without-toggle";
+}
+
+export interface Web06DomEventIdentity extends Web06DomEventSnapshot {
+	protocolVersion: typeof WEB06_PRIVATE_PROTOCOL_VERSION;
+	eventId: string;
+	eventSequenceId: number;
+	eventDeliveredAt: number;
+	classification: Web06EventClassification;
+	reason: string;
+	mappedActionCount: number;
+	compositionEpochId: number;
+	supersessionSubRunId: number;
+}
+
+export interface Web06ActionIdentity {
+	protocolVersion: typeof WEB06_PRIVATE_PROTOCOL_VERSION;
+	actionId: string;
+	sequenceId: number;
+	eventId?: string;
+	eventSequenceId?: number;
+	eventActionIndex?: number;
+	compositionEpochId: number;
+	supersessionSubRunId: number;
+	actionClass: Web06ActionClass;
+	supersedable: boolean;
+	boundary: Web06BoundaryKind;
+	rawInputSequence: string[];
+	originKind: "dom-event" | "background";
+	originReason: string;
+	causedByActionId?: string;
+	causedBySequenceId?: number;
+	causedByEventId?: string;
+	causedByEventSequenceId?: number;
+	actionEnqueuedAt: number;
+	mainQueueDepthAtEnqueue: number;
+	workerSentAt?: number;
+	workerDispatchDepth?: number;
+}
+
+export interface Web06ActionContext {
+	event?: Web06DomEventIdentity;
+	eventActionIndex?: number;
+	compositionEpochId: number;
+	supersessionSubRunId: number;
+	actionClass: Web06ActionClass;
+	supersedable: boolean;
+	boundary: Web06BoundaryKind;
+	rawInputSequence: string[];
+	originKind?: "dom-event" | "background";
+	originReason?: string;
+	causedByActionId?: string;
+	causedBySequenceId?: number;
+	causedByEventId?: string;
+	causedByEventSequenceId?: number;
+}
+
+export interface Web06ClockPingEnvelope {
+	protocolVersion: typeof WEB06_PRIVATE_PROTOCOL_VERSION;
+	kind: "clock-ping";
+	pingId: string;
+	mainSentAt: number;
+}
+
+export interface Web06ClockEchoEnvelope {
+	protocolVersion: typeof WEB06_PRIVATE_PROTOCOL_VERSION;
+	kind: "clock-echo";
+	pingId: string;
+	mainSentAt: number;
+	workerReceivedAt: number;
+	workerSentAt: number;
+}
+
+export interface Web06WorkerActionEnvelope {
+	protocolVersion: typeof WEB06_PRIVATE_PROTOCOL_VERSION;
+	kind: "action";
+	mode: Web06CollectionMode;
+	identity: Web06ActionIdentity;
+	name: keyof Actions;
+	args: unknown[];
+}
+
+export interface Web06ComponentSpan {
+	component: "runtime" | "adapter" | "persistence" | "collector";
+	operation: string;
+	stage: string;
+	startedAt: number;
+	finishedAt: number;
+	outcome: "success" | "error";
+}
+
+export interface Web06WorkerReceipt {
+	workerMessageReceivedAt: number;
+	workerActionStartedAt: number;
+	workerFinishedAt: number;
+	runtimeSpans: Web06ComponentSpan[];
+	adapterSpans: Web06ComponentSpan[];
+	persistenceSpans: Web06ComponentSpan[];
+	collectorSpans: Web06ComponentSpan[];
+	engineRawJson?: string;
+	observerFailures: string[];
+}
+
+export interface Web06WorkerResultEnvelope {
+	protocolVersion: typeof WEB06_PRIVATE_PROTOCOL_VERSION;
+	kind: "action-result";
+	mode: Web06CollectionMode;
+	identity: Web06ActionIdentity;
+	resultType: "success" | "error";
+	result?: ReturnType<Actions[keyof Actions]>;
+	error?: unknown;
+	receipt: Web06WorkerReceipt;
+	elapsedMs?: number;
+	workerStartedAt?: number;
+	workerFinishedAt?: number;
+	workerBaseElapsedMs?: number;
+	workerAmplificationMs?: number;
+	workerActionMultiplier?: number;
+}
+
+export type Web06WorkerRequestEnvelope = Web06ClockPingEnvelope | Web06WorkerActionEnvelope;
+export type Web06WorkerResponseEnvelope = Web06ClockEchoEnvelope | Web06WorkerResultEnvelope;
+
+export interface Web06ClockExchange {
+	pingId: string;
+	mainSentAt: number;
+	workerReceivedAt: number;
+	workerSentAt: number;
+	mainReceivedAt: number;
+	offset: number;
+	netRtt: number;
+	uncertainty: number;
+}
+
+export interface Web06PresentationFingerprint {
+	input: string;
+	page: number;
+	isLastPage: boolean;
+	highlightedIndex: number;
+	candidates: {
+		label: string;
+		text: string;
+		comment: string;
+		source: string;
+	}[];
+	status: Record<string, unknown> | null;
+	textareaValue: string;
+	selectionStart: number;
+	selectionEnd: number;
+}
+
+export interface Web06PresentationOutcomeReceipt {
+	identity: Web06ActionIdentity;
+	outcome: Web06TerminalOutcome;
+	stateUpdateScheduledAt: number;
+	stateCommittedAt?: number;
+	firstRafAt?: number;
+	terminalObservedAt: number;
+	presentationExpected: Web06PresentationFingerprint;
+	domObserved: Web06PresentationFingerprint;
+	presentationDigest: string;
+	supersededBySequenceId?: number;
+	supersessionSequenceLag?: number;
+}
+
+export interface Web06ActionReceipt {
+	identity: Web06ActionIdentity;
+	returnedIdentity?: Web06ActionIdentity;
+	name: keyof Actions;
+	args: unknown[];
+	mainResponseReceivedAt?: number;
+	responseMappingStartedAt?: number;
+	responseMappingFinishedAt?: number;
+	worker?: Web06WorkerReceipt;
+	presentation?: Web06PresentationOutcomeReceipt;
+	resultType?: "success" | "error";
+}
+
+export interface Web06MeasurementInvalidation {
+	code: string;
+	detail: string;
+	recordedAt: number;
+	actionId?: string;
+	eventId?: string;
+}
+
 export interface InputState {
 	isPrevDisabled: boolean;
 	isNextDisabled: boolean;
+	page: number;
+	isLastPage: boolean;
 	inputBuffer: InputBuffer;
 	candidates: CandidateInfo[];
 	highlightedIndex: number;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, IS_PUBLIC_DEMO, Language, PUBLIC_SCHEMA_OPTIONS, SCHEMA_OPTIONS, normalizeOutputStandard } from "./consts";
-import Rime, { subscribe } from "./rime";
+import Rime, { subscribe, withWeb06OwnedAction } from "./rime";
 import { notify } from "./toast";
 import { isUiLanguage } from "./uiText";
 
@@ -65,7 +65,14 @@ export function useRimeOption(option: string, defaultValue: boolean, deployStatu
 		}
 		async function setOption() {
 			try {
-				await Rime.setOption(option, value);
+				await withWeb06OwnedAction(
+					`rime-option:${option}`,
+					"setOption",
+					[option, value],
+					"rime-option-effect",
+					undefined,
+					() => Rime.setOption(option, value),
+				);
 				writeOptionDataset(option, value);
 			}
 			catch {

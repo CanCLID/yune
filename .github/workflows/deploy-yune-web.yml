@@ -114,7 +114,7 @@ jobs:
     needs: classify
     if: needs.classify.outputs.release_required == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 90
     outputs:
       archive_sha256: ${{ steps.seal.outputs.archive_sha256 }}
       artifact_name: yune-web-release-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -130,7 +130,9 @@ jobs:
           printf 'EVIDENCE_ROOT=%s\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_OUTPUT_DIR=%s/latency\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_EVIDENCE_DIR=%s/latency\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
-          mkdir -p "$EVIDENCE_ROOT/latency"
+          printf 'YUNE_WEB_WEB06_EVIDENCE_DIR=%s/web06\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_WEB06_OUTPUT_DIR=%s/web06/playwright\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          mkdir -p "$EVIDENCE_ROOT/latency" "$EVIDENCE_ROOT/web06/playwright"
           {
             printf 'source_commit=%s\n' "$GITHUB_SHA"
             printf 'source_tree_state=unavailable-before-checkout\n'
@@ -144,8 +146,9 @@ jobs:
           } > "$EVIDENCE_ROOT/environment.txt"
           {
             printf '%s\n' 'bash apps/yune-web/public-demo/build-public-release.sh'
-            printf '%s\n' 'bash apps/yune-web/public-demo/certify-public-release.sh'
-            printf '%s\n' 'tar certified public-demo/dist; hash exact archive'
+            printf '%s\n' 'tar built public-demo/dist once; hash exact archive'
+            printf '%s\n' 'safely extract and reconcile exact archive bytes'
+            printf '%s\n' 'bash apps/yune-web/public-demo/certify-public-release.sh (unchanged WEB03-11 plus distinct WEB06)'
           } > "$EVIDENCE_ROOT/commands.txt"
       - name: Reject GitHub UI reruns
         run: |
@@ -165,9 +168,7 @@ jobs:
             >> "$EVIDENCE_ROOT/environment.txt"
       - name: Build pinned public artifact
         run: bash apps/yune-web/public-demo/build-public-release.sh
-      - name: Run binding WEB03-11 certification once
-        run: bash apps/yune-web/public-demo/certify-public-release.sh
-      - name: Seal certified artifact
+      - name: Seal public artifact once before measurement
         id: seal
         run: |
           cp apps/yune-web/public-demo/dist/build-info.json "$EVIDENCE_ROOT/build-info.json"
@@ -176,6 +177,57 @@ jobs:
           archive_sha256="$(sha256sum "$EVIDENCE_ROOT/yune-web-dist.tar.gz" | awk '{print $1}')"
           printf '%s\n' "$archive_sha256" > "$EVIDENCE_ROOT/yune-web-dist.tar.gz.sha256"
           printf 'archive_sha256=%s\n' "$archive_sha256" >> "$GITHUB_OUTPUT"
+          printf 'sealed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$EVIDENCE_ROOT/environment.txt"
+      - name: Safely extract and reconcile sealed bytes
+        env:
+          ARCHIVE: ${{ runner.temp }}/yune-web-release-${{ github.sha }}/yune-web-dist.tar.gz
+          DESTINATION: ${{ runner.temp }}/certified-release-dist
+          EXPECTED_ARCHIVE_SHA256: ${{ steps.seal.outputs.archive_sha256 }}
+          YUNE_WEB_EXPECTED_DIST: ${{ runner.temp }}/certified-release-dist
+          YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+          YUNE_WEB_LOCAL_ARTIFACT_RECEIPT: ${{ runner.temp }}/yune-web-release-${{ github.sha }}/sealed-artifact-verification.json
+        run: |
+          sibling="$(tr -d '[:space:]' < "$ARCHIVE.sha256")"
+          actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          test "$actual" = "$sibling"
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import tarfile
+
+          archive = pathlib.Path(os.environ["ARCHIVE"])
+          destination = pathlib.Path(os.environ["DESTINATION"])
+          destination.mkdir(parents=True, exist_ok=False)
+          seen = set()
+          with tarfile.open(archive, "r:gz") as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  relative = pathlib.PurePosixPath(member.name)
+                  normalized = relative.as_posix()
+                  if normalized == "." and member.isdir():
+                      continue
+                  if (
+                      relative.is_absolute()
+                      or ".." in relative.parts
+                      or "\\" in member.name
+                      or not (member.isfile() or member.isdir())
+                      or normalized == "."
+                      or normalized in seen
+                  ):
+                      raise SystemExit(f"unsafe archive member: {member.name!r}")
+                  seen.add(normalized)
+              bundle.extractall(destination, members=members, filter="data")
+          PY
+          node apps/yune-web/e2e/verify-local-artifact.mjs
+      - name: Run unchanged WEB03-11 and distinct WEB06 certification over sealed bytes
+        env:
+          YUNE_WEB_CERTIFIED_ARCHIVE: ${{ runner.temp }}/yune-web-release-${{ github.sha }}/yune-web-dist.tar.gz
+          YUNE_WEB_CERTIFIED_ARCHIVE_SHA256: ${{ steps.seal.outputs.archive_sha256 }}
+          YUNE_WEB_CERTIFIED_DIST_ROOT: ${{ runner.temp }}/certified-release-dist
+          YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          bash apps/yune-web/public-demo/certify-public-release.sh
           printf 'completed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$EVIDENCE_ROOT/environment.txt"
       - name: Preserve build, gate, and artifact receipts
         if: always()
@@ -483,22 +535,30 @@ jobs:
 
   preview-canary:
     name: Source-pinned preview canary
-    needs: deploy-preview
+    needs:
+      - build-certify
+      - deploy-preview
     if: needs.deploy-preview.outputs.current == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       CI: "1"
       YUNE_WEB_APP_URL: ${{ needs.deploy-preview.outputs.deployment_url }}
       YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+      YUNE_WEB_CERTIFIED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
       YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT: "1"
+      YUNE_WEB_WEB06_GATE_SCOPE: preview-canary
     steps:
       - name: Seed preview canary receipt
         run: |
           printf 'PLAYWRIGHT_BROWSERS_PATH=%s/ms-playwright\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_OUTPUT_DIR=%s/preview-canary\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_EVIDENCE_DIR=%s/preview-canary\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-          mkdir -p "$RUNNER_TEMP/preview-canary"
+          printf 'YUNE_WEB_WEB06_EVIDENCE_DIR=%s/preview-canary/web06\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_WEB06_OUTPUT_DIR=%s/preview-canary/web06/playwright\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_WEB06_DIST_ROOT=%s/preview-certified-dist\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_CERTIFIED_ARCHIVE=%s/preview-release/yune-web-dist.tar.gz\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/preview-canary/web06/playwright"
           {
             printf '{\n'
             printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
@@ -519,24 +579,79 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
+      - name: Download sealed bundle for preview reconciliation
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.build-certify.outputs.artifact_name }}
+          path: ${{ runner.temp }}/preview-release
+      - name: Safely extract and verify sealed preview reference
+        env:
+          ARCHIVE: ${{ runner.temp }}/preview-release/yune-web-dist.tar.gz
+          DESTINATION: ${{ runner.temp }}/preview-certified-dist
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
+          YUNE_WEB_EXPECTED_DIST: ${{ runner.temp }}/preview-certified-dist
+          YUNE_WEB_LOCAL_ARTIFACT_RECEIPT: ${{ runner.temp }}/preview-canary/web06/sealed-artifact-verification.json
+        run: |
+          sibling="$(tr -d '[:space:]' < "$ARCHIVE.sha256")"
+          actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          test "$actual" = "$sibling"
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import tarfile
+
+          archive = pathlib.Path(os.environ["ARCHIVE"])
+          destination = pathlib.Path(os.environ["DESTINATION"])
+          destination.mkdir(parents=True, exist_ok=False)
+          seen = set()
+          with tarfile.open(archive, "r:gz") as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  relative = pathlib.PurePosixPath(member.name)
+                  normalized = relative.as_posix()
+                  if normalized == "." and member.isdir():
+                      continue
+                  if (
+                      relative.is_absolute()
+                      or ".." in relative.parts
+                      or "\\" in member.name
+                      or not (member.isfile() or member.isdir())
+                      or normalized == "."
+                      or normalized in seen
+                  ):
+                      raise SystemExit(f"unsafe archive member: {member.name!r}")
+                  seen.add(normalized)
+              bundle.extractall(destination, members=members, filter="data")
+          PY
+          node apps/yune-web/e2e/verify-local-artifact.mjs
+      - name: Reconcile every deployed preview byte before timing
+        run: npm --prefix apps/yune-web/e2e run test:e2e:web06:preview-reconcile
       - name: Install source-pinned canary runtime
         run: |
           npm --prefix apps/yune-web/e2e ci
           PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/ms-playwright" \
             node apps/yune-web/e2e/node_modules/@playwright/test/cli.js install --with-deps chromium
-      - name: Run deployed canary once
+      - name: Run unchanged WEB03 and frozen WEB06 preview canaries once
         run: |
+          web03_status=failed
+          web06_status=failed
           if npm --prefix apps/yune-web/e2e run test:e2e:input-latency; then
-            status=passed
-          else
-            status=failed
+            web03_status=passed
           fi
+          if npm --prefix apps/yune-web/e2e run test:e2e:web06:preview-canary; then
+            web06_status=passed
+          fi
+          status=failed
+          [ "$web03_status" = passed ] && [ "$web06_status" = passed ] && status=passed
           {
             printf '{\n'
             printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
             printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
             printf '  "completedAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             printf '  "measurementStarted": true,\n'
+            printf '  "web03Status": "%s",\n' "$web03_status"
+            printf '  "web06ExistingNormalGuardRapidJyutpingStatus": "%s",\n' "$web06_status"
             printf '  "status": "%s"\n' "$status"
             printf '}\n'
           } > "$RUNNER_TEMP/preview-canary/setup-status.json"

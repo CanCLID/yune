@@ -17,7 +17,9 @@ tree `f1c36a0079d85628f5cbef140bd94288930cc2e8`. No production-default memory
 reduction or supplemental-ratchet claim was accepted. Closeout also preserves
 the literal workspace red and uses two cfg(test)-only contract corrections plus
 nonduplicative owning-target/never-reached recovery; no runtime behavior changed.
-No numbered milestone is currently active. Current performance results and
+WEB-06 is the active milestone under the reviewed rapid-typing smoothness plan;
+the user explicitly parked the protected M62 macOS native-memory draft on
+2026-07-19. Current performance results and
 bottleneck analysis live only in the
 [`Yune Performance Dashboard`](./reports/yune-vs-librime-performance.md).
 TypeDuck-Windows product/frontend work is owned by the separate
@@ -47,6 +49,8 @@ TypeDuck-Windows product/frontend work is owned by the separate
   — the completed schema-general reachability formalism record.
 - [`plans/completed/m61-plan-native-track-a-memory-owner-reduction.md`](./plans/completed/m61-plan-native-track-a-memory-owner-reduction.md)
   — the completed Windows Track A measured partial/no-go record.
+- [`plans/active/web06-plan-rapid-typing-smoothness.md`](./plans/active/web06-plan-rapid-typing-smoothness.md)
+  — the active, reviewed browser rapid-typing measurement and attribution plan.
 - [`plans/`](./plans) — active, reference, and completed execution records.
 
 ## Current Snapshot
@@ -56,20 +60,24 @@ TypeDuck-Windows product/frontend work is owned by the separate
 | Schema-general reachability | M59 ships default-on single-character reachability for every current and future schema automatically on install. M60 binds it to the canonical contract, retained `version: m59-reach03-v1`, `reachabilityFormalismVersion: m60-reachability-v1`, exactly `reachabilityOptOuts: []`, classified tracked roots, a production-semantic Rust audit, and blocking-open onboarding. Final native behavior/performance authority remains `443cc636`; browser/WASM/package closeout remains bound to `5fa986d8`, with manifest follow-up `07845e02`. | Keep the M60 contract and mandatory checker fail closed. Any future opt-out requires a separately approved complete row and an exact explicit-false bijection. |
 | Native performance | The signed M59 Windows ceilings remain authoritative. Final Windows source `443cc636` passes `32/32` aggregate and `160/160` individual observations. The reviewed Mac packet at `0111cf47` is diagnostic and source-unmatched. | Keep the Windows ratchet unchanged. Any causal platform claim or optimization proposal needs fresh same-source, same-lane evidence and an identified structural owner. |
 | Native memory | M61 completed the exact-source Windows owned/byte-backed diagnostic. Correction source `91f59696` reduced Track A peak working-set median from `154,030,080 B` to `116,162,560 B` and owner-snapshot private median from `108,482,560 B` to `83,386,368 B`, but named owners explained only `74.61%` of the private delta and the `6,371,950 B` residual exceeded its `5,019,238 B` bound. Disposition D restored runtime tree `f1c36a…`; no default memory win is claimed. | Keep M61 closed. Any future native-memory proposal requires a new plan, fresh source-bound attribution, and a newly authorized owner; do not retry or extend the exhausted M61 branch. |
-| Web harness | WEB03-11 remains closed at clean source `ef485b10`; its deployment-maintenance delivery boundary is active at clean source `d5f2ca7b`. The unchanged local gate passed 8/8 scenarios and 186/186 keys, the source-pinned preview canary passed, the identical archive was promoted, and production verified all 11 required files. Cloudflare Git auto-builds are disabled and credentialed jobs reassert that interlock. This is not a refresh of M59 browser authority or the browser peer lane. | Keep the source classifier, secret-free certification, one preview canary, identical-byte promotion, and production hash verification fail-closed. Preserve every measured red; use a fresh explicitly named run only for a diagnosed setup failure. |
+| Web harness | WEB03-11 remains closed at clean source `ef485b10`; its deployment-maintenance delivery boundary is active at clean source `d5f2ca7b`. The unchanged local gate passed 8/8 scenarios and 186/186 keys, the source-pinned preview canary passed, the identical archive was promoted, and production verified all 11 required files. Cloudflare Git auto-builds are disabled and credentialed jobs reassert that interlock. WEB-06 is now active under its frozen rapid-typing, corrected-peer, and attribution-first contract. | Execute the reviewed WEB-06 plan literally. Preserve WEB03-11, every measured red, exact artifact/source identity, and the fail-closed preview/deployment interlocks; do not select a production optimization before valid RED attribution. Local commits and one preview canary are authorized; Git push and production promotion require fresh explicit approval after the preview is green. |
 | AI-native layer | M11/M13 proved a default-off local AI layer above the deterministic engine. | Keep AI outside the classic path unless a named experiment explicitly enables it and owns privacy, memory, and behavior evidence. |
 | Platform products | TypeDuck-Windows product/frontend work has transferred to `CanCLID/yune-windows`. | Bring back only a separately proposed engine, package, or profile-API requirement with oracle evidence and owning tests. |
 
 ## Authoritative Sequence
 
-1. **Preserve the completed M60/M61 boundaries.** Keep the schema-general
+1. **Execute WEB-06 while M62 remains parked.** Complete the reviewed browser
+   rapid-typing measurement correction, frozen five-round RED, attribution,
+   evidence-selected implementation or measured no-go, and source-identical
+   preview canary without widening into M62 or another lane.
+2. **Preserve the completed M60/M61 boundaries.** Keep the schema-general
    reachability contract, default runtime tree, signed registry, and M61
    measured-red evidence unchanged.
-2. **Do not continue the exhausted M61 branch.** A future native-memory effort
+3. **Do not continue the exhausted M61 branch.** A future native-memory effort
    requires a new plan and fresh owner evidence; the diagnostic correction,
    projected supplemental pass, and working-set movement are not an accepted
    production reduction.
-3. **Open other future work only through its owning lane.** Browser memory,
+4. **Open other future work only through its owning lane.** Browser memory,
    Apple-device validation, product-profile storage, schema-id migration, and
    AI remain separate scopes.
 
@@ -112,10 +120,11 @@ a milestone for speculative layering work.
 ## Performance North Star
 
 Performance is lane-specific; Yune is not described as universally faster
-than librime. A future performance milestone must name one lane, capture fresh
+than librime. A performance milestone must name one lane, capture fresh
 same-run baseline and noise evidence, identify one structural owner before code
 changes, define a real win bar, preserve oracle and ABI behavior, and be willing
-to close partial or no-go. No latency implementation is currently selected.
+to close partial or no-go. WEB-06 is active, but no latency implementation may
+be selected until its frozen valid RED identifies an in-scope causal owner.
 See the
 [`current dashboard`](./reports/yune-vs-librime-performance.md#current-bottleneck-analysis)
 for measurements and owner-ranked bottlenecks.
@@ -161,8 +170,9 @@ acceptance authorities.
 - **M47 product-profile memory polish:** RED-09/10/11-style asset/profile,
   allocator, or keyboard-startup work remains separate from the completed M61
   Track A no-go and requires fresh product-lane ownership.
-- **Browser fair-lane work:** refresh the same-schema peer lane before choosing
-  a startup, WASM-memory, or encoded-resource owner.
+- **M62 macOS native-memory convergence:** the protected draft remains intact
+  but parked by explicit user decision while WEB-06 runs; it is not folded into
+  WEB-06 or automatically activated by WEB-06 closeout.
 - **TypeDuck profile storage or schema-id migration:** require explicit scope,
   userdb/cache-key migration evidence, and profile-specific oracle guards.
 - **librime C++ plugin ABI:** defer Lua, dynamic octagram plugins, predict, and

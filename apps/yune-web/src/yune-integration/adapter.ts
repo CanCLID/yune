@@ -31,7 +31,6 @@ import {
 
 import { translateResponse, type RimeResult } from "./response.js";
 import type { Web06CollectionMode, Web06ComponentSpan } from "../types";
-
 /**
  * Upstream Actions interface from src/types.ts
  */
@@ -306,7 +305,7 @@ export async function initYuneRuntime(
 
   // Initialize runtime
   emitPersistenceDiagnostic(fs, prepareOptions, "rime:init:start", "after-init");
-  currentWeb06RuntimeObservation = web06Observation === undefined
+  currentWeb06RuntimeObservation = web06Observation === undefined || web06Observation.mode !== "full"
     ? undefined
     : {
       mode: web06Observation.mode,
@@ -544,7 +543,7 @@ function translateObservedResponse(
 
 function observeWeb06AdapterStage<T>(operation: string, stage: string, action: () => T): T {
   const observation = currentWeb06Observation;
-  if (observation === undefined || observation.mode === "off") {
+  if (observation === undefined || observation.mode !== "full") {
     return action();
   }
   const startedAt = observation.now();
@@ -569,7 +568,7 @@ function observeWeb06AdapterStage<T>(operation: string, stage: string, action: (
 
 async function observeWeb06Persistence<T>(operation: string, action: () => Promise<T>): Promise<T> {
   const observation = currentWeb06Observation;
-  if (observation === undefined || observation.mode === "off") {
+  if (observation === undefined || observation.mode !== "full") {
     return action();
   }
   const startedAt = observation.now();
@@ -594,7 +593,7 @@ async function observeWeb06Persistence<T>(operation: string, action: () => Promi
 
 function emitWeb06AdapterCallback(callback: () => void, operation: string, stage: string): void {
   const observation = currentWeb06Observation;
-  if (observation === undefined || observation.mode === "off") {
+  if (observation === undefined || observation.mode !== "full") {
     return;
   }
   try {
@@ -1210,7 +1209,9 @@ function emitPersistenceDiagnostic(
     persistedConfig: snapshotPersistedCustomConfig(fs, prepareOptions),
     deployedConfig: snapshotDeployedSchemaConfig(fs, prepareOptions),
   };
-  console.info(`YUNE_PERSISTENCE ${JSON.stringify(diagnostic)}`);
+  if (currentWeb06Observation === undefined || currentWeb06Observation.mode === "off") {
+    console.info(`YUNE_PERSISTENCE ${JSON.stringify(diagnostic)}`);
+  }
   const diagnosticGlobal = globalThis as typeof globalThis & {
     onYunePersistenceDiagnostic?: (marker: YunePersistenceDiagnostic) => void;
   };

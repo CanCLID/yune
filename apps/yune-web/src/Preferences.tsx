@@ -13,13 +13,11 @@ import {
 import { candidateLayoutText, displayLanguageText, outputStandardText, showRomanizationText, typefaceText, uiText } from "./uiText";
 
 import type { ShowRomanization } from "./consts";
-import type { PreferencesWithSetter } from "./types";
+import type { PreferencesWithSetter, Web06FanoutAction } from "./types";
 import { useEffect } from "react";
 import { web06ControlAction } from "./yune-integration/private-protocol";
 import {
 	WEB06_ACTION_OWNER,
-	web06DeployPreferenceFanout,
-	web06LiveOptionFanout,
 	web06SingleActionFanout,
 } from "./yune-integration/web06-app-action-map";
 
@@ -33,9 +31,31 @@ const DICTIONARY_EXCLUDE_BY_SCHEMA = {
 const thresholdRange = { min: 0, max: 200000, step: 1000 } as const;
 const languageOrder = Object.values(Language);
 
+type DeployPreferencePatch = Partial<{
+	pageSize: number;
+	enableCompletion: boolean;
+	enableCorrection: boolean;
+	enableSentence: boolean;
+	enableLearning: boolean;
+	combineCandidates: boolean;
+	predictionNeverFirst: boolean;
+	predictionThreshold: number;
+	dictionaryExclude: string[];
+}>;
+
+type LiveOptionPatch = Partial<{
+	isAsciiMode: boolean;
+	isFullShape: boolean;
+	outputStandard: PreferencesWithSetter["outputStandard"];
+	isExtendedCharset: boolean;
+	isDisabled: boolean;
+}>;
+
 type PreferencesProps = PreferencesWithSetter & {
 	isAsciiPunct: boolean;
 	setIsAsciiPunct(checked: boolean): void;
+	web06DeployPreferencePlan(patch: DeployPreferencePatch): Web06FanoutAction[];
+	web06LiveOptionPlan(patch: LiveOptionPatch): Web06FanoutAction[];
 };
 
 export default function Preferences(prefs: PreferencesProps) {
@@ -78,47 +98,11 @@ export default function Preferences(prefs: PreferencesProps) {
 				.filter(Boolean),
 		);
 	}
-	function deployPreferencePlan(patch: Partial<{
-		pageSize: number;
-		enableCompletion: boolean;
-		enableCorrection: boolean;
-		enableSentence: boolean;
-		enableLearning: boolean;
-		combineCandidates: boolean;
-		predictionNeverFirst: boolean;
-		predictionThreshold: number;
-		dictionaryExclude: string[];
-	}>) {
-		return web06DeployPreferenceFanout({
-			pageSize: prefs.pageSize,
-			enableCompletion: prefs.enableCompletion,
-			enableCorrection: prefs.enableCorrection,
-			enableSentence: prefs.enableSentence,
-			enableLearning: prefs.enableLearning,
-			combineCandidates: prefs.combineCandidates,
-			predictionNeverFirst: prefs.predictionNeverFirst,
-			predictionThreshold: prefs.predictionThreshold,
-			dictionaryExclude: prefs.dictionaryExclude,
-			isCangjie5: prefs.isCangjie5,
-			...patch,
-		});
+	function deployPreferencePlan(patch: DeployPreferencePatch) {
+		return prefs.web06DeployPreferencePlan(patch);
 	}
-	function liveOptionPlan(patch: Partial<{
-		isAsciiMode: boolean;
-		isFullShape: boolean;
-		outputStandard: typeof outputStandard;
-		isExtendedCharset: boolean;
-		isDisabled: boolean;
-	}>) {
-		return web06LiveOptionFanout({
-			isAsciiMode: prefs.isAsciiMode,
-			isFullShape: prefs.isFullShape,
-			outputStandard,
-			activeSchema: prefs.activeSchema,
-			isExtendedCharset: prefs.isExtendedCharset,
-			isDisabled: prefs.isDisabled,
-			...patch,
-		});
+	function liveOptionPlan(patch: LiveOptionPatch) {
+		return prefs.web06LiveOptionPlan(patch);
 	}
 	function declareDeployPreferenceChange(reason: string, patch: Parameters<typeof deployPreferencePlan>[0]) {
 		declareWeb06ControlFanout(reason, deployPreferencePlan(patch));

@@ -10,11 +10,21 @@ import {
   web06AsciiModeToggleActions,
   web06ActionIdentitiesEqual,
   web06CollectionMode,
+  web06CollectionModeProvenance,
+	web06DeferredControlAction,
   web06EnqueueThenSignal,
   web06PrivateActionArgs,
   web06ReceiptCapacity,
+  web06AdapterProjectionFingerprint,
+  web06AdapterProjectionFingerprintsEqual,
+  web06EngineRawAdapterProjection,
+  web06EngineRawFingerprint,
+  web06PresentationFingerprintDigest,
+  web06PresentationFingerprintsEqual,
+  web06PresentationStateDigest,
   web06StableDigest,
   web06TimestampsAreOrdered,
+  web06TerminalContract,
 } from "../src/yune-integration/private-protocol.js";
 
 import type {
@@ -85,14 +95,41 @@ function context(overrides: Partial<Parameters<typeof mapWeb06KeyboardEvent>[1]>
 describe("WEB-06 private protocol", () => {
   it("freezes collection modes and bounded capacities", () => {
     expect(web06CollectionMode("")).toBe("minimal");
-    expect(web06CollectionMode("?yuneWeb06Mode=off")).toBe("off");
+    expect(web06CollectionMode("?unrelated=1")).toBe("minimal");
+    expect(web06CollectionMode("?yuneWeb06Mode=minimal")).toBe("minimal");
     expect(web06CollectionMode("?yuneWeb06Mode=full")).toBe("full");
+    expect(() => web06CollectionMode("?yuneWeb06Mode=off")).toThrow(/Invalid yuneWeb06Mode/);
     expect(() => web06CollectionMode("?yuneWeb06Mode=other")).toThrow(/Invalid yuneWeb06Mode/);
+    expect(() => web06CollectionMode("?yuneWeb06Mode=minimal&yuneWeb06Mode=full")).toThrow(/at most once/);
+    expect(web06CollectionModeProvenance("")).toBe("instrumented-default-minimal");
+    expect(web06CollectionModeProvenance("?unrelated=1")).toBe("instrumented-default-minimal");
+    expect(web06CollectionModeProvenance("?yuneWeb06Mode=minimal")).toBe("instrumented-explicit-minimal");
+    expect(web06CollectionModeProvenance("?yuneWeb06Mode=full")).toBe("instrumented-explicit-full");
     expect([
       web06ReceiptCapacity("off"),
       web06ReceiptCapacity("minimal"),
       web06ReceiptCapacity("full"),
     ]).toEqual([0, 2_048, 8_192]);
+  });
+
+  it("assigns exactly one terminal owner to every Action", () => {
+    expect(actionNames.map(name => [name, web06TerminalContract(name)])).toEqual([
+      ["setOption", { strategy: "listener", workerEffect: "engine-state", doubleRaf: true }],
+      ["selectSchema", { strategy: "listener", workerEffect: "engine-state", doubleRaf: true }],
+      ["getUserdbSnapshot", { strategy: "owner-effect", workerEffect: "snapshot-read", ownerEffect: "ui-userdb-refresh", doubleRaf: true }],
+      ["importUserdb", { strategy: "owner-effect", workerEffect: "engine-persistence", ownerEffect: "ui-userdb-refresh", doubleRaf: true }],
+      ["processKey", { strategy: "presentation", doubleRaf: true }],
+      ["stageAi", { strategy: "presentation", doubleRaf: true }],
+      ["selectCandidate", { strategy: "presentation", doubleRaf: true }],
+      ["deleteCandidate", { strategy: "presentation", doubleRaf: true }],
+      ["flipPage", { strategy: "presentation", doubleRaf: true }],
+      ["customize", { strategy: "worker-effect", doubleRaf: true }],
+      ["customizeValue", { strategy: "worker-effect", workerEffect: "engine-persistence", doubleRaf: true }],
+      ["deploy", { strategy: "listener", workerEffect: "engine-persistence", doubleRaf: true }],
+      ["deployCacheSnapshot", { strategy: "owner-effect", workerEffect: "snapshot-read", ownerEffect: "ui-diagnostic-refresh", doubleRaf: true }],
+      ["invalidateDeployCache", { strategy: "owner-effect", workerEffect: "cache-invalidation", ownerEffect: "cache-invalidation", doubleRaf: true }],
+      ["injectedAssetsManifest", { strategy: "owner-effect", workerEffect: "snapshot-read", ownerEffect: "ui-diagnostic-refresh", doubleRaf: true }],
+    ]);
   });
 
   it("classifies every public Action without changing its public shape", () => {
@@ -188,7 +225,7 @@ describe("WEB-06 private protocol", () => {
     ]);
     expect(keyup.actions).toHaveLength(12);
     expect(keyup.actions.every(action =>
-      action.deferred === true
+      action.deferred === undefined
       && action.actionClass === "stateful-barrier"
       && action.boundary === "modifier-release"
     )).toBe(true);
@@ -221,6 +258,30 @@ describe("WEB-06 private protocol", () => {
       capturedHasComposition: false,
       currentHasComposition: true,
     })).actions).toEqual([]);
+  });
+
+  it("keeps non-ASCII text browser-owned when production has no active composition", () => {
+    const accented = keyEvent("keydown", "é", "KeyE");
+    expect(mapWeb06KeyboardEvent(accented, context({
+      capturedHasComposition: false,
+      currentHasComposition: false,
+      isInputFocused: true,
+    }))).toMatchObject({
+      classification: "browser-pass-through",
+      reason: "unmapped-keydown",
+      actions: [],
+    });
+
+    // Once composition exists, the production handler intentionally forwards
+    // the physical key; it is a non-supersedable boundary, not an invented
+    // ASCII printable insertion.
+    expect(mapWeb06KeyboardEvent(accented, context()).actions[0]).toMatchObject({
+      name: "processKey",
+      args: ["{é}"],
+      supersedable: false,
+      actionClass: "stateful-barrier",
+      boundary: "commit",
+    });
   });
 
   it("keeps off/minimal/full event decisions and public action arguments identical", () => {
@@ -256,13 +317,79 @@ describe("WEB-06 private protocol", () => {
     expect(ring.set({ identity: identity(1), value: "one" })).toBe(false);
     expect(ring.set({ identity: identity(2), value: "two" })).toBe(false);
     expect(ring.set({ identity: identity(3), value: "three" })).toBe(true);
-    expect(ring.values().map(receipt => receipt.value)).toEqual(["two", "three"]);
+    expect(ring.set({ identity: identity(4), value: "four" })).toBe(false);
+    expect(ring.set({ identity: identity(5), value: "five" })).toBe(false);
+    expect(ring.values().map(receipt => receipt.value)).toEqual(["four", "five"]);
+    ring.clear();
+    expect(ring.set({ identity: identity(6), value: "six" })).toBe(false);
+    expect(ring.set({ identity: identity(7), value: "seven" })).toBe(false);
+    expect(ring.set({ identity: identity(8), value: "eight" })).toBe(true);
   });
 
   it("uses stable pointer-free digests", () => {
     expect(web06StableDigest({ b: 2, a: [1, "x"] })).toBe(
       web06StableDigest({ a: [1, "x"], b: 2 }),
     );
+    const fingerprint = {
+      sequenceId: 1,
+      input: "nei",
+      page: 0,
+      isLastPage: true,
+      highlightedIndex: 0,
+      candidates: [],
+      status: null,
+      textareaValue: "",
+      selectionStart: 0,
+      selectionEnd: 0,
+    };
+    expect(web06PresentationStateDigest(fingerprint)).toBe(
+      web06PresentationStateDigest({ ...fingerprint, sequenceId: 99 }),
+    );
+    expect(web06PresentationFingerprintDigest(fingerprint)).toMatch(/^[0-9a-f]{32}$/);
+    const mutated = { ...fingerprint, input: "nei5" };
+    expect(web06PresentationFingerprintsEqual(fingerprint, mutated)).toBe(false);
+    // Exactness is direct field equality, never equality of a caller-supplied
+    // or compact provenance commitment.
+    expect(web06PresentationFingerprintsEqual(
+      fingerprint,
+      { ...fingerprint, candidates: [{ label: "1", text: "你", comment: "", source: "table" }] },
+    )).toBe(false);
+  });
+
+  it("derives raw and adapter fingerprints independently from frozen runtime bytes", () => {
+    const rawJson = JSON.stringify({
+      handled: true,
+      commits: [],
+      context: {
+        input: "nei",
+        preedit: "nei",
+        caret: 3,
+        highlighted: 0,
+        page_size: 6,
+        page_no: 0,
+        is_last_page: true,
+        select_keys: null,
+        select_labels: ["1"],
+        candidates: [{ text: "你", comment: "nei5", source: "table" }],
+      },
+      status: null,
+    });
+    const raw = web06EngineRawFingerprint("processKey", "process-key", rawJson);
+    const rawProjection = web06EngineRawAdapterProjection(raw);
+    const adapterProjection = web06AdapterProjectionFingerprint({
+      isComposing: true,
+      success: true,
+      inputBuffer: { before: "nei", active: "", after: "" },
+      page: 0,
+      isLastPage: true,
+      highlightedIndex: 0,
+      candidates: [{ label: "1", text: "你", comment: "nei5", source: "table" }],
+    });
+    expect(web06AdapterProjectionFingerprintsEqual(rawProjection, adapterProjection)).toBe(true);
+    expect(web06AdapterProjectionFingerprintsEqual(
+      rawProjection,
+      { ...adapterProjection, page: 1 },
+    )).toBe(false);
   });
 
   it("redacts every free-form action path without hashing or retaining source text", () => {
@@ -429,7 +556,7 @@ describe("WEB-06 private protocol", () => {
     }, () => {
       importEvent = rime.declareWeb06ControlFanout("privacy-test-import", [{
         owner: "privacy-import",
-        action: web06PrivateAction("importUserdb", ["<pending-file-text>"]),
+        action: web06DeferredControlAction("importUserdb", ["<pending-file-text>"]),
       }]);
     });
     expect(importEvent).toBeDefined();
@@ -489,6 +616,5 @@ function web06PrivateAction(name: keyof Actions, args: unknown[]) {
     actionClass: contract.actionClass,
     supersedable: false,
     boundary: contract.boundary,
-    deferred: true,
   };
 }

@@ -47,6 +47,13 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
 	useEffect(() => {
 		numOfMoves.current = 0;
 	}, [info]);
+	useEffect(() => () => {
+		cancelLongPressTimer();
+		if (pendingDeleteEvent.current !== undefined) {
+			cancelWeb06EventFanout(pendingDeleteEvent.current, "candidate-long-press-unmounted");
+			pendingDeleteEvent.current = undefined;
+		}
+	}, [cancelLongPressTimer]);
 	function _selectCandidate(event: MouseEvent) {
 		if (justDeletedCandidate.current) {
 			justDeletedCandidate.current = false;

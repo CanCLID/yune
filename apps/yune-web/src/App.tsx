@@ -6,7 +6,9 @@ import { useLoading, usePreferences, useRimeOption } from "./hooks";
 import Preferences from "./Preferences";
 import Rime, {
 	declareWeb06ControlFanout,
+	recordWeb06OwnedResultEffect,
 	subscribe,
+	web06ActionIdentityFor,
 	withWeb06ControlEvent,
 	withWeb06OwnedAction,
 } from "./rime";
@@ -22,10 +24,15 @@ import YuneUserdbViewer from "./YuneUserdbViewer";
 import {
 	WEB06_ACTION_OWNER,
 	web06DeployPreferenceFanout,
+	web06LiveOptionFanout,
 	web06SchemaChangeFanout,
 	web06SingleActionFanout,
 } from "./yune-integration/web06-app-action-map";
-import { web06ControlAction } from "./yune-integration/private-protocol";
+import {
+	web06ControlAction,
+	web06StableDigest,
+	web06UserdbOwnerState,
+} from "./yune-integration/private-protocol";
 
 import type {
 	RimePreferences,
@@ -38,8 +45,40 @@ import type {
 	RimeSchemaId,
 	Web06ActionIdentity,
 	Web06FanoutAction,
+	Web06MappedAction,
 } from "./types";
 import type { UiLanguage } from "./uiText";
+
+function readWeb06UserdbOwnerState(): Record<string, unknown> | undefined {
+	const dataset = document.querySelector<HTMLElement>("[data-yune-userdb-viewer]")?.dataset;
+	if (dataset === undefined) return undefined;
+	return {
+		digest: dataset["yuneWeb06UserdbEffectDigest"],
+		schemaId: dataset["yuneWeb06UserdbSchemaId"],
+		dictionaryId: dataset["yuneWeb06UserdbDictionaryId"],
+		exists: dataset["yuneWeb06UserdbExists"] === "1",
+		bytes: Number(dataset["yuneWeb06UserdbBytes"]),
+		rowCount: Number(dataset["yuneWeb06UserdbRowCount"]),
+		parseErrorCount: Number(dataset["yuneWeb06UserdbParseErrorCount"]),
+	};
+}
+
+function web06EffectActionsKey(actions: readonly Web06MappedAction[]): string {
+	return web06StableDigest(actions.map(action => ({ name: action.name, args: action.args })));
+}
+
+function web06FanoutEffectKey(actions: readonly Web06FanoutAction[]): string {
+	return web06EffectActionsKey(actions.map(action => action.action));
+}
+
+function claimWeb06PendingEffect(
+	pending: { current: string | undefined },
+	effectKey: string,
+): boolean {
+	if (pending.current !== effectKey) return false;
+	pending.current = undefined;
+	return true;
+}
 
 interface YuneMetrics {
 	lookupMs?: number;
@@ -248,10 +287,17 @@ export default function App() {
 		});
 	}, [startAsyncTask]);
 
-	const [deployStatus, updateDeployStatus] = useReducer(
-		(n: number) => n + 1,
-		0,
+	const [deployRefresh, dispatchDeployRefresh] = useReducer(
+		(state: { version: number; cause?: Web06ActionIdentity }, action: { cause?: Web06ActionIdentity }) => ({
+			version: state.version + 1,
+			...(action.cause === undefined ? {} : { cause: action.cause }),
+		}),
+		{ version: 0 },
 	);
+	const deployStatus = deployRefresh.version;
+	const updateDeployStatus = useCallback((cause?: Web06ActionIdentity) => {
+		dispatchDeployRefresh(cause === undefined ? {} : { cause });
+	}, []);
 	const [aiStatus, updateAiStatus] = useReducer((n: number) => n + 1, 0);
 	const [isInspectorEnabled, setIsInspectorEnabled] = useState(false);
 	const [inspectorDebug, setInspectorDebug] = useState<
@@ -317,7 +363,14 @@ export default function App() {
 	const text = uiText[uiLanguage];
 	const outputStandardValue = normalizeOutputStandard(outputStandard, "hong_kong_traditional");
 	const composePlaceholder = schemaText[uiLanguage][activeSchema].label;
-	const [isAsciiPunct, toggleAsciiPunct] = useRimeOption("ascii_punct", false, deployStatus, "isAsciiPunct", isEngineReady);
+	const [isAsciiPunct, toggleAsciiPunct] = useRimeOption(
+		"ascii_punct",
+		false,
+		deployStatus,
+		"isAsciiPunct",
+		isEngineReady,
+		deployRefresh.cause,
+	);
 	const setIsAsciiPunct = useCallback((checked: boolean) => {
 		if (checked !== isAsciiPunct) {
 			toggleAsciiPunct();
@@ -331,6 +384,37 @@ export default function App() {
 	const lastDeployPreferenceKey = useRef<string | undefined>(undefined);
 	const lastDeployPreferenceSchema = useRef<string | undefined>(undefined);
 	const restoreTextAreaFocusAfterLiveOptions = useRef(false);
+	const lastWeb06LiveOptionsDeployStatus = useRef(deployStatus);
+	const web06SchemaTransitionCause = useRef<Web06ActionIdentity>();
+	const pendingWeb06LoadingCompletionCause = useRef<Web06ActionIdentity>();
+	const pendingWeb06LiveOptionsEffectClaim = useRef<string>();
+	const pendingWeb06DeployPreferenceEffectClaim = useRef<string>();
+	const lastWeb06UserdbRefreshTrigger = useRef({
+		activeSchema,
+		deployStatus,
+		loading,
+	});
+	const pendingWeb06SchemaEffectClaims = useRef<{
+		schemaId: RimeSchemaId;
+		schema: boolean;
+		deployPreferences: boolean;
+		liveOptions: boolean;
+	}>();
+	const claimWeb06SchemaEffect = useCallback((
+		kind: "schema" | "deployPreferences" | "liveOptions",
+		schemaId: RimeSchemaId,
+	) => {
+		const pending = pendingWeb06SchemaEffectClaims.current;
+		if (pending === undefined || pending.schemaId !== schemaId || pending[kind]) return false;
+		pending[kind] = true;
+		if (pending.schema && pending.deployPreferences && pending.liveOptions) {
+			pendingWeb06SchemaEffectClaims.current = undefined;
+		}
+		return true;
+	}, []);
+	const claimWeb06LiveOptionsEffect = useCallback((actions: Web06MappedAction[]) => {
+		pendingWeb06LiveOptionsEffectClaim.current = web06EffectActionsKey(actions);
+	}, []);
 
 	useEffect(() => {
 		document.documentElement.lang = uiLanguage === "yue" ? "zh-HK" : "en";
@@ -342,6 +426,9 @@ export default function App() {
 			return;
 		}
 		runAsyncTask(async () => {
+			const actionOwner = claimWeb06SchemaEffect("schema", activeSchema)
+				? WEB06_ACTION_OWNER.schema
+				: `${WEB06_ACTION_OWNER.schema}:background`;
 			if (!didRunSchemaEffect.current) {
 				didRunSchemaEffect.current = true;
 				if (document.documentElement.dataset["yuneActiveSchema"] === activeSchema) {
@@ -350,14 +437,17 @@ export default function App() {
 			}
 			let type: "warning" | "error" | undefined;
 			try {
-					if (!(await withWeb06OwnedAction(
-						WEB06_ACTION_OWNER.schema,
-						"selectSchema",
-						[activeSchema],
-						"schema-effect",
-						undefined,
-						() => Rime.selectSchema(activeSchema),
-					))) {
+				const promise = withWeb06OwnedAction(
+					actionOwner,
+					"selectSchema",
+					[activeSchema],
+					"schema-effect",
+					undefined,
+					() => Rime.selectSchema(activeSchema),
+				);
+				const identity = web06ActionIdentityFor(promise);
+				web06SchemaTransitionCause.current = identity;
+				if (!(await promise)) {
 					type = "warning";
 				}
 				setInspectorDebug(undefined);
@@ -367,7 +457,7 @@ export default function App() {
 					wasmHeapBytes: current.wasmHeapBytes,
 					peakWasmHeapBytes: current.peakWasmHeapBytes,
 				}));
-				updateDeployStatus();
+				updateDeployStatus(identity);
 			} catch {
 				type = "error";
 			}
@@ -375,7 +465,7 @@ export default function App() {
 				notify(type, "切換方案", "switching the schema");
 			}
 		});
-	}, [activeSchema, isEngineReady, runAsyncTask]);
+	}, [activeSchema, claimWeb06SchemaEffect, isEngineReady, runAsyncTask, updateDeployStatus]);
 
 	useEffect(() =>
 		subscribe("grammarDiagnosticChanged", setGrammarDiagnostic),
@@ -399,6 +489,14 @@ export default function App() {
 				isCangjie5,
 			};
 			const deployPreferenceKey = deployPreferenceSetKey(deployPreferences);
+			const claimedEffect = claimWeb06SchemaEffect("deployPreferences", activeSchema)
+				|| claimWeb06PendingEffect(
+					pendingWeb06DeployPreferenceEffectClaim,
+					web06FanoutEffectKey(web06DeployPreferenceFanout(deployPreferences)),
+				);
+			const actionOwner = claimedEffect
+				? WEB06_ACTION_OWNER.deployPreferences
+				: `${WEB06_ACTION_OWNER.deployPreferences}:background`;
 			const firstRun = !didRunDeployPreferencesEffect.current;
 			const previousDeployPreferenceKey = lastDeployPreferenceKey.current;
 			const previousDeployPreferenceSchema = lastDeployPreferenceSchema.current;
@@ -425,24 +523,29 @@ export default function App() {
 				return;
 			}
 			let type: "warning" | "error" | undefined;
+			let deployIdentity: Web06ActionIdentity | undefined;
 			try {
-					const success = await withWeb06OwnedAction(
-						WEB06_ACTION_OWNER.deployPreferences,
-						"customize",
-						[deployPreferences],
-						"deploy-preferences-effect",
-						undefined,
-						() => Rime.customize(deployPreferences),
-					);
-					const deployed = await withWeb06OwnedAction(
-						WEB06_ACTION_OWNER.deployPreferences,
-						"deploy",
-						[],
-						"deploy-preferences-effect",
-						undefined,
-						() => Rime.deploy(),
-					);
-					if (!(deployed && success)) {
+				const customizePromise = withWeb06OwnedAction(
+					actionOwner,
+					"customize",
+					[deployPreferences],
+					"deploy-preferences-effect",
+					undefined,
+					() => Rime.customize(deployPreferences),
+				);
+				const success = await customizePromise;
+				const deployPromise = withWeb06OwnedAction(
+					actionOwner,
+					"deploy",
+					[],
+					"deploy-preferences-effect",
+					undefined,
+					() => Rime.deploy(),
+				);
+				deployIdentity = web06ActionIdentityFor(deployPromise);
+				web06SchemaTransitionCause.current = deployIdentity;
+				const deployed = await deployPromise;
+				if (!(deployed && success)) {
 					type = "warning";
 				}
 			} catch {
@@ -451,7 +554,7 @@ export default function App() {
 			if (type) {
 				notify(type, "套用設定", "applying the settings");
 			}
-			updateDeployStatus();
+			updateDeployStatus(deployIdentity);
 		});
 	}, [
 		activeSchema,
@@ -465,6 +568,7 @@ export default function App() {
 		predictionThreshold,
 		dictionaryExclude,
 		isCangjie5,
+		claimWeb06SchemaEffect,
 		isEngineReady,
 		updateDeployStatus,
 		runAsyncTask,
@@ -477,31 +581,61 @@ export default function App() {
 		if (textArea !== null && document.activeElement === textArea) {
 			restoreTextAreaFocusAfterLiveOptions.current = true;
 		}
+		const currentLiveOptionFanout = web06LiveOptionFanout({
+			isAsciiMode,
+			isFullShape,
+			outputStandard: outputStandardValue,
+			activeSchema,
+			isExtendedCharset,
+			isDisabled,
+		});
+		const claimedSchemaEffect = claimWeb06SchemaEffect("liveOptions", activeSchema);
+		const claimedControlEffect = claimWeb06PendingEffect(
+			pendingWeb06LiveOptionsEffectClaim,
+			web06FanoutEffectKey(currentLiveOptionFanout),
+		);
+		const claimedEffect = claimedSchemaEffect || claimedControlEffect;
+		const causedBy = !claimedEffect && lastWeb06LiveOptionsDeployStatus.current !== deployStatus
+			? deployRefresh.cause
+			: undefined;
+		lastWeb06LiveOptionsDeployStatus.current = deployStatus;
 		runAsyncTask(async () => {
+			const actionOwner = claimedEffect
+				? WEB06_ACTION_OWNER.liveOptions
+				: `${WEB06_ACTION_OWNER.liveOptions}:background`;
 			let type: "warning" | "error" | undefined;
+			let latestLiveOptionPromise: ReturnType<typeof Rime.setOption> | undefined;
 			try {
-					const setLiveOption = (option: string, value: boolean) => withWeb06OwnedAction(
-						WEB06_ACTION_OWNER.liveOptions,
+				const setLiveOption = (option: string, value: boolean) => {
+					latestLiveOptionPromise = withWeb06OwnedAction(
+						actionOwner,
 						"setOption",
 						[option, value],
 						"live-options-effect",
-						undefined,
+						causedBy,
 						() => Rime.setOption(option, value),
 					);
-					await setLiveOption("soft_cursor", true);
-					await setLiveOption("ascii_mode", isAsciiMode);
-					await setLiveOption("full_shape", isFullShape);
-					await setLiveOption("traditionalization", false);
+					return latestLiveOptionPromise;
+				};
+				await setLiveOption("soft_cursor", true);
+				await setLiveOption("ascii_mode", isAsciiMode);
+				await setLiveOption("full_shape", isFullShape);
+				await setLiveOption("traditionalization", false);
 				const activeOutputOption = outputOptionForStandard(outputStandardValue, activeSchema);
 				document.documentElement.dataset["yuneActiveOutputOption"] = activeOutputOption ?? "none";
 				const appliedOutputOptions: string[] = [];
 				for (const optionName of OUTPUT_STANDARD_ENGINE_OPTIONS) {
-						await setLiveOption(optionName, optionName === activeOutputOption);
+					await setLiveOption(optionName, optionName === activeOutputOption);
 					appliedOutputOptions.push(`${optionName}:${optionName === activeOutputOption}`);
 				}
 				document.documentElement.dataset["yuneAppliedOutputOptions"] = appliedOutputOptions.join(",");
-					await setLiveOption("extended_charset", isExtendedCharset);
-					await setLiveOption("disabled", isDisabled);
+				await setLiveOption("extended_charset", isExtendedCharset);
+				await setLiveOption("disabled", isDisabled);
+				if (claimedControlEffect && latestLiveOptionPromise !== undefined) {
+					const identity = web06ActionIdentityFor(latestLiveOptionPromise);
+					web06SchemaTransitionCause.current = identity;
+					pendingWeb06LoadingCompletionCause.current = identity;
+				}
 			} catch {
 				type = "error";
 			}
@@ -511,7 +645,9 @@ export default function App() {
 		});
 	}, [
 		activeSchema,
+		claimWeb06SchemaEffect,
 		deployStatus,
+		deployRefresh.cause,
 		isAsciiMode,
 		isFullShape,
 		outputStandardValue,
@@ -600,20 +736,31 @@ export default function App() {
 		};
 	}, [enableAI, isEngineReady, updateAiStatus]);
 
-	const refreshUserdbSnapshot = useCallback(async () => {
+	const refreshUserdbSnapshot = useCallback(async (web06Cause?: Web06ActionIdentity) => {
 		setIsUserdbLoading(true);
 		setUserdbError(undefined);
 		try {
-			const cause = userdbRefreshCause.current;
+			const commitCause = userdbRefreshCause.current;
+			const cause = commitCause ?? web06Cause;
 			userdbRefreshCause.current = undefined;
-			setUserdbSnapshot(await withWeb06OwnedAction(
+			const promise = withWeb06OwnedAction(
 				WEB06_ACTION_OWNER.userdb,
 				"getUserdbSnapshot",
 				[],
-				cause === undefined ? "userdb-refresh-effect" : "commit-userdb-refresh",
+				commitCause !== undefined
+					? "commit-userdb-refresh"
+					: web06Cause === undefined
+						? "userdb-refresh-effect"
+						: "causal-userdb-refresh",
 				cause,
 				() => Rime.getUserdbSnapshot(),
-			));
+			);
+			const snapshot = await promise;
+			setUserdbSnapshot(snapshot);
+			recordWeb06OwnedResultEffect(promise, "ui-userdb-refresh", {
+				expectedState: web06UserdbOwnerState(snapshot),
+				readObservedState: readWeb06UserdbOwnerState,
+			});
 		} catch (error) {
 			setUserdbError(
 				error instanceof Error
@@ -629,14 +776,20 @@ export default function App() {
 		setIsUserdbLoading(true);
 		setUserdbError(undefined);
 		try {
-			setUserdbSnapshot(await withWeb06OwnedAction(
+			const promise = withWeb06OwnedAction(
 				WEB06_ACTION_OWNER.userdb,
 				"importUserdb",
 				[rawText],
 				"userdb-import",
 				undefined,
 				() => Rime.importUserdb(rawText),
-			));
+			);
+			const snapshot = await promise;
+			setUserdbSnapshot(snapshot);
+			recordWeb06OwnedResultEffect(promise, "ui-userdb-refresh", {
+				expectedState: web06UserdbOwnerState(snapshot),
+				readObservedState: readWeb06UserdbOwnerState,
+			});
 		} catch (error) {
 			setUserdbError(
 				error instanceof Error
@@ -650,15 +803,29 @@ export default function App() {
 	}, []);
 
 	useEffect(() => {
-		if (!isEngineReady || loading) {
+		if (!isEngineReady) {
 			return;
 		}
-		void refreshUserdbSnapshot();
+		const previous = lastWeb06UserdbRefreshTrigger.current;
+		lastWeb06UserdbRefreshTrigger.current = { activeSchema, deployStatus, loading };
+		if (loading) {
+			return;
+		}
+		const cause = previous.activeSchema !== activeSchema
+			? web06SchemaTransitionCause.current
+			: previous.deployStatus !== deployStatus
+				? deployRefresh.cause
+				: previous.loading !== loading
+					? web06SchemaTransitionCause.current
+					: pendingWeb06LoadingCompletionCause.current;
+		pendingWeb06LoadingCompletionCause.current = undefined;
+		void refreshUserdbSnapshot(cause);
 	}, [
 		isEngineReady,
 		loading,
 		activeSchema,
 		deployStatus,
+		deployRefresh.cause,
 		userdbRefreshStatus,
 		refreshUserdbSnapshot,
 	]);
@@ -668,8 +835,8 @@ export default function App() {
 	const inputOverlayMessage = engineStartupState === "failed"
 		? text.compose.startupFailed
 		: text.compose.loading;
-	const web06DeployPreferencePlan = useCallback((patch: Partial<DeployPreferenceSet>): Web06FanoutAction[] =>
-		web06DeployPreferenceFanout({
+	const web06DeployPreferencePlan = useCallback((patch: Partial<DeployPreferenceSet>): Web06FanoutAction[] => {
+		const plan = web06DeployPreferenceFanout({
 			pageSize,
 			enableCompletion,
 			enableCorrection,
@@ -681,7 +848,10 @@ export default function App() {
 			dictionaryExclude,
 			isCangjie5,
 			...patch,
-		}), [
+		});
+		pendingWeb06DeployPreferenceEffectClaim.current = web06FanoutEffectKey(plan);
+		return plan;
+	}, [
 		pageSize,
 		enableCompletion,
 		enableCorrection,
@@ -693,7 +863,41 @@ export default function App() {
 		dictionaryExclude,
 		isCangjie5,
 	]);
+	const web06LiveOptionPlan = useCallback((patch: Partial<{
+		isAsciiMode: boolean;
+		isFullShape: boolean;
+		outputStandard: typeof outputStandardValue;
+		isExtendedCharset: boolean;
+		isDisabled: boolean;
+	}>): Web06FanoutAction[] => {
+		const plan = web06LiveOptionFanout({
+			isAsciiMode,
+			isFullShape,
+			outputStandard: outputStandardValue,
+			activeSchema,
+			isExtendedCharset,
+			isDisabled,
+			...patch,
+		});
+		pendingWeb06LiveOptionsEffectClaim.current = web06FanoutEffectKey(plan);
+		return plan;
+	}, [
+		activeSchema,
+		isAsciiMode,
+		isDisabled,
+		isExtendedCharset,
+		isFullShape,
+		outputStandardValue,
+	]);
 	const web06SchemaChangePlan = useCallback((nextSchema: RimeSchemaId): Web06FanoutAction[] => {
+		pendingWeb06LiveOptionsEffectClaim.current = undefined;
+		pendingWeb06DeployPreferenceEffectClaim.current = undefined;
+		pendingWeb06SchemaEffectClaims.current = {
+			schemaId: nextSchema,
+			schema: false,
+			deployPreferences: false,
+			liveOptions: false,
+		};
 		const deployPreferences: DeployPreferenceSet = {
 			pageSize,
 			enableCompletion,
@@ -783,6 +987,7 @@ export default function App() {
 							isDisabled={preferences.isDisabled}
 							web06SchemaChangePlan={web06SchemaChangePlan}
 							web06DeployPreferencePlan={web06DeployPreferencePlan}
+							web06LiveOptionPlan={web06LiveOptionPlan}
 						uiLanguage={uiLanguage}
 					/>
 					<div className="yd-playground-grid">
@@ -827,6 +1032,7 @@ export default function App() {
 									onStatus={setEngineStatus}
 									onUserdbChange={refreshUserdbAfterCommit}
 									onMetrics={updateMetrics}
+									onClaimWeb06LiveOptions={claimWeb06LiveOptionsEffect}
 									onToggleAsciiMode={toggleAsciiMode}
 								/>
 							)}
@@ -879,13 +1085,16 @@ export default function App() {
 						isEngineReady={isEngineReady}
 						deployStatus={deployStatusLabel}
 						refreshSignal={deployStatus}
+						refreshCause={deployRefresh.cause}
 						onDeployMutation={updateDeployStatus}
 					/>
 				</section>
 				<Preferences
 					{...preferences}
 					isAsciiPunct={isAsciiPunct}
-					setIsAsciiPunct={setIsAsciiPunct} />
+					setIsAsciiPunct={setIsAsciiPunct}
+					web06DeployPreferencePlan={web06DeployPreferencePlan}
+					web06LiveOptionPlan={web06LiveOptionPlan} />
 			</main>
 			<footer className="yd-app-footer">
 				<span>{text.header.footer}</span>

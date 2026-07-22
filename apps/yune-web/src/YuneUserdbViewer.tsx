@@ -10,7 +10,9 @@ import {
 import {
 	WEB06_IMPORT_CONTINUATION_EVENT,
 	web06ControlAction,
+	web06DeferredControlAction,
 	web06EnqueueThenSignal,
+	web06UserdbOwnerState,
 } from "./yune-integration/private-protocol";
 import {
 	WEB06_ACTION_OWNER,
@@ -170,22 +172,26 @@ export default function YuneUserdbViewer({
 		});
 	}
 	async function importUserdbFile(event: ChangeEvent<HTMLInputElement>) {
-		const file = event.currentTarget.files?.[0];
-		event.currentTarget.value = "";
-		if (!file) {
-			withWeb06ControlEvent(event, () => undefined);
-			return;
-		}
+		let file: File | undefined;
 		let importEventIdentity: ReturnType<typeof declareWeb06ControlFanout> | undefined;
 		withWeb06ControlEvent(event, () => {
-			importEventIdentity = declareWeb06ControlFanout(
-				"userdb-import-file-change",
-				web06SingleActionFanout(
-					WEB06_ACTION_OWNER.userdb,
-					web06ControlAction("importUserdb", ["<pending-file-text>"]),
-				),
-			);
+			// Capture the DOM delivery timestamp before any File API access or input
+			// mutation; file.text() remains intentionally outside the event callback.
+			file = event.currentTarget.files?.[0];
+			event.currentTarget.value = "";
+			if (file !== undefined) {
+				importEventIdentity = declareWeb06ControlFanout(
+					"userdb-import-file-change",
+					web06SingleActionFanout(
+						WEB06_ACTION_OWNER.userdb,
+						web06DeferredControlAction("importUserdb", ["<pending-file-text>"]),
+					),
+				);
+			}
 		});
+		if (!file) {
+			return;
+		}
 		setIsImporting(true);
 		try {
 			const rawText = await file.text();
@@ -222,7 +228,19 @@ export default function YuneUserdbViewer({
 			setIsImporting(false);
 		}
 	}
-	return <section className="yd-userdb-panel" data-yune-userdb-viewer>
+	const web06OwnerState = snapshot === undefined ? undefined : web06UserdbOwnerState(snapshot);
+	return <section
+		className="yd-userdb-panel"
+		data-yune-userdb-viewer
+		data-yune-web06-userdb-effect-digest={
+			web06OwnerState?.["digest"]
+		}
+		data-yune-web06-userdb-schema-id={web06OwnerState?.["schemaId"]}
+		data-yune-web06-userdb-dictionary-id={web06OwnerState?.["dictionaryId"]}
+		data-yune-web06-userdb-exists={web06OwnerState === undefined ? undefined : web06OwnerState["exists"] ? "1" : "0"}
+		data-yune-web06-userdb-bytes={web06OwnerState?.["bytes"]}
+		data-yune-web06-userdb-row-count={web06OwnerState?.["rowCount"]}
+		data-yune-web06-userdb-parse-error-count={web06OwnerState?.["parseErrorCount"]}>
 		<div className="yd-panel-heading yd-panel-heading-split">
 			<span>{text.title}</span>
 			<button

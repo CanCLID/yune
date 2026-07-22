@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { IS_PUBLIC_DEMO, NO_AUTO_FILL } from "./consts";
 import Rime, {
 	declareWeb06ControlFanout,
+	recordWeb06OwnedResultEffect,
 	web06ActionIdentityFor,
 	withWeb06ControlEvent,
 	withWeb06OwnedAction,
@@ -13,14 +14,42 @@ import type {
 	YuneDeployCacheSnapshot,
 	YuneInjectedAssetManifest,
 	RimeDeployStatus,
+	Web06ActionIdentity,
 } from "./types";
 import type { UiLanguage } from "./uiText";
 import type { MouseEvent } from "react";
-import { web06ControlAction } from "./yune-integration/private-protocol";
+import {
+	web06ControlAction,
+	web06DeployCacheOwnerState,
+	web06InjectedAssetsOwnerState,
+} from "./yune-integration/private-protocol";
 import {
 	WEB06_ACTION_OWNER,
 	web06SingleActionFanout,
 } from "./yune-integration/web06-app-action-map";
+
+function readWeb06CacheOwnerState(): Record<string, unknown> | undefined {
+	const dataset = document.querySelector<HTMLElement>("[data-yune-control-surface]")?.dataset;
+	if (dataset === undefined) return undefined;
+	return {
+		digest: dataset["yuneWeb06CacheEffectDigest"],
+		schemaId: dataset["yuneWeb06CacheSchemaId"],
+		dictionaryId: dataset["yuneWeb06CacheDictionaryId"],
+		cacheFresh: dataset["yuneWeb06CacheFresh"] === "1",
+		deployedSchemaExists: dataset["yuneWeb06CacheDeployed"] === "1",
+	};
+}
+
+function readWeb06AssetsOwnerState(): Record<string, unknown> | undefined {
+	const dataset = document.querySelector<HTMLElement>("[data-yune-control-surface]")?.dataset;
+	if (dataset === undefined) return undefined;
+	return {
+		digest: dataset["yuneWeb06AssetsEffectDigest"],
+		schemaId: dataset["yuneWeb06AssetsSchemaId"],
+		assetCount: Number(dataset["yuneWeb06AssetsCount"]),
+		totalBytes: Number(dataset["yuneWeb06AssetsBytes"]),
+	};
+}
 
 type DiagnosticPayload = {
 	source?: string;
@@ -97,13 +126,15 @@ export default function YuneControlSurface({
 	isEngineReady,
 	deployStatus,
 	refreshSignal,
+	refreshCause,
 	onDeployMutation,
 }: {
 	uiLanguage: UiLanguage;
 	isEngineReady: boolean;
 	deployStatus: RimeDeployStatus | "idle";
 	refreshSignal: number;
-	onDeployMutation(): void;
+	refreshCause?: Web06ActionIdentity;
+	onDeployMutation(cause?: Web06ActionIdentity): void;
 }) {
 	const text = uiText[uiLanguage].controlSurface;
 	const [cache, setCache] = useState<YuneDeployCacheSnapshot | undefined>();
@@ -131,27 +162,34 @@ export default function YuneControlSurface({
 			return;
 		}
 		try {
-			const [nextCache, nextAssets] = await Promise.all([
-				withWeb06OwnedAction(
+			const cachePromise = withWeb06OwnedAction(
 					"control-snapshot-background",
 					"deployCacheSnapshot",
 					[],
 					"control-snapshot-refresh",
 					cause,
 					() => Rime.deployCacheSnapshot(),
-				),
-				withWeb06OwnedAction(
+				);
+			const assetsPromise = withWeb06OwnedAction(
 					"control-snapshot-background",
 					"injectedAssetsManifest",
 					[],
 					"control-snapshot-refresh",
 					cause,
 					() => Rime.injectedAssetsManifest(),
-				),
-			]);
+				);
+			const [nextCache, nextAssets] = await Promise.all([cachePromise, assetsPromise]);
 			setCache(nextCache);
 			setAssets(nextAssets);
 			document.documentElement.dataset["yuneDeployCacheFresh"] = String(nextCache.cacheFresh);
+			recordWeb06OwnedResultEffect(cachePromise, "ui-diagnostic-refresh", {
+				expectedState: web06DeployCacheOwnerState(nextCache),
+				readObservedState: readWeb06CacheOwnerState,
+			});
+			recordWeb06OwnedResultEffect(assetsPromise, "ui-diagnostic-refresh", {
+				expectedState: web06InjectedAssetsOwnerState(nextAssets),
+				readObservedState: readWeb06AssetsOwnerState,
+			});
 		}
 		catch {
 			// The diagnostics panel should not destabilize the input path.
@@ -160,8 +198,8 @@ export default function YuneControlSurface({
 	}, [isEngineReady, refreshDiagnostics]);
 
 	useEffect(() => {
-		void refreshRemoteState();
-	}, [refreshRemoteState, refreshSignal]);
+		void refreshRemoteState(refreshCause);
+	}, [refreshCause, refreshRemoteState, refreshSignal]);
 
 	useEffect(() => {
 		if (IS_PUBLIC_DEMO) {
@@ -198,8 +236,9 @@ export default function YuneControlSurface({
 		catch {
 			// Error details are recorded by rime.ts diagnostics.
 		}
-		onDeployMutation();
-		await refreshRemoteState(promise === undefined ? undefined : web06ActionIdentityFor(promise));
+		const cause = promise === undefined ? undefined : web06ActionIdentityFor(promise);
+		onDeployMutation(cause);
+		await refreshRemoteState(cause);
 	}
 
 	async function invalidateCache(event: MouseEvent<HTMLButtonElement>) {
@@ -226,9 +265,13 @@ export default function YuneControlSurface({
 					throw new Error("Deploy-cache invalidation was not enqueued");
 				}
 				const snapshot = await promise;
-			setCache(snapshot);
-			document.documentElement.dataset["yuneDeployCacheFresh"] = String(snapshot.cacheFresh);
-			onDeployMutation();
+				setCache(snapshot);
+				document.documentElement.dataset["yuneDeployCacheFresh"] = String(snapshot.cacheFresh);
+				recordWeb06OwnedResultEffect(promise, "cache-invalidation", {
+					expectedState: web06DeployCacheOwnerState(snapshot),
+					readObservedState: readWeb06CacheOwnerState,
+				});
+				onDeployMutation(web06ActionIdentityFor(promise));
 		}
 		catch {
 			// Error details are recorded by rime.ts diagnostics.
@@ -305,9 +348,24 @@ export default function YuneControlSurface({
 		"?wasmAttributionFamily=luna-core",
 	];
 
+	const web06CacheState = cache === undefined ? undefined : web06DeployCacheOwnerState(cache);
+	const web06AssetsState = assets === undefined ? undefined : web06InjectedAssetsOwnerState(assets);
 	return <section
 		className="yd-control-surface"
 		data-yune-control-surface
+		data-yune-web06-cache-effect-digest={
+			web06CacheState?.digest
+		}
+		data-yune-web06-cache-schema-id={web06CacheState?.schemaId}
+		data-yune-web06-cache-dictionary-id={web06CacheState?.dictionaryId}
+		data-yune-web06-cache-fresh={web06CacheState === undefined ? undefined : web06CacheState.cacheFresh ? "1" : "0"}
+		data-yune-web06-cache-deployed={web06CacheState === undefined ? undefined : web06CacheState.deployedSchemaExists ? "1" : "0"}
+		data-yune-web06-assets-effect-digest={
+			web06AssetsState?.digest
+		}
+		data-yune-web06-assets-schema-id={web06AssetsState?.schemaId}
+		data-yune-web06-assets-count={web06AssetsState?.assetCount}
+		data-yune-web06-assets-bytes={web06AssetsState?.totalBytes}
 		data-yune-diagnostics-polling={IS_PUBLIC_DEMO ? "disabled" : "enabled"}>
 		<header className="yd-control-surface-header">
 			<h3>{text.title}</h3>
@@ -315,7 +373,7 @@ export default function YuneControlSurface({
 				<span
 					className="yd-status-pill"
 					data-status={deployStatus || "idle"}
-					data-yune-deploy-status-view>
+					data-yune-deploy-status-view={deployStatus}>
 					<span className="yd-status-dot" aria-hidden="true" />
 					{text.deployStatus}: {deployStatus || text.idle}
 				</span>

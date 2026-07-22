@@ -10,6 +10,7 @@
 		"build:public": "node public-demo/build.mjs",
 		"check:schema-manifest": "node scripts/check-schema-asset-manifest.mjs",
 		"fetch:octagram-dev-model": "node scripts/fetch-octagram-dev-model.mjs",
+		"test:web06": "vitest run yune-integration/private-protocol.test.ts yune-integration/web06-app-action-map.test.ts yune-integration/web06-private-pipeline.test.ts yune-integration/web06-candidate-panel.test.tsx yune-integration/web06-worker-protocol.test.ts yune-integration/web06-app-schema-integration.test.tsx",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"worker": "esbuild src/worker.ts --bundle --format=iife --outdir=public",
 		"preview": "vite preview --host"
@@ -28,11 +29,13 @@
 		"@vitejs/plugin-react-swc": "^3.7.0",
 		"autoprefixer": "^10.4.19",
 		"esbuild": "^0.21.4",
+		"jsdom": "^26.1.0",
 		"postcss": "^8.4.38",
 		"postcss-nesting": "^12.1.5",
 		"tailwindcss": "^3.4.3",
 		"typescript": "^5.4.5",
-		"vite": "^5.2.11"
+		"vite": "^5.2.11",
+		"vitest": "4.1.5"
 	},
 	"license": "MIT",
 	"browserslist": "> 0.5% in HK and fully supports wasm and not dead"

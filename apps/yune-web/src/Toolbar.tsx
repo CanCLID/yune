@@ -9,7 +9,6 @@ import type { RimeSchemaId } from "./types";
 import type { Web06FanoutAction } from "./types";
 import type { UiLanguage } from "./uiText";
 import type { Dispatch, MouseEvent, SetStateAction } from "react";
-import { web06LiveOptionFanout } from "./yune-integration/web06-app-action-map";
 
 function ModeButton({
 	ariaLabel,
@@ -76,6 +75,7 @@ export default function Toolbar({
 	isDisabled,
 	web06SchemaChangePlan,
 	web06DeployPreferencePlan,
+	web06LiveOptionPlan,
 	uiLanguage,
 }: {
 	isAsciiMode: boolean;
@@ -92,26 +92,16 @@ export default function Toolbar({
 	isDisabled: boolean;
 	web06SchemaChangePlan(nextSchema: RimeSchemaId): Web06FanoutAction[];
 	web06DeployPreferencePlan(patch: { isCangjie5: boolean }): Web06FanoutAction[];
+	web06LiveOptionPlan(patch: Partial<{
+		isAsciiMode: boolean;
+		isFullShape: boolean;
+		outputStandard: OutputStandard;
+	}>): Web06FanoutAction[];
 	uiLanguage: UiLanguage;
 }) {
 	const outputStandardValue = normalizeOutputStandard(outputStandard, "hong_kong_traditional");
 	const currentOutputStandard = OUTPUT_STANDARD_BY_ID[outputStandardValue];
 	const text = uiText[uiLanguage].toolbar;
-	function liveOptionPlan(patch: Partial<{
-		isAsciiMode: boolean;
-		isFullShape: boolean;
-		outputStandard: OutputStandard;
-	}>): Web06FanoutAction[] {
-		return web06LiveOptionFanout({
-			isAsciiMode,
-			isFullShape,
-			outputStandard: outputStandardValue,
-			activeSchema,
-			isExtendedCharset,
-			isDisabled,
-			...patch,
-		});
-	}
 	function cycleOutputStandard(event: MouseEvent<HTMLButtonElement>) {
 		withWeb06ControlEvent(event, () => {
 		setOutputStandard(currentValue => {
@@ -120,7 +110,7 @@ export default function Toolbar({
 			const nextValue = OUTPUT_STANDARD_OPTIONS[(currentIndex + 1) % OUTPUT_STANDARD_OPTIONS.length].id;
 			declareWeb06ControlFanout(
 				"toolbar-output-standard-change",
-				liveOptionPlan({ outputStandard: nextValue }),
+				web06LiveOptionPlan({ outputStandard: nextValue }),
 			);
 			return nextValue;
 		});
@@ -149,7 +139,7 @@ export default function Toolbar({
 							setIsAsciiMode(value => {
 								declareWeb06ControlFanout(
 									"toolbar-ascii-mode-change",
-									liveOptionPlan({ isAsciiMode: !value }),
+									web06LiveOptionPlan({ isAsciiMode: !value }),
 								);
 								return !value;
 							})
@@ -173,7 +163,7 @@ export default function Toolbar({
 							setIsFullShape(value => {
 								declareWeb06ControlFanout(
 									"toolbar-full-shape-change",
-									liveOptionPlan({ isFullShape: !value }),
+									web06LiveOptionPlan({ isFullShape: !value }),
 								);
 								return !value;
 							})

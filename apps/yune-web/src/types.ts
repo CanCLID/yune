@@ -172,6 +172,10 @@ export type Message = NamedMessage<keyof Actions>;
 export const WEB06_PRIVATE_PROTOCOL_VERSION = "web06-private-v1" as const;
 
 export type Web06CollectionMode = "off" | "minimal" | "full";
+export type Web06CollectionModeProvenance =
+	| "instrumented-default-minimal"
+	| "instrumented-explicit-minimal"
+	| "instrumented-explicit-full";
 export type Web06ActionClass = "native-key" | "adapter-only" | "read-only" | "stateful-barrier";
 export type Web06EventClassification = "mapped-action(s)" | "frontend-consumed" | "browser-pass-through";
 export type Web06TerminalOutcome =
@@ -268,6 +272,7 @@ export interface Web06ActionIdentity {
 	rawInputSequence: string[];
 	originKind: "dom-event" | "background";
 	originReason: string;
+	originOwner?: string;
 	causedByActionId?: string;
 	causedBySequenceId?: number;
 	causedByEventId?: string;
@@ -289,6 +294,7 @@ export interface Web06ActionContext {
 	rawInputSequence: string[];
 	originKind?: "dom-event" | "background";
 	originReason?: string;
+	originOwner?: string;
 	causedByActionId?: string;
 	causedBySequenceId?: number;
 	causedByEventId?: string;
@@ -315,6 +321,7 @@ export interface Web06WorkerActionEnvelope {
 	protocolVersion: typeof WEB06_PRIVATE_PROTOCOL_VERSION;
 	kind: "action";
 	mode: Web06CollectionMode;
+	modeProvenance: Web06CollectionModeProvenance;
 	identity: Web06ActionIdentity;
 	name: keyof Actions;
 	args: unknown[];
@@ -337,14 +344,131 @@ export interface Web06WorkerReceipt {
 	adapterSpans: Web06ComponentSpan[];
 	persistenceSpans: Web06ComponentSpan[];
 	collectorSpans: Web06ComponentSpan[];
+	engineRaw: Web06EngineRawProof;
 	engineRawJson?: string;
+	engineRawOperation?: string;
 	observerFailures: string[];
+	lifecycleEffects: Web06WorkerLifecycleEffect[];
+	resultSummary?: Web06WorkerResultSummary;
+}
+
+export interface Web06AdapterProjectionFingerprint {
+	success: boolean;
+	isComposing: boolean;
+	input: string;
+	page: number;
+	isLastPage: boolean;
+	highlightedIndex: number;
+	candidates: {
+		label?: string;
+		text: string;
+		comment?: string;
+		source?: string;
+	}[];
+	committed?: string;
+	status: YuneWebStatus | null;
+}
+
+export interface Web06EngineRawFingerprint {
+	action: keyof Actions;
+	operation: string;
+	handled: boolean;
+	commits: string[];
+	context: null | {
+		input: string;
+		preedit: string;
+		caret: number;
+		page: number;
+		pageSize: number;
+		isLastPage: boolean;
+		highlightedIndex: number;
+		selectLabels: string[];
+		candidates: {
+			text: string;
+			comment: string;
+			source?: string;
+		}[];
+	};
+	status: YuneWebStatus | null;
+}
+
+export type Web06EngineRawProof = {
+	availability: "captured";
+	action: keyof Actions;
+	operation: string;
+	jsonDigest: string;
+	rawFingerprintDigest: string;
+	rawProjectionDigest: string;
+	adapterProjectionDigest: string;
+	projectionMatches: boolean;
+	adapterProjection?: Web06AdapterProjectionFingerprint;
+	rawFingerprint?: Web06EngineRawFingerprint;
+} | {
+	availability: "captured-error";
+	action: keyof Actions;
+	operation: string;
+	jsonDigest: string;
+	rawFingerprintDigest: string;
+	reason: "action-result-error";
+	rawFingerprint?: Web06EngineRawFingerprint;
+} | {
+	availability: "not-applicable";
+	action: keyof Actions;
+	reason:
+		| "action-has-no-runtime-response"
+		| "adapter-short-circuit"
+		| "action-failed-before-runtime-response";
+} | {
+	availability: "not-collected";
+	action: keyof Actions;
+	reason: "minimal-content-free";
+} | {
+	availability: "missing";
+	action: keyof Actions;
+	reason: "required-runtime-response-missing";
+};
+
+export type Web06WorkerLifecycleEffect = {
+	kind: "listener";
+	name: keyof ListenerArgsMap;
+	argsDigest: string;
+	/** Transient wire proof; the main collector strips this from exported receipts. */
+	args?: unknown[];
+	recordedAt: number;
+} | {
+	kind: "engine-state" | "engine-persistence" | "cache-invalidation" | "snapshot-read";
+	name: keyof Actions;
+	resultDigest: string;
+	recordedAt: number;
+};
+
+/**
+ * Content-free worker result proof retained in minimal and full modes. Raw
+ * result bytes remain on the public result path and are never copied here.
+ */
+export interface Web06WorkerResultSummary {
+	kind:
+		| "boolean"
+		| "empty"
+		| "rime-result"
+		| "userdb-snapshot"
+		| "deploy-cache-snapshot"
+		| "asset-manifest";
+	resultDigest: string;
+	success: boolean;
+	persistenceCompleted: boolean;
+	committedTextDigest?: string;
+	committedUtf16Length?: number;
+	userdbDigest?: string;
+	userdbRowCount?: number;
+	userdbBytes?: number;
 }
 
 export interface Web06WorkerResultEnvelope {
 	protocolVersion: typeof WEB06_PRIVATE_PROTOCOL_VERSION;
 	kind: "action-result";
 	mode: Web06CollectionMode;
+	modeProvenance: Web06CollectionModeProvenance;
 	identity: Web06ActionIdentity;
 	resultType: "success" | "error";
 	result?: ReturnType<Actions[keyof Actions]>;
@@ -373,6 +497,7 @@ export interface Web06ClockExchange {
 }
 
 export interface Web06PresentationFingerprint {
+	sequenceId: number;
 	input: string;
 	page: number;
 	isLastPage: boolean;
@@ -395,12 +520,54 @@ export interface Web06PresentationOutcomeReceipt {
 	stateUpdateScheduledAt: number;
 	stateCommittedAt?: number;
 	firstRafAt?: number;
+	paintObservedAt?: number;
 	terminalObservedAt: number;
-	presentationExpected: Web06PresentationFingerprint;
-	domObserved: Web06PresentationFingerprint;
+	beforePresentationDigest: string;
+	adapterProjectionDigest: string;
+	adapterProjection?: Web06AdapterProjectionFingerprint;
+	presentationExpected?: Web06PresentationFingerprint;
+	domObserved?: Web06PresentationFingerprint;
+	presentationExpectedDigest: string;
+	domObservedDigest: string;
 	presentationDigest: string;
 	supersededBySequenceId?: number;
 	supersessionSequenceLag?: number;
+}
+
+export interface Web06PresentationOutcomeInput extends Omit<
+	Web06PresentationOutcomeReceipt,
+	| "beforePresentationDigest"
+	| "adapterProjection"
+	| "presentationExpected"
+	| "domObserved"
+	| "presentationExpectedDigest"
+	| "domObservedDigest"
+> {
+	beforePresentation: Web06PresentationFingerprint;
+	adapterProjection: Web06AdapterProjectionFingerprint;
+	presentationExpected: Web06PresentationFingerprint;
+	domObserved: Web06PresentationFingerprint;
+}
+
+export interface Web06LifecycleOutcomeReceipt {
+	identity: Web06ActionIdentity;
+	outcome: "barrier-completed" | "failure";
+	stateUpdateScheduledAt: number;
+	firstRafAt?: number;
+	terminalObservedAt: number;
+	effect:
+		| "listener"
+		| "engine-state"
+		| "engine-persistence"
+		| "ui-userdb-refresh"
+		| "ui-diagnostic-refresh"
+		| "cache-invalidation"
+		| "error";
+	effectDigest: string;
+	workerEffectDigest: string;
+	mainEffectDigest?: string;
+	listenerEffectCount: number;
+	persistenceCompleted: boolean;
 }
 
 export interface Web06ActionReceipt {
@@ -408,11 +575,13 @@ export interface Web06ActionReceipt {
 	returnedIdentity?: Web06ActionIdentity;
 	name: keyof Actions;
 	args: unknown[];
+	expectedFailureControl?: boolean;
 	mainResponseReceivedAt?: number;
 	responseMappingStartedAt?: number;
 	responseMappingFinishedAt?: number;
 	worker?: Web06WorkerReceipt;
 	presentation?: Web06PresentationOutcomeReceipt;
+	lifecycle?: Web06LifecycleOutcomeReceipt;
 	resultType?: "success" | "error";
 }
 

@@ -7,13 +7,16 @@ import { RIME_KEY_MAP } from "./consts";
 import DictionaryPanel from "./DictionaryPanel";
 import Rime, {
 	canWeb06Supersede,
+	advanceWeb06Boundary,
 	declareWeb06ControlFanout,
 	invalidateWeb06Measurement,
+	observeWeb06Measurement,
 	recordWeb06DomEvent,
 	recordWeb06PresentationOutcome,
 	recordWeb06ResponseMapping,
 	registerWeb06EventFanout,
 	web06ActionIdentityFor,
+	web06MappedActionContext,
 	withWeb06OwnedAction,
 	withWeb06ActionContext,
 	withWeb06ControlEvent,
@@ -24,8 +27,14 @@ import {
 	mapWeb06KeyboardEvent,
 	snapshotKeyboardEvent,
 	web06AsciiModeToggleActions,
+	web06AdapterProjectionFingerprint,
+	web06CollectionMode,
+	web06PresentationFingerprintDigest,
+	web06PresentationFingerprintsEqual,
+	web06ReceiptCapacity,
 	web06FocusLossEvent,
 	web06StableDigest,
+	web06ValuesEqual,
 	web06ControlAction,
 } from "./yune-integration/private-protocol";
 import {
@@ -39,7 +48,6 @@ import type {
 	RimeResult,
 	Web06ActionContext,
 	Web06ActionIdentity,
-	Web06BoundaryKind,
 	Web06DomEventIdentity,
 	Web06MappedAction,
 	Web06PresentationFingerprint,
@@ -47,6 +55,10 @@ import type {
 	YuneStatusSnapshot,
 } from "./types";
 import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
+
+const WEB06_PRESENTATION_RECEIPT_CAPACITY = web06ReceiptCapacity(
+	web06CollectionMode(location.search),
+);
 
 interface ActionDiagnosticSnapshot {
 	action?: string;
@@ -105,7 +117,9 @@ interface PendingWeb06Presentation {
 	identity: Web06ActionIdentity;
 	stateUpdateScheduledAt: number;
 	presentationExpected: Web06PresentationFingerprint;
-	beforePresentationDigest: string;
+	beforePresentation: Web06PresentationFingerprint;
+	adapterProjection: ReturnType<typeof web06AdapterProjectionFingerprint>;
+	adapterProjectionDigest: string;
 	committed: boolean;
 	resolved: boolean;
 	stateCommittedAt?: number;
@@ -168,8 +182,10 @@ function presentationFingerprint(
 	prefs: Preferences,
 	textArea: HTMLTextAreaElement,
 	status: YuneStatusSnapshot | undefined,
+	sequenceId: number,
 ): Web06PresentationFingerprint {
 	return {
+		sequenceId,
 		input: renderedInput(state) ?? "",
 		page: state?.page ?? 0,
 		isLastPage: state?.isLastPage ?? true,
@@ -222,6 +238,7 @@ function observedPresentationFingerprint(textArea: HTMLTextAreaElement): Web06Pr
 		source: row.dataset["source"] ?? "",
 	}));
 	return {
+		sequenceId: observedWeb06SequenceId(marker.sequenceId, textArea.dataset["yuneWeb06SequenceId"]),
 		input: normalizedText(panel?.querySelector(".candidate-preedit")),
 		page: marker.page,
 		isLastPage: marker.isLastPage,
@@ -239,22 +256,30 @@ function normalizedText(element: Element | null | undefined): string {
 }
 
 function parseWeb06StateMarker(value: string | undefined): {
+	sequenceId: number;
 	page: number;
 	isLastPage: boolean;
 	highlightedIndex: number;
 } {
 	if (value === undefined) {
-		return { page: 0, isLastPage: true, highlightedIndex: -1 };
+		return { sequenceId: 0, page: 0, isLastPage: true, highlightedIndex: -1 };
 	}
-	const [version, , page, isLastPage, highlightedIndex] = value.split("|");
+	const [version, sequenceId, page, isLastPage, highlightedIndex] = value.split("|");
 	if (version !== "web06-private-v1") {
-		return { page: Number.NaN, isLastPage: false, highlightedIndex: Number.NaN };
+		return { sequenceId: Number.NaN, page: Number.NaN, isLastPage: false, highlightedIndex: Number.NaN };
 	}
 	return {
+		sequenceId: Number(sequenceId),
 		page: Number(page),
 		isLastPage: isLastPage === "1",
 		highlightedIndex: Number(highlightedIndex),
 	};
+}
+
+function observedWeb06SequenceId(panelSequenceId: number, textAreaSequenceId: string | undefined): number {
+	const textAreaValue = textAreaSequenceId === undefined ? 0 : Number(textAreaSequenceId);
+	if (panelSequenceId !== 0 && panelSequenceId !== textAreaValue) return Number.NaN;
+	return panelSequenceId === 0 ? textAreaValue : panelSequenceId;
 }
 
 function observedStatusFingerprint(): Record<string, unknown> | null {
@@ -288,6 +313,7 @@ export default function CandidatePanel({
 	onStatus,
 	onUserdbChange,
 	onMetrics,
+	onClaimWeb06LiveOptions,
 	onToggleAsciiMode,
 }: {
 	runAsyncTask(asyncTask: () => Promise<void>): void;
@@ -300,6 +326,7 @@ export default function CandidatePanel({
 	onStatus?(status: YuneStatusSnapshot | undefined): void;
 	onUserdbChange?(identity?: Web06ActionIdentity): void;
 	onMetrics?(metrics: MetricUpdate): void;
+	onClaimWeb06LiveOptions(actions: Web06MappedAction[]): void;
 	onToggleAsciiMode(): void;
 }) {
 	const [inputState, setInputState] = useState<InputState | undefined>();
@@ -308,13 +335,11 @@ export default function CandidatePanel({
 	const candidateList = useRef<HTMLTableElement>(null);
 	const dictionaryPanel = useRef<HTMLDivElement>(null);
 	const pendingPerfDiagnostics = useRef<PendingPerfDiagnostic[]>([]);
-	const pendingWeb06Presentations = useRef<PendingWeb06Presentation[]>([]);
+	const pendingWeb06Presentations = useRef(new Map<number, PendingWeb06Presentation>());
+	const pendingWeb06PresentationOverflowed = useRef(false);
 	const [web06Render, setWeb06Render] = useState<PendingWeb06Presentation | undefined>();
 	const committedRender = useRef<{ input: string | undefined; revision: number }>({ input: undefined, revision: 0 });
 	const web06RenderRevision = useRef(0);
-	const web06CompositionEpochId = useRef(1);
-	const web06SupersessionSubRunId = useRef(1);
-	const web06RawInputSequence = useRef<string[]>([]);
 	const lastClassicStateRef = useRef<InputState | undefined>();
 	const lastClassicActionIdentity = useRef<Web06ActionIdentity | undefined>();
 	const pendingAsciiModeShift = useRef<string | undefined>();
@@ -330,28 +355,9 @@ export default function CandidatePanel({
 		textArea.selectionStart = textArea.selectionEnd = selectionStart + newText.length;
 	}, [textArea]);
 
-	function advanceWeb06Boundary(boundary: Web06BoundaryKind) {
-		if (boundary === "none") return;
-		web06SupersessionSubRunId.current += 1;
-		web06RawInputSequence.current = [];
-		if (
-			boundary === "commit"
-			|| boundary === "cancel"
-			|| boundary === "focus-loss"
-			|| boundary === "schema"
-			|| boundary === "option"
-			|| boundary === "deploy"
-			|| boundary === "persistence"
-			|| boundary === "error"
-		) {
-			web06CompositionEpochId.current += 1;
-		}
-	}
-
 	const handleRimeResult = useCallback((promise: Promise<RimeResult>, key?: string, keydownContext?: { input: string; key?: string; keydownAt: number }, metricKind?: "lookup" | "ai") => {
 		const startedAt = performance.now();
 		const web06Identity = web06ActionIdentityFor(promise);
-		const beforePresentationDigest = web06StableDigest(observedPresentationFingerprint(textArea));
 		if (web06Identity === undefined) {
 			invalidateWeb06Measurement("MISSING_ACTION_IDENTITY", "RimeResult promise has no WEB-06 action identity");
 		}
@@ -359,6 +365,13 @@ export default function CandidatePanel({
 			let type: "warning" | "error" | undefined;
 			try {
 				const result = await promise;
+				// FIFO actions must observe the DOM left by the preceding completed
+				// action, not the potentially stale DOM from their enqueue time.
+				const beforePresentation = observeWeb06Measurement(
+					"presentation-before-dom-read",
+					web06Identity,
+					() => observedPresentationFingerprint(textArea),
+				);
 				const responseReceivedAt = nowMs();
 				const responseMappingStartedAt = web06Now();
 				onInspectorDebug?.(result.isComposing ? result.debug : undefined);
@@ -440,24 +453,63 @@ export default function CandidatePanel({
 					...(metricKind === "lookup" ? { lookupMs: Math.round(performance.now() - startedAt) } : {}),
 					...(metricKind === "ai" ? { aiMs: Math.round(performance.now() - startedAt) } : {}),
 				});
-				if (web06Identity !== undefined) {
-					const presentationExpected = presentationFingerprint(
+				if (web06Identity !== undefined && beforePresentation !== undefined) {
+					observeWeb06Measurement("presentation-prepare", web06Identity, () => {
+						const presentationExpected = presentationFingerprint(
 						result.isComposing ? state : undefined,
 						prefs,
 						textArea,
-						result.status,
-					);
+							result.status,
+							web06Identity.sequenceId,
+						);
+					const adapterProjection = web06AdapterProjectionFingerprint(result);
 					const pending: PendingWeb06Presentation = {
 						identity: web06Identity,
 						stateUpdateScheduledAt: Number.NaN,
 						presentationExpected,
-						beforePresentationDigest,
+						beforePresentation,
+						adapterProjection,
+						adapterProjectionDigest: web06StableDigest(adapterProjection),
 						committed: result.committed !== undefined,
 						resolved: false,
 					};
-					pendingWeb06Presentations.current.push(pending);
+						if (pendingWeb06Presentations.current.size >= WEB06_PRESENTATION_RECEIPT_CAPACITY) {
+							const oldest = pendingWeb06Presentations.current.entries().next().value as
+								| [number, PendingWeb06Presentation]
+								| undefined;
+							if (!pendingWeb06PresentationOverflowed.current) {
+								pendingWeb06PresentationOverflowed.current = true;
+								invalidateWeb06Measurement(
+									"PENDING_PRESENTATION_RING_OVERFLOW",
+									`WEB-06 pending presentation ring exceeded ${WEB06_PRESENTATION_RECEIPT_CAPACITY} records`,
+									oldest?.[1].identity,
+								);
+							}
+							if (oldest !== undefined) {
+								const [oldestSequenceId, evicted] = oldest;
+								pendingWeb06Presentations.current.delete(oldestSequenceId);
+								const terminalObservedAt = web06Now();
+								const domObserved = observedPresentationFingerprint(textArea);
+									recordWeb06PresentationOutcome({
+									identity: evicted.identity,
+									outcome: "failure",
+									stateUpdateScheduledAt: Number.isFinite(evicted.stateUpdateScheduledAt)
+										? evicted.stateUpdateScheduledAt
+										: terminalObservedAt,
+									terminalObservedAt,
+										beforePresentation: evicted.beforePresentation,
+										adapterProjection: evicted.adapterProjection,
+										adapterProjectionDigest: evicted.adapterProjectionDigest,
+									presentationExpected: evicted.presentationExpected,
+									domObserved,
+									presentationDigest: web06PresentationFingerprintDigest(domObserved),
+								});
+							}
+						}
+						pendingWeb06Presentations.current.set(web06Identity.sequenceId, pending);
 					pending.stateUpdateScheduledAt = web06Now();
 					setWeb06Render(pending);
+					});
 				}
 				setInputState(result.isComposing ? state : undefined);
 				if (result.committed !== undefined && web06Identity?.boundary !== "commit") {
@@ -476,7 +528,6 @@ export default function CandidatePanel({
 			}
 			catch (error) {
 				type = "error";
-				advanceWeb06Boundary("error");
 				invalidateWeb06Measurement(
 					"ACTION_RESULT_ERROR",
 					error instanceof Error ? `${error.name}: ${error.message}` : String(error),
@@ -653,31 +704,11 @@ export default function CandidatePanel({
 	}, [inputState, prefs.isAsciiMode, textArea]);
 
 	useEffect(() => {
-		function mappedActionContext(
-			event: Web06DomEventIdentity,
-			action: Web06MappedAction,
-			eventActionIndex: number,
-			rawKey: string,
-		): Web06ActionContext {
-			if (action.supersedable) {
-				web06RawInputSequence.current = [...web06RawInputSequence.current, rawKey];
-			}
-			return {
-				event,
-				eventActionIndex,
-				compositionEpochId: web06CompositionEpochId.current,
-				supersessionSubRunId: web06SupersessionSubRunId.current,
-				actionClass: action.actionClass,
-				supersedable: action.supersedable,
-				boundary: action.boundary,
-				rawInputSequence: [...web06RawInputSequence.current],
-			};
-		}
-
 		function instrumentKeyboardEvent(event: KeyboardEvent, eventDeliveredAt: number) {
-			const snapshot = snapshotKeyboardEvent(event);
-			const currentState = inputStateRef.current;
-			const mapping = mapWeb06KeyboardEvent(snapshot, {
+			return observeWeb06Measurement("dom-event-freeze-map-record", undefined, () => {
+				const snapshot = snapshotKeyboardEvent(event);
+				const currentState = inputStateRef.current;
+				const mapping = mapWeb06KeyboardEvent(snapshot, {
 				capturedHasComposition: inputState !== undefined,
 				currentHasComposition: currentState !== undefined,
 				isAsciiMode: prefs.isAsciiMode,
@@ -693,29 +724,38 @@ export default function CandidatePanel({
 					isExtendedCharset: prefs.isExtendedCharset,
 					isDisabled: prefs.isDisabled,
 				}),
-			});
-			const eventIdentity = recordWeb06DomEvent(
-				snapshot,
-				mapping,
-				web06CompositionEpochId.current,
-				web06SupersessionSubRunId.current,
-				eventDeliveredAt,
-			);
-			return { mapping, eventIdentity };
+				});
+				const eventIdentity = recordWeb06DomEvent(
+					snapshot,
+					mapping,
+					eventDeliveredAt,
+				);
+				return { mapping, eventIdentity };
+			}) ?? {
+				mapping: {
+					classification: "browser-pass-through" as const,
+					reason: "observer-failure",
+					preventDefault: false,
+					actions: [],
+				},
+				eventIdentity: undefined,
+			};
 		}
 
 		function expectedContext(
 			event: KeyboardEvent,
-			eventIdentity: Web06DomEventIdentity,
+			eventIdentity: Web06DomEventIdentity | undefined,
 			action: Web06MappedAction | undefined,
 			eventActionIndex: number,
 			name: Web06MappedAction["name"],
 			args: unknown[],
 		): Web06ActionContext | undefined {
+			return observeWeb06Measurement("dom-event-expected-action-context", eventIdentity, () => {
 			if (
-				action === undefined
+				eventIdentity === undefined
+				|| action === undefined
 				|| action.name !== name
-				|| web06StableDigest(action.args) !== web06StableDigest(args)
+				|| !web06ValuesEqual(action.args, args)
 			) {
 				invalidateWeb06Measurement(
 					"EVENT_ACTION_MAP_MISMATCH",
@@ -723,7 +763,8 @@ export default function CandidatePanel({
 				);
 				return undefined;
 			}
-			return mappedActionContext(eventIdentity, action, eventActionIndex, event.key);
+			return web06MappedActionContext(eventIdentity, action, eventActionIndex, event.key);
+			});
 		}
 
 		function verifyActionCount(
@@ -731,12 +772,14 @@ export default function CandidatePanel({
 			expected: number,
 			actual: number,
 		) {
+			observeWeb06Measurement("dom-event-action-count", undefined, () => {
 			if (expected !== actual) {
 				invalidateWeb06Measurement(
 					"EVENT_ACTION_CARDINALITY_MISMATCH",
 					`${event.type}/${event.code} expected ${expected} actions, dispatched ${actual}`,
 				);
 			}
+			});
 		}
 
 		function isModifierRelease(event: KeyboardEvent) {
@@ -786,7 +829,6 @@ export default function CandidatePanel({
 				: undefined;
 			if (selectCandidateFromDigitKey(event, digitContext)) {
 				verifyActionCount(event, mapping.actions.length, 1);
-				advanceWeb06Boundary("selection");
 				return;
 			}
 			const key = parseKey(event);
@@ -804,7 +846,6 @@ export default function CandidatePanel({
 				);
 				processKey(input, event.key, nowMs(), context);
 				verifyActionCount(event, mapping.actions.length, 1);
-				advanceWeb06Boundary(action?.boundary ?? "error");
 				return;
 			}
 			verifyActionCount(event, mapping.actions.length, 0);
@@ -819,13 +860,15 @@ export default function CandidatePanel({
 					pendingAsciiModeShift.current = undefined;
 					pendingAsciiModeShiftWasChorded.current = false;
 					if (shouldToggle) {
-						registerWeb06EventFanout(
-							eventIdentity,
-							mapping.actions.map(action => ({ owner: "live-options-effect", action })),
-						);
+						if (eventIdentity !== undefined) {
+							registerWeb06EventFanout(
+								eventIdentity,
+								mapping.actions.map(action => ({ owner: "live-options-effect", action })),
+							);
+						}
+					onClaimWeb06LiveOptions(mapping.actions);
 					onToggleAsciiMode();
 					verifyActionCount(event, mapping.actions.length, 12);
-					advanceWeb06Boundary("modifier-release");
 				}
 				else {
 					verifyActionCount(event, mapping.actions.length, 0);
@@ -854,7 +897,6 @@ export default function CandidatePanel({
 					);
 					processKey(input, undefined, undefined, context);
 					verifyActionCount(event, mapping.actions.length, 1);
-					advanceWeb06Boundary("modifier-release");
 					return;
 				}
 			}
@@ -864,7 +906,8 @@ export default function CandidatePanel({
 		function onFocusLoss(event: FocusEvent) {
 			const eventDeliveredAt = web06Now();
 			const snapshot = web06FocusLossEvent(event.timeStamp);
-			recordWeb06DomEvent(
+			observeWeb06Measurement("focus-loss-event-record", undefined, () => {
+				recordWeb06DomEvent(
 				snapshot,
 				{
 					classification: "frontend-consumed",
@@ -872,11 +915,10 @@ export default function CandidatePanel({
 					preventDefault: false,
 					actions: [],
 				},
-				web06CompositionEpochId.current,
-				web06SupersessionSubRunId.current,
-				eventDeliveredAt,
-			);
-			advanceWeb06Boundary("focus-loss");
+					eventDeliveredAt,
+				);
+				advanceWeb06Boundary("focus-loss");
+			});
 		}
 
 		document.addEventListener("keydown", onKeyDown);
@@ -889,6 +931,7 @@ export default function CandidatePanel({
 		};
 	}, [
 		inputState,
+		onClaimWeb06LiveOptions,
 		onToggleAsciiMode,
 		parseKey,
 		prefs.activeSchema,
@@ -953,18 +996,76 @@ export default function CandidatePanel({
 		if (web06Render === undefined || web06Render.resolved) return;
 		const renderRevision = ++web06RenderRevision.current;
 		web06Render.stateCommittedAt = web06Now();
+		textArea.dataset["yuneWeb06SequenceId"] = String(web06Render.identity.sequenceId);
 		requestAnimationFrame(() => {
 			if (web06RenderRevision.current !== renderRevision) return;
 			web06Render.firstRafAt = web06Now();
 			requestAnimationFrame(() => {
 				if (web06RenderRevision.current !== renderRevision || web06Render.resolved) return;
+				observeWeb06Measurement("presentation-terminal-and-supersession", web06Render.identity, () => {
 				const domObserved = observedPresentationFingerprint(textArea);
-				const domDigest = web06StableDigest(domObserved);
-				const expectedDigest = web06StableDigest(web06Render.presentationExpected);
+				const domDigest = web06PresentationFingerprintDigest(domObserved);
+				const expectedDigest = web06PresentationFingerprintDigest(web06Render.presentationExpected);
 				const terminalObservedAt = web06Now();
-				const exactPresentation = domDigest === expectedDigest;
+				const exactPresentation = web06PresentationFingerprintsEqual(
+					web06Render.presentationExpected,
+					domObserved,
+				);
+				const visualChanged = !web06PresentationFingerprintsEqual(
+					web06Render.beforePresentation,
+					domObserved,
+					false,
+				);
+				const outcome = !exactPresentation
+					? "failure"
+					: web06Render.committed
+					? "committed"
+					: web06Render.identity.actionClass === "stateful-barrier"
+					? visualChanged ? "painted" : "barrier-completed"
+					: visualChanged
+					? "painted"
+					: web06Render.identity.actionClass === "adapter-only"
+					? "processed-no-visual-change"
+					: "failure";
+				if (!exactPresentation) {
+					invalidateWeb06Measurement(
+						"PRESENTATION_FINGERPRINT_MISMATCH",
+						`Expected ${expectedDigest}, observed ${domDigest}`,
+						web06Render.identity,
+					);
+				}
+				else if (
+					!visualChanged
+					&& web06Render.identity.actionClass !== "stateful-barrier"
+					&& web06Render.identity.actionClass !== "adapter-only"
+				) {
+					invalidateWeb06Measurement(
+						"EXPECTED_VISIBLE_ACTION_UNCHANGED",
+						`Action ${web06Render.identity.actionId} completed without its required visible state`,
+						web06Render.identity,
+					);
+				}
+				// Record the covering action first. Supersession validation then has
+				// an exact, independently accepted painted terminal to bind against.
+				recordWeb06PresentationOutcome({
+					identity: web06Render.identity,
+					outcome,
+					stateUpdateScheduledAt: web06Render.stateUpdateScheduledAt,
+					stateCommittedAt: web06Render.stateCommittedAt,
+					firstRafAt: web06Render.firstRafAt,
+					terminalObservedAt,
+					...(outcome === "painted" ? { paintObservedAt: terminalObservedAt } : {}),
+					beforePresentation: web06Render.beforePresentation,
+					adapterProjection: web06Render.adapterProjection,
+					adapterProjectionDigest: web06Render.adapterProjectionDigest,
+					presentationExpected: web06Render.presentationExpected,
+					domObserved,
+					presentationDigest: domDigest,
+				});
+				web06Render.resolved = true;
+				pendingWeb06Presentations.current.delete(web06Render.identity.sequenceId);
 
-				for (const pending of pendingWeb06Presentations.current) {
+				for (const [pendingSequenceId, pending] of pendingWeb06Presentations.current) {
 					if (
 						pending.resolved
 						|| pending.identity.sequenceId >= web06Render.identity.sequenceId
@@ -974,9 +1075,11 @@ export default function CandidatePanel({
 					const renderedPrefix = web06Render.presentationExpected.input.startsWith(
 						pending.presentationExpected.input,
 					) && web06Render.presentationExpected.input.length > pending.presentationExpected.input.length;
-					const canSupersede = renderedPrefix
+					const canSupersede = outcome === "painted"
+						&& exactPresentation
+						&& renderedPrefix
 						&& canWeb06Supersede(pending.identity, web06Render.identity);
-					const outcome = canSupersede ? "superseded" : "failure";
+					const pendingOutcome = canSupersede ? "superseded" : "failure";
 					if (!canSupersede) {
 						invalidateWeb06Measurement(
 							pending.identity.supersedable
@@ -988,11 +1091,15 @@ export default function CandidatePanel({
 					}
 					recordWeb06PresentationOutcome({
 						identity: pending.identity,
-						outcome,
+						outcome: pendingOutcome,
 						stateUpdateScheduledAt: pending.stateUpdateScheduledAt,
 						stateCommittedAt: pending.stateCommittedAt,
 						firstRafAt: pending.firstRafAt,
 						terminalObservedAt,
+						...(canSupersede ? { paintObservedAt: terminalObservedAt } : {}),
+						beforePresentation: pending.beforePresentation,
+						adapterProjection: pending.adapterProjection,
+						adapterProjectionDigest: pending.adapterProjectionDigest,
 						presentationExpected: pending.presentationExpected,
 						domObserved,
 						presentationDigest: domDigest,
@@ -1003,40 +1110,8 @@ export default function CandidatePanel({
 						} : {}),
 					});
 					pending.resolved = true;
+					pendingWeb06Presentations.current.delete(pendingSequenceId);
 				}
-
-				const visualChanged = web06Render.beforePresentationDigest !== domDigest;
-				const outcome = !exactPresentation
-					? "failure"
-					: web06Render.committed
-					? "committed"
-					: web06Render.identity.actionClass === "stateful-barrier"
-					? visualChanged ? "painted" : "barrier-completed"
-					: visualChanged
-					? "painted"
-					: "processed-no-visual-change";
-				if (!exactPresentation) {
-					invalidateWeb06Measurement(
-						"PRESENTATION_FINGERPRINT_MISMATCH",
-						`Expected ${expectedDigest}, observed ${domDigest}`,
-						web06Render.identity,
-					);
-				}
-				recordWeb06PresentationOutcome({
-					identity: web06Render.identity,
-					outcome,
-					stateUpdateScheduledAt: web06Render.stateUpdateScheduledAt,
-					stateCommittedAt: web06Render.stateCommittedAt,
-					firstRafAt: web06Render.firstRafAt,
-					terminalObservedAt,
-					presentationExpected: web06Render.presentationExpected,
-					domObserved,
-					presentationDigest: domDigest,
-				});
-				web06Render.resolved = true;
-				pendingWeb06Presentations.current = pendingWeb06Presentations.current.filter(
-					pending => !pending.resolved,
-				);
 				try {
 					document.documentElement.dataset["yuneWeb06Terminal"] = [
 						"web06-private-v1",
@@ -1054,6 +1129,7 @@ export default function CandidatePanel({
 						web06Render.identity,
 					);
 				}
+				});
 			});
 		});
 	}, [inputState, textArea, web06Render]);

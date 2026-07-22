@@ -6,7 +6,7 @@ import { notify } from "./toast";
 import { isUiLanguage } from "./uiText";
 
 import type { ChineseTypefaceId, OutputStandard } from "./consts";
-import type { Preferences, PreferencesWithSetter, RimeSchemaId } from "./types";
+import type { Preferences, PreferencesWithSetter, RimeSchemaId, Web06ActionIdentity } from "./types";
 import type { UiLanguage } from "./uiText";
 import type { Dispatch, DispatchWithoutAction, MouseEvent, SetStateAction, TouchEvent } from "react";
 
@@ -55,9 +55,17 @@ export function useLoading(): [boolean, (asyncTask: () => Promise<void>) => void
 	return [pendingCount > 0, runAsyncTask, startAsyncTask];
 }
 
-export function useRimeOption(option: string, defaultValue: boolean, deployStatus: number, localStorageKey?: string, enabled = true): [boolean, DispatchWithoutAction] {
+export function useRimeOption(
+	option: string,
+	defaultValue: boolean,
+	deployStatus: number,
+	localStorageKey?: string,
+	enabled = true,
+	web06DeployCause?: Web06ActionIdentity,
+): [boolean, DispatchWithoutAction] {
 	// eslint-disable-next-line react-hooks/rules-of-hooks
 	const [value, setValue] = localStorageKey ? useLocalStorageValue(localStorageKey, { defaultValue }) : useState(defaultValue);
+	const lastWeb06DeployStatus = useRef(deployStatus);
 
 	useEffect(() => {
 		if (!enabled) {
@@ -65,12 +73,16 @@ export function useRimeOption(option: string, defaultValue: boolean, deployStatu
 		}
 		async function setOption() {
 			try {
+				const causedBy = lastWeb06DeployStatus.current === deployStatus
+					? undefined
+					: web06DeployCause;
+				lastWeb06DeployStatus.current = deployStatus;
 				await withWeb06OwnedAction(
 					`rime-option:${option}`,
 					"setOption",
 					[option, value],
 					"rime-option-effect",
-					undefined,
+					causedBy,
 					() => Rime.setOption(option, value),
 				);
 				writeOptionDataset(option, value);
@@ -80,7 +92,7 @@ export function useRimeOption(option: string, defaultValue: boolean, deployStatu
 			}
 		}
 		void setOption();
-	}, [enabled, option, value, deployStatus]);
+	}, [enabled, option, value, deployStatus, web06DeployCause]);
 
 	useEffect(() =>
 		subscribe("optionChanged", (rimeOption, rimeValue) => {

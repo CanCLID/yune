@@ -15,6 +15,14 @@ For the browser peer chart, the denominator is My RIME rather than librime and
 the same lower/equal/higher convention applies. A ratio such as `0.250x` means
 Yune used 25% of the peer value, not “0.250x faster.”
 
+**Correction — 2026-07-21 (`WITHDRAWN_ENDPOINT_MISMATCH`):** the historical
+browser interaction quotients `74/95 = 0.779x` and `107/119 = 0.899x` used
+unequal endpoints. Yune stopped on the earlier candidate-bearing `n` diagnostic
+while My RIME waited for complete `ni`; commit timing inherited those unequal
+starts. The CSV and SVG retain the exact historical values with a withdrawal
+overlay. They are not fair-peer performance evidence. Ready time, WASM, and
+resource payload remain unchanged dated observations.
+
 ## Sources
 
 - `current-windows-track-a-ratios.csv`: derived from
@@ -46,14 +54,16 @@ web performance.
 | --- | --- | --- | --- |
 | `visuals/current-windows-track-a-parity-1-of-2.svg` and `-2-of-2.svg` | Are final-M59 Windows medians and worst observations below librime parity? | two mobile-readable 9/8 logarithmic interval panels | Windows `443cc636`, same-run librime peer |
 | `visuals/current-macos-track-a-parity-1-of-2.svg` and `-2-of-2.svg` | Are the latest measured Mac medians and pooled worsts below librime parity? | two mobile-readable 9/8 logarithmic interval panels | Mac `0111cf47`, same-Mac librime peer |
-| `visuals/browser-luna-peer-parity.svg` | Which fair same-schema browser metrics favor Yune or My RIME? | logarithmic diverging ratio bars | dated 2026-06-28 `luna_pinyin` peer snapshot |
+| `visuals/browser-luna-peer-parity.svg` | What did the dated same-schema browser snapshot record, and which interaction rows are withdrawn? | logarithmic diverging ratio bars with a dated withdrawal overlay | dated 2026-06-28 `luna_pinyin` snapshot; interaction correction 2026-07-21 |
 
 All charts use position plus direct text/shape, a dark `1.000x` line, exact
 values visible without hover, and explicit numerator/denominator semantics.
 The dashboard-facing native panels include `760 px` intrinsic SVG dimensions,
 split the 17 rows 9/8, and use 18–20 px primary labels/values. The browser
 panel uses the same narrow-reader width and typography, wrapping its longest
-metric label and leaving raw values to the adjacent dashboard table. The
+metric label and marking the two interaction ratios as withdrawn while leaving
+their historical values visible. Raw values remain in the adjacent dashboard
+table. The
 original combined native SVGs remain in the packet as preserved superseded
 renderings; the dashboard uses the split panels. Regenerate with
 `python3 build_visuals.py`.

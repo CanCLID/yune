@@ -1,6 +1,6 @@
 # Yune Performance Dashboard
 
-Updated: 2026-07-16
+Updated: 2026-07-21
 
 This is the single current performance report for Yune. It covers native
 Windows, native macOS, the Track B product guard, the browser peer lane, the
@@ -29,9 +29,10 @@ measurements and longer source-bound investigations are kept in
   deployment, and the source-pinned production canary. The deployed 47-key row
   measured `43 ms` p95 / `44 ms` max with zero worker queue wait.
 - **Browser startup and footprint remain the clearest peer deficits.** In the
-  latest fair same-schema peer run, Yune is `1.577x` on ready time, `4.000x` on
-  WASM memory, and `3.471x` on unique encoded resources. First-input and commit
-  latency are below peer parity at `0.779x` and `0.899x`.
+  dated same-schema peer run, Yune is `1.577x` on ready time, `4.000x` on WASM
+  memory, and `3.471x` on unique encoded resources. The interaction-only
+  `0.779x` first-candidate and `0.899x` commit interpretations are withdrawn for
+  unequal endpoints; they are not peer-performance evidence.
 - **The current Windows 17-input prerequisite is exact.** The corrected M61
   preflight and every owned and byte-backed correction-source round passed
   `17/17`. The older macOS packet remains source-bound to its historical
@@ -69,7 +70,7 @@ reinterpreting those ceilings.
 | macOS native | `0111cf47c09bfe7a4a3d55a1832f35a55bc59435` | librime `33e78140250125871856cdc5b42ddc6a5fcd3cd4` | 5 fixed-binary rounds; `9/60/80`; product deployment | artifact/identity/completeness checks pass; quiet-machine condition was not continuous |
 | Windows iOS-budget proxy | M47 RED-08, measured 2026-06-29 | no peer; 48/64 MB product targets | fresh-process native probe | portable optimization scope complete; on-device validation pending |
 | Web interaction | `ef485b102b3a5e75359e547008b47ed89eb89c7e` | no peer | local full release-stress gate, Cloudflare deployment, and deployed canary | WEB03-11 source-current pass; no browser-peer ratio formed |
-| Browser peer | measured 2026-06-28 | My RIME | same-schema `luna_pinyin` comparison | latest fair browser peer snapshot; Jyutping peer rows excluded as dictionary-confounded |
+| Browser peer | measured 2026-06-28 | My RIME | same-schema `luna_pinyin` comparison | dated startup/WASM/payload snapshot; interaction rows withdrawn for endpoint mismatch; Jyutping peer rows excluded as dictionary-confounded |
 | Linux native | — | — | no current packet | unmeasured; no Linux performance claim |
 | iOS device | — | — | no on-device packet | unmeasured; no Apple `phys_footprint` claim |
 
@@ -206,24 +207,34 @@ on-device Apple `phys_footprint`.
 
 ## Browser peer comparison
 
-This is the latest fair browser peer snapshot. It compares `luna_pinyin` with
-the same schema/dictionary family. Jyutping peer rows are omitted because the
-dictionary sets differ.
+This is the latest dated same-schema browser peer snapshot. Its startup, WASM,
+and resource-payload observations remain usable. Jyutping peer rows are omitted
+because the dictionary sets differ.
 
-![Browser luna_pinyin peer ratios relative to 1.000x parity](./evidence/current-ratio-visuals-2026-07-14/visuals/browser-luna-peer-parity.svg)
+> **Correction — 2026-07-21 (`WITHDRAWN_ENDPOINT_MISMATCH`):** the
+> interaction-only `74 ms` versus `95 ms` (`0.779x`) first-candidate and
+> `107 ms` versus `119 ms` (`0.899x`) commit reads are withdrawn. The comparator
+> stopped Yune on the earlier candidate-bearing `n` diagnostic (`那`) while My
+> RIME waited for complete `ni`; Yune's final DOM later showed `你`. Commit
+> timing inherited those unequal starts. The values remain visible as preserved
+> historical observations, not fair-peer evidence. This correction does not
+> change the dated ready-time, WASM, or resource-payload observations.
+
+![Dated browser luna_pinyin ratio snapshot with interaction rows withdrawn](./evidence/current-ratio-visuals-2026-07-14/visuals/browser-luna-peer-parity.svg)
 
 | Metric | Yune | My RIME | Yune / peer | Reading |
 | --- | ---: | ---: | ---: | --- |
 | ready to input | `1,000 ms` | `634 ms` | `1.577x` | peer lower |
-| input to candidate | `74 ms` | `95 ms` | `0.779x` | Yune lower |
-| commit | `107 ms` | `119 ms` | `0.899x` | Yune lower |
+| input to candidate | `74 ms` | `95 ms` | `0.779x` | `WITHDRAWN_ENDPOINT_MISMATCH` |
+| commit | `107 ms` | `119 ms` | `0.899x` | `WITHDRAWN_ENDPOINT_MISMATCH` |
 | WASM ready | `64 MiB` | `16 MiB` | `4.000x` | peer lower |
 | WASM peak | `64 MiB` | `16 MiB` | `4.000x` | peer lower |
 | unique encoded resources | `29.5 MiB` | `8.5 MiB` | `3.471x` | peer lower |
 
 This peer result was measured on 2026-06-28. It remains the latest direct peer
 comparison, but it is not a source-current remeasurement of the later web
-build. The `0111cf47` web receipts observe a `128 MiB` Yune WASM heap;
+build, and its interaction rows have the dated withdrawal above. The
+`0111cf47` web receipts observe a `128 MiB` Yune WASM heap;
 without a same-run My RIME result, no refreshed peer ratio is formed.
 
 ## Current WEB03-11 web interaction receipts
@@ -307,7 +318,7 @@ lanes with their own acceptance contracts.
   `$HOME/yune-m59-current-macos-20260714/`
 - M47 final portable product-memory proxy:
   [`m47-ios-budget-native-memory-reduction-red08-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red08-2026-06-29/)
-- Latest fair browser peer normalized rows:
+- Dated browser peer normalized rows with the interaction-withdrawal overlay:
   [`current-browser-peer-comparator.csv`](./evidence/current-performance-dashboard-2026-06-28/current-browser-peer-comparator.csv)
 - Latest measured web release receipts (external):
   `$HOME/yune-cloudflare-gate-evidence-0111cf47/` and

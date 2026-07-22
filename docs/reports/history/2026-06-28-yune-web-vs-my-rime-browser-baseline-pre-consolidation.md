@@ -14,21 +14,30 @@ Measurement date: 2026-06-28
 > browser startup, interaction, payload, or WASM-memory results. `WEB03-11`
 > remains pending until the first clean source-current Cloudflare pass.
 
+> **Correction — 2026-07-21 (`WITHDRAWN_ENDPOINT_MISMATCH`):** the preserved
+> interaction-only `74 ms` versus `95 ms` (`0.779x`) first-candidate and
+> `107 ms` versus `119 ms` (`0.899x`) commit interpretations are withdrawn.
+> Yune stopped on the earlier candidate-bearing `n` diagnostic (`那`) while My
+> RIME waited for complete `ni`; the final Yune DOM later showed `你`. Commit
+> timing inherited those unequal starts. The packet and values below remain
+> historical bytes, not fair-peer interaction evidence. Ready time, WASM, and
+> resource payload are unaffected dated observations.
+
 This report shows that measured browser benchmark state. The previous WEB-01/M46
 handoff narrative has been archived at
 [`2026-06-28-yune-web-vs-my-rime-browser-baseline-pre-current-dashboard.md`](./2026-06-28-yune-web-vs-my-rime-browser-baseline-pre-current-dashboard.md).
 
 ## Technical Summary
 
-All fair-lane ratios use **Yune divided by My RIME**. Below `1.000x` means Yune
-uses less of that metric, `1.000x` is parity, and above `1.000x` means Yune uses
-more. A value such as `0.779x` means 77.9% of the peer latency, not “0.779x
-faster.”
+Retained fair-lane ratios use **Yune divided by My RIME**. Below `1.000x` means
+Yune uses less of that metric, `1.000x` is parity, and above `1.000x` means Yune
+uses more. The historical interaction quotients remain printed for packet
+traceability, but the correction above withdraws their peer interpretation.
 
-- **Fair same-schema lane**: in this snapshot, Yune is below latency parity on
-  first input (`0.779x`) and commit (`0.899x`), but above parity on ready time
+- **Same-schema lane**: in this snapshot, Yune is above parity on ready time
   (`1.577x`), WASM ready/peak (`4.000x`), and unique encoded resources
-  (`3.471x`).
+  (`3.471x`). The `0.779x` and `0.899x` interaction quotients are retained only
+  as `WITHDRAWN_ENDPOINT_MISMATCH` history.
 - **Jyutping lane**: the measured Yune public demo uses `160.0 MiB` WASM peak and
   is byte-backed. The My RIME Jyutping row is retained only as guard context
   because it uses a different Cantonese-only dictionary.
@@ -42,7 +51,7 @@ faster.”
 
 | Lane | Meaning | Validity |
 | --- | --- | --- |
-| Yune public demo vs My RIME on `luna_pinyin` | Same schema and dictionary family | fair cross-engine browser comparison |
+| Yune public demo vs My RIME on `luna_pinyin` | Same schema and dictionary family | fair only for retained startup, WASM, and payload observations; interaction endpoints mismatched |
 | Yune public demo Jyutping | Yune launch/profile guard | not fair against My RIME; dictionary-confounded |
 | My RIME Jyutping | Cantonese-only My RIME guard context | not a target for TypeDuck `jyut6ping3` |
 
@@ -51,23 +60,25 @@ The measured dashboard source bundle is
 
 ## Measured Browser Peer Results
 
-The fair `luna_pinyin` lane is plotted on the same parity-centered ratio scale
-as the native reports. Latency, memory, and payload remain separate metrics;
-the chart only makes their direction relative to the peer explicit.
+The dated `luna_pinyin` snapshot is plotted on the same parity-centered ratio
+scale as the native reports. Startup, memory, and payload remain retained peer
+metrics. The two interaction quotients stay visible with their withdrawal
+overlay and have no peer direction.
 
-![Browser luna_pinyin peer ratios relative to 1.000x parity](../evidence/current-ratio-visuals-2026-07-14/visuals/browser-luna-peer-parity.svg)
+![Dated browser luna_pinyin ratio snapshot with interaction rows withdrawn](../evidence/current-ratio-visuals-2026-07-14/visuals/browser-luna-peer-parity.svg)
 
-| Fair `luna_pinyin` metric | Yune | My RIME | Yune/peer | Parity read |
+| `luna_pinyin` metric | Yune | My RIME | Historical Yune/peer quotient | Status |
 | --- | ---: | ---: | ---: | --- |
 | ready to input | `1000 ms` | `634 ms` | `1.577x` | above parity; Yune uses more time |
-| input to candidate | `74 ms` | `95 ms` | `0.779x` | below parity; Yune uses less time |
-| commit | `107 ms` | `119 ms` | `0.899x` | below parity; Yune uses less time |
+| input to candidate | `74 ms` | `95 ms` | `0.779x` | `WITHDRAWN_ENDPOINT_MISMATCH` |
+| commit | `107 ms` | `119 ms` | `0.899x` | `WITHDRAWN_ENDPOINT_MISMATCH` |
 | WASM ready | `64.0 MiB` | `16.0 MiB` | `4.000x` | above parity; Yune uses more memory |
 | WASM peak | `64.0 MiB` | `16.0 MiB` | `4.000x` | above parity; Yune uses more memory |
 | unique encoded resources | `29.5 MiB` | `8.5 MiB` | `3.471x` | above parity; Yune transfers more bytes |
 
-The raw snapshot table is retained below. Its Jyutping rows are guard context,
-not peer ratios, because the dictionaries differ.
+The raw snapshot table is retained below without rewriting its measured cells.
+Its Luna interaction cells carry the correction above; its Jyutping rows are
+guard context, not peer ratios, because the dictionaries differ.
 
 | Scenario | Schema | Ready | Input -> candidate | Commit | WASM ready | WASM peak | Unique encoded resources | Commit check |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -121,8 +132,8 @@ Evidence:
 | --- | --- |
 | Fair memory gap | Yune `luna_pinyin` is `4.0x` My RIME on WASM peak (`64.0 MiB` vs `16.0 MiB`). |
 | Fair startup gap | Yune `luna_pinyin` ready-to-input is `1.577x` My RIME (`1000 ms` vs `634 ms`), above parity. |
-| Fair first-input latency | Yune `luna_pinyin` is `0.779x` My RIME (`74 ms` vs `95 ms`), below parity. |
-| Fair commit latency | Yune `luna_pinyin` is `0.899x` My RIME (`107 ms` vs `119 ms`), below parity. |
+| Withdrawn first-candidate interpretation | `0.779x` (`74 ms` vs `95 ms`) is preserved history with status `WITHDRAWN_ENDPOINT_MISMATCH`; it is not peer-performance evidence. |
+| Withdrawn commit interpretation | `0.899x` (`107 ms` vs `119 ms`) is preserved history with status `WITHDRAWN_ENDPOINT_MISMATCH`; it is not peer-performance evidence. |
 | Public-demo Jyutping memory | The measured byte-backed launch path is `160.0 MiB`; old `893.1 MiB` is historical source-fallback evidence. |
 | Public-demo Jyutping long typing | The measured WEB-03 long rows are below `150 ms` exact keydown-to-paint in the checked-in local evidence. |
 

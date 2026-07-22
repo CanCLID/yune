@@ -423,16 +423,16 @@ def browser_chart() -> None:
     ticks = [0.5, 1.0, 2.0, 4.0, 8.0]
     parts = svg_start(
         width, height,
-        "Fair same-schema browser Yune/My RIME ratios",
-        "Six dated luna_pinyin browser metrics plot Yune divided by My RIME on a logarithmic axis. Values left of 1.000 mean Yune is lower; values right mean My RIME is lower. Jyutping is excluded because its dictionaries differ.",
+        "Dated same-schema browser snapshot with interaction withdrawals",
+        "Six dated luna_pinyin browser quotients plot Yune divided by My RIME on a logarithmic axis. Input to candidate at 0.779x and commit at 0.899x are historical values withdrawn on 2026-07-21 for endpoint mismatch. Ready time, WASM, and payload rows remain dated peer observations. Jyutping is excluded because its dictionaries differ.",
         intrinsic_dimensions=True,
     )
     parts += [
-        text(24, 46, "Fair browser peer ratios", 30, weight=700),
-        text(24, 78, "2026-06-28 luna_pinyin · Yune value / My RIME value", 17, fill=MUTED),
-        text(left, 118, "← Yune lower", 18, weight=600, fill=BLUE),
-        text(right, 118, "My RIME lower →", 18, anchor="end", weight=600, fill=ORANGE),
-        text(730, 160, "Yune / peer", 17, anchor="end", weight=700, fill=MUTED),
+        text(24, 46, "Browser peer ratio snapshot", 30, weight=700),
+        text(24, 78, "2026-06-28 luna_pinyin · interaction correction 2026-07-21", 17, fill=MUTED),
+        text(left, 118, "← quotient below 1.000x", 16, weight=600, fill=BLUE),
+        text(right, 118, "quotient above 1.000x →", 16, anchor="end", weight=600, fill=ORANGE),
+        text(730, 160, "Historical Yune / peer", 17, anchor="end", weight=700, fill=MUTED),
     ]
     top, row_h = 198, 64
     bottom = top + row_h * (len(data) - 1) + 28
@@ -447,8 +447,13 @@ def browser_chart() -> None:
         y = top + index * row_h
         ratio = float(row["yune_my_rime_ratio"])
         x = scale(ratio)
-        color = BLUE if ratio < 1 else ORANGE
-        fill = BLUE_LIGHT if ratio < 1 else ORANGE_LIGHT
+        withdrawn = row["claim_status"] == "WITHDRAWN_ENDPOINT_MISMATCH"
+        if withdrawn:
+            color = MUTED
+            fill = "#edf1f4"
+        else:
+            color = BLUE if ratio < 1 else ORANGE
+            fill = BLUE_LIGHT if ratio < 1 else ORANGE_LIGHT
         if index % 2 == 0:
             parts.append(f'<rect x="12" y="{y-27:.1f}" width="724" height="54" rx="7" fill="#f3f6fa"/>')
         label_lines = [row["metric"]]
@@ -457,11 +462,14 @@ def browser_chart() -> None:
         parts.append(multiline_text(190, y + 6, label_lines, 19, anchor="end", weight=600))
         rect_x = min(parity_x, x)
         rect_w = max(2, abs(x - parity_x))
-        parts.append(f'<rect x="{rect_x:.1f}" y="{y-10:.1f}" width="{rect_w:.1f}" height="20" rx="5" fill="{fill}" stroke="{color}" stroke-width="1.5"/>')
+        dash = ' stroke-dasharray="4 3"' if withdrawn else ""
+        parts.append(f'<rect x="{rect_x:.1f}" y="{y-10:.1f}" width="{rect_w:.1f}" height="20" rx="5" fill="{fill}" stroke="{color}" stroke-width="1.5"{dash}/>')
         parts.append(circle(x, y, 7, color, INK, 1))
         parts.append(text(730, y + 7, f"{ratio:.3f}x", 20, anchor="end", weight=800, fill=color, family="ui-monospace, monospace"))
+        if withdrawn:
+            parts.append(text(730, y + 24, "WITHDRAWN_ENDPOINT_MISMATCH", 11, anchor="end", weight=800, fill="#9b2c2c", family="ui-monospace, monospace"))
     parts += [
-        text(24, height - 24, "Same luna_pinyin family · Jyutping excluded · log axis", 17, fill=MUTED),
+        text(24, height - 24, "Withdrawn interaction values are history, not peer evidence · other rows unchanged", 15, fill=MUTED),
         "</svg>",
     ]
     (OUT / "browser-luna-peer-parity.svg").write_text("\n".join(parts) + "\n", encoding="utf-8")

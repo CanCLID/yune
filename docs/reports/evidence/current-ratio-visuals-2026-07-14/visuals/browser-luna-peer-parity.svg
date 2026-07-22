@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="640" viewBox="0 0 760 640" role="img" aria-labelledby="title desc" style="max-width:100%;height:auto;background:#fbfcfe">
-<title id="title">Fair same-schema browser Yune/My RIME ratios</title>
-<desc id="desc">Six dated luna_pinyin browser metrics plot Yune divided by My RIME on a logarithmic axis. Values left of 1.000 mean Yune is lower; values right mean My RIME is lower. Jyutping is excluded because its dictionaries differ.</desc>
+<title id="title">Dated same-schema browser snapshot with interaction withdrawals</title>
+<desc id="desc">Six dated luna_pinyin browser quotients plot Yune divided by My RIME on a logarithmic axis. Input to candidate at 0.779x and commit at 0.899x are historical values withdrawn on 2026-07-21 for endpoint mismatch. Ready time, WASM, and payload rows remain dated peer observations. Jyutping is excluded because its dictionaries differ.</desc>
 <rect width="760" height="640" fill="#fbfcfe"/>
-<text x="24.0" y="46.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="30" font-weight="700" fill="#17202a">Fair browser peer ratios</text>
-<text x="24.0" y="78.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="17" font-weight="400" fill="#52616f">2026-06-28 luna_pinyin · Yune value / My RIME value</text>
-<text x="205.0" y="118.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#2463d4">← Yune lower</text>
-<text x="555.0" y="118.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#c45a1b">My RIME lower →</text>
-<text x="730.0" y="160.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#52616f">Yune / peer</text>
+<text x="24.0" y="46.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="30" font-weight="700" fill="#17202a">Browser peer ratio snapshot</text>
+<text x="24.0" y="78.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="17" font-weight="400" fill="#52616f">2026-06-28 luna_pinyin · interaction correction 2026-07-21</text>
+<text x="205.0" y="118.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#2463d4">← quotient below 1.000x</text>
+<text x="555.0" y="118.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#c45a1b">quotient above 1.000x →</text>
+<text x="730.0" y="160.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#52616f">Historical Yune / peer</text>
 <line x1="205.0" y1="156.0" x2="205.0" y2="546.0" stroke="#d9e2ec" stroke-width="1" stroke-dasharray="3 5"/>
 <text x="205.0" y="578.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="16" font-weight="400" fill="#17202a">0.5x</text>
 <line x1="292.5" y1="156.0" x2="292.5" y2="546.0" stroke="#17202a" stroke-width="3"/>
@@ -24,14 +24,16 @@
 <circle cx="350.0" cy="198.0" r="7" fill="#c45a1b" stroke="#17202a" stroke-width="1"/>
 <text x="730.0" y="205.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#c45a1b">1.577x</text>
 <text x="190.0" y="268.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="19" font-weight="600" fill="#17202a"><tspan x="190.0" dy="0.0">Input to candidate</tspan></text>
-<rect x="261.0" y="252.0" width="31.5" height="20" rx="5" fill="#d9e7ff" stroke="#2463d4" stroke-width="1.5"/>
-<circle cx="261.0" cy="262.0" r="7" fill="#2463d4" stroke="#17202a" stroke-width="1"/>
-<text x="730.0" y="269.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#2463d4">0.779x</text>
+<rect x="261.0" y="252.0" width="31.5" height="20" rx="5" fill="#edf1f4" stroke="#52616f" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="261.0" cy="262.0" r="7" fill="#52616f" stroke="#17202a" stroke-width="1"/>
+<text x="730.0" y="269.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#52616f">0.779x</text>
+<text x="730.0" y="286.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="11" font-weight="800" fill="#9b2c2c">WITHDRAWN_ENDPOINT_MISMATCH</text>
 <rect x="12" y="299.0" width="724" height="54" rx="7" fill="#f3f6fa"/>
 <text x="190.0" y="332.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="19" font-weight="600" fill="#17202a"><tspan x="190.0" dy="0.0">Commit</tspan></text>
-<rect x="279.1" y="316.0" width="13.4" height="20" rx="5" fill="#d9e7ff" stroke="#2463d4" stroke-width="1.5"/>
-<circle cx="279.1" cy="326.0" r="7" fill="#2463d4" stroke="#17202a" stroke-width="1"/>
-<text x="730.0" y="333.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#2463d4">0.899x</text>
+<rect x="279.1" y="316.0" width="13.4" height="20" rx="5" fill="#edf1f4" stroke="#52616f" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="279.1" cy="326.0" r="7" fill="#52616f" stroke="#17202a" stroke-width="1"/>
+<text x="730.0" y="333.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#52616f">0.899x</text>
+<text x="730.0" y="350.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="11" font-weight="800" fill="#9b2c2c">WITHDRAWN_ENDPOINT_MISMATCH</text>
 <text x="190.0" y="396.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="19" font-weight="600" fill="#17202a"><tspan x="190.0" dy="0.0">WASM ready</tspan></text>
 <rect x="292.5" y="380.0" width="175.0" height="20" rx="5" fill="#f8dfcf" stroke="#c45a1b" stroke-width="1.5"/>
 <circle cx="467.5" cy="390.0" r="7" fill="#c45a1b" stroke="#17202a" stroke-width="1"/>
@@ -45,5 +47,5 @@
 <rect x="292.5" y="508.0" width="157.1" height="20" rx="5" fill="#f8dfcf" stroke="#c45a1b" stroke-width="1.5"/>
 <circle cx="449.6" cy="518.0" r="7" fill="#c45a1b" stroke="#17202a" stroke-width="1"/>
 <text x="730.0" y="525.0" text-anchor="end" font-family="ui-monospace, monospace" font-size="20" font-weight="800" fill="#c45a1b">3.471x</text>
-<text x="24.0" y="616.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="17" font-weight="400" fill="#52616f">Same luna_pinyin family · Jyutping excluded · log axis</text>
+<text x="24.0" y="616.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="15" font-weight="400" fill="#52616f">Withdrawn interaction values are history, not peer evidence · other rows unchanged</text>
 </svg>

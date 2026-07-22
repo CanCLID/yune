@@ -1,7 +1,7 @@
-order,metric,yune_value,my_rime_value,unit,yune_my_rime_ratio,parity_read
-1,Ready to input,1000,634,ms,1.577,My RIME lower
-2,Input to candidate,74,95,ms,0.779,Yune lower
-3,Commit,107,119,ms,0.899,Yune lower
-4,WASM ready,64.0,16.0,MiB,4.000,My RIME lower
-5,WASM peak,64.0,16.0,MiB,4.000,My RIME lower
-6,Unique encoded resources,29.5,8.5,MiB,3.471,My RIME lower
+order,metric,yune_value,my_rime_value,unit,yune_my_rime_ratio,parity_read,claim_status,correction_date,correction_reason
+1,Ready to input,1000,634,ms,1.577,My RIME lower,RETAINED_DATED_SNAPSHOT,,
+2,Input to candidate,74,95,ms,0.779,WITHDRAWN_ENDPOINT_MISMATCH,WITHDRAWN_ENDPOINT_MISMATCH,2026-07-21,yune_early_candidate_vs_peer_complete_input
+3,Commit,107,119,ms,0.899,WITHDRAWN_ENDPOINT_MISMATCH,WITHDRAWN_ENDPOINT_MISMATCH,2026-07-21,commit_inherited_unequal_interaction_starts
+4,WASM ready,64.0,16.0,MiB,4.000,My RIME lower,RETAINED_DATED_SNAPSHOT,,
+5,WASM peak,64.0,16.0,MiB,4.000,My RIME lower,RETAINED_DATED_SNAPSHOT,,
+6,Unique encoded resources,29.5,8.5,MiB,3.471,My RIME lower,RETAINED_DATED_SNAPSHOT,,

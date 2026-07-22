@@ -52,6 +52,21 @@ describe("public runtime value exports", () => {
     expect(Object.keys(publicRuntime).sort()).toEqual(BASELINE_VALUE_EXPORTS);
   });
 
+  it("preserves the frozen JavaScript call arities", () => {
+    expect(publicRuntime.readYuneWebResponse).toHaveLength(2);
+    expect(publicRuntime.YuneWebRuntime.init).toHaveLength(2);
+    expect(publicRuntime.YuneWebRuntime.prototype.processKey).toHaveLength(1);
+    expect(publicRuntime.YuneWebRuntime.prototype.selectCandidate).toHaveLength(1);
+    expect(publicRuntime.YuneWebRuntime.prototype.deleteCandidate).toHaveLength(1);
+    expect(publicRuntime.YuneWebRuntime.prototype.flipPage).toHaveLength(0);
+    expect(publicRuntime.YuneWebRuntime.prototype.deploy).toHaveLength(0);
+    expect(publicRuntime.YuneWebRuntime.prototype.customize).toHaveLength(3);
+    expect(publicRuntime.YuneWebRuntime.prototype.setOption).toHaveLength(2);
+    expect(publicRuntime.YuneWebRuntime.prototype.setAiEnabled).toHaveLength(1);
+    expect(publicRuntime.YuneWebRuntime.prototype.stageAi).toHaveLength(0);
+    expect(publicRuntime.YuneWebRuntime.prototype.cleanup).toHaveLength(0);
+  });
+
   it("byte-matches the frozen emitted declarations", () => {
     const packageRoot = fileURLToPath(new URL("../", import.meta.url));
     const outputRoot = mkdtempSync(path.join(tmpdir(), "yune-web06-runtime-api-"));

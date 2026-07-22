@@ -6,7 +6,9 @@
     "test:e2e": "playwright test --config playwright.config.ts",
     "test:e2e:smoke": "playwright test --config playwright.config.ts --grep @smoke",
     "test:e2e:input-latency": "playwright test --config playwright.latency.config.ts",
-    "test:e2e:input-latency:public": "node run-public-latency-gate.mjs"
+    "test:e2e:input-latency:public": "node run-public-latency-gate.mjs",
+    "test:e2e:web06-peer-contract": "playwright test --config playwright.web06-peer.config.ts --grep @contract",
+    "run:e2e:web06-peer": "node --experimental-strip-types run-web06-peer-lane.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.61.0"

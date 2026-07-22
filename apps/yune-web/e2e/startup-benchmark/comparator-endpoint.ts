@@ -20,6 +20,7 @@ export interface ComparatorSelectorManifest {
   candidateComment: string;
   highlighted: string;
   pageButtons: string;
+  schemaStatus: string;
   status: string;
 }
 
@@ -36,6 +37,7 @@ export const comparatorSelectorManifest: Record<ComparatorApp, ComparatorSelecto
     candidateComment: ".candidate-note",
     highlighted: ".candidate-row.highlighted",
     pageButtons: ".page-nav",
+    schemaStatus: "[data-yune-status-schema]",
     status: "[data-yune-status]",
   },
   "my-rime": {
@@ -50,6 +52,7 @@ export const comparatorSelectorManifest: Record<ComparatorApp, ComparatorSelecto
     candidateComment: "",
     highlighted: ".n-menu-item-content--selected, [aria-selected='true']",
     pageButtons: "button",
+    schemaStatus: ".n-select[style*='width: 160px'] .n-base-selection-input",
     status: ".n-popover",
   },
 };
@@ -100,6 +103,7 @@ export interface ComparatorEventBoundary {
   key: string;
   code: string;
   timeStamp: number;
+  deliveredAt?: number;
   revisionBeforeEvent: number;
 }
 
@@ -284,12 +288,35 @@ export function comparatorDomTupleDigest(tuple: ComparatorDomTuple): string {
     contractVersion: tuple.contractVersion,
     selectorManifestId: tuple.selectorManifestId,
     composition: tuple.composition,
-    candidates: tuple.candidates,
+    candidates: tuple.candidates.map(candidate => ({
+      label: candidate.label,
+      text: candidate.text,
+      comment: candidate.comment,
+    })),
     candidateSurfaceCount: tuple.candidateSurfaceCount,
-    page: tuple.page,
+    page: {
+      index: tuple.page.index,
+      buttonCount: tuple.page.buttonCount,
+      previousDisabled: tuple.page.previousDisabled,
+      nextDisabled: tuple.page.nextDisabled,
+    },
     highlightedIndex: tuple.highlightedIndex,
-    caret: tuple.caret,
-    status: tuple.status,
+    caret: {
+      selectorCount: tuple.caret.selectorCount,
+      value: tuple.caret.value,
+      selectionStart: tuple.caret.selectionStart,
+      selectionEnd: tuple.caret.selectionEnd,
+      selectionDirection: tuple.caret.selectionDirection,
+      active: tuple.caret.active,
+      visible: tuple.caret.visible,
+      disabled: tuple.caret.disabled,
+    },
+    status: {
+      schemaId: tuple.status.schemaId,
+      composing: tuple.status.composing,
+      surfaceVisible: tuple.status.surfaceVisible,
+      digest: tuple.status.digest,
+    },
   });
 }
 
@@ -355,6 +382,10 @@ export function evaluatePackageAlignment(
 export function validateCandidateObservation(
   observation: ComparatorStableObservation | undefined,
   expectedInput: string,
+  options: {
+    requireYuneDiagnostic?: boolean;
+    expectedPageShape?: { candidateCount: number; nextDisabled: boolean };
+  } = {},
 ): string[] {
   const reasons = validateStableObservation(observation);
   if (!observation) {
@@ -381,13 +412,17 @@ export function validateCandidateObservation(
   )) {
     reasons.push("candidate-collection-label-order-is-not-the-frozen-default");
   }
-  if (tuple.candidates.length !== comparatorPeerPageSize) {
-    reasons.push("candidate-page-size-is-not-six");
+  const expectedPageShape = options.expectedPageShape ?? {
+    candidateCount: comparatorPeerPageSize,
+    nextDisabled: false,
+  };
+  if (tuple.candidates.length !== expectedPageShape.candidateCount) {
+    reasons.push("candidate-page-size-does-not-match-frozen-shape");
   }
   if (tuple.page.index !== 0
       || tuple.page.buttonCount !== 2
       || tuple.page.previousDisabled !== true
-      || tuple.page.nextDisabled !== false) {
+      || tuple.page.nextDisabled !== expectedPageShape.nextDisabled) {
     reasons.push("candidate-page-evidence-incomplete");
   }
   if (tuple.highlightedIndex < 0 || tuple.highlightedIndex >= tuple.candidates.length) {
@@ -399,7 +434,8 @@ export function validateCandidateObservation(
   if (!tuple.status.schemaId || !tuple.status.composing || !tuple.status.surfaceVisible) {
     reasons.push("candidate-status-evidence-incomplete");
   }
-  if (tuple.selectorManifestId.startsWith("yune-web-")) {
+  if (tuple.selectorManifestId.startsWith("yune-web-")
+      && (options.requireYuneDiagnostic ?? true)) {
     const diagnostic = observation.yuneDiagnostic;
     if (!diagnostic
         || diagnostic.input !== expectedInput
@@ -553,7 +589,10 @@ function validateStableObservation(observation: ComparatorStableObservation | un
       || !Number.isInteger(observation.event.revisionBeforeEvent)
       || observation.event.revisionBeforeEvent < 0
       || !Number.isFinite(observation.event.timeStamp)
-      || observation.event.timeStamp < 0) {
+      || observation.event.timeStamp < 0
+      || (observation.event.deliveredAt !== undefined
+        && (!Number.isFinite(observation.event.deliveredAt)
+          || observation.event.deliveredAt < observation.event.timeStamp))) {
     reasons.push("event-boundary-invalid");
   }
   if (tuples.some(tuple =>

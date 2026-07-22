@@ -12,6 +12,10 @@ import {
   type ComparatorSelectorManifest,
   type ComparatorStableObservation,
 } from "./comparator-endpoint";
+import {
+  Web06PeerMeasurementError,
+  type Web06PeerMeasurementFailureCode,
+} from "./web06-peer-lane";
 
 const endpointTimeoutMs = 30_000;
 const yunePageSizeTransitions = [
@@ -356,6 +360,7 @@ export async function installComparatorEndpointObserver(
       selectors.editable,
       selectors.candidateRoot,
       selectors.candidateSurface,
+      selectors.schemaStatus,
       selectors.status,
     ].filter(Boolean).join(",");
 
@@ -419,10 +424,16 @@ export async function installComparatorEndpointObserver(
         const statusElement = targetApp === "yune-web"
           ? document.querySelector(selectors.status)
           : root;
+        const schemaStatusMatches = [...document.querySelectorAll(selectors.schemaStatus)];
+        const schemaStatusElement = schemaStatusMatches[0] ?? null;
+        const schemaStatusText = normalizedText(
+          schemaStatusElement?.getAttribute("title") ?? schemaStatusElement?.textContent,
+        );
         const schemaId = targetApp === "yune-web"
-          ? statusElement?.querySelector("[data-yune-status-schema]")
-            ?.getAttribute("data-yune-status-schema-id") ?? ""
-          : new URL(location.href).searchParams.get("schemaId") ?? "";
+          ? schemaStatusElement?.getAttribute("data-yune-status-schema-id") ?? ""
+          : schemaStatusMatches.length === 1 && schemaStatusText === "朙月拼音"
+            ? "luna_pinyin"
+            : `unrecognized-my-rime-schema:${schemaStatusText}`;
         const composing = targetApp === "yune-web"
           ? statusElement?.querySelector("[data-yune-status-composing]")
             ?.getAttribute("data-yune-status-composing") === "true"
@@ -432,6 +443,8 @@ export async function installComparatorEndpointObserver(
           : undefined;
         const statusDigest = JSON.stringify({
           schemaId,
+          schemaStatusText,
+          schemaStatusMatches: schemaStatusMatches.length,
           composing,
           visibleCandidateSurfaces: visibleSurfaces.length,
           statusText: normalizedText(statusElement?.textContent),
@@ -490,6 +503,7 @@ export async function installComparatorEndpointObserver(
         key: event.key,
         code: event.code,
         timeStamp: event.timeStamp,
+        deliveredAt: performance.now(),
         revisionBeforeEvent: state.revision,
       });
     }
@@ -533,25 +547,87 @@ export async function comparatorEventsSince(
   }, afterEventOrdinal);
 }
 
+export interface ComparatorEmptyPosture {
+  localStoragePageSize: string | null;
+  visibleCandidateSurfaces: number;
+  yuneComposing: string | null;
+  schemaEvidenceMatches: number;
+  schemaEvidenceValue: string | null;
+}
+
+export async function readComparatorEmptyPosture(
+  page: Page,
+  app: ComparatorApp,
+): Promise<ComparatorEmptyPosture> {
+  return page.evaluate(({ targetApp, schemaSelector }) => {
+    const visible = (element: Element): boolean => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== "none"
+        && style.visibility !== "hidden"
+        && Number(style.opacity || "1") !== 0
+        && rect.width > 0
+        && rect.height > 0;
+    };
+    const surfaces = [...document.querySelectorAll(
+      targetApp === "yune-web" ? ".candidate-panel .candidates" : ".n-popover .n-menu",
+    )].filter(visible);
+    const schemaStatus = [...document.querySelectorAll(schemaSelector)];
+    const yuneRootSchema = document.documentElement.getAttribute("data-yune-active-schema");
+    return {
+      localStoragePageSize: localStorage.getItem("pageSize"),
+      visibleCandidateSurfaces: surfaces.length,
+      yuneComposing: targetApp === "yune-web"
+        ? document.querySelector("[data-yune-status-composing]")
+          ?.getAttribute("data-yune-status-composing") ?? null
+        : null,
+      schemaEvidenceMatches: targetApp === "yune-web"
+        ? Number(yuneRootSchema !== null)
+        : schemaStatus.length,
+      schemaEvidenceValue: targetApp === "yune-web"
+        ? yuneRootSchema
+        : schemaStatus[0]?.getAttribute("title") ?? null,
+    };
+  }, {
+    targetApp: app,
+    schemaSelector: comparatorSelectorManifest[app].schemaStatus,
+  });
+}
+
 export async function waitForStableCandidateEndpoint(
   page: Page,
   app: ComparatorApp,
   expectedInput: string,
   afterEventOrdinal: number,
   yuneDiagnosticStartIndex = 0,
+  options: {
+    requireYuneDiagnostic?: boolean;
+    failOnLaterEvent?: boolean;
+    expectedPageShape?: { candidateCount: number; nextDisabled: boolean };
+  } = {},
 ): Promise<ComparatorStableObservation> {
-  return page.evaluate(async ({
+  let outcome: EndpointEvaluationOutcome;
+  try {
+    outcome = await page.evaluate(async ({
     targetApp,
     expected,
     afterOrdinal,
     diagnosticStart,
+    requireYuneDiagnostic,
+    failOnLaterEvent,
+    expectedPageShape,
     timeoutMs,
     pageSize,
   }) => {
+    const endpointSuccess = (observation: ComparatorStableObservation): EndpointEvaluationOutcome =>
+      ({ ok: true, observation });
+    const endpointFailure = (
+      code: Web06PeerMeasurementFailureCode,
+      detail = "",
+    ): EndpointEvaluationOutcome => ({ ok: false, code, detail });
     const state = (window as ComparatorWindow).__web06ComparatorObserver;
-    if (!state || state.app !== targetApp) {
-      throw new Error("WEB06 comparator endpoint observer is missing or belongs to the wrong app");
-    }
+    if (!state) return endpointFailure("ENDPOINT_OBSERVER_MISSING");
+    if (state.app !== targetApp) return endpointFailure("ENDPOINT_OBSERVER_WRONG_APP");
     const deadline = performance.now() + timeoutMs;
     let lastTuple: ComparatorDomTuple | undefined;
     let lastEvent: ComparatorEventBoundary | undefined;
@@ -561,7 +637,19 @@ export async function waitForStableCandidateEndpoint(
       state.flush();
       const events = state.events.filter(event => event.ordinal > afterOrdinal);
       const expectedKey = expected.at(-1);
-      const event = events.at(-1);
+      const expectedOrdinal = afterOrdinal + 1;
+      const event = failOnLaterEvent
+        ? events.find(candidate => candidate.ordinal === expectedOrdinal)
+        : events.at(-1);
+      if (failOnLaterEvent && events.some(candidate => candidate.ordinal > expectedOrdinal)) {
+        return endpointFailure("CANDIDATE_ENDPOINT_SUPERSEDED", JSON.stringify({
+          app: targetApp,
+          expected,
+          expectedOrdinal,
+          lastEvent: events.at(-1),
+          lastTuple,
+        }));
+      }
       const tuple = state.read();
       lastTuple = tuple;
       lastEvent = event;
@@ -571,12 +659,12 @@ export async function waitForStableCandidateEndpoint(
         && tuple.observedAt >= event.timeStamp
         && tuple.composition === expected
         && tuple.candidateSurfaceCount === 1
-        && tuple.candidates.length === pageSize
+        && tuple.candidates.length === (expectedPageShape?.candidateCount ?? pageSize)
         && tuple.candidates.every(candidate => candidate.text !== "")
         && tuple.page.index === 0
         && tuple.page.buttonCount === 2
         && tuple.page.previousDisabled === true
-        && tuple.page.nextDisabled === false
+        && tuple.page.nextDisabled === (expectedPageShape?.nextDisabled ?? false)
         && tuple.highlightedIndex >= 0
         && tuple.highlightedIndex < tuple.candidates.length
         && tuple.caret.selectorCount === 1
@@ -594,18 +682,29 @@ export async function waitForStableCandidateEndpoint(
         const firstRaf = state.read();
         await nextFrame();
         const secondRaf = state.read();
+        state.flush();
+        if (failOnLaterEvent
+            && state.events.some(candidate => candidate.ordinal > expectedOrdinal)) {
+          return endpointFailure("CANDIDATE_ENDPOINT_SUPERSEDED", JSON.stringify({
+            app: targetApp,
+            expected,
+            expectedOrdinal,
+            lastEvent: state.events.at(-1),
+            lastTuple: secondRaf,
+          }));
+        }
         const stable = initial.revision === firstRaf.revision
           && firstRaf.revision === secondRaf.revision
           && initial.digest === firstRaf.digest
           && firstRaf.digest === secondRaf.digest;
         if (stable) {
-          if (targetApp !== "yune-web") {
-            return {
+          if (targetApp !== "yune-web" || !requireYuneDiagnostic) {
+            return endpointSuccess({
               event,
               initial,
               firstRaf,
               secondRaf,
-            };
+            });
           }
           while (performance.now() <= deadline) {
             const diagnostics = JSON.parse(
@@ -624,7 +723,7 @@ export async function waitForStableCandidateEndpoint(
               )
               .at(-1);
             if (exact) {
-              return {
+              return endpointSuccess({
                 event,
                 initial,
                 firstRaf,
@@ -638,7 +737,7 @@ export async function waitForStableCandidateEndpoint(
                   totalCandidateCount: exact.diagnostic.totalCandidateCount ?? 0,
                   firstCandidateText: exact.diagnostic.firstCandidateText ?? "",
                 },
-              };
+              });
             }
             state.flush();
             if (state.read().digest !== secondRaf.digest) {
@@ -650,7 +749,7 @@ export async function waitForStableCandidateEndpoint(
       }
       await nextFrame();
     }
-    throw new Error("Timed out waiting for coherent WEB06 candidate endpoint: " + JSON.stringify({
+    return endpointFailure("CANDIDATE_ENDPOINT_TIMEOUT", JSON.stringify({
       app: targetApp,
       expected,
       afterEventOrdinal: afterOrdinal,
@@ -658,14 +757,24 @@ export async function waitForStableCandidateEndpoint(
       lastTuple,
       diagnosticsTail: lastDiagnostics.slice(-3),
     }));
-  }, {
-    targetApp: app,
-    expected: expectedInput,
-    afterOrdinal: afterEventOrdinal,
-    diagnosticStart: yuneDiagnosticStartIndex,
-    timeoutMs: endpointTimeoutMs,
-    pageSize: comparatorPeerPageSize,
-  });
+    }, {
+      targetApp: app,
+      expected: expectedInput,
+      afterOrdinal: afterEventOrdinal,
+      diagnosticStart: yuneDiagnosticStartIndex,
+      requireYuneDiagnostic: options.requireYuneDiagnostic ?? true,
+      failOnLaterEvent: options.failOnLaterEvent ?? false,
+      expectedPageShape: options.expectedPageShape,
+      timeoutMs: endpointTimeoutMs,
+      pageSize: comparatorPeerPageSize,
+    });
+  } catch (error) {
+    throw new Web06PeerMeasurementError(
+      "ENDPOINT_METRIC_CONTRACT_FAILURE",
+      `Candidate endpoint evaluation failed: ${endpointErrorMessage(error)}`,
+    );
+  }
+  return unwrapEndpointOutcome(outcome);
 }
 
 export async function waitForStableCommitEndpoint(
@@ -674,25 +783,40 @@ export async function waitForStableCommitEndpoint(
   expectedCommittedValue: string,
   afterEventOrdinal: number,
 ): Promise<ComparatorStableObservation> {
-  return page.evaluate(async ({
+  let outcome: EndpointEvaluationOutcome;
+  try {
+    outcome = await page.evaluate(async ({
     targetApp,
     expected,
     afterOrdinal,
     timeoutMs,
   }) => {
+    const endpointSuccess = (observation: ComparatorStableObservation): EndpointEvaluationOutcome =>
+      ({ ok: true, observation });
+    const endpointFailure = (
+      code: Web06PeerMeasurementFailureCode,
+      detail = "",
+    ): EndpointEvaluationOutcome => ({ ok: false, code, detail });
     const state = (window as ComparatorWindow).__web06ComparatorObserver;
-    if (!state || state.app !== targetApp) {
-      throw new Error("WEB06 comparator endpoint observer is missing or belongs to the wrong app");
-    }
+    if (!state) return endpointFailure("ENDPOINT_OBSERVER_MISSING");
+    if (state.app !== targetApp) return endpointFailure("ENDPOINT_OBSERVER_WRONG_APP");
     const deadline = performance.now() + timeoutMs;
     let lastTuple: ComparatorDomTuple | undefined;
     let lastEvent: ComparatorEventBoundary | undefined;
     const nextFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
     while (performance.now() <= deadline) {
       state.flush();
-      const event = state.events
-        .filter(candidate => candidate.ordinal > afterOrdinal)
-        .at(-1);
+      const events = state.events.filter(candidate => candidate.ordinal > afterOrdinal);
+      const expectedOrdinal = afterOrdinal + 1;
+      const event = events.find(candidate => candidate.ordinal === expectedOrdinal);
+      if (events.some(candidate => candidate.ordinal > expectedOrdinal)) {
+        return endpointFailure("COMMIT_ENDPOINT_SUPERSEDED", JSON.stringify({
+          app: targetApp,
+          expectedOrdinal,
+          lastEvent: events.at(-1),
+          lastTuple,
+        }));
+      }
       const tuple = state.read();
       lastTuple = tuple;
       lastEvent = event;
@@ -719,28 +843,57 @@ export async function waitForStableCommitEndpoint(
         const firstRaf = state.read();
         await nextFrame();
         const secondRaf = state.read();
+        state.flush();
+        if (state.events.some(candidate => candidate.ordinal > expectedOrdinal)) {
+          return endpointFailure("COMMIT_ENDPOINT_SUPERSEDED", JSON.stringify({
+            app: targetApp,
+            expectedOrdinal,
+            lastEvent: state.events.at(-1),
+            lastTuple: secondRaf,
+          }));
+        }
         if (initial.revision === firstRaf.revision
             && firstRaf.revision === secondRaf.revision
             && initial.digest === firstRaf.digest
             && firstRaf.digest === secondRaf.digest) {
-          return { event, initial, firstRaf, secondRaf };
+          return endpointSuccess({ event, initial, firstRaf, secondRaf });
         }
       }
       await nextFrame();
     }
-    throw new Error("Timed out waiting for coherent WEB06 commit endpoint: " + JSON.stringify({
+    return endpointFailure("COMMIT_ENDPOINT_TIMEOUT", JSON.stringify({
       app: targetApp,
       expectedCommittedValue: expected,
       afterEventOrdinal: afterOrdinal,
       lastEvent,
       lastTuple,
     }));
-  }, {
-    targetApp: app,
-    expected: expectedCommittedValue,
-    afterOrdinal: afterEventOrdinal,
-    timeoutMs: endpointTimeoutMs,
-  });
+    }, {
+      targetApp: app,
+      expected: expectedCommittedValue,
+      afterOrdinal: afterEventOrdinal,
+      timeoutMs: endpointTimeoutMs,
+    });
+  } catch (error) {
+    throw new Web06PeerMeasurementError(
+      "ENDPOINT_METRIC_CONTRACT_FAILURE",
+      `Commit endpoint evaluation failed: ${endpointErrorMessage(error)}`,
+    );
+  }
+  return unwrapEndpointOutcome(outcome);
+}
+
+type EndpointEvaluationOutcome =
+  | { ok: true; observation: ComparatorStableObservation }
+  | { ok: false; code: Web06PeerMeasurementFailureCode; detail: string };
+
+function unwrapEndpointOutcome(outcome: EndpointEvaluationOutcome): ComparatorStableObservation {
+  if (outcome.ok) return outcome.observation;
+  throw new Web06PeerMeasurementError(outcome.code, outcome.detail || outcome.code);
+}
+
+function endpointErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 export async function exactYuneDiagnostic(

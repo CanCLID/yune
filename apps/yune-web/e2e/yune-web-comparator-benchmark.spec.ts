@@ -194,6 +194,7 @@ test.describe("WEB06 comparator endpoint and alignment contract", () => {
         body: [
           "<style>textarea,.n-popover,.n-menu,.n-menu-item,button{display:block;width:200px;height:24px}</style>",
           "<aside data-unrelated-copy>ni</aside>",
+          "<div class='n-select' style='width: 160px'><div class='n-base-selection-input' title='朙月拼音'>朙月拼音</div></div>",
           "<div id='container'><textarea></textarea></div>",
           "<div class='n-popover'>",
           "<span class='preedit'>n</span>",

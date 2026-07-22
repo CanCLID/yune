@@ -188,13 +188,28 @@ class Web06EndpointWithdrawalTests(unittest.TestCase):
 
     def test_svg_overlays_are_well_formed_and_keep_historical_values(self) -> None:
         ratio_svg = RATIO_BUNDLE / "visuals/browser-luna-peer-parity.svg"
-        ET.parse(ratio_svg)
+        ratio_tree = ET.parse(ratio_svg)
         ratio_source = ratio_svg.read_text(encoding="utf-8")
         self.assertEqual(ratio_source.count(TOKEN), 2)
         for value in ("0.779x", "0.899x", "1.577x", "4.000x", "3.471x"):
             self.assertIn(value, ratio_source)
         self.assertIn(CORRECTION_DATE, ratio_source)
         self.assertIn("other rows unchanged", ratio_source)
+
+        svg_namespace = "{http://www.w3.org/2000/svg}"
+        labels = {
+            element.text: element
+            for element in ratio_tree.getroot().iter(f"{svg_namespace}text")
+            if element.text
+        }
+        below = labels["← quotient below 1.000x"]
+        above = labels["quotient above 1.000x →"]
+        self.assertEqual(below.attrib["text-anchor"], "start")
+        self.assertEqual(above.attrib["text-anchor"], "end")
+        self.assertGreaterEqual(
+            float(above.attrib["x"]) - float(below.attrib["x"]),
+            700.0,
+        )
 
         dashboard_svgs = [
             bundle / "visuals/current-browser-peer-latency.svg"

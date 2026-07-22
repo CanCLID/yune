@@ -4,8 +4,8 @@
 <rect width="760" height="640" fill="#fbfcfe"/>
 <text x="24.0" y="46.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="30" font-weight="700" fill="#17202a">Browser peer ratio snapshot</text>
 <text x="24.0" y="78.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="17" font-weight="400" fill="#52616f">2026-06-28 luna_pinyin · interaction correction 2026-07-21</text>
-<text x="205.0" y="118.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#2463d4">← quotient below 1.000x</text>
-<text x="555.0" y="118.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#c45a1b">quotient above 1.000x →</text>
+<text x="24.0" y="118.0" text-anchor="start" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#2463d4">← quotient below 1.000x</text>
+<text x="736.0" y="118.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#c45a1b">quotient above 1.000x →</text>
 <text x="730.0" y="160.0" text-anchor="end" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#52616f">Historical Yune / peer</text>
 <line x1="205.0" y1="156.0" x2="205.0" y2="546.0" stroke="#d9e2ec" stroke-width="1" stroke-dasharray="3 5"/>
 <text x="205.0" y="578.0" text-anchor="middle" font-family="ui-monospace, monospace" font-size="16" font-weight="400" fill="#17202a">0.5x</text>

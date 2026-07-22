@@ -430,8 +430,8 @@ def browser_chart() -> None:
     parts += [
         text(24, 46, "Browser peer ratio snapshot", 30, weight=700),
         text(24, 78, "2026-06-28 luna_pinyin · interaction correction 2026-07-21", 17, fill=MUTED),
-        text(left, 118, "← quotient below 1.000x", 16, weight=600, fill=BLUE),
-        text(right, 118, "quotient above 1.000x →", 16, anchor="end", weight=600, fill=ORANGE),
+        text(24, 118, "← quotient below 1.000x", 16, weight=600, fill=BLUE),
+        text(width - 24, 118, "quotient above 1.000x →", 16, anchor="end", weight=600, fill=ORANGE),
         text(730, 160, "Historical Yune / peer", 17, anchor="end", weight=700, fill=MUTED),
     ]
     top, row_h = 198, 64

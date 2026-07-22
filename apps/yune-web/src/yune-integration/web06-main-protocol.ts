@@ -267,6 +267,7 @@ export function createWeb06MainProtocol(hooks: Web06MainProtocolHooks) {
 	const auditedIncompleteFanouts = new Set<string>();
 	const mainObserverCallbacks: Web06MainObserverCallbackInterval[] = [];
 	const mainListenerEffectsByAction = new Map<number, Web06MainListenerEffect[]>();
+	const terminalContractsByAction = new Map<number, ReturnType<typeof web06TerminalContract>>();
 	const pendingLifecycles = new Map<number, Web06PendingLifecycle>();
 	const pendingPresentations = new Set<number>();
 	const presentationTerminalProofs = new Map<number, Web06PresentationTerminalProof>();
@@ -939,6 +940,17 @@ export function createWeb06MainProtocol(hooks: Web06MainProtocolHooks) {
 		invalidatePreparedContinuity(`action ${name} after reload preparation`);
 		const context = takeActionContext(name);
 		const sequenceId = ++actionSequenceId;
+		if (mode !== "off") {
+			terminalContractsByAction.set(sequenceId, web06TerminalContract(name, args));
+			if (terminalContractsByAction.size > receiptCapacity) {
+				const oldest = terminalContractsByAction.keys().next().value as number | undefined;
+				if (oldest !== undefined) terminalContractsByAction.delete(oldest);
+				invalidate(
+					"TERMINAL_CONTRACT_RING_OVERFLOW",
+					`WEB-06 terminal-contract ledger exceeded ${receiptCapacity} records`,
+				);
+			}
+		}
 		const identity: Web06ActionIdentity = {
 			protocolVersion: WEB06_PRIVATE_PROTOCOL_VERSION,
 			actionId: `web06-action-${String(sequenceId).padStart(8, "0")}`,
@@ -1245,7 +1257,9 @@ export function createWeb06MainProtocol(hooks: Web06MainProtocolHooks) {
 		mainResponseReceivedAt: number,
 	): void {
 		const identity = receipt.identity;
-		const contract = web06TerminalContract(receipt.name);
+		const contract = terminalContractsByAction.get(identity.sequenceId)
+			?? web06TerminalContract(receipt.name, receipt.args);
+		terminalContractsByAction.delete(identity.sequenceId);
 		const resultSummary = data.receipt.resultSummary;
 		const semanticEffects = data.receipt.lifecycleEffects.filter((effect): effect is Exclude<Web06WorkerLifecycleEffect, { kind: "listener" }> => effect.kind !== "listener" && effect.name === receipt.name);
 		const semanticEffect = contract.workerEffect === undefined
@@ -1647,7 +1661,7 @@ export function createWeb06MainProtocol(hooks: Web06MainProtocolHooks) {
 	}
 
 	function presentationOutcomeViolation(receipt: Web06ActionReceipt, outcome: Web06PresentationOutcomeInput): string | undefined {
-		if (web06TerminalContract(receipt.name).strategy !== "presentation") return `${receipt.name} is not owned by the presentation terminal lane`;
+		if (web06TerminalContract(receipt.name, receipt.args).strategy !== "presentation") return `${receipt.name} is not owned by the presentation terminal lane`;
 		if (outcome.outcome === "failure") return undefined;
 		const exact = web06PresentationFingerprintsEqual(outcome.presentationExpected, outcome.domObserved);
 		const visualChanged = !web06PresentationFingerprintsEqual(outcome.beforePresentation, outcome.domObserved, false);
@@ -1797,6 +1811,7 @@ export function createWeb06MainProtocol(hooks: Web06MainProtocolHooks) {
 		workerObserverFailureCount = 0;
 		workerObserverFailuresAudited = true;
 		mainListenerEffectsByAction.clear();
+		terminalContractsByAction.clear();
 		pendingPresentations.clear();
 		presentationTerminalProofs.clear();
 		auditedMissingTerminals.clear();

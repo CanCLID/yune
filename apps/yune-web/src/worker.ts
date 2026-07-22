@@ -31,6 +31,10 @@ import {
 	invokeWeb06PublicAction,
 } from "./yune-integration/web06-worker-protocol";
 import {
+  logWeb06NativeMessage,
+  logWeb06RuntimeInitializationFailure,
+} from "./yune-integration/web06-product-console";
+import {
   OCTAGRAM_MODEL_BYTES,
   grammarDiagnosticForSchema,
   grammarMemoryDelta,
@@ -777,7 +781,7 @@ const loadRime = (async () => {
       },
     });
   } catch (error) {
-    if (WEB06_COLLECTION_MODE === "off") console.error("Yune runtime initialization failed", error);
+    logWeb06RuntimeInitializationFailure(WEB06_COLLECTION_MODE, error);
     loading = false;
     dispatch("initialized", false);
     postMessage({
@@ -789,16 +793,7 @@ const loadRime = (async () => {
 })();
 
 function printErr(message: string): void {
-  if (WEB06_COLLECTION_MODE !== "off") return;
-  if (!YUNE_PUBLIC_DEMO || location.search === "?debug") {
-    const match = /^([IWEF])\S+ \S+ \S+ (.*)$/.exec(message);
-    if (match) {
-      console[({ I: "info", W: "warn", E: "error", F: "error" } as const)[match[1] as "I" | "W" | "E" | "F"]](`[${match[2]}`);
-    }
-    else {
-      console.error(message);
-    }
-  }
+  logWeb06NativeMessage(WEB06_COLLECTION_MODE, message, YUNE_PUBLIC_DEMO, location.search);
 }
 
 function initialSchemaFromWorkerUrl(): RimeSchemaId {

@@ -138,6 +138,10 @@ async function loadProtocol(
   options: { autoRaf?: boolean } = {},
 ) {
   vi.resetModules();
+  if (!vi.isMockFunction(console.info)) vi.spyOn(console, "info").mockImplementation(() => undefined);
+  if (!vi.isMockFunction(console.warn)) vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  if (!vi.isMockFunction(console.error)) vi.spyOn(console, "error").mockImplementation(() => undefined);
+  if (!vi.isMockFunction(console.log)) vi.spyOn(console, "log").mockImplementation(() => undefined);
   const dataset: Record<string, string> = {};
   const rafCallbacks: FrameRequestCallback[] = [];
   const localStorage = new MemoryStorage();
@@ -512,6 +516,65 @@ describe("WEB-06 private main/worker pipeline", () => {
     expect(snapshot.invalidations.map((entry: any) => entry.code)).toContain("WORKER_OBSERVER_FAILURE");
   });
 
+  it("completes the notification-free yune_inspector option from one real worker effect after two rAFs", async () => {
+    const realm = await loadProtocol("minimal", new MemoryStorage(), { autoRaf: false });
+    const action = ownedAction(realm.rime, "setOption", ["yune_inspector", true]);
+    emitSuccess(realm.worker, 0, undefined, {
+      kind: "empty",
+      resultDigest: web06StableDigest(null),
+      success: true,
+      persistenceCompleted: false,
+    }, [{
+      kind: "engine-state",
+      name: "setOption",
+      resultDigest: web06StableDigest(null),
+      recordedAt: performance.now(),
+    }]);
+    await expect(action).resolves.toBeUndefined();
+
+    expect(realm.debug.status()).toMatchObject({ pendingTerminalActions: 1, valid: false });
+    expect(realm.pendingRafCount()).toBe(1);
+    realm.flushRaf();
+    expect(realm.debug.status()).toMatchObject({ pendingTerminalActions: 1, valid: false });
+    expect(realm.pendingRafCount()).toBe(1);
+    realm.flushRaf();
+
+    const snapshot = realm.debug.snapshot();
+    expect(snapshot.actions).toHaveLength(1);
+    expect(snapshot.actions[0].worker.lifecycleEffects.map((effect: any) => effect.kind)).toEqual(["engine-state"]);
+    expect(snapshot.actions[0].lifecycle).toMatchObject({
+      outcome: "barrier-completed",
+      effect: "engine-state",
+      listenerEffectCount: 0,
+      firstRafAt: expect.any(Number),
+    });
+    expect(snapshot.status).toMatchObject({ pendingTerminalActions: 0, valid: true });
+    expect(snapshot.invalidations).toEqual([]);
+  });
+
+  it("still rejects an ordinary setOption result without its real optionChanged notification", async () => {
+    const realm = await loadProtocol("minimal", new MemoryStorage(), { autoRaf: false });
+    const action = ownedAction(realm.rime, "setOption", ["ascii_mode", true]);
+    emitSuccess(realm.worker, 0, undefined, {
+      kind: "empty",
+      resultDigest: web06StableDigest(null),
+      success: true,
+      persistenceCompleted: false,
+    }, [{
+      kind: "engine-state",
+      name: "setOption",
+      resultDigest: web06StableDigest(null),
+      recordedAt: performance.now(),
+    }]);
+    await expect(action).resolves.toBeUndefined();
+
+    const snapshot = realm.debug.snapshot();
+    expect(snapshot.actions).toHaveLength(1);
+    expect(snapshot.actions[0].lifecycle).toMatchObject({ outcome: "failure", effect: "listener" });
+    expect(snapshot.invalidations.map((entry: any) => entry.code)).toContain("LISTENER_EFFECT_MISMATCH");
+    expect(realm.pendingRafCount()).toBe(0);
+  });
+
   it("binds presentations to exact DOM sequence tokens and keeps minimal receipts content-free", async () => {
     const { rime, debug, worker } = await loadProtocol("minimal");
     const first = ownedAction(rime, "processKey", ["{n}"]);
@@ -644,7 +707,7 @@ describe("WEB-06 private main/worker pipeline", () => {
     for (const [index, testCase] of cases.entries()) {
       const promise = ownedAction(rime, testCase.name, testCase.args as never);
       const identity = rime.web06ActionIdentityFor(promise)!;
-      const contract = web06TerminalContract(testCase.name);
+      const contract = web06TerminalContract(testCase.name, testCase.args);
       const effects: Web06WorkerReceipt["lifecycleEffects"] = [];
       if (testCase.listener !== undefined) {
         emitListener(worker, index, testCase.listener.name, testCase.listener.args);

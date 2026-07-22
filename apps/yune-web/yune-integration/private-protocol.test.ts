@@ -113,7 +113,10 @@ describe("WEB-06 private protocol", () => {
   });
 
   it("assigns exactly one terminal owner to every Action", () => {
-    expect(actionNames.map(name => [name, web06TerminalContract(name)])).toEqual([
+    expect(actionNames.map(name => [
+      name,
+      web06TerminalContract(name, name === "setOption" ? ["ascii_mode", true] : []),
+    ])).toEqual([
       ["setOption", { strategy: "listener", workerEffect: "engine-state", doubleRaf: true }],
       ["selectSchema", { strategy: "listener", workerEffect: "engine-state", doubleRaf: true }],
       ["getUserdbSnapshot", { strategy: "owner-effect", workerEffect: "snapshot-read", ownerEffect: "ui-userdb-refresh", doubleRaf: true }],
@@ -130,6 +133,16 @@ describe("WEB-06 private protocol", () => {
       ["invalidateDeployCache", { strategy: "owner-effect", workerEffect: "cache-invalidation", ownerEffect: "cache-invalidation", doubleRaf: true }],
       ["injectedAssetsManifest", { strategy: "owner-effect", workerEffect: "snapshot-read", ownerEffect: "ui-diagnostic-refresh", doubleRaf: true }],
     ]);
+    expect(web06TerminalContract("setOption", ["yune_inspector", true])).toEqual({
+      strategy: "worker-effect",
+      workerEffect: "engine-state",
+      doubleRaf: true,
+    });
+    expect(web06TerminalContract("setOption", ["ascii_mode", true])).toEqual({
+      strategy: "listener",
+      workerEffect: "engine-state",
+      doubleRaf: true,
+    });
   });
 
   it("classifies every public Action without changing its public shape", () => {

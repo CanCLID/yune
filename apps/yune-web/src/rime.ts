@@ -24,6 +24,10 @@ import {
 import {
 	WEB06_MODE_QUERY,
 } from "./yune-integration/private-protocol";
+import {
+	logWeb06ActionError,
+	shouldLogWeb06ProductDebug,
+} from "./yune-integration/web06-product-console";
 
 type ListenerPayload = {
 	[K in keyof ListenerArgsMap]: {
@@ -309,8 +313,7 @@ function postMessage(message: Message) {
 }
 
 function shouldLogDebugMessages() {
-	return web06Mode === "off"
-		&& (import.meta.env.DEV || new URLSearchParams(location.search).has("debug"));
+	return shouldLogWeb06ProductDebug(web06Mode, import.meta.env.DEV, location.search);
 }
 
 function appendPersistenceDiagnostic(data: DiagnosticPayload) {
@@ -337,7 +340,7 @@ function appendActionErrorDiagnostic(diagnostic: ActionErrorDiagnostic) {
 	debugWindow.__YUNE_ACTION_ERRORS__ = latest;
 	document.documentElement.dataset["yuneLastActionError"] = JSON.stringify(diagnostic);
 	document.documentElement.dataset["yuneActionErrors"] = JSON.stringify(latest);
-	if (shouldLogDebugMessages()) console.error("YUNE_WORKER_ACTION_ERROR", diagnostic);
+	logWeb06ActionError(web06Mode, diagnostic);
 }
 
 function appendLastActionResult(action: keyof Actions, result: unknown) {

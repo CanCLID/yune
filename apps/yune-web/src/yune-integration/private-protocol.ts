@@ -274,7 +274,10 @@ export type Web06TerminalContract = {
  * contract deliberately lives beside the action map so an added action cannot
  * silently become outcome-less.
  */
-export function web06TerminalContract(name: keyof Actions): Web06TerminalContract {
+export function web06TerminalContract(
+	name: keyof Actions,
+	args: readonly unknown[],
+): Web06TerminalContract {
 	switch (name) {
 		case "processKey":
 		case "stageAi":
@@ -283,6 +286,9 @@ export function web06TerminalContract(name: keyof Actions): Web06TerminalContrac
 		case "flipPage":
 			return { strategy: "presentation", doubleRaf: true };
 		case "setOption":
+			return args[0] === "yune_inspector"
+				? { strategy: "worker-effect", workerEffect: "engine-state", doubleRaf: true }
+				: { strategy: "listener", workerEffect: "engine-state", doubleRaf: true };
 		case "selectSchema":
 			return { strategy: "listener", workerEffect: "engine-state", doubleRaf: true };
 		case "deploy":

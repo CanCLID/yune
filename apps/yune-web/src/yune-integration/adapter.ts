@@ -31,6 +31,7 @@ import {
 
 import { translateResponse, type RimeResult } from "./response.js";
 import type { Web06CollectionMode, Web06ComponentSpan } from "../types";
+import { logWeb06PersistenceDiagnostic } from "./web06-product-console.js";
 /**
  * Upstream Actions interface from src/types.ts
  */
@@ -1209,9 +1210,7 @@ function emitPersistenceDiagnostic(
     persistedConfig: snapshotPersistedCustomConfig(fs, prepareOptions),
     deployedConfig: snapshotDeployedSchemaConfig(fs, prepareOptions),
   };
-  if (currentWeb06Observation === undefined || currentWeb06Observation.mode === "off") {
-    console.info(`YUNE_PERSISTENCE ${JSON.stringify(diagnostic)}`);
-  }
+  logWeb06PersistenceDiagnostic(currentWeb06Observation?.mode ?? "product/no-probe", diagnostic);
   const diagnosticGlobal = globalThis as typeof globalThis & {
     onYunePersistenceDiagnostic?: (marker: YunePersistenceDiagnostic) => void;
   };

@@ -682,14 +682,16 @@ export default function App() {
 		runAsyncTask(async () => {
 			let type: "error" | undefined;
 			try {
-					await withWeb06OwnedAction(
-						WEB06_ACTION_OWNER.inspector,
-						"setOption",
-						["yune_inspector", isInspectorEnabled],
-						"inspector-effect",
-						undefined,
-						() => Rime.setOption("yune_inspector", isInspectorEnabled),
-					);
+				const promise = withWeb06OwnedAction(
+					WEB06_ACTION_OWNER.inspector,
+					"setOption",
+					["yune_inspector", isInspectorEnabled],
+					"inspector-effect",
+					undefined,
+					() => Rime.setOption("yune_inspector", isInspectorEnabled),
+				);
+				pendingWeb06LoadingCompletionCause.current = web06ActionIdentityFor(promise);
+				await promise;
 				if (!isInspectorEnabled) {
 					setInspectorDebug(undefined);
 				}
@@ -816,7 +818,7 @@ export default function App() {
 			: previous.deployStatus !== deployStatus
 				? deployRefresh.cause
 				: previous.loading !== loading
-					? web06SchemaTransitionCause.current
+					? pendingWeb06LoadingCompletionCause.current ?? web06SchemaTransitionCause.current
 					: pendingWeb06LoadingCompletionCause.current;
 		pendingWeb06LoadingCompletionCause.current = undefined;
 		void refreshUserdbSnapshot(cause);

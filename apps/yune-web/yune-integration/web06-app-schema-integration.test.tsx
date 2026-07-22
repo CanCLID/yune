@@ -9,6 +9,7 @@ import {
 	web06DeployCacheSnapshotDigest,
 	web06InjectedAssetManifestDigest,
 	web06AsciiModeToggleActions,
+	web06ControlAction,
 	web06RetainedMappedAction,
 	web06StableDigest,
 	web06UserdbSnapshotDigest,
@@ -19,6 +20,7 @@ import {
 	web06DeployPreferenceFanout,
 	web06LiveOptionFanout,
 	web06SchemaChangeFanout,
+	web06SingleActionFanout,
 } from "../src/yune-integration/web06-app-action-map.js";
 
 import type {
@@ -281,7 +283,9 @@ function resultSummary(name: keyof Actions, args: unknown[], result: unknown): W
 function actionListeners(envelope: WorkerMessage): Array<{ name: string; args: unknown[] }> {
 	switch (envelope.name as keyof Actions) {
 		case "setOption":
-			return [{ name: "optionChanged", args: envelope.args }];
+			return envelope.args[0] === "yune_inspector"
+				? []
+				: [{ name: "optionChanged", args: envelope.args }];
 		case "selectSchema":
 			return [{ name: "schemaChanged", args: [envelope.args[0], `Schema ${envelope.args[0]}`] }];
 		case "deploy":
@@ -389,6 +393,10 @@ async function settleApp(app: AppRealm, startIndex: number): Promise<number> {
 
 async function mountApp(): Promise<AppRealm> {
 	vi.resetModules();
+	if (!vi.isMockFunction(console.info)) vi.spyOn(console, "info").mockImplementation(() => undefined);
+	if (!vi.isMockFunction(console.warn)) vi.spyOn(console, "warn").mockImplementation(() => undefined);
+	if (!vi.isMockFunction(console.error)) vi.spyOn(console, "error").mockImplementation(() => undefined);
+	if (!vi.isMockFunction(console.log)) vi.spyOn(console, "log").mockImplementation(() => undefined);
 	window.history.replaceState({}, "", "/?yuneWeb06Mode=full");
 	window.localStorage.clear();
 	for (const key of Object.keys(document.documentElement.dataset)) {
@@ -754,6 +762,61 @@ describe("WEB-06 App control integration", () => {
 				originOwner: WEB06_ACTION_OWNER.userdb,
 				originReason: "causal-userdb-refresh",
 				causedByActionId: shiftEvent.linkedActionIds.at(-1),
+			},
+			lifecycle: { outcome: "barrier-completed" },
+		});
+	});
+
+	it("completes the real notification-free inspector toggle exactly once", async () => {
+		const { app, processed } = await prepareAppMeasurement();
+		const inspector = app.container.querySelector<HTMLInputElement>("[data-yune-inspector-toggle] input")!;
+		await act(async () => {
+			const timestampDescriptor = Object.getOwnPropertyDescriptor(Event.prototype, "timeStamp");
+			Object.defineProperty(Event.prototype, "timeStamp", {
+				configurable: true,
+				get: () => performance.now(),
+			});
+			try {
+				inspector.click();
+			}
+			finally {
+				if (timestampDescriptor === undefined) delete (Event.prototype as { timeStamp?: number }).timeStamp;
+				else Object.defineProperty(Event.prototype, "timeStamp", timestampDescriptor);
+			}
+			for (let index = 0; index < 4; index += 1) await Promise.resolve();
+		});
+		await settleApp(app, processed);
+		const expected = web06SingleActionFanout(
+			WEB06_ACTION_OWNER.inspector,
+			web06ControlAction("setOption", ["yune_inspector", true]),
+		);
+		const snapshot = app.debug.snapshot();
+		assertExactControlFanout(app, snapshot, processed, "inspector-toggle", expected);
+		const event = snapshot.events.find((candidate: any) => candidate.identity.reason === "inspector-toggle");
+		const action = snapshot.actions.find((candidate: any) => candidate.identity.actionId === event.linkedActionIds[0]);
+		expect(snapshot.actions.filter((candidate: any) =>
+			candidate.name === "setOption" && candidate.identity.originOwner === WEB06_ACTION_OWNER.inspector
+		)).toHaveLength(1);
+		expect(action.worker.lifecycleEffects.map((effect: any) => effect.kind)).toEqual(["engine-state"]);
+		expect(action.lifecycle).toMatchObject({
+			outcome: "barrier-completed",
+			effect: "engine-state",
+			listenerEffectCount: 0,
+			firstRafAt: expect.any(Number),
+		});
+		expect(action.lifecycle.terminalObservedAt).toBeGreaterThanOrEqual(action.lifecycle.firstRafAt);
+		expect(snapshot.actions).toHaveLength(2);
+		const background = snapshot.actions.find((candidate: any) => candidate.identity.actionId !== action.identity.actionId);
+		expect(background).toMatchObject({
+			name: "getUserdbSnapshot",
+			identity: {
+				originKind: "background",
+				originOwner: WEB06_ACTION_OWNER.userdb,
+				originReason: "causal-userdb-refresh",
+				causedByActionId: action.identity.actionId,
+				causedBySequenceId: action.identity.sequenceId,
+				causedByEventId: action.identity.eventId,
+				causedByEventSequenceId: action.identity.eventSequenceId,
 			},
 			lifecycle: { outcome: "barrier-completed" },
 		});

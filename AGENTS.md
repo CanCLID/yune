@@ -49,6 +49,27 @@ TypeDuck profile split).
   assets, and a source-current `443cc636` performance ratchet of `32/32`
   aggregate rows and `160/160` individual observations. Completed plan:
   `docs/plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`.
+- **M60 (schema-general reachability formalism) is complete.** Formalized
+  M59's shipped default-on single-character reachability without changing
+  engine behavior. The live registry retains `m59-reach03-v1`, adds
+  `m60-reachability-v1`, and has exactly `reachabilityOptOuts: []`. A
+  production-semantic read-only Rust audit plus the mandatory checker
+  classify every tracked schema root and enforce the exact namespaced
+  explicit-false/opt-out bijection. New product schemas remain
+  blocking-open; the canonical contract records per-input
+  `prefix_fallback_owned` precedence. Completed plan:
+  `docs/plans/completed/m60-plan-schema-general-single-character-reachability.md`.
+- **M61 (native Track A memory-owner reduction) is complete as a measured
+  partial/no-go.** Five exact-source owned rounds plus five byte-backed
+  rounds at correction source `91f59696` all passed `17/17` candidate parity
+  and green Track B/signed guards. The byte-backed diagnostic projected a
+  `116,162,560 B` median Track A peak, but owner reconciliation explained
+  only `74.61%` of the private delta, leaving a `6,371,950 B` residual above
+  its `5,019,238 B` bound. Disposition D explicitly reverted the correction
+  (`01a62f2a`), restoring runtime tree
+  `f1c36a0079d85628f5cbef140bd94288930cc2e8`. No production-default memory
+  reduction or supplemental-ratchet claim was accepted. Completed plan:
+  `docs/plans/completed/m61-plan-native-track-a-memory-owner-reduction.md`.
 - **M47 (iOS-budget native memory reduction) is complete for its portable scope.**
   Phase 0 + RED-01…RED-08 byte-backed the native footprint (table, prism, *and*
   rich comment/lookup payloads served from mmap'd compiled storage like

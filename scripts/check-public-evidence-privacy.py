@@ -14,9 +14,23 @@ from urllib.parse import unquote
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-TOOL_VERSION = "1"
+TOOL_VERSION = "4"
+MAX_URL_DECODE_PASSES = 2
+PERCENT_ESCAPE = re.compile(r"%[0-9A-Fa-f]{2}")
+MALFORMED_PERCENT_ESCAPE = re.compile(r"%(?![0-9A-Fa-f]{2})")
 
 GENERIC_PATTERNS = (
+    (
+        "credentialed_url",
+        re.compile(
+            r"(?i)\bhttps?://[^\s/@\"'<>]+"
+            r"(?::[^\s/@\"'<>]*)?@[^\s/\"'<>]+"
+        ),
+    ),
+    (
+        "file_url",
+        re.compile(r"(?i)\bfile://[^\s\"'<>]+"),
+    ),
     (
         "user_profile_path",
         re.compile(
@@ -25,6 +39,26 @@ GENERIC_PATTERNS = (
             r"[^\\/\s\"'<>:]+"
             r"|/(?:users|home)/[^/\s\"'<>:]+"
             r")"
+        ),
+    ),
+    (
+        "windows_absolute_path",
+        re.compile(
+            r"(?i)(?<![a-z0-9])\b[a-z]:[\\/][^\r\n\"'<>|]+"
+        ),
+    ),
+    (
+        "unc_path",
+        re.compile(r"(?<![\\])\\\\[^\\/\s\"'<>]+[\\/][^\r\n\"'<>]+"),
+    ),
+    (
+        "posix_absolute_path",
+        re.compile(
+            r"(?<![:/a-z0-9._-])/(?:private|tmp|var|users|home|volumes|"
+            r"opt|usr|etc|mnt|srv|root|library)"
+            r"(?:/[^/\s\"'<>:,;)\]}]+)*"
+            r"(?=$|[\s\"'<>:,;)\]}])",
+            re.IGNORECASE,
         ),
     ),
     (
@@ -46,7 +80,10 @@ GENERIC_PATTERNS = (
     ),
     (
         "bearer_token",
-        re.compile(r"(?i)\bbearer\s+[a-z0-9._~+/=-]{8,}"),
+        re.compile(
+            r"(?i)\bbearer(?:\s+|[\s\"']*[:=][\s\"']*)"
+            r"[a-z0-9._~+/=-]{8,}"
+        ),
     ),
     (
         "known_token_prefix",
@@ -55,6 +92,7 @@ GENERIC_PATTERNS = (
             r"AKIA[0-9A-Z]{16}"
             r"|gh[pousr]_[A-Za-z0-9_]{20,}"
             r"|github_pat_[A-Za-z0-9_]{20,}"
+            r"|sk-proj-[A-Za-z0-9_-]{8,}"
             r"|sk-[A-Za-z0-9_-]{20,}"
             r"|xox[baprs]-[A-Za-z0-9-]{10,}"
             r")\b"
@@ -124,8 +162,27 @@ def _resolve_public_paths(entries: Sequence[str]) -> list[Path]:
     return paths
 
 
+def _bounded_url_decode(value: str) -> str:
+    decoded = value
+    saw_escape = False
+    for _ in range(MAX_URL_DECODE_PASSES):
+        if PERCENT_ESCAPE.search(decoded) is None:
+            if saw_escape and MALFORMED_PERCENT_ESCAPE.search(decoded):
+                raise ValueError("malformed percent escape after decoding")
+            return decoded
+        saw_escape = True
+        if MALFORMED_PERCENT_ESCAPE.search(decoded):
+            raise ValueError("mixed valid and malformed percent escapes")
+        decoded = unquote(decoded, errors="strict")
+    if PERCENT_ESCAPE.search(decoded) is not None:
+        raise ValueError("percent encoding exceeds the decode bound")
+    if saw_escape and MALFORMED_PERCENT_ESCAPE.search(decoded):
+        raise ValueError("malformed percent escape after decoding")
+    return decoded
+
+
 def _normalized_forms(value: str) -> set[str]:
-    decoded = unquote(value)
+    decoded = _bounded_url_decode(value)
     folded = unicodedata.normalize("NFKC", decoded).casefold()
     slash = re.sub(r"/+", "/", folded.replace("\\", "/"))
     backslash = re.sub(r"\\+", r"\\", folded.replace("/", "\\"))
@@ -141,7 +198,11 @@ def _scan_text(
     forbidden_forms: Sequence[set[str]],
     file_index: int,
 ) -> None:
-    content_forms = _normalized_forms(text)
+    try:
+        decoded_text = _bounded_url_decode(text)
+        content_forms = _normalized_forms(text)
+    except (UnicodeError, ValueError) as error:
+        raise PrivacyError("malformed_url_encoding", file_index) from error
     for literal_forms in forbidden_forms:
         if any(
             literal in content
@@ -150,10 +211,10 @@ def _scan_text(
         ):
             raise PrivacyError("forbidden_literal", file_index)
     for category, pattern in GENERIC_PATTERNS:
-        match = pattern.search(text)
+        match = pattern.search(decoded_text)
         if match is not None:
             raise PrivacyError(
-                category, file_index, _line_number(text, match.start())
+                category, file_index, _line_number(decoded_text, match.start())
             )
 
 
@@ -162,7 +223,12 @@ def check(paths_from: Path, forbid_literal_file: Path) -> tuple[int, int]:
     forbidden_literals = _read_required_lines(
         forbid_literal_file, "invalid_forbidden_literal_file"
     )
-    forbidden_forms = [_normalized_forms(value) for value in forbidden_literals]
+    try:
+        forbidden_forms = [
+            _normalized_forms(value) for value in forbidden_literals
+        ]
+    except (UnicodeError, ValueError) as error:
+        raise PrivacyError("invalid_forbidden_literal_file") from error
     if any(not forms for forms in forbidden_forms):
         raise PrivacyError("invalid_forbidden_literal_file")
     public_paths = _resolve_public_paths(path_entries)

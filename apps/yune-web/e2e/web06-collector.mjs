@@ -114,6 +114,13 @@ function hasOwn(record, key) {
   return typeof key === "string" && Object.prototype.hasOwnProperty.call(record, key);
 }
 
+function rawAttemptOrdinalMatches(envelope) {
+  const match = /^(?:triplet-)?attempt-([1-9][0-9]*)$/.exec(envelope?.attemptId ?? "");
+  if (!match) return false;
+  const ordinal = Number(match[1]);
+  return Number.isSafeInteger(ordinal) && envelope.attemptNumber === ordinal;
+}
+
 function safeEvidenceSegment(segment) {
   return typeof segment === "string" && (SAFE_SEGMENT_RE.test(segment)
     || (hasOwn(SCENARIO_RUN_REGISTRY, segment) && segment.includes("@")
@@ -1262,13 +1269,16 @@ export function validateCompletedRawDecisionShape(envelope) {
     : undefined;
   const pass = envelope?.version === "web06-raw-attempt-v1"
     && envelope.measurementStarted === true && envelope.measurementCompleted === true
+    && rawAttemptOrdinalMatches(envelope)
     && hasOwn(SCENARIO_REGISTRY, scenarioId)
     && run?.scenarioId === scenarioId && run?.schema === schemaId
     && runnerRawSentinelDecisionShape(envelope.sentinel)
     && runnerRawProtocolDecisionShape(envelope)
     && runnerReceiptDecisionShape(envelope.commonReceipt, scenarioId, scenarioRunId, schemaId, { common: true })
+    && envelope.commonReceipt.roundId === `${scenarioId}-round-${envelope.attemptNumber}`
     && (envelope.privateReceipt === undefined
-      || runnerReceiptDecisionShape(envelope.privateReceipt, scenarioId, scenarioRunId, schemaId, { common: false }));
+      || (runnerReceiptDecisionShape(envelope.privateReceipt, scenarioId, scenarioRunId, schemaId, { common: false })
+        && envelope.privateReceipt.roundId === `${scenarioId}-round-${envelope.attemptNumber}`));
   return Object.freeze({
     pass,
     errors: pass ? [] : ["WEB06_COMPLETED_RAW_DECISION_SHAPE_INVALID"],
@@ -1277,6 +1287,7 @@ export function validateCompletedRawDecisionShape(envelope) {
 
 function runnerRetainedReceiptBindingValid(envelope) {
   const target = envelope?.target ?? {};
+  if (!rawAttemptOrdinalMatches(envelope)) return false;
   if (target.protocolMode === "off"
     && (envelope.privateReceipt !== undefined || envelope.protocolExport !== undefined)) return false;
   const expectedSource = {
@@ -1287,6 +1298,7 @@ function runnerRetainedReceiptBindingValid(envelope) {
     buildInfoSha256: target.buildInfoSha256,
     artifactSha256: target.artifactSha256,
     artifactResponseGuardSha256: target.artifactResponseGuardSha256,
+    artifactResponseGuardSummarySha256: envelope.artifactResponseGuard?.summarySha256,
     identityManifestSha256: envelope.identityManifestSha256,
     runnerSourceManifestSha256: envelope.runnerSourceManifestSha256,
     runnerToolingManifestSha256: envelope.attemptSourceBefore?.toolingManifestSha256,
@@ -1315,13 +1327,11 @@ function runnerRetainedReceiptBindingValid(envelope) {
     })) if (receipt[field] !== expected) return false;
     if (typeof receipt.roundId !== "string" || receipt.roundId.length === 0) return false;
     roundIds.push(receipt.roundId);
-    if (Number.isSafeInteger(envelope.attemptNumber)
-      && receipt.roundId !== `${envelope.scenarioId}-round-${envelope.attemptNumber}`) return false;
+    if (receipt.roundId !== `${envelope.scenarioId}-round-${envelope.attemptNumber}`) return false;
     if (!receipt.source || typeof receipt.source !== "object" || Array.isArray(receipt.source)) return false;
     for (const [field, expected] of Object.entries(expectedSource)) {
       if (receipt.source[field] !== expected) return false;
     }
-    if (!isSha256(receipt.source.artifactResponseGuardSummarySha256)) return false;
   }
   if (new Set(roundIds).size > 1) return false;
   const sameProjection = (left, right) =>
@@ -1329,7 +1339,9 @@ function runnerRetainedReceiptBindingValid(envelope) {
   const common = envelope.commonReceipt;
   const internal = envelope.privateReceipt;
   const evidence = envelope.measurementEvidence;
-  if (!common || !evidence || typeof evidence !== "object" || Array.isArray(evidence)
+  const sentinel = envelope.sentinel;
+  if (!common || !sentinel || typeof sentinel !== "object" || Array.isArray(sentinel)
+    || !evidence || typeof evidence !== "object" || Array.isArray(evidence)
     || !sameProjection(common.eventClockProbe, evidence.eventClockProbe)
     || !sameProjection(common.eventClockSegments, evidence.eventClockSegments)
     || !sameProjection(common.calibration, { driver: evidence.calibration?.driver })
@@ -1341,6 +1353,21 @@ function runnerRetainedReceiptBindingValid(envelope) {
     || !sameProjection(common.idleFrameSegments, evidence.idleFrameSegments)
     || !sameProjection(common.cadenceGaps, envelope.drive?.cadenceGaps)
     || !sameProjection(common.lifecycleContinuity, envelope.drive?.learned?.lifecycleContinuity)) return false;
+  for (const field of ["events", "auxiliaryEvents", "unmatchedEvents", "interactionWindows",
+    "idleControlWindows", "interactionFrameWindows", "interactionFrameTimestamps",
+    "interactionFrameIntervalsMs", "longTasks", "focusVisibilitySamples",
+    "assetsRequestedDuringWindow", "sentinelOverflowCounts"]) {
+    if (!sameProjection(common[field], sentinel[field])) return false;
+  }
+  try {
+    if (!sameProjection(common.commonSamples, resolveCommonSamples({
+      scenarioId: envelope.scenarioId,
+      events: sentinel.events,
+      snapshots: sentinel.snapshots,
+    }))) return false;
+  } catch {
+    return false;
+  }
   if (internal && (!sameProjection(internal.eventClockProbe, evidence.eventClockProbe)
     || !sameProjection(internal.eventClockSegments, evidence.eventClockSegments)
     || !sameProjection(internal.calibration, evidence.calibration)
@@ -1939,6 +1966,23 @@ function schemaObserverMode(value, errors, label, modeName) {
   }
 }
 
+/** Exact nested public schema used for a compact observer-mode projection. */
+export function validateWeb06ObserverModeProjectionSchema(value, modeName) {
+  const errors = [];
+  try {
+    if (!["product", "minimal", "full"].includes(modeName)) errors.push("observer-mode:mode");
+    else schemaObserverMode(value, errors, "observer-mode", modeName);
+  } catch {
+    errors.push("observer-mode:schema-exception");
+  }
+  try {
+    errors.push(...validatePointerFreePrivacy(value).errors);
+  } catch {
+    errors.push("observer-mode:privacy-exception");
+  }
+  return { pass: errors.length === 0, errors };
+}
+
 function schemaObserverTriplet(value, errors, label) {
   const keys = ["attemptId", "valid", "counterbalanceSlot", "freshContextId", "modeContextIds", "modeOrder",
     "modeFixedBeforePageLoad", "product", "minimal", "full"];
@@ -2277,13 +2321,15 @@ function schemaSuiteSourceArtifactRoles(value, errors, label, expectation) {
   if (!isSha256(bindingsSha256)
     || bindingsSha256 !== digestJson(stableJsonValue(bindings))) errors.push(`${label}:bindings-hash`);
   const runnerKeys = ["role", "identityRole", "sourceCommit", "sourceTree", "sourceTreeState",
-    "sourceManifestSha256", "toolingManifestSha256", "beforeObservationSha256", "afterObservationSha256"];
+    "sourceManifestSha256", "toolingManifestSha256", "beforeObservationSha256", "afterObservationSha256",
+    "environmentManifestSha256", "environmentId"];
   if (schemaExactKeys(value.runnerSource, runnerKeys, errors, `${label}.runnerSource`)) {
     const expectedIdentityRole = ["FINAL", "PREVIEW"].includes(expectation) ? "FINAL" : "BASE";
     if (value.runnerSource.role !== "RUNNER_SOURCE" || value.runnerSource.identityRole !== expectedIdentityRole
       || !COMMIT_RE.test(value.runnerSource.sourceCommit ?? "") || !COMMIT_RE.test(value.runnerSource.sourceTree ?? "")
       || value.runnerSource.sourceTreeState !== "clean"
-      || ["sourceManifestSha256", "toolingManifestSha256", "beforeObservationSha256", "afterObservationSha256"]
+      || ["sourceManifestSha256", "toolingManifestSha256", "beforeObservationSha256", "afterObservationSha256",
+        "environmentManifestSha256", "environmentId"]
         .some((key) => !isSha256(value.runnerSource[key]))
       || value.runnerSource.beforeObservationSha256 !== value.runnerSource.afterObservationSha256) {
       errors.push(`${label}.runnerSource:identity`);
@@ -2432,6 +2478,8 @@ function validateAttestationSchema(payload, errors) {
   if (runnerRole?.sourceManifestSha256 !== payload.runnerSourceManifestSha256
     || runnerRole?.beforeObservationSha256 !== payload.runnerSourceObservationSha256
     || runnerRole?.afterObservationSha256 !== payload.runnerSourcePostObservationSha256
+    || runnerRole?.environmentManifestSha256 !== payload.environmentManifestSha256
+    || runnerRole?.environmentId !== payload.environmentId
     || runnerIdentityTargetRole?.sourceCommit !== runnerRole?.sourceCommit
     || runnerIdentityTargetRole?.sourceTree !== runnerRole?.sourceTree) {
     errors.push("attestation:runner-role-link");
@@ -2511,12 +2559,20 @@ function validateAttestationSchema(payload, errors) {
 /** Exact recursive schemas for every compact public run artifact. */
 export function validateWeb06RunArtifactSchema(fileName, payload) {
   const errors = [];
-  if (fileName === "collector-output.json") validateCollectorOutputSchema(payload, errors);
-  else if (fileName === "independent-recompute.json") validateIndependentSchema(payload, errors);
-  else if (fileName === "suite-attestation.json") validateAttestationSchema(payload, errors);
-  else errors.push(`artifact:unknown-file:${fileName}`);
-  const privacy = validatePointerFreePrivacy(payload);
-  errors.push(...privacy.errors);
+  try {
+    if (fileName === "collector-output.json") validateCollectorOutputSchema(payload, errors);
+    else if (fileName === "independent-recompute.json") validateIndependentSchema(payload, errors);
+    else if (fileName === "suite-attestation.json") validateAttestationSchema(payload, errors);
+    else errors.push(`artifact:unknown-file:${fileName}`);
+  } catch {
+    errors.push(`artifact:schema-exception:${fileName}`);
+  }
+  try {
+    const privacy = validatePointerFreePrivacy(payload);
+    errors.push(...privacy.errors);
+  } catch {
+    errors.push(`artifact:privacy-exception:${fileName}`);
+  }
   return { pass: errors.length === 0, errors };
 }
 
@@ -2749,6 +2805,8 @@ export function buildSuiteSourceArtifactRoles({ config, runnerSourceBefore, runn
       toolingManifestSha256: config.runnerSource.toolingManifestSha256,
       beforeObservationSha256: runnerSourceBefore?.observationSha256,
       afterObservationSha256: runnerSourceAfter?.observationSha256,
+      environmentManifestSha256: config.environmentManifestSha256,
+      environmentId: config.environmentId,
     },
     targetRoles,
   });
@@ -3002,7 +3060,16 @@ export async function collectFiveWithinSeven(runAttempt) {
   });
 }
 
-export function protocolCapabilityBlockers({ mode, scenarioId, protocol, status, invalidations = [], uiCapabilities = {}, selectedBranch = "NONE" }) {
+export function protocolCapabilityBlockers({
+  mode,
+  scenarioId,
+  protocol,
+  status,
+  invalidations = [],
+  uiCapabilities = {},
+  disposableUiCapabilities = {},
+  selectedBranch = "NONE",
+}) {
   const blockers = [];
   if (mode === "off") {
     if (protocol !== undefined && protocol !== null) blockers.push("PRODUCT_PRIVATE_PROTOCOL_PRESENT");
@@ -3018,7 +3085,8 @@ export function protocolCapabilityBlockers({ mode, scenarioId, protocol, status,
   if (!Number.isSafeInteger(status?.receiptWindowStartEventSequenceId)
     || !Number.isSafeInteger(status?.receiptWindowStartActionSequenceId)) blockers.push("PROTOCOL_WINDOW_START_MISSING");
   if (!Array.isArray(invalidations) || invalidations.length > 0) blockers.push("PRIVATE_PROTOCOL_INVALIDATIONS");
-  if (scenarioId === "fifo-pressure-barriers" && uiCapabilities.importUserdbSameTask !== true) {
+  if (scenarioId === "fifo-pressure-barriers"
+    && disposableUiCapabilities.importUserdbSameTask !== true) {
     blockers.push("FIFO_IMPORT_SAME_TASK_UI_UNSUPPORTED");
   }
   if (scenarioId === "learned-row" && uiCapabilities.backgroundCausality !== true) {

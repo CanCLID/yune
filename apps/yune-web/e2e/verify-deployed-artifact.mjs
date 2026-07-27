@@ -7,6 +7,10 @@ import {
   sha256,
   validateLocalBundle,
 } from "./public-artifact-verifier.mjs";
+import {
+  productionManifestRows,
+  verifyProductionManifestMember,
+} from "./production-artifact-verifier.mjs";
 
 const e2eRoot = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(e2eRoot, "..");
@@ -96,30 +100,15 @@ try {
   );
   verified.push({ path: manifestName, sha256: sha256(remoteManifestBytes) });
 
-  const runtimePaths = local.manifest.files
-    .map((file) => file.path)
-    .filter(
-      (relative) =>
-        [
-          "index.html",
-          "worker.js",
-          "yune-web.js",
-          "yune-web.wasm",
-          "schema-asset-manifest.json",
-          "schema/jyut6ping3_mobile.prism.bin.part0",
-          "schema/jyut6ping3_mobile.prism.bin.part1",
-        ].includes(relative) || /^assets\/.*\.(?:js|css)$/.test(relative),
-    );
-  for (const relative of runtimePaths) {
-    const expected = local.inventory.get(relative);
-    const expectedBytes = await readFile(path.join(distRoot, relative));
+  for (const expected of productionManifestRows(local.manifest)) {
+    const relative = expected.path;
+    const expectedBytes = await readFile(path.join(distRoot, ...relative.split("/")));
     const bytes = await waitForExactBytes(
       relative,
       expectedBytes,
       propagationDeadline,
     );
-    if (bytes.byteLength !== expected.bytes || sha256(bytes) !== expected.sha256)
-      throw new Error(`Internal certified inventory mismatch for ${relative}`);
+    verifyProductionManifestMember(expected, bytes);
     verified.push({ path: relative, bytes: bytes.byteLength, sha256: expected.sha256 });
   }
   passed = true;

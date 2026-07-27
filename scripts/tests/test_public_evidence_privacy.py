@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from urllib.parse import quote
 
 
 SCRIPTS = Path(__file__).resolve().parents[1]
@@ -125,6 +126,11 @@ class PublicEvidencePrivacyTests(unittest.TestCase):
                 "known_token_prefix",
             ),
             (
+                "project-token",
+                "token=(sk-proj-abcdefghijklmnopqrstuvwxyz012345)",
+                "known_token_prefix",
+            ),
+            (
                 "private-key",
                 "-----BEGIN PRIVATE KEY-----",
                 "private_key",
@@ -136,6 +142,110 @@ class PublicEvidencePrivacyTests(unittest.TestCase):
                 result, stdout, stderr = self.run_tool()
                 self.assertEqual((result, stdout), (2, ""))
                 self.assertIn(f"category={category}", stderr)
+
+    def test_punctuated_paths_bearer_and_credentialed_urls_are_rejected(self):
+        cases = (
+            (
+                "markdown-user-path",
+                "paths=(/Users/Someone/Desktop/raw.json),",
+                "user_profile_path",
+            ),
+            (
+                "json-private-path",
+                '{"raw":"/private/tmp/web06/raw.json"},',
+                "posix_absolute_path",
+            ),
+            (
+                "bracketed-opt-path",
+                "tool=[/opt/emsdk/emcc];",
+                "posix_absolute_path",
+            ),
+            (
+                "json-bearer",
+                '{"Authorization":"Bearer abcdefghijklmnop"},',
+                "bearer_token",
+            ),
+            (
+                "credentialed-url",
+                "preview=https://user:password@example.invalid/path",
+                "credentialed_url",
+            ),
+            (
+                "encoded-credentialed-url",
+                "preview=https%3A%2F%2Fuser%3Apassword%40example.invalid/path",
+                "credentialed_url",
+            ),
+            (
+                "double-encoded-credentialed-url",
+                "preview=https%253A%252F%252Fuser%253Apassword%2540example.invalid%252Fpath",
+                "credentialed_url",
+            ),
+        )
+        for label, text, category in cases:
+            with self.subTest(label=label):
+                self.public.write_text(text + "\n", encoding="utf-8")
+                result, stdout, stderr = self.run_tool()
+                self.assertEqual((result, stdout), (2, ""))
+                self.assertIn(f"category={category}", stderr)
+
+    def test_generic_absolute_and_file_url_paths_are_rejected(self):
+        cases = (
+            ("posix", "artifact=/private/tmp/web06/raw.json", "posix_absolute_path"),
+            ("mac-user", "/Users/Someone/Desktop/raw.json", "user_profile_path"),
+            ("linux-user", "/home/someone/raw.json", "user_profile_path"),
+            ("drive", r"artifact=D:\bench\raw.json", "windows_absolute_path"),
+            ("drive-slash", "artifact=d:/bench/raw.json", "windows_absolute_path"),
+            ("unc", r"artifact=\\server\share\raw.json", "unc_path"),
+            ("file-url", "artifact=file:///private/tmp/raw.json", "file_url"),
+            (
+                "encoded-file-url",
+                "artifact=file:%2F%2F%2Fprivate%2Ftmp%2Fraw.json",
+                "file_url",
+            ),
+        )
+        for label, text, category in cases:
+            with self.subTest(label=label):
+                self.public.write_text(text + "\n", encoding="utf-8")
+                result, stdout, stderr = self.run_tool()
+                self.assertEqual((result, stdout), (2, ""))
+                self.assertIn(f"category={category}", stderr)
+
+    def test_public_url_paths_and_relative_repository_paths_remain_allowed(self):
+        self.public.write_text(
+            "request_path=/assets/app.js\n"
+            "evidence=docs/reports/evidence/web06/README.md\n"
+            "preview=https://candidate.pages.dev/index.html\n",
+            encoding="utf-8",
+        )
+        result, stdout, stderr = self.run_tool()
+        self.assertEqual((result, stderr), (0, ""))
+        self.assertIn("tool_version=4", stdout)
+
+    def test_malformed_and_overencoded_url_escapes_fail_closed(self):
+        cases = [
+            "preview=https%3A%2F%2Fuser%3Apassword%4@example.invalid",
+            "preview=https%3A%2F%2Fuser%3Apassword%ZZexample.invalid",
+            "preview=https%253A%252F%252Fuser%25253Apassword%2540example.invalid",
+            "preview=https%FFexample.invalid",
+        ]
+        for secret in (
+            "Bearer abcdefghijklmnop",
+            "sk-proj-abcdefghijklmnopqrstuvwxyz012345",
+        ):
+            encoded = (
+                secret.replace("-", "%2D")
+                if secret.startswith("sk-proj-")
+                else quote(secret, safe="")
+            )
+            for _ in range(3):
+                encoded = quote(encoded, safe="")
+            cases.append(f"payload={encoded}")
+        for text in cases:
+            with self.subTest(text=text):
+                self.public.write_text(text + "\n", encoding="utf-8")
+                result, stdout, stderr = self.run_tool()
+                self.assertEqual((result, stdout), (2, ""))
+                self.assertIn("category=malformed_url_encoding", stderr)
 
     def test_missing_empty_malformed_and_duplicate_inputs_fail_closed(self):
         missing = self.root / "missing.txt"

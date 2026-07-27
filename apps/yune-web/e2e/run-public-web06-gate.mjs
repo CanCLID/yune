@@ -16,9 +16,20 @@ import {
   sha256,
   validateLocalBundle,
 } from "./public-artifact-verifier.mjs";
+import {
+  WEB06_PREVIEW_SCENARIOS,
+  createRunnerSourceManifest,
+  readAndValidateSuiteAttestation,
+  sha256Bytes,
+  sha256StableJson,
+} from "./web06-suite-attestation.mjs";
+import {
+  loadSealedArtifactSnapshot,
+  sealedArtifactResponseGuard,
+  startSealedArtifactServer,
+} from "./web06-sealed-artifact-server.mjs";
 
 const e2eRoot = path.dirname(fileURLToPath(import.meta.url));
-const appRoot = path.resolve(e2eRoot, "..");
 const repoRoot = path.resolve(e2eRoot, "../../..");
 const playwrightCli = path.join(
   e2eRoot,
@@ -27,14 +38,13 @@ const playwrightCli = path.join(
   "test",
   "cli.js",
 );
-const viteCli = path.join(appRoot, "node_modules", "vite", "bin", "vite.js");
 const web06Config = path.join(e2eRoot, "playwright.web06.config.ts");
 const web06Spec = path.join(e2eRoot, "yune-web06-smoothness.spec.ts");
 const statusName = "web06-public-gate-status.json";
 
 export const gateScopes = Object.freeze({
-  full: Object.freeze({
-    grep: "@web06-full",
+  "release-certification": Object.freeze({
+    grep: "@web06-preview-canary",
     servesLocalArtifact: true,
   }),
   "preview-canary": Object.freeze({
@@ -50,6 +60,17 @@ function requiredString(environment, name) {
     throw new Error(`${name} must not contain control characters`);
   }
   return value;
+}
+
+export function withoutCloudflareCredentials(environment) {
+  return Object.fromEntries(
+    Object.entries(environment).filter(
+      ([name]) =>
+        !name.startsWith("CLOUDFLARE_") &&
+        !name.startsWith("CF_") &&
+        !name.startsWith("WRANGLER_"),
+    ),
+  );
 }
 
 function fullSha(value, label, length) {
@@ -83,7 +104,7 @@ function selectedOptions(arguments_, environment) {
       throw new Error(`Unknown WEB06 public gate argument: ${argument}`);
     }
   }
-  const environmentScope = environment.YUNE_WEB_WEB06_GATE_SCOPE?.trim() || null;
+  const environmentScope = environment.YUNE_WEB06_GATE_SCOPE?.trim() || null;
   if (
     commandLineScope !== null &&
     environmentScope !== null &&
@@ -91,12 +112,9 @@ function selectedOptions(arguments_, environment) {
   ) {
     throw new Error("Command-line and environment WEB06 gate scopes disagree");
   }
-  const scope = commandLineScope ?? environmentScope ?? "full";
+  const scope = commandLineScope ?? environmentScope ?? "release-certification";
   if (!Object.hasOwn(gateScopes, scope)) {
-    throw new Error(`Unsupported YUNE_WEB_WEB06_GATE_SCOPE: ${scope}`);
-  }
-  if (verifyOnly && scope !== "preview-canary") {
-    throw new Error("--verify-only is supported only for preview-canary reconciliation");
+    throw new Error(`Unsupported YUNE_WEB06_GATE_SCOPE: ${scope}`);
   }
   return { scope, verifyOnly };
 }
@@ -127,23 +145,28 @@ export function resolveGateContract(environment, arguments_ = []) {
   const { scope, verifyOnly } = selectedOptions(arguments_, environment);
   const scopeContract = gateScopes[scope];
   const expectedSourceCommit = fullSha(
-    requiredString(environment, "YUNE_WEB_EXPECTED_SOURCE_COMMIT"),
-    "YUNE_WEB_EXPECTED_SOURCE_COMMIT",
+    requiredString(environment, "YUNE_WEB06_EXPECTED_SOURCE_COMMIT"),
+    "YUNE_WEB06_EXPECTED_SOURCE_COMMIT",
+    40,
+  );
+  const expectedSourceTree = fullSha(
+    requiredString(environment, "YUNE_WEB06_EXPECTED_SOURCE_TREE"),
+    "YUNE_WEB06_EXPECTED_SOURCE_TREE",
     40,
   );
   const archiveSha256 = fullSha(
-    requiredString(environment, "YUNE_WEB_CERTIFIED_ARCHIVE_SHA256"),
-    "YUNE_WEB_CERTIFIED_ARCHIVE_SHA256",
+    requiredString(environment, "YUNE_WEB06_CERTIFIED_ARCHIVE_SHA256"),
+    "YUNE_WEB06_CERTIFIED_ARCHIVE_SHA256",
     64,
   );
   const archivePath = path.resolve(
-    requiredString(environment, "YUNE_WEB_CERTIFIED_ARCHIVE"),
+    requiredString(environment, "YUNE_WEB06_CERTIFIED_ARCHIVE"),
   );
   const evidenceDir = path.resolve(
-    requiredString(environment, "YUNE_WEB_WEB06_EVIDENCE_DIR"),
+    requiredString(environment, "YUNE_WEB06_EVIDENCE_ROOT"),
   );
   const outputDir = path.resolve(
-    environment.YUNE_WEB_WEB06_OUTPUT_DIR?.trim() ||
+    environment.YUNE_WEB06_PLAYWRIGHT_OUTPUT_DIR?.trim() ||
       path.join(evidenceDir, "playwright"),
   );
   const outputRelative = path.relative(evidenceDir, outputDir);
@@ -154,25 +177,91 @@ export function resolveGateContract(environment, arguments_ = []) {
     path.isAbsolute(outputRelative)
   ) {
     throw new Error(
-      "YUNE_WEB_WEB06_OUTPUT_DIR must be a strict descendant of the external evidence root",
+      "YUNE_WEB06_PLAYWRIGHT_OUTPUT_DIR must be a strict descendant of the external evidence root",
     );
   }
-  if (environment.YUNE_WEB_WEB06_DIST_ROOT?.trim()) {
+  if (environment.YUNE_WEB06_DIST_ROOT?.trim()) {
     throw new Error(
-      "YUNE_WEB_WEB06_DIST_ROOT is runner-owned; supplied artifact roots are forbidden",
+      "YUNE_WEB06_DIST_ROOT is runner-owned; supplied artifact roots are forbidden",
     );
+  }
+  const selectedBranch = requiredString(environment, "YUNE_WEB06_SELECTED_BRANCH");
+  if (!["A", "B", "C"].includes(selectedBranch)) {
+    throw new Error("A preview-eligible YUNE_WEB06_SELECTED_BRANCH must be A, B, or C");
+  }
+  const disposition = requiredString(environment, "YUNE_WEB06_DISPOSITION");
+  if (disposition !== "PRODUCTION_REDUCTION") {
+    throw new Error("WEB06 preview certification requires PRODUCTION_REDUCTION");
+  }
+  const identityManifestJson = requiredString(
+    environment,
+    "YUNE_WEB06_IDENTITY_MANIFEST_JSON",
+  );
+  let identityManifest;
+  try {
+    identityManifest = JSON.parse(identityManifestJson);
+  } catch {
+    throw new Error("YUNE_WEB06_IDENTITY_MANIFEST_JSON must be valid JSON");
+  }
+  if (
+    identityManifest?.version !== "web06-target-identities-v1" ||
+    identityManifest.metricContractVersion !== "web06-metric-v1" ||
+    identityManifest.scenarioRegistryVersion !== "web06-scenarios-v1" ||
+    identityManifest.behaviorPredicateVersion !== "web06-behavior-predicates-v1" ||
+    !/^[0-9a-f]{64}$/.test(identityManifest.collectorContractSha256 ?? "")
+  ) {
+    throw new Error("YUNE_WEB06_IDENTITY_MANIFEST_JSON does not match the frozen contract");
+  }
+  const identityManifestSha256 = sha256StableJson(identityManifest);
+  const finalSuiteAttestationPath = path.resolve(
+    requiredString(environment, "YUNE_WEB06_FINAL_SUITE_ATTESTATION"),
+  );
+  const finalSuiteEvidenceRoot = path.resolve(
+    requiredString(environment, "YUNE_WEB06_FINAL_SUITE_EVIDENCE_ROOT"),
+  );
+  let runEnvironmentJson = null;
+  let runEnvironmentManifest = null;
+  if (!verifyOnly) {
+    runEnvironmentJson = requiredString(
+      environment,
+      "YUNE_WEB06_RUN_ENVIRONMENT_JSON",
+    );
+    try {
+      runEnvironmentManifest = JSON.parse(runEnvironmentJson);
+    } catch {
+      throw new Error("YUNE_WEB06_RUN_ENVIRONMENT_JSON must be valid JSON");
+    }
+    if (
+      !runEnvironmentManifest ||
+      typeof runEnvironmentManifest !== "object" ||
+      Array.isArray(runEnvironmentManifest)
+    ) {
+      throw new Error("YUNE_WEB06_RUN_ENVIRONMENT_JSON must be an object");
+    }
+  }
+  if (environment.YUNE_WEB06_BLOCKED_SCENARIOS_JSON !== undefined) {
+    let blocked;
+    try {
+      blocked = JSON.parse(environment.YUNE_WEB06_BLOCKED_SCENARIOS_JSON);
+    } catch {
+      throw new Error("YUNE_WEB06_BLOCKED_SCENARIOS_JSON must be valid JSON");
+    }
+    if (!Array.isArray(blocked) || blocked.length !== 0) {
+      throw new Error("WEB06 release and preview execution forbids blocked scenarios");
+    }
   }
 
   if (scopeContract.servesLocalArtifact) {
-    const portValue = environment.YUNE_WEB_WEB06_PREVIEW_PORT?.trim() || "4174";
+    const portValue = environment.YUNE_WEB06_PREVIEW_PORT?.trim() || "4174";
     const port = Number(portValue);
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
-      throw new Error(`Invalid YUNE_WEB_WEB06_PREVIEW_PORT: ${portValue}`);
+      throw new Error(`Invalid YUNE_WEB06_PREVIEW_PORT: ${portValue}`);
     }
     return {
       scope,
       grep: scopeContract.grep,
       expectedSourceCommit,
+      expectedSourceTree,
       archiveSha256,
       archivePath,
       evidenceDir,
@@ -181,8 +270,17 @@ export function resolveGateContract(environment, arguments_ = []) {
       appUrl: `http://127.0.0.1:${port}/`,
       port,
       expectedPreviewScenarios: null,
+      selectedBranch,
+      disposition,
+      identityManifest,
+      identityManifestJson,
+      identityManifestSha256,
+      finalSuiteAttestationPath,
+      finalSuiteEvidenceRoot,
+      runEnvironmentJson,
+      runEnvironmentManifest,
       verifyOnly,
-      statusName,
+      statusName: verifyOnly ? "web06-local-reconciliation-status.json" : statusName,
     };
   }
 
@@ -190,6 +288,7 @@ export function resolveGateContract(environment, arguments_ = []) {
     scope,
     grep: scopeContract.grep,
     expectedSourceCommit,
+    expectedSourceTree,
     archiveSha256,
     archivePath,
     evidenceDir,
@@ -197,7 +296,16 @@ export function resolveGateContract(environment, arguments_ = []) {
     distRoot: null,
     appUrl: checkedRemoteUrl(requiredString(environment, "YUNE_WEB_APP_URL")),
     port: null,
-    expectedPreviewScenarios: "existing-normal-guard,rapid-jyutping",
+    expectedPreviewScenarios: [...WEB06_PREVIEW_SCENARIOS],
+    selectedBranch,
+    disposition,
+    identityManifest,
+    identityManifestJson,
+    identityManifestSha256,
+    finalSuiteAttestationPath,
+    finalSuiteEvidenceRoot,
+    runEnvironmentJson,
+    runEnvironmentManifest,
     verifyOnly,
     statusName: verifyOnly ? "web06-preview-reconciliation-status.json" : statusName,
   };
@@ -250,7 +358,33 @@ function runCommand(command, args, options = {}) {
   });
 }
 
-async function validateExternalEvidenceDir(evidenceDir) {
+export async function proveExactPublicGateRunnerSource(
+  contract,
+  environment,
+  execute = runCommand,
+) {
+  const command = async (args) =>
+    (await execute("git", args, {
+      cwd: repoRoot,
+      env: withoutCloudflareCredentials(environment),
+      stdio: "pipe",
+    })).stdout.trim();
+  const [head, tree, status] = await Promise.all([
+    command(["rev-parse", "HEAD"]),
+    command(["rev-parse", "HEAD^{tree}"]),
+    command(["status", "--porcelain", "--untracked-files=all"]),
+  ]);
+  if (
+    head !== contract.expectedSourceCommit ||
+    tree !== contract.expectedSourceTree ||
+    status !== ""
+  ) {
+    throw new Error("WEB06 public gate requires clean exact source HEAD/tree");
+  }
+  return Object.freeze({ sourceCommit: head, sourceTree: tree });
+}
+
+async function validateExternalEvidenceDir(evidenceDir, environment) {
   const result = await runCommand(
     "python3",
     [
@@ -263,7 +397,7 @@ async function validateExternalEvidenceDir(evidenceDir) {
     ],
     {
       cwd: repoRoot,
-      env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1" },
+      env: { ...environment, PYTHONDONTWRITEBYTECODE: "1" },
       stdio: "pipe",
     },
   );
@@ -309,36 +443,172 @@ function assertStrictDescendant(root, candidate, label) {
   }
 }
 
-export async function prepareOutputPaths(contract) {
+function directoryIdentity(metadata) {
+  return Object.freeze({
+    dev: metadata.dev,
+    ino: metadata.ino,
+    uid: metadata.uid,
+    mode: metadata.mode & 0o7777,
+  });
+}
+
+function sameDirectoryIdentity(left, right) {
+  return (
+    left.dev === right.dev &&
+    left.ino === right.ino &&
+    left.uid === right.uid &&
+    left.mode === right.mode
+  );
+}
+
+async function inspectPrivateDirectory(directory, label) {
+  const requested = path.resolve(directory);
+  const metadata = await lstat(requested);
+  if (
+    !metadata.isDirectory() ||
+    metadata.isSymbolicLink() ||
+    (await realpath(requested)) !== requested
+  ) {
+    throw new Error(`${label} must be a canonical plain directory`);
+  }
+  const uid = process.getuid?.();
+  if (!Number.isSafeInteger(uid) || metadata.uid !== uid) {
+    throw new Error(`${label} must be owned by the current uid`);
+  }
+  if ((metadata.mode & 0o777) !== 0o700) {
+    throw new Error(`${label} must have mode 0700`);
+  }
+  return directoryIdentity(metadata);
+}
+
+async function assertDirectoryIdentity(directory, expected, label) {
+  const current = await inspectPrivateDirectory(directory, label);
+  if (!sameDirectoryIdentity(current, expected)) {
+    throw new Error(`${label} identity changed after reservation`);
+  }
+}
+
+async function createPrivateDirectoryExclusive(directory, label) {
+  try {
+    await mkdir(directory, { mode: 0o700 });
+  } catch (error) {
+    if (error?.code === "EEXIST") {
+      const existing = new Error(`${label} must be create-new`);
+      existing.code = "EEXIST";
+      throw existing;
+    }
+    throw error;
+  }
+  return inspectPrivateDirectory(directory, label);
+}
+
+async function reserveEvidenceDirectories(
+  evidenceDir,
+  outputDir,
+  { beforeEvidenceMkdir = async () => {} } = {},
+) {
+  const parent = path.dirname(evidenceDir);
+  const parentIdentity = await inspectPrivateDirectory(
+    parent,
+    "WEB06 trusted evidence parent",
+  );
+  await assertDirectoryIdentity(
+    parent,
+    parentIdentity,
+    "WEB06 trusted evidence parent",
+  );
+  await beforeEvidenceMkdir();
+  const evidenceIdentity = await createPrivateDirectoryExclusive(
+    evidenceDir,
+    "WEB06 evidence root",
+  );
+  await assertDirectoryIdentity(
+    parent,
+    parentIdentity,
+    "WEB06 trusted evidence parent",
+  );
+
+  const relative = path.relative(evidenceDir, outputDir);
+  let current = evidenceDir;
+  for (const component of relative.split(path.sep)) {
+    current = path.join(current, component);
+    await createPrivateDirectoryExclusive(
+      current,
+      "WEB06 Playwright output component",
+    );
+    await assertDirectoryIdentity(
+      evidenceDir,
+      evidenceIdentity,
+      "WEB06 evidence root",
+    );
+  }
+  const outputIdentity = await inspectPrivateDirectory(
+    outputDir,
+    "WEB06 Playwright output",
+  );
+  await assertDirectoryIdentity(
+    parent,
+    parentIdentity,
+    "WEB06 trusted evidence parent",
+  );
+  return Object.freeze({
+    evidenceDir,
+    evidenceIdentity,
+    outputDir,
+    outputIdentity,
+    parent,
+    parentIdentity,
+  });
+}
+
+export async function assertPreparedOutputPaths(contract) {
+  const reservation = contract.outputReservation;
+  if (!reservation) {
+    throw new Error("WEB06 output paths were not reserved");
+  }
+  await assertDirectoryIdentity(
+    reservation.parent,
+    reservation.parentIdentity,
+    "WEB06 trusted evidence parent",
+  );
+  await assertDirectoryIdentity(
+    reservation.evidenceDir,
+    reservation.evidenceIdentity,
+    "WEB06 evidence root",
+  );
+  await assertDirectoryIdentity(
+    reservation.outputDir,
+    reservation.outputIdentity,
+    "WEB06 Playwright output",
+  );
+}
+
+export async function prepareOutputPaths(
+  contract,
+  environment = process.env,
+  dependencies = {},
+) {
   const outputRelative = path.relative(contract.evidenceDir, contract.outputDir);
   await assertNoSymlinkComponents(contract.evidenceDir, "WEB06 evidence root");
   await assertNoSymlinkComponents(contract.outputDir, "WEB06 Playwright output");
-  contract.evidenceDir = await validateExternalEvidenceDir(contract.evidenceDir);
+  contract.evidenceDir = await validateExternalEvidenceDir(
+    contract.evidenceDir,
+    environment,
+  );
   contract.outputDir = path.join(contract.evidenceDir, outputRelative);
   assertStrictDescendant(
     contract.evidenceDir,
     contract.outputDir,
-    "YUNE_WEB_WEB06_OUTPUT_DIR",
+    "YUNE_WEB06_PLAYWRIGHT_OUTPUT_DIR",
   );
 
-  await assertNoSymlinkComponents(contract.evidenceDir, "WEB06 evidence root");
-  await mkdir(contract.evidenceDir, { recursive: true });
-  await assertNoSymlinkComponents(contract.evidenceDir, "WEB06 evidence root");
-  await assertNoSymlinkComponents(contract.outputDir, "WEB06 Playwright output");
-  await mkdir(contract.outputDir, { recursive: true });
-  await assertNoSymlinkComponents(contract.outputDir, "WEB06 Playwright output");
-
-  const [realEvidenceDir, realOutputDir] = await Promise.all([
-    realpath(contract.evidenceDir),
-    realpath(contract.outputDir),
-  ]);
-  if (
-    path.normalize(realEvidenceDir) !== path.normalize(contract.evidenceDir) ||
-    path.normalize(realOutputDir) !== path.normalize(contract.outputDir)
-  ) {
-    throw new Error("WEB06 output canonicalization changed after directory creation");
-  }
-  assertStrictDescendant(realEvidenceDir, realOutputDir, "WEB06 Playwright output");
+  contract.outputReservation = await reserveEvidenceDirectories(
+    contract.evidenceDir,
+    contract.outputDir,
+    dependencies,
+  );
+  await assertPreparedOutputPaths(contract);
+  return contract.outputReservation;
 }
 
 async function sha256File(file) {
@@ -357,7 +627,7 @@ export async function validateArchive(contract) {
     lstat(`${contract.archivePath}.sha256`),
   ]);
   if (!metadata.isFile() || metadata.isSymbolicLink()) {
-    throw new Error("YUNE_WEB_CERTIFIED_ARCHIVE must be a plain archive file");
+    throw new Error("YUNE_WEB06_CERTIFIED_ARCHIVE must be a plain archive file");
   }
   if (!siblingMetadata.isFile() || siblingMetadata.isSymbolicLink()) {
     throw new Error("Certified archive sibling digest must be a plain file");
@@ -409,12 +679,16 @@ function extractionDestination(contract) {
   return path.join(contract.evidenceDir, `.web06-sealed-artifact-${suffix}`);
 }
 
-async function extractCertifiedArchive(contract, destination) {
+export async function extractCertifiedArchive(
+  contract,
+  destination,
+  environment = process.env,
+) {
   await assertNoSymlinkComponents(destination, "WEB06 archive extraction root");
   await runCommand("python3", ["-c", safeExtractionProgram], {
     cwd: repoRoot,
     env: {
-      ...process.env,
+      ...environment,
       PYTHONDONTWRITEBYTECODE: "1",
       YUNE_WEB_ARCHIVE_TO_EXTRACT: contract.archivePath,
       YUNE_WEB_ARCHIVE_DESTINATION: destination,
@@ -445,8 +719,8 @@ async function fetchBuildInfo(appUrl, expectedSourceCommit) {
   return validateRemoteBuildInfo(await response.json(), expectedSourceCommit);
 }
 
-async function fetchBytes(url, label) {
-  const response = await fetch(url, {
+async function fetchBytes(url, label, fetchImplementation = globalThis.fetch) {
+  const response = await fetchImplementation(url, {
     cache: "no-store",
     signal: AbortSignal.timeout(30_000),
   });
@@ -492,12 +766,22 @@ export function validateRemoteFile(file, bytes) {
   }
 }
 
-async function reconcileRemoteBundle(appUrl, local, expectedSourceCommit) {
+export async function reconcileRemoteBundle(
+  appUrl,
+  local,
+  expectedSourceCommit,
+  fetchImplementation = globalThis.fetch,
+) {
   const [remoteBuildInfoBytes, remoteManifestBytes] = await Promise.all([
-    fetchBytes(new URL("build-info.json", appUrl), "build-info.json"),
+    fetchBytes(
+      new URL("build-info.json", appUrl),
+      "build-info.json",
+      fetchImplementation,
+    ),
     fetchBytes(
       new URL("public-artifact-manifest.json", appUrl),
       "public-artifact-manifest.json",
+      fetchImplementation,
     ),
   ]);
   const remoteBuildInfo = validateRemoteMetadata(
@@ -518,6 +802,7 @@ async function reconcileRemoteBundle(appUrl, local, expectedSourceCommit) {
         const bytes = await fetchBytes(
           deployedArtifactUrl(appUrl, file.path),
           `artifact file ${file.path}`,
+          fetchImplementation,
         );
         validateRemoteFile(file, bytes);
       }
@@ -527,20 +812,18 @@ async function reconcileRemoteBundle(appUrl, local, expectedSourceCommit) {
   return remoteBuildInfo;
 }
 
-async function writeStatus(contract, values, { createNew = false } = {}) {
+async function writeStatus(contract, values) {
+  await assertPreparedOutputPaths(contract);
   const statusPath = path.join(contract.evidenceDir, contract.statusName);
-  if (!createNew) {
-    const metadata = await lstat(statusPath);
-    if (!metadata.isFile() || metadata.isSymbolicLink()) {
-      throw new Error("WEB06 status receipt must remain a plain file");
-    }
-  }
   await writeFile(
     statusPath,
     `${JSON.stringify(
       {
+        version: "web06-public-gate-status-v1",
         sourceCommit: contract.expectedSourceCommit,
+        sourceTree: contract.expectedSourceTree,
         archiveSha256: contract.archiveSha256,
+        disposition: contract.disposition,
         scope: contract.scope,
         appUrl: contract.appUrl,
         ...values,
@@ -548,96 +831,55 @@ async function writeStatus(contract, values, { createNew = false } = {}) {
       null,
       2,
     )}\n`,
-    { flag: createNew ? "wx" : "w" },
+    { flag: "wx", mode: 0o600 },
   );
+  await assertPreparedOutputPaths(contract);
 }
 
-function startPreview(contract) {
-  const preview = spawn(
-    process.execPath,
-    [
-      viteCli,
-      "preview",
-      "--host",
-      "127.0.0.1",
-      "--port",
-      String(contract.port),
-      "--strictPort",
-      "--outDir",
-      contract.distRoot,
-    ],
-    { cwd: appRoot, env: process.env, stdio: "inherit" },
-  );
-  let exit = null;
-  let error = null;
-  let resolveStopped;
-  const stopped = new Promise((resolve) => {
-    resolveStopped = resolve;
-  });
-  preview.once("exit", (code, signal) => {
-    exit = { code, signal };
-    resolveStopped();
-  });
-  preview.once("error", (value) => {
-    error = value;
-    resolveStopped();
-  });
-  return {
-    async ready() {
-      const deadline = Date.now() + 30_000;
-      while (Date.now() < deadline) {
-        if (exit !== null) {
-          throw new Error(`WEB06 public preview exited before readiness: ${JSON.stringify(exit)}`);
-        }
-        if (error !== null) throw error;
-        try {
-          await fetchBuildInfo(contract.appUrl, contract.expectedSourceCommit);
-          return;
-        } catch {
-          await new Promise((resolve) => setTimeout(resolve, 250));
-        }
-      }
-      throw new Error(`WEB06 public preview did not become ready at ${contract.appUrl}`);
-    },
-    async stop() {
-      if (exit !== null || error !== null) return;
-      preview.kill();
-      const stoppedNormally = await Promise.race([
-        stopped.then(() => true),
-        new Promise((resolve) => setTimeout(() => resolve(false), 5_000)),
-      ]);
-      if (stoppedNormally) return;
-      preview.kill("SIGKILL");
-      const killed = await Promise.race([
-        stopped.then(() => true),
-        new Promise((resolve) => setTimeout(() => resolve(false), 2_000)),
-      ]);
-      if (!killed) throw new Error("WEB06 public preview did not terminate");
-    },
-  };
-}
-
-export async function main(environment = process.env, arguments_ = process.argv.slice(2)) {
+export async function main(
+  environment = process.env,
+  arguments_ = process.argv.slice(2),
+  dependencies = {},
+) {
   const contract = resolveGateContract(environment, arguments_);
-  await prepareOutputPaths(contract);
-  await writeStatus(
-    contract,
-    {
-      generatedAt: new Date().toISOString(),
-      measurementStarted: false,
-      status: "setup-pending",
-    },
-    { createNew: true },
-  );
+  const readSuiteAttestation =
+    dependencies.readAndValidateSuiteAttestation ??
+    readAndValidateSuiteAttestation;
+  const childEnvironment = withoutCloudflareCredentials({
+    ...process.env,
+    ...environment,
+  });
+  if (!childEnvironment.PATH && process.env.PATH) {
+    childEnvironment.PATH = process.env.PATH;
+  }
+  let runnerSourceManifest = null;
+  if (!contract.verifyOnly) {
+    const runnerSource = await proveExactPublicGateRunnerSource(
+      contract,
+      childEnvironment,
+    );
+    runnerSourceManifest = await createRunnerSourceManifest(
+      repoRoot,
+      runnerSource.sourceCommit,
+      runnerSource.sourceTree,
+    );
+  }
+  await prepareOutputPaths(contract, childEnvironment);
 
   let preview = null;
   let artifactManifestSha256 = null;
   let artifactFileCount = null;
-  let measurementStarted = false;
+  let canaryStarted = false;
+  let finalSuiteAttestationSha256 = null;
+  let previewSuiteAttestationSha256 = null;
   try {
     await validateArchive(contract);
     contract.distRoot = extractionDestination(contract);
-    contract.distRoot = await extractCertifiedArchive(contract, contract.distRoot);
+    contract.distRoot = await extractCertifiedArchive(
+      contract,
+      contract.distRoot,
+      childEnvironment,
+    );
     // Catch any mutation between the pre-extraction digest and the bytes that
     // Python opened. The runner never measures a root unless both checks agree.
     await validateArchive(contract);
@@ -646,7 +888,7 @@ export async function main(environment = process.env, arguments_ = process.argv.
     }
     const metadata = await lstat(contract.distRoot);
     if (!metadata.isDirectory() || metadata.isSymbolicLink()) {
-      throw new Error("YUNE_WEB_WEB06_DIST_ROOT must be a plain extracted directory");
+      throw new Error("YUNE_WEB06_DIST_ROOT must be a plain extracted directory");
     }
     const local = await validateLocalBundle(
       contract.distRoot,
@@ -654,11 +896,49 @@ export async function main(environment = process.env, arguments_ = process.argv.
     );
     artifactManifestSha256 = sha256(local.manifestBytes);
     artifactFileCount = local.manifest.files.length;
-    if (contract.scope === "full") {
-      await stat(viteCli);
-      preview = startPreview(contract);
-      await preview.ready();
-    } else {
+    const finalAttestation = await readSuiteAttestation(
+      contract.finalSuiteAttestationPath,
+      {
+        expectation: "FINAL",
+        sourceCommit: contract.expectedSourceCommit,
+        sourceTree: contract.expectedSourceTree,
+        archiveSha256: contract.archiveSha256,
+        artifactManifestSha256,
+        selectedBranch: contract.selectedBranch,
+        disposition: "PRODUCTION_REDUCTION",
+        identityManifestSha256: contract.identityManifestSha256,
+        collectorContractSha256:
+          contract.identityManifest.collectorContractSha256,
+        identityManifest: contract.identityManifest,
+        evidenceRoot: contract.finalSuiteEvidenceRoot,
+      },
+    );
+    finalSuiteAttestationSha256 = finalAttestation.sha256;
+    const finalRole = contract.identityManifest.roles?.FINAL;
+    if (
+      finalRole?.sourceCommit !== contract.expectedSourceCommit ||
+      finalRole?.sourceTree !== contract.expectedSourceTree ||
+      finalRole?.sourceTreeState !== "clean" ||
+      finalRole?.archiveSha256 !== contract.archiveSha256 ||
+      finalRole?.artifactManifestSha256 !== artifactManifestSha256 ||
+      finalRole?.buildInfoSha256 !== sha256(local.buildInfoBytes) ||
+      finalRole?.selectedBranch !== contract.selectedBranch ||
+      finalRole?.disposition !== "PRODUCTION_REDUCTION"
+    ) {
+      throw new Error("WEB06 FINAL identity role does not match the sealed release candidate");
+    }
+    if (contract.scope === "release-certification" && !contract.verifyOnly) {
+      const snapshot = await loadSealedArtifactSnapshot(contract.distRoot, local);
+      preview = await startSealedArtifactServer(snapshot, {
+        host: "127.0.0.1",
+        port: contract.port,
+      });
+      if (preview.appUrl !== contract.appUrl) {
+        throw new Error("Sealed artifact server bound an unexpected origin");
+      }
+      await fetchBuildInfo(contract.appUrl, contract.expectedSourceCommit);
+      preview.assertHealthy();
+    } else if (contract.scope === "preview-canary") {
       const buildInfo = await reconcileRemoteBundle(
         contract.appUrl,
         local,
@@ -676,55 +956,121 @@ export async function main(environment = process.env, arguments_ = process.argv.
         generatedAt: new Date().toISOString(),
         artifactManifestSha256,
         artifactFileCount,
+        finalSuiteAttestationSha256,
         extractedArtifactRetained: false,
-        measurementStarted: false,
+        canaryStarted: false,
         status: "reconciled",
       });
       return;
     }
 
-    await writeStatus(contract, {
-      generatedAt: new Date().toISOString(),
-      artifactManifestSha256,
-      artifactFileCount,
-      measurementStarted: true,
-      status: "measurement-running",
-    });
-    measurementStarted = true;
-    await runCommand(
-      process.execPath,
-      [
-        playwrightCli,
-        "test",
-        "--config",
-        path.basename(web06Config),
-        "--grep",
-        contract.grep,
-        "--workers=1",
-        "--retries=0",
-      ],
-      {
-        cwd: e2eRoot,
-        env: {
-          ...environment,
-          YUNE_WEB_APP_URL: contract.appUrl,
-          YUNE_WEB_EXPECTED_SOURCE_COMMIT: contract.expectedSourceCommit,
-          YUNE_WEB_CERTIFIED_ARCHIVE: contract.archivePath,
-          YUNE_WEB_CERTIFIED_ARCHIVE_SHA256: contract.archiveSha256,
-          YUNE_WEB_WEB06_GATE_SCOPE: contract.scope,
-          YUNE_WEB_WEB06_EVIDENCE_DIR: contract.evidenceDir,
-          YUNE_WEB_WEB06_OUTPUT_DIR: contract.outputDir,
-          ...(contract.expectedPreviewScenarios === null
-            ? {}
-            : {
-                YUNE_WEB_WEB06_EXPECTED_PREVIEW_SCENARIOS:
-                  contract.expectedPreviewScenarios,
-              }),
-          YUNE_WEB_WEB06_DIST_ROOT: contract.distRoot,
+    const collectorEvidenceRoot = path.join(contract.evidenceDir, "collector");
+    await createPrivateDirectoryExclusive(
+      collectorEvidenceRoot,
+      "WEB06 collector evidence root",
+    );
+    const previewAttestationPath = path.join(
+      collectorEvidenceRoot,
+      "suite-attestation.json",
+    );
+    const targets = {
+      FINAL_MINIMAL: {
+        origin: contract.appUrl,
+        sourceCommit: contract.expectedSourceCommit,
+        sourceTree: contract.expectedSourceTree,
+        treeState: "clean",
+        artifactSha256: artifactManifestSha256,
+        archiveSha256: contract.archiveSha256,
+        buildInfoSha256: sha256(local.buildInfoBytes),
+        artifactResponseGuard: sealedArtifactResponseGuard(local),
+        protocolMode: "minimal",
+        selectorPolicy: "omitted",
+      },
+    };
+    canaryStarted = true;
+    let browserFailure = null;
+    try {
+      await runCommand(
+        process.execPath,
+        [
+          playwrightCli,
+          "test",
+          "--config",
+          path.basename(web06Config),
+          "--grep",
+          contract.grep,
+          "--workers=1",
+          "--retries=0",
+        ],
+        {
+          cwd: e2eRoot,
+          env: {
+            ...childEnvironment,
+            YUNE_WEB_APP_URL: contract.appUrl,
+            YUNE_WEB06_EXPECTED_SOURCE_COMMIT: contract.expectedSourceCommit,
+            YUNE_WEB06_EXPECTED_SOURCE_TREE: contract.expectedSourceTree,
+            YUNE_WEB06_CERTIFIED_ARCHIVE: contract.archivePath,
+            YUNE_WEB06_CERTIFIED_ARCHIVE_SHA256: contract.archiveSha256,
+            YUNE_WEB06_GATE_SCOPE: contract.scope,
+            YUNE_WEB06_EVIDENCE_ROOT: collectorEvidenceRoot,
+            YUNE_WEB06_PLAYWRIGHT_OUTPUT_DIR: contract.outputDir,
+            YUNE_WEB06_EXPECTATION: "PREVIEW",
+            YUNE_WEB06_RUN_KIND: "preview-canary",
+            YUNE_WEB06_SELECTED_BRANCH: contract.selectedBranch,
+            YUNE_WEB06_DISPOSITION: contract.disposition,
+            YUNE_WEB06_IDENTITY_MANIFEST_JSON: contract.identityManifestJson,
+            YUNE_WEB06_RUN_ENVIRONMENT_JSON: contract.runEnvironmentJson,
+            YUNE_WEB06_RUNNER_SOURCE_JSON: JSON.stringify(runnerSourceManifest),
+            YUNE_WEB06_BLOCKED_SCENARIOS_JSON: "[]",
+            YUNE_WEB06_TARGETS_JSON: JSON.stringify(targets),
+            YUNE_WEB06_TARGET_ORDER_JSON: JSON.stringify(["FINAL_MINIMAL"]),
+            YUNE_WEB06_SCENARIOS_JSON: JSON.stringify(WEB06_PREVIEW_SCENARIOS),
+            YUNE_WEB06_PLAYWRIGHT_RETRIES: "0",
+            YUNE_WEB06_PLAYWRIGHT_WORKERS: "1",
+            YUNE_WEB06_RUN_ID: `${contract.scope}-canary`,
+            YUNE_WEB06_SUITE_ATTESTATION_PATH: previewAttestationPath,
+            YUNE_WEB06_COLLECTOR_OUTPUT_PATH: path.join(
+              collectorEvidenceRoot,
+              "collector-output.json",
+            ),
+            YUNE_WEB06_INDEPENDENT_RECOMPUTE_PATH: path.join(
+              collectorEvidenceRoot,
+              "independent-recompute.json",
+            ),
+            YUNE_WEB06_DIST_ROOT: contract.distRoot,
+          },
         },
+      );
+    } catch (error) {
+      browserFailure = error;
+    }
+    if (preview !== null) preview.assertHealthy();
+    if (browserFailure !== null) throw browserFailure;
+    await proveExactPublicGateRunnerSource(contract, childEnvironment);
+    const previewAttestation = await readSuiteAttestation(
+      previewAttestationPath,
+      {
+        expectation: "PREVIEW",
+        sourceCommit: contract.expectedSourceCommit,
+        sourceTree: contract.expectedSourceTree,
+        archiveSha256: contract.archiveSha256,
+        artifactManifestSha256,
+        selectedBranch: contract.selectedBranch,
+        disposition: contract.disposition,
+        identityManifestSha256: contract.identityManifestSha256,
+        collectorContractSha256:
+          contract.identityManifest.collectorContractSha256,
+        environmentManifestSha256: sha256Bytes(
+          Buffer.from(JSON.stringify(contract.runEnvironmentManifest)),
+        ),
+        environmentId: contract.runEnvironmentManifest.environmentId,
+        identityManifest: contract.identityManifest,
+        evidenceRoot: collectorEvidenceRoot,
       },
     );
+    previewSuiteAttestationSha256 = previewAttestation.sha256;
     if (preview !== null) {
+      preview.assertHealthy();
       await preview.stop();
       preview = null;
     }
@@ -734,8 +1080,10 @@ export async function main(environment = process.env, arguments_ = process.argv.
       generatedAt: new Date().toISOString(),
       artifactManifestSha256,
       artifactFileCount,
+      finalSuiteAttestationSha256,
+      previewSuiteAttestationSha256,
       extractedArtifactRetained: false,
-      measurementStarted: true,
+      canaryStarted: true,
       status: "passed",
     });
   } catch (error) {
@@ -752,11 +1100,13 @@ export async function main(environment = process.env, arguments_ = process.argv.
       generatedAt: new Date().toISOString(),
       artifactManifestSha256,
       artifactFileCount,
+      finalSuiteAttestationSha256,
+      previewSuiteAttestationSha256,
       extractedArtifactRetained,
       retainedExtractedArtifactRoot: extractedArtifactRetained
         ? contract.distRoot
         : null,
-      measurementStarted,
+      canaryStarted,
       status: "failed",
       failure: error instanceof Error ? error.message : String(error),
     });

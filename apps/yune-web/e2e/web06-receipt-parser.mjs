@@ -28,6 +28,10 @@ const FORBIDDEN_KEY_RE = /(?:(?:^|[_-])ptr(?:$|[_-])|pointer|address|authorizati
 const ABSOLUTE_PATH_RE = /(?:^|[\s"'=(:,\[])(?:file:\/\/|\/(?:[^/\s()[\]{},;]+\/)*[^/\s()[\]{},;]+|[A-Za-z]:[\\/]|\\\\[^\\\s]+\\)/;
 const POINTER_VALUE_RE = /(?:^|[\s"'=(:,\[])0x[0-9a-f]{6,}(?=$|[\s"',);}\]])/i;
 const SENSITIVE_VALUE_RE = /(?:\bBearer[ \t]+[A-Za-z0-9._~+/=-]+|\bsk-proj-[A-Za-z0-9_-]+|https?:\/\/[^/\s:@]+:[^/\s@]+@)/i;
+const SUSPICIOUS_ENCODED_PRIVACY_RE =
+  /(?:https?%|file%|bearer%|sk(?:-|%(?:25)*2d)proj|%(?:25)*(?:2f|5c|3a|40))/i;
+const PRIVACY_PERCENT_DECODE_MAX_PASSES = 16;
+const PRIVACY_STRING_MAX_LENGTH = 65_536;
 const ALLOWED_OUTCOMES = new Set([
   "painted",
   "superseded",
@@ -197,15 +201,50 @@ function validateContiguousIds(rows, field, start, prefix, errors) {
   }
 }
 
+function privacyStringInvalid(value) {
+  if (value.length > PRIVACY_STRING_MAX_LENGTH) return true;
+  const candidates = [value];
+  let current = value;
+  let malformedSuspiciousEncoding = false;
+  let decodeBoundExceeded = false;
+  for (let pass = 0; current.includes("%"); pass += 1) {
+    if (pass >= PRIVACY_PERCENT_DECODE_MAX_PASSES) {
+      decodeBoundExceeded = true;
+      break;
+    }
+    try {
+      const decoded = decodeURIComponent(current);
+      if (decoded === current || decoded.length >= current.length) {
+        malformedSuspiciousEncoding = true;
+        break;
+      }
+      candidates.push(decoded);
+      current = decoded;
+    } catch {
+      malformedSuspiciousEncoding = SUSPICIOUS_ENCODED_PRIVACY_RE.test(value)
+        || SUSPICIOUS_ENCODED_PRIVACY_RE.test(current)
+        || (/%[0-9a-f]{2}/i.test(current) && /%(?![0-9a-f]{2})/i.test(current));
+      break;
+    }
+  }
+  if (!decodeBoundExceeded && current.includes("%") && (SUSPICIOUS_ENCODED_PRIVACY_RE.test(value)
+    || SUSPICIOUS_ENCODED_PRIVACY_RE.test(current))) {
+    malformedSuspiciousEncoding = true;
+  }
+  return decodeBoundExceeded || malformedSuspiciousEncoding || candidates.some((candidate) => {
+    const webUrl = /^https?:\/\//i.test(candidate);
+    return (!webUrl && ABSOLUTE_PATH_RE.test(candidate))
+      || POINTER_VALUE_RE.test(candidate) || SENSITIVE_VALUE_RE.test(candidate);
+  });
+}
+
 function validatePrivacy(value, path, errors) {
   if (Array.isArray(value)) {
     value.forEach((child, index) => validatePrivacy(child, `${path}[${index}]`, errors));
     return;
   }
   if (!value || typeof value !== "object") {
-    const webUrl = typeof value === "string" && /^https?:\/\//i.test(value);
-    if (typeof value === "string" && ((!webUrl && ABSOLUTE_PATH_RE.test(value))
-      || POINTER_VALUE_RE.test(value) || SENSITIVE_VALUE_RE.test(value))) {
+    if (typeof value === "string" && privacyStringInvalid(value)) {
       errors.push(`PUBLIC_PRIVACY_VALUE:${path}`);
     }
     return;

@@ -58,6 +58,7 @@ import {
   evaluateFiveRoundCommonPool,
   evaluateFiveRoundPool,
 } from "./web06-receipt-parser.mjs";
+import { verifyWeb06SuiteArtifactSet } from "./web06-suite-attestation.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const declaredConfig = parseWeb06CollectorEnvironment(process.env, { repoRoot });
@@ -94,6 +95,31 @@ interface AttemptResult {
   runnerSummaries?: Record<string, unknown>;
 }
 
+async function verifyWrittenSuite(
+  config: CollectorEnvironment,
+  artifact: Awaited<ReturnType<typeof writeSuiteAttestation>>,
+) {
+  await verifyWeb06SuiteArtifactSet({
+    attestationPath: artifact.path,
+    evidenceRoot: config.evidenceRoot,
+    expected: {
+      expectation: config.expectation,
+      disposition: config.disposition,
+      selectedBranch: config.branch,
+      sourceCommit: config.runnerSource.sourceCommit,
+      sourceTree: config.runnerSource.sourceTree,
+      sourceTreeState: config.runnerSource.sourceTreeState,
+      identityManifestSha256: config.identityManifestSha256,
+      collectorContractSha256: config.identityManifest.collectorContractSha256,
+      environmentManifestSha256: config.environmentManifestSha256,
+      environmentId: config.environmentId,
+      identityManifest: config.identityManifest,
+    },
+    repoRoot: config.repoRoot,
+    verifyCurrentSource: true,
+  });
+}
+
 test.describe("WEB-06 source-bound smoothness", () => {
   test.describe.configure({ mode: "serial", retries: 0 });
   test.setTimeout(6 * 60 * 60 * 1000);
@@ -128,9 +154,10 @@ test.describe("WEB-06 source-bound smoothness", () => {
         collectorOutputPath: collector.artifact.path,
         outputPath: config.outputPaths.independent,
       });
-      await writeSuiteAttestation({ config, collectorOutputArtifact: collector.artifact,
+      const attestation = await writeSuiteAttestation({ config, collectorOutputArtifact: collector.artifact,
         independentRecomputeArtifact: independent, observerTriplets: result.attempts,
         verdict: result.evaluation.status, runnerSourceBefore, runnerSourceAfter });
+      await verifyWrittenSuite(config, attestation);
       expect(result.evaluation.status).toBe("PASS");
       return;
     }
@@ -205,9 +232,10 @@ test.describe("WEB-06 source-bound smoothness", () => {
       outputPath: config.outputPaths.independent });
     const verdict = completed.some((scenario) => scenario.verdict === "SETUP_NO_GO") ? "SETUP_NO_GO"
       : completed.some((scenario) => scenario.verdict !== "PASS") ? "RED" : "PASS";
-    await writeSuiteAttestation({ config, collectorOutputArtifact: collector.artifact,
+    const attestation = await writeSuiteAttestation({ config, collectorOutputArtifact: collector.artifact,
       independentRecomputeArtifact: independent, scenarioResults: completed, verdict,
       runnerSourceBefore, runnerSourceAfter });
+    await verifyWrittenSuite(config, attestation);
     expect(laneFailures, `WEB-06 lane failures were preserved in external evidence: ${laneFailures.join(",")}`)
       .toEqual([]);
   });
@@ -248,9 +276,10 @@ test.describe("WEB-06 source-bound smoothness", () => {
       collectorOutputPath: collector.artifact.path, outputPath: config.outputPaths.independent });
     const verdict = completed.every((scenario) => scenario.verdict === "PASS") ? "PASS"
       : completed.some((scenario) => scenario.verdict === "RED") ? "RED" : "SETUP_INVALID";
-    await writeSuiteAttestation({ config, collectorOutputArtifact: collector.artifact,
+    const attestation = await writeSuiteAttestation({ config, collectorOutputArtifact: collector.artifact,
       independentRecomputeArtifact: independent, scenarioResults: completed, verdict,
       runnerSourceBefore, runnerSourceAfter });
+    await verifyWrittenSuite(config, attestation);
     expect(completed.map((scenario) => scenario.verdict), "preview canary verdicts")
       .toEqual(completed.map(() => "PASS"));
   });
@@ -760,10 +789,11 @@ async function collectAttempt(
     if (scenarioId === "correction") await enableCorrectionThroughUi(page, target.protocolMode !== "off");
     await page.locator(".yd-input-area").focus();
 
-    const uiCapabilities = await readUiCapabilities(page, scenarioId, target.protocolMode !== "off");
+    const uiCapabilities = await readUiCapabilities(page, target.protocolMode !== "off");
     rawEnvelope.measuredRealmSetup = {
       configurationRecipeReappliedBeforeLoad: true,
       persistenceTransferred: false,
+      mutatingCapabilityProbesPerformed: false,
       correctionEnabled: scenarioId === "correction"
         ? await page.locator("[data-yune-section='active'] label").filter({ hasText: "Auto-correction" }).locator("input").isChecked()
         : false,
@@ -793,9 +823,22 @@ async function collectAttempt(
       status: protocolAfterReset?.status,
       invalidations: protocolAfterReset?.invalidations ?? [],
       uiCapabilities,
+      disposableUiCapabilities: setup.receipt.uiCapabilities,
       selectedBranch: config.branch,
     });
-    rawEnvelope.preflight = { protocolBeforeReset, protocolAfterReset, uiCapabilities, blockers };
+    rawEnvelope.preflight = {
+      protocolBeforeReset,
+      protocolAfterReset,
+      uiCapabilities,
+      disposableUiCapabilities: setup.receipt.uiCapabilities,
+      capabilityProvenance: {
+        importUserdbSameTask: scenarioId === "fifo-pressure-barriers"
+          && target.protocolMode !== "off"
+          ? "disposable-setup"
+          : "not-required",
+      },
+      blockers,
+    };
     if (blockers.length) throw new Error(`WEB06_SETUP_PREFLIGHT:${blockers.join(",")}`);
     await page.evaluate(() => (window as any).__YUNE_WEB06_SENTINEL__.reset());
     measurementStarted = true;
@@ -1400,7 +1443,12 @@ async function prepareDisposableSetup(browser: Browser, target: CollectorTarget,
     const sourceProof = await verifyServedSource(page, target, responseGuard);
     const pageSizeSetup = await forceRealSixRowSetup(page, schema, target.protocolMode !== "off");
     if (scenarioId === "correction") await enableCorrectionThroughUi(page, target.protocolMode !== "off");
-    const uiCapabilities = await readUiCapabilities(page, scenarioId, target.protocolMode !== "off");
+    const uiCapabilities = await readUiCapabilities(page, target.protocolMode !== "off");
+    const mutatingCapabilityProbes: string[] = [];
+    if (scenarioId === "fifo-pressure-barriers" && target.protocolMode !== "off") {
+      uiCapabilities.importUserdbSameTask = await probeImportContinuationMarker(page);
+      mutatingCapabilityProbes.push("importUserdbSameTask");
+    }
     if (target.protocolMode !== "off") {
       await waitForProtocolIdle(page);
       const health = protocolHealthBlockers(await readProtocol(page));
@@ -1425,6 +1473,13 @@ async function prepareDisposableSetup(browser: Browser, target: CollectorTarget,
         artifactResponseGuard: await responseGuard.assertComplete("disposable-setup-complete"),
         pageSizeSetup,
         uiCapabilities,
+        mutatingCapabilityProbes,
+        capabilityProvenance: {
+          importUserdbSameTask: scenarioId === "fifo-pressure-barriers"
+            && target.protocolMode !== "off"
+            ? "disposable-setup"
+            : "not-required",
+        },
         disposableActionsExcludedFromMeasuredRealm: true,
         measuredRealmFresh: true,
         persistenceTransferredToMeasuredRealm: false,
@@ -1481,7 +1536,7 @@ async function enableCorrectionThroughUi(page: Page, hasProtocol: boolean) {
   await expect(control).toBeChecked();
 }
 
-async function readUiCapabilities(page: Page, scenarioId: string, hasProtocol: boolean) {
+async function readUiCapabilities(page: Page, hasProtocol: boolean) {
   const capabilities = await page.evaluate(() => ({
     importUserdbSameTask: false,
     backgroundCausality: typeof (window as any).__YUNE_WEB06__?.status === "function",
@@ -1495,9 +1550,6 @@ async function readUiCapabilities(page: Page, scenarioId: string, hasProtocol: b
   if (!hasProtocol) {
     capabilities.backgroundCausality = false;
     capabilities.browserLifecycleContinuity = false;
-  }
-  if (scenarioId === "fifo-pressure-barriers" && hasProtocol) {
-    capabilities.importUserdbSameTask = await probeImportContinuationMarker(page);
   }
   return capabilities;
 }

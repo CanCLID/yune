@@ -14,7 +14,7 @@ on:
           - setup-retry
           - production-promotion
       setup_retry_of:
-        description: URL or run ID of the setup failure being retried
+        description: Numeric attempt-1 run ID of the same-source setup-only failure
         required: false
         type: string
       setup_retry_reason:
@@ -59,6 +59,8 @@ jobs:
     outputs:
       release_required: ${{ steps.classify.outputs.release_required }}
       reason: ${{ steps.classify.outputs.reason }}
+      web06_handoff_required: ${{ steps.classify.outputs.web06_handoff_required }}
+      web06_reason: ${{ steps.classify.outputs.web06_reason }}
     steps:
       - name: Reject GitHub UI reruns
         run: |
@@ -73,6 +75,7 @@ jobs:
       - name: Classify changed paths
         id: classify
         env:
+          GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
           SOURCE_REF: ${{ github.ref }}
           HEAD_SHA: ${{ github.sha }}
@@ -92,6 +95,8 @@ jobs:
           if [ "$current_main" != "$HEAD_SHA" ]; then
             printf 'release_required=false\n' >> "$GITHUB_OUTPUT"
             printf 'reason=superseded by current main %s\n' "$current_main" >> "$GITHUB_OUTPUT"
+            printf 'web06_handoff_required=false\n' >> "$GITHUB_OUTPUT"
+            printf 'web06_reason=superseded before release classification\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
@@ -103,8 +108,43 @@ jobs:
               printf 'Setup retry metadata must be single-line text.\n' >&2
               exit 1
             fi
+            printf '%s\n' "$SETUP_RETRY_OF" | grep -Eq '^[1-9][0-9]*$' || {
+              printf 'setup_retry_of must be a numeric prior workflow run ID.\n' >&2
+              exit 1
+            }
+            prior_root="$RUNNER_TEMP/prior-web06-attempt"
+            mkdir -p "$prior_root"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SETUP_RETRY_OF" \
+              > "$prior_root/prior-run.json"
+            gh run download "$SETUP_RETRY_OF" \
+              --repo "$GITHUB_REPOSITORY" \
+              --name "yune-web-release-$HEAD_SHA-$SETUP_RETRY_OF-1" \
+              --dir "$prior_root/artifact"
+            receipt_count="$(find "$prior_root/artifact" -name web06-workflow-attempt.json -type f | wc -l | tr -d '[:space:]')"
+            test "$receipt_count" = "1" || {
+              printf 'Prior run must contain exactly one WEB06 workflow-attempt receipt.\n' >&2
+              exit 1
+            }
+            prior_receipt="$(find "$prior_root/artifact" -name web06-workflow-attempt.json -type f -print -quit)"
+            jq -n \
+              --arg runId "$GITHUB_RUN_ID" \
+              --argjson runAttempt "$GITHUB_RUN_ATTEMPT" \
+              --arg retryOf "$SETUP_RETRY_OF" \
+              --arg sourceCommit "$HEAD_SHA" \
+              --arg workflowPath ".github/workflows/deploy-yune-web.yml" \
+              '{runId: $runId, runAttempt: $runAttempt, retryOf: $retryOf, sourceCommit: $sourceCommit, workflowPath: $workflowPath}' \
+              > "$prior_root/current.json"
+            node apps/yune-web/e2e/web06-setup-retry.mjs \
+              "$prior_root/prior-run.json" "$prior_receipt" "$prior_root/current.json"
+            web06_handoff_required="$(jq -r '.web06HandoffRequired // false' "$prior_receipt")"
+            if [ "$web06_handoff_required" != true ] && [ "$web06_handoff_required" != false ]; then
+              printf 'Prior workflow receipt has an invalid WEB06 handoff classification.\n' >&2
+              exit 1
+            fi
             printf 'release_required=true\n' >> "$GITHUB_OUTPUT"
             printf 'reason=explicit source-bound setup retry\n' >> "$GITHUB_OUTPUT"
+            printf 'web06_handoff_required=%s\n' "$web06_handoff_required" >> "$GITHUB_OUTPUT"
+            printf 'web06_reason=classification retained from original attempt\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           base="$(git rev-list --max-parents=0 "$HEAD_SHA")"
@@ -138,17 +178,63 @@ jobs:
         run: |
           printf 'No yune-web release required: %s\n' "$REASON"
 
+  web06-measured-handoff-required:
+    name: Preserve pending WEB06 deployment identity
+    needs: classify
+    if: needs.classify.outputs.release_required == 'true' && needs.classify.outputs.web06_handoff_required == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns cannot supply WEB06 measured bytes.\n' >&2
+            exit 1
+          }
+      - name: Check out exact source without building
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Record create-new pending-identity receipt
+        env:
+          WEB06_REASON: ${{ needs.classify.outputs.web06_reason }}
+        run: |
+          receipt_root="$RUNNER_TEMP/web06-measured-handoff-required"
+          mkdir "$receipt_root"
+          test -z "$(git status --porcelain --untracked-files=all)" || {
+            printf 'WEB06 pending-identity receipt requires a clean exact checkout.\n' >&2
+            exit 1
+          }
+          source_tree="$(git rev-parse 'HEAD^{tree}')"
+          jq -n \
+            --arg sourceCommit "$GITHUB_SHA" \
+            --arg sourceTree "$source_tree" \
+            --arg reason "$WEB06_REASON" \
+            --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{version: "web06-ci-handoff-noop-v1", operation: "measured-artifact-handoff-required", sourceCommit: $sourceCommit, sourceTree: $sourceTree, sourceTreeState: "clean", reason: $reason, deploymentIdentityStatus: "pending", fullSuccessEligible: false, buildInvoked: false, measurementInvoked: false, previewMutationStarted: false, productionMutationStarted: false, generatedAt: $generatedAt, status: "no-op"}' \
+            > "$receipt_root/web06-ci-handoff-noop.json"
+          printf 'WEB06 release is a green CI no-op: no reviewed immutable handoff exists for the locally measured archive. Deployment identity remains pending and this receipt cannot satisfy WEB06 Full.\n'
+      - name: Preserve pending-identity receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: web06-measured-handoff-required-${{ github.sha }}-${{ github.run_id }}-1
+          path: ${{ runner.temp }}/web06-measured-handoff-required
+          if-no-files-found: error
+          retention-days: 90
+
   build-certify:
     name: Build and certify exact source
     needs: classify
-    if: needs.classify.outputs.release_required == 'true'
+    if: needs.classify.outputs.release_required == 'true' && needs.classify.outputs.web06_handoff_required != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     outputs:
       archive_sha256: ${{ steps.seal.outputs.archive_sha256 }}
       artifact_name: yune-web-release-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      certification_mode: ${{ steps.certification-mode.outputs.certification_mode }}
     env:
       CI: "1"
+      YUNE_WEB_RELEASE_CERTIFICATION_MODE: legacy
     steps:
       - name: Seed source-bound receipts before setup
         env:
@@ -159,8 +245,9 @@ jobs:
           printf 'EVIDENCE_ROOT=%s\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_OUTPUT_DIR=%s/latency\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_EVIDENCE_DIR=%s/latency\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
-          printf 'YUNE_WEB_WEB06_EVIDENCE_DIR=%s/web06\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
-          printf 'YUNE_WEB_WEB06_OUTPUT_DIR=%s/web06/playwright\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB06_EVIDENCE_ROOT=%s/web06\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB06_PLAYWRIGHT_OUTPUT_DIR=%s/web06/playwright\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_WORKFLOW_MEASUREMENT_STARTED_PATH=%s/web06-workflow-measurement-started.json\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
           mkdir -p "$EVIDENCE_ROOT/latency" "$EVIDENCE_ROOT/web06/playwright"
           {
             printf 'source_commit=%s\n' "$GITHUB_SHA"
@@ -177,7 +264,7 @@ jobs:
             printf '%s\n' 'bash apps/yune-web/public-demo/build-public-release.sh'
             printf '%s\n' 'tar built public-demo/dist once; hash exact archive'
             printf '%s\n' 'safely extract and reconcile exact archive bytes'
-            printf '%s\n' 'bash apps/yune-web/public-demo/certify-public-release.sh (unchanged WEB03-11 plus distinct WEB06)'
+            printf '%s\n' 'bash apps/yune-web/public-demo/certify-public-release.sh (classifier-selected legacy exact-artifact WEB03 only)'
           } > "$EVIDENCE_ROOT/commands.txt"
       - name: Reject GitHub UI reruns
         run: |
@@ -185,6 +272,17 @@ jobs:
             printf 'GitHub reruns are prohibited because they can discard a measured red; use a fresh, explicitly named workflow_dispatch only for setup failure.\n' >&2
             exit 1
           fi
+      - name: Select legacy certification internally
+        id: certification-mode
+        env:
+          WEB06_HANDOFF_REQUIRED: ${{ needs.classify.outputs.web06_handoff_required }}
+        run: |
+          test "$WEB06_HANDOFF_REQUIRED" != true || {
+            printf 'A WEB06-governed range cannot select legacy certification.\n' >&2
+            exit 1
+          }
+          test "$YUNE_WEB_RELEASE_CERTIFICATION_MODE" = legacy
+          printf 'certification_mode=legacy\n' >> "$GITHUB_OUTPUT"
       - name: Check out exact source
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -195,6 +293,7 @@ jobs:
           printf 'checked_out_source_tree_state=%s\n' \
             "$(test -z "$(git status --porcelain --untracked-files=all)" && printf clean || printf dirty)" \
             >> "$EVIDENCE_ROOT/environment.txt"
+          printf 'YUNE_WEB06_EXPECTED_SOURCE_TREE=%s\n' "$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_ENV"
       - name: Build pinned public artifact
         run: bash apps/yune-web/public-demo/build-public-release.sh
       - name: Seal public artifact once before measurement
@@ -249,15 +348,66 @@ jobs:
               bundle.extractall(destination, members=members, filter="data")
           PY
           node apps/yune-web/e2e/verify-local-artifact.mjs
-      - name: Run unchanged WEB03-11 and distinct WEB06 certification over sealed bytes
+      - name: Run classifier-selected legacy exact-artifact certification
+        id: certify
         env:
-          YUNE_WEB_CERTIFIED_ARCHIVE: ${{ runner.temp }}/yune-web-release-${{ github.sha }}/yune-web-dist.tar.gz
-          YUNE_WEB_CERTIFIED_ARCHIVE_SHA256: ${{ steps.seal.outputs.archive_sha256 }}
-          YUNE_WEB_CERTIFIED_DIST_ROOT: ${{ runner.temp }}/certified-release-dist
-          YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+          YUNE_WEB06_CERTIFIED_ARCHIVE: ${{ runner.temp }}/yune-web-release-${{ github.sha }}/yune-web-dist.tar.gz
+          YUNE_WEB06_CERTIFIED_ARCHIVE_SHA256: ${{ steps.seal.outputs.archive_sha256 }}
+          YUNE_WEB06_CERTIFIED_DIST_ROOT: ${{ runner.temp }}/certified-release-dist
+          YUNE_WEB06_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
         run: |
           bash apps/yune-web/public-demo/certify-public-release.sh
           printf 'completed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$EVIDENCE_ROOT/environment.txt"
+      - name: Finalize immutable retry classification receipt
+        if: always()
+        env:
+          CERTIFY_OUTCOME: ${{ steps.certify.outcome }}
+          WEB06_HANDOFF_REQUIRED: ${{ needs.classify.outputs.web06_handoff_required }}
+        run: |
+          normalized_outcome=failure
+          [ "$CERTIFY_OUTCOME" = success ] && normalized_outcome=success
+          current="$RUNNER_TEMP/web06-workflow-attempt-input.json"
+          jq -n \
+            --arg workflowPath ".github/workflows/deploy-yune-web.yml" \
+            --arg sourceCommit "$GITHUB_SHA" \
+            --arg runId "$GITHUB_RUN_ID" \
+            --argjson runAttempt "$GITHUB_RUN_ATTEMPT" \
+            --argjson web06HandoffRequired "$WEB06_HANDOFF_REQUIRED" \
+            --arg certifyOutcome "$normalized_outcome" \
+            '{version: "web06-workflow-attempt-input-v1", workflowPath: $workflowPath, sourceCommit: $sourceCommit, runId: $runId, runAttempt: $runAttempt, web06HandoffRequired: $web06HandoffRequired, certifyOutcome: $certifyOutcome}' \
+            > "$current"
+          attempt_receipt="$EVIDENCE_ROOT/web06-workflow-attempt.json"
+          marker="$EVIDENCE_ROOT/web06-workflow-measurement-started.json"
+          if [ -f apps/yune-web/e2e/web06-workflow-attempt.mjs ]; then
+            node apps/yune-web/e2e/web06-workflow-attempt.mjs \
+              "$current" \
+              "$marker" \
+              "$EVIDENCE_ROOT/latency/input-latency-hard-stop.json" \
+              "$EVIDENCE_ROOT/latency/normal-typing-exact-input.json" \
+              "$EVIDENCE_ROOT/web06/legacy-local-certification.json" \
+              "$attempt_receipt"
+          else
+            measurement_started=false
+            failure_class=SETUP_ONLY
+            if [ -e "$marker" ]; then
+              measurement_started=true
+              failure_class=MEASUREMENT_OR_BEHAVIOR
+            elif [ "$normalized_outcome" = success ]; then
+              failure_class=EVIDENCE_INVALID
+            fi
+            jq -n \
+              --arg workflowPath ".github/workflows/deploy-yune-web.yml" \
+              --arg sourceCommit "$GITHUB_SHA" \
+              --arg runId "$GITHUB_RUN_ID" \
+              --argjson runAttempt "$GITHUB_RUN_ATTEMPT" \
+              --arg failureClass "$failure_class" \
+              --argjson measurementStarted "$measurement_started" \
+              '{version: "web06-workflow-attempt-v1", workflowPath: $workflowPath, sourceCommit: $sourceCommit, runId: $runId, runAttempt: $runAttempt, web06HandoffRequired: false, certifyOutcome: "failure", status: "failed", failureClass: $failureClass, measurementStarted: $measurementStarted, measurementCompleted: false, validRedObserved: false, canaryStarted: false, productionMutationStarted: false}' \
+              > "$attempt_receipt"
+          fi
+          if [ "$normalized_outcome" = success ]; then
+            jq -e '.status == "passed" and .failureClass == "NONE" and .measurementStarted == true and .measurementCompleted == true and .validRedObserved == false' "$attempt_receipt" >/dev/null
+          fi
       - name: Preserve build, gate, and artifact receipts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -574,25 +724,21 @@ jobs:
       CI: "1"
       YUNE_WEB_APP_URL: ${{ needs.deploy-preview.outputs.deployment_url }}
       YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
-      YUNE_WEB_CERTIFIED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
+      YUNE_WEB_RELEASE_CERTIFICATION_MODE: ${{ needs.build-certify.outputs.certification_mode }}
       YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT: "1"
-      YUNE_WEB_WEB06_GATE_SCOPE: preview-canary
     steps:
       - name: Seed preview canary receipt
         run: |
           printf 'PLAYWRIGHT_BROWSERS_PATH=%s/ms-playwright\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_OUTPUT_DIR=%s/preview-canary\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_EVIDENCE_DIR=%s/preview-canary\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-          printf 'YUNE_WEB_WEB06_EVIDENCE_DIR=%s/preview-canary/web06\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-          printf 'YUNE_WEB_WEB06_OUTPUT_DIR=%s/preview-canary/web06/playwright\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-          printf 'YUNE_WEB_CERTIFIED_ARCHIVE=%s/preview-release/yune-web-dist.tar.gz\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-          mkdir -p "$RUNNER_TEMP/preview-canary/web06/playwright"
+          mkdir -p "$RUNNER_TEMP/preview-canary"
           {
             printf '{\n'
             printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
             printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
             printf '  "seededAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            printf '  "measurementStarted": false,\n'
+            printf '  "canaryStarted": false,\n'
             printf '  "status": "setup-pending"\n'
             printf '}\n'
           } > "$RUNNER_TEMP/preview-canary/setup-status.json"
@@ -618,7 +764,7 @@ jobs:
           DESTINATION: ${{ runner.temp }}/preview-certified-dist
           EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
           YUNE_WEB_EXPECTED_DIST: ${{ runner.temp }}/preview-certified-dist
-          YUNE_WEB_LOCAL_ARTIFACT_RECEIPT: ${{ runner.temp }}/preview-canary/web06/sealed-artifact-verification.json
+          YUNE_WEB_LOCAL_ARTIFACT_RECEIPT: ${{ runner.temp }}/preview-canary/sealed-artifact-verification.json
         run: |
           sibling="$(tr -d '[:space:]' < "$ARCHIVE.sha256")"
           actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
@@ -654,32 +800,33 @@ jobs:
           PY
           node apps/yune-web/e2e/verify-local-artifact.mjs
       - name: Reconcile every deployed preview byte before timing
-        run: npm --prefix apps/yune-web/e2e run test:e2e:web06:preview-reconcile
+        env:
+          YUNE_WEB_EXPECTED_DIST: ${{ runner.temp }}/preview-certified-dist
+          YUNE_WEB_DEPLOYMENT_RECEIPT: ${{ runner.temp }}/preview-canary/deployed-artifact-verification.json
+        run: node apps/yune-web/e2e/verify-deployed-artifact.mjs
       - name: Install source-pinned canary runtime
         run: |
           npm --prefix apps/yune-web/e2e ci
           PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/ms-playwright" \
             node apps/yune-web/e2e/node_modules/@playwright/test/cli.js install --with-deps chromium
-      - name: Run unchanged WEB03 and frozen WEB06 preview canaries once
+      - name: Run the unchanged legacy WEB03 preview canary once
         run: |
           web03_status=failed
-          web06_status=failed
           if npm --prefix apps/yune-web/e2e run test:e2e:input-latency; then
             web03_status=passed
           fi
-          if npm --prefix apps/yune-web/e2e run test:e2e:web06:preview-canary; then
-            web06_status=passed
-          fi
           status=failed
-          [ "$web03_status" = passed ] && [ "$web06_status" = passed ] && status=passed
+          [ "$web03_status" = passed ] && status=passed
           {
             printf '{\n'
             printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
             printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
             printf '  "completedAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            printf '  "measurementStarted": true,\n'
+            printf '  "certificationMode": "legacy",\n'
+            printf '  "canaryStarted": true,\n'
             printf '  "web03Status": "%s",\n' "$web03_status"
-            printf '  "web06ExistingNormalGuardRapidJyutpingStatus": "%s",\n' "$web06_status"
+            printf '  "web06Status": "not-run",\n'
+            printf '  "web06ClaimMade": false,\n'
             printf '  "status": "%s"\n' "$status"
             printf '}\n'
           } > "$RUNNER_TEMP/preview-canary/setup-status.json"
@@ -924,25 +1071,18 @@ jobs:
             "$RUNNER_TEMP/approved-preview-deployment/project-interlock.json" >/dev/null
           jq -e \
             --arg sha "$APPROVED_SOURCE_COMMIT" \
-            '.sourceCommit == $sha and .measurementStarted == true and .web03Status == "passed" and .web06ExistingNormalGuardRapidJyutpingStatus == "passed" and .status == "passed"' \
+            '.sourceCommit == $sha and .certificationMode == "legacy" and .canaryStarted == true and .web03Status == "passed" and .web06Status == "not-run" and .web06ClaimMade == false and .status == "passed"' \
             "$RUNNER_TEMP/approved-canary/setup-status.json" >/dev/null
           jq -e \
             --arg sha "$APPROVED_SOURCE_COMMIT" \
-            --arg archive "$APPROVED_ARCHIVE_SHA256" \
-            '.sourceCommit == $sha and .archiveSha256 == $archive and .scope == "preview-canary" and .measurementStarted == false and .status == "reconciled"' \
-            "$RUNNER_TEMP/approved-canary/web06/web06-preview-reconciliation-status.json" >/dev/null
-          jq -e \
-            --arg sha "$APPROVED_SOURCE_COMMIT" \
-            --arg archive "$APPROVED_ARCHIVE_SHA256" \
-            '.sourceCommit == $sha and .archiveSha256 == $archive and .scope == "preview-canary" and .measurementStarted == true and .status == "passed"' \
-            "$RUNNER_TEMP/approved-canary/web06/web06-public-gate-status.json" >/dev/null
+            '.expectedSourceCommit == $sha and .passed == true and (.verified | length) > 0' \
+            "$RUNNER_TEMP/approved-canary/deployed-artifact-verification.json" >/dev/null
           mkdir -p "$RUNNER_TEMP/approved-preview-validation/approved-receipts"
           cp "$RUNNER_TEMP/approved-preview-deployment/deployment.txt" \
             "$RUNNER_TEMP/approved-preview-deployment/deployment.json" \
             "$RUNNER_TEMP/approved-preview-deployment/project-interlock.json" \
             "$RUNNER_TEMP/approved-canary/setup-status.json" \
-            "$RUNNER_TEMP/approved-canary/web06/web06-preview-reconciliation-status.json" \
-            "$RUNNER_TEMP/approved-canary/web06/web06-public-gate-status.json" \
+            "$RUNNER_TEMP/approved-canary/deployed-artifact-verification.json" \
             "$RUNNER_TEMP/approved-preview-validation/approved-receipts/"
           {
             printf '{\n'

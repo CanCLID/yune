@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, realpath, rm, symlink } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -50,6 +50,7 @@ import {
   independentlyEvaluateObserverTriplets,
   independentlyRecomputeRoundSummary,
   independentlyValidateRawSentinelIntegrity,
+  validateIndependentRecomputeSchema,
 } from "./web06-independent-verifier.mjs";
 
 const COMMIT = "0123456789abcdef0123456789abcdef01234567";
@@ -530,6 +531,16 @@ test("collector, independent, and attestation artifacts use recursive exact publ
       copy.sourceArtifactRoles.runnerSource.identityRole = "toString";
     }],
     ["top collector contract", (copy) => { copy.collectorContractSha256 = "c".repeat(64); }],
+    ["incomplete top environment manifest", (copy) => {
+      copy.environmentManifestSha256 = "c".repeat(64);
+    }],
+    ["incomplete top environment id", (copy) => { copy.environmentId = "d".repeat(64); }],
+    ["runner environment manifest", (copy) => {
+      copy.sourceArtifactRoles.runnerSource.environmentManifestSha256 = "c".repeat(64);
+    }],
+    ["runner environment id", (copy) => {
+      copy.sourceArtifactRoles.runnerSource.environmentId = "d".repeat(64);
+    }],
     ["target archive", (copy) => { copy.sourceArtifactRoles.targetRoles.FINAL.archiveSha256 = "c".repeat(64); }],
     ["target artifact", (copy) => {
       copy.sourceArtifactRoles.targetRoles.FINAL.artifactManifestSha256 = "c".repeat(64);
@@ -577,6 +588,49 @@ test("collector, independent, and attestation artifacts use recursive exact publ
     const copy = structuredClone(value);
     mutate(copy);
     assert.equal(validateWeb06RunArtifactSchema(fileName, copy).pass, false, `${fileName} mutation`);
+  }
+  for (const [label, fileName, value, mutate] of [
+    ["collector scenario array", "collector-output.json", collector,
+      (copy) => { copy.scenarioResults = {}; }],
+    ["collector recursive round array", "collector-output.json", collector, (copy) => {
+      copy.scenarioResults[0].runnerFiveRoundSummaries = {
+        common: { roundSummaries: {} },
+      };
+    }],
+    ["independent scenario array", "independent-recompute.json", independent,
+      (copy) => { copy.scenarioResults = {}; }],
+    ["independent recursive round array", "independent-recompute.json", independent, (copy) => {
+      copy.scenarioResults[0].fiveRoundSummaries = {
+        common: { roundSummaries: {} },
+      };
+    }],
+    ["attestation scenario array", "suite-attestation.json", attestation,
+      (copy) => { copy.scenarioResults = {}; }],
+  ]) {
+    const copy = structuredClone(value);
+    mutate(copy);
+    let result;
+    assert.doesNotThrow(() => {
+      result = validateWeb06RunArtifactSchema(fileName, copy);
+    }, label);
+    assert.equal(result.pass, false, label);
+  }
+  for (const [label, mutate] of [
+    ["scenario array", (copy) => { copy.scenarioResults = {}; }],
+    ["observer array", (copy) => { copy.observerTriplets = {}; }],
+    ["recursive round array", (copy) => {
+      copy.scenarioResults[0].fiveRoundSummaries = {
+        common: { roundSummaries: {} },
+      };
+    }],
+  ]) {
+    const copy = structuredClone(independent);
+    mutate(copy);
+    let result;
+    assert.doesNotThrow(() => {
+      result = validateIndependentRecomputeSchema(copy);
+    }, `independent ${label}`);
+    assert.equal(result.pass, false, `independent ${label}`);
   }
 });
 
@@ -1510,7 +1564,7 @@ test("harness failures use an explicit dimensional table and unknown transport l
   });
 });
 
-test("protocol preflight fails closed on provenance, pending fanout, and unsupported real UI", () => {
+test("protocol preflight fails closed and keeps mutating FIFO probes disposable-only", async () => {
   const status = {
     valid: true,
     queueDepth: 0,
@@ -1535,7 +1589,16 @@ test("protocol preflight fails closed on provenance, pending fanout, and unsuppo
     protocol,
     status: { ...status, pendingFanoutActions: 1 },
     uiCapabilities: { importUserdbSameTask: false },
+    disposableUiCapabilities: { importUserdbSameTask: false },
   }), ["PENDING_FANOUT_ACTIONS", "FIFO_IMPORT_SAME_TASK_UI_UNSUPPORTED"]);
+  assert.deepEqual(protocolCapabilityBlockers({
+    mode: "full",
+    scenarioId: "fifo-pressure-barriers",
+    protocol,
+    status,
+    uiCapabilities: { importUserdbSameTask: false },
+    disposableUiCapabilities: { importUserdbSameTask: true },
+  }), [], "the required FIFO capability is gated by the disposable preflight proof");
   assert.deepEqual(protocolCapabilityBlockers({
     mode: "full",
     scenarioId: "extended-scheduler-barriers",
@@ -1554,6 +1617,42 @@ test("protocol preflight fails closed on provenance, pending fanout, and unsuppo
     status,
     uiCapabilities: {},
   }), ["BACKGROUND_CAUSALITY_UNPROVED", "BROWSER_LIFECYCLE_PROTOCOL_CONTINUITY_UNPROVED"]);
+
+  const smoothnessSource = await readFile(
+    new URL("./yune-web06-smoothness.spec.ts", import.meta.url),
+    "utf8",
+  );
+  const sourceSlice = (start, end) => {
+    const startIndex = smoothnessSource.indexOf(start);
+    const endIndex = smoothnessSource.indexOf(end, startIndex + start.length);
+    assert.ok(startIndex >= 0 && endIndex > startIndex, `${start}:source-boundary`);
+    return smoothnessSource.slice(startIndex, endIndex);
+  };
+  const measuredAttemptSource = sourceSlice(
+    "async function collectAttempt(",
+    "function partialEvidenceSummary(",
+  );
+  const disposableSetupSource = sourceSlice(
+    "async function prepareDisposableSetup(",
+    "async function forceRealSixRowSetup(",
+  );
+  const nonMutatingCapabilitySource = sourceSlice(
+    "async function readUiCapabilities(",
+    "async function probeImportContinuationMarker(",
+  );
+  assert.doesNotMatch(measuredAttemptSource, /probeImportContinuationMarker\s*\(/);
+  assert.doesNotMatch(nonMutatingCapabilitySource, /probeImportContinuationMarker\s*\(/);
+  assert.match(disposableSetupSource, /probeImportContinuationMarker\s*\(page\)/);
+  assert.equal(
+    smoothnessSource.match(/probeImportContinuationMarker\s*\(page\)/g)?.length,
+    1,
+    "the mutating import probe has exactly one call site and it is disposable",
+  );
+  assert.ok(
+    measuredAttemptSource.indexOf("mutatingCapabilityProbesPerformed: false")
+      < measuredAttemptSource.indexOf("measurementStarted = true"),
+    "the measured realm discloses zero mutating capability probes before the first timed event",
+  );
 });
 
 test("post-window protocol health rejects invalidations, observer failures, missing return identity, and slow callbacks", () => {

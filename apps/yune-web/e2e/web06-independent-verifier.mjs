@@ -94,6 +94,13 @@ function hasOwn(record, key) {
   return typeof key === "string" && Object.prototype.hasOwnProperty.call(record, key);
 }
 
+function independentRawAttemptOrdinalMatches(envelope) {
+  const match = /^(?:triplet-)?attempt-([1-9][0-9]*)$/.exec(envelope?.attemptId ?? "");
+  if (!match) return false;
+  const ordinal = Number(match[1]);
+  return Number.isSafeInteger(ordinal) && envelope.attemptNumber === ordinal;
+}
+
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
@@ -975,6 +982,11 @@ function independentRawObservationErrors(envelope, requireAttemptAfter) {
 function independentPartialReceiptBindingErrors(envelope) {
   const errors = [];
   const target = envelope?.target ?? {};
+  const attemptNumberSafe = Number.isSafeInteger(envelope?.attemptNumber)
+    && envelope.attemptNumber >= 1;
+  const attemptNumberValid = attemptNumberSafe && independentRawAttemptOrdinalMatches(envelope);
+  if (!attemptNumberSafe) errors.push("raw-partial-attempt-number");
+  else if (!attemptNumberValid) errors.push("raw-partial-attempt-ordinal");
   if (target.protocolMode === "off"
     && (envelope.privateReceipt !== undefined || envelope.protocolExport !== undefined)) {
     errors.push("raw-partial-product-private-protocol-present");
@@ -987,6 +999,7 @@ function independentPartialReceiptBindingErrors(envelope) {
     buildInfoSha256: target.buildInfoSha256,
     artifactSha256: target.artifactSha256,
     artifactResponseGuardSha256: target.artifactResponseGuardSha256,
+    artifactResponseGuardSummarySha256: envelope.artifactResponseGuard?.summarySha256,
     identityManifestSha256: envelope.identityManifestSha256,
     runnerSourceManifestSha256: envelope.runnerSourceManifestSha256,
     runnerToolingManifestSha256: envelope.attemptSourceBefore?.toolingManifestSha256,
@@ -1022,8 +1035,8 @@ function independentPartialReceiptBindingErrors(envelope) {
       errors.push(`raw-partial-${surface}-receipt-metadata:roundId`);
     } else {
       roundIds.push(receipt.roundId);
-      if (Number.isSafeInteger(envelope.attemptNumber)
-        && receipt.roundId !== `${envelope.scenarioId}-round-${envelope.attemptNumber}`) {
+      if (!attemptNumberValid
+        || receipt.roundId !== `${envelope.scenarioId}-round-${envelope.attemptNumber}`) {
         errors.push(`raw-partial-${surface}-receipt-metadata:roundId`);
       }
     }
@@ -1035,15 +1048,14 @@ function independentPartialReceiptBindingErrors(envelope) {
     for (const [field, expected] of Object.entries(expectedSource)) {
       if (source[field] !== expected) errors.push(`raw-partial-${surface}-source-metadata:${field}`);
     }
-    if (!SHA64.test(source.artifactResponseGuardSummarySha256 ?? "")) {
-      errors.push(`raw-partial-${surface}-source-metadata:artifactResponseGuardSummarySha256`);
-    }
   }
   if (new Set(roundIds).size > 1) errors.push("raw-partial-receipt-round-mismatch");
   const common = envelope.commonReceipt;
   const internal = envelope.privateReceipt;
   const evidence = envelope.measurementEvidence;
-  if (common !== undefined && (!evidence || typeof evidence !== "object" || Array.isArray(evidence)
+  const sentinel = envelope.sentinel;
+  if (common !== undefined && (!sentinel || typeof sentinel !== "object" || Array.isArray(sentinel)
+    || !evidence || typeof evidence !== "object" || Array.isArray(evidence)
     || !equivalentProjection(common.eventClockProbe, evidence.eventClockProbe)
     || !equivalentProjection(common.eventClockSegments, evidence.eventClockSegments)
     || !equivalentProjection(common.calibration, { driver: evidence.calibration?.driver })
@@ -1056,6 +1068,28 @@ function independentPartialReceiptBindingErrors(envelope) {
     || !equivalentProjection(common.cadenceGaps, envelope.drive?.cadenceGaps)
     || !equivalentProjection(common.lifecycleContinuity, envelope.drive?.learned?.lifecycleContinuity))) {
     errors.push("raw-partial-common-projection");
+  }
+  if (common !== undefined && sentinel && typeof sentinel === "object" && !Array.isArray(sentinel)) {
+    for (const field of ["events", "auxiliaryEvents", "unmatchedEvents", "interactionWindows",
+      "idleControlWindows", "interactionFrameWindows", "interactionFrameTimestamps",
+      "interactionFrameIntervalsMs", "longTasks", "focusVisibilitySamples",
+      "assetsRequestedDuringWindow", "sentinelOverflowCounts"]) {
+      if (!equivalentProjection(common[field], sentinel[field])) {
+        errors.push(`raw-partial-common-sentinel-projection:${field}`);
+      }
+    }
+    try {
+      const expectedSamples = independentlyResolveCommonSamples({
+        scenarioId: envelope.scenarioId,
+        events: sentinel.events,
+        snapshots: sentinel.snapshots,
+      });
+      if (!equivalentProjection(common.commonSamples, expectedSamples)) {
+        errors.push("raw-partial-common-snapshot-projection");
+      }
+    } catch {
+      errors.push("raw-partial-common-snapshot-projection");
+    }
   }
   if (internal !== undefined && (!evidence || typeof evidence !== "object" || Array.isArray(evidence)
     || !equivalentProjection(internal.eventClockProbe, evidence.eventClockProbe)
@@ -1482,9 +1516,6 @@ function independentRawSentinelIntegrityErrors(sentinel) {
   if (callbacks.some((callback) => !finite(callback?.startedAt)
     || !finite(callback?.finishedAt)
     || !finite(callback?.durationMs)
-    || callback.startedAt < 0
-    || callback.finishedAt < callback.startedAt
-    || callback.durationMs < 0
     || callback.durationMs !== callback.finishedAt - callback.startedAt)) {
     errors.push("raw-sentinel-callback-timing");
   }
@@ -1590,13 +1621,16 @@ export function independentlyValidateCompletedRawDecisionShape(envelope) {
     : undefined;
   const pass = envelope?.version === "web06-raw-attempt-v1"
     && envelope.measurementStarted === true && envelope.measurementCompleted === true
+    && independentRawAttemptOrdinalMatches(envelope)
     && hasOwn(SCENARIO_REGISTRY, scenarioId)
     && run?.scenarioId === scenarioId && run?.schema === schemaId
     && independentRawSentinelIsDecisionShaped(envelope.sentinel)
     && independentRawProtocolIsDecisionShaped(envelope)
     && independentReceiptIsDecisionShaped(envelope.commonReceipt, scenarioId, scenarioRunId, schemaId, true)
+    && envelope.commonReceipt.roundId === `${scenarioId}-round-${envelope.attemptNumber}`
     && (envelope.privateReceipt === undefined
-      || independentReceiptIsDecisionShaped(envelope.privateReceipt, scenarioId, scenarioRunId, schemaId, false));
+      || (independentReceiptIsDecisionShaped(envelope.privateReceipt, scenarioId, scenarioRunId, schemaId, false)
+        && envelope.privateReceipt.roundId === `${scenarioId}-round-${envelope.attemptNumber}`));
   return {
     pass,
     errors: pass ? [] : ["WEB06_COMPLETED_RAW_DECISION_SHAPE_INVALID"],
@@ -2003,10 +2037,7 @@ function independentReceiptPrivacyErrors(value, location = "", errors = []) {
     return errors;
   }
   if (!value || typeof value !== "object") {
-    const webUrl = typeof value === "string" && /^https?:\/\//i.test(value);
-    if (typeof value === "string"
-      && ((!webUrl && INDEPENDENT_ABSOLUTE_PATH.test(value))
-        || INDEPENDENT_POINTER_VALUE.test(value) || INDEPENDENT_SENSITIVE_VALUE.test(value))) {
+    if (typeof value === "string" && independentPrivacyStringInvalid(value)) {
       errors.push(`PUBLIC_PRIVACY_VALUE:${location}`);
     }
     return errors;
@@ -2518,6 +2549,11 @@ function independentPrivateProtocolProjectionErrors(envelope) {
 function independentRawReceiptMetadataErrors(envelope) {
   const errors = [];
   const target = envelope.target ?? {};
+  const attemptNumberSafe = Number.isSafeInteger(envelope.attemptNumber)
+    && envelope.attemptNumber >= 1;
+  const attemptNumberValid = attemptNumberSafe && independentRawAttemptOrdinalMatches(envelope);
+  if (!attemptNumberSafe) errors.push("raw-attempt-number");
+  else if (!attemptNumberValid) errors.push("raw-attempt-ordinal");
   const expectedSource = {
     commit: target.sourceCommit,
     tree: target.sourceTree,
@@ -2552,8 +2588,8 @@ function independentRawReceiptMetadataErrors(envelope) {
       measurementStarted: true,
       measurementCompleted: true,
     })) if (receipt[field] !== expected) errors.push(`raw-${surface}-receipt-metadata:${field}`);
-    if (Number.isSafeInteger(envelope.attemptNumber)
-      && receipt.roundId !== `${envelope.scenarioId}-round-${envelope.attemptNumber}`) {
+    if (!attemptNumberValid
+      || receipt.roundId !== `${envelope.scenarioId}-round-${envelope.attemptNumber}`) {
       errors.push(`raw-${surface}-receipt-metadata:roundId`);
     }
   }
@@ -4671,6 +4707,10 @@ function independentObserverModeRawProjection(envelope) {
   };
 }
 
+export function independentlyProjectObserverModeRawEvidence(envelope) {
+  return independentObserverModeRawProjection(envelope);
+}
+
 function independentPartialObserverModeProjection(envelope) {
   const dimension = independentlyClassifyHarnessFailure(envelope.partialAttempt?.failure?.code);
   const hardRedObserved = dimension === "behavior"
@@ -5118,6 +5158,47 @@ const INDEPENDENT_FORBIDDEN_KEY = /(?:(?:^|[_-])ptr(?:$|[_-])|pointer|address|au
 const INDEPENDENT_ABSOLUTE_PATH = /(?:^|[\s"'=(:,\[])(?:file:\/\/|\/(?:[^/\s()[\]{},;]+\/)*[^/\s()[\]{},;]+|[A-Za-z]:[\\/]|\\\\[^\\\s]+\\)/;
 const INDEPENDENT_POINTER_VALUE = /(?:^|[\s"'=(:,\[])0x[0-9a-f]{6,}(?=$|[\s"',);}\]])/i;
 const INDEPENDENT_SENSITIVE_VALUE = /(?:\bBearer[ \t]+[A-Za-z0-9._~+/=-]+|\bsk-proj-[A-Za-z0-9_-]+|https?:\/\/[^/\s:@]+:[^/\s@]+@)/i;
+const INDEPENDENT_SUSPICIOUS_ENCODED_PRIVACY =
+  /(?:https?%|file%|bearer%|sk(?:-|%(?:25)*2d)proj|%(?:25)*(?:2f|5c|3a|40))/i;
+const INDEPENDENT_PRIVACY_PERCENT_DECODE_MAX_PASSES = 16;
+const INDEPENDENT_PRIVACY_STRING_MAX_LENGTH = 65_536;
+
+function independentPrivacyStringInvalid(value) {
+  if (value.length > INDEPENDENT_PRIVACY_STRING_MAX_LENGTH) return true;
+  const candidates = [value];
+  let current = value;
+  let malformedSuspiciousEncoding = false;
+  let decodeBoundExceeded = false;
+  for (let pass = 0; current.includes("%"); pass += 1) {
+    if (pass >= INDEPENDENT_PRIVACY_PERCENT_DECODE_MAX_PASSES) {
+      decodeBoundExceeded = true;
+      break;
+    }
+    try {
+      const decoded = decodeURIComponent(current);
+      if (decoded === current || decoded.length >= current.length) {
+        malformedSuspiciousEncoding = true;
+        break;
+      }
+      candidates.push(decoded);
+      current = decoded;
+    } catch {
+      malformedSuspiciousEncoding = INDEPENDENT_SUSPICIOUS_ENCODED_PRIVACY.test(value)
+        || INDEPENDENT_SUSPICIOUS_ENCODED_PRIVACY.test(current)
+        || (/%[0-9a-f]{2}/i.test(current) && /%(?![0-9a-f]{2})/i.test(current));
+      break;
+    }
+  }
+  if (!decodeBoundExceeded && current.includes("%") && (INDEPENDENT_SUSPICIOUS_ENCODED_PRIVACY.test(value)
+    || INDEPENDENT_SUSPICIOUS_ENCODED_PRIVACY.test(current))) {
+    malformedSuspiciousEncoding = true;
+  }
+  return decodeBoundExceeded || malformedSuspiciousEncoding || candidates.some((candidate) => {
+    const webUrl = /^https?:\/\//i.test(candidate);
+    return (!webUrl && INDEPENDENT_ABSOLUTE_PATH.test(candidate))
+      || INDEPENDENT_POINTER_VALUE.test(candidate) || INDEPENDENT_SENSITIVE_VALUE.test(candidate);
+  });
+}
 
 function independentEventRule(id) {
   const rule = EVENT_ACTION_RULES.find((candidate) => candidate.id === id);
@@ -5807,6 +5888,23 @@ function independentSchemaObserverMode(value, errors, label, modeName) {
   }
 }
 
+/** Verifier-owned exact nested schema for a compact observer-mode projection. */
+export function independentlyValidateObserverModeProjectionSchema(value, modeName) {
+  const errors = [];
+  try {
+    if (!["product", "minimal", "full"].includes(modeName)) errors.push("observer-mode:mode");
+    else independentSchemaObserverMode(value, errors, "observer-mode", modeName);
+  } catch {
+    errors.push("observer-mode:schema-exception");
+  }
+  try {
+    independentSchemaPrivacy(value, "", errors);
+  } catch {
+    errors.push("observer-mode:privacy-exception");
+  }
+  return { pass: errors.length === 0, errors };
+}
+
 function independentSchemaObserverTriplet(value, errors, label, index) {
   if (!independentSchemaExact(value, ["attemptId", "valid", "counterbalanceSlot", "freshContextId", "modeContextIds",
     "modeOrder", "modeFixedBeforePageLoad", "product", "minimal", "full"], errors, label)) return;
@@ -5858,10 +5956,7 @@ function independentSchemaPrivacy(value, location, errors) {
     return;
   }
   if (!value || typeof value !== "object") {
-    const webUrl = typeof value === "string" && /^https?:\/\//i.test(value);
-    if (typeof value === "string"
-      && ((!webUrl && INDEPENDENT_ABSOLUTE_PATH.test(value))
-        || INDEPENDENT_POINTER_VALUE.test(value) || INDEPENDENT_SENSITIVE_VALUE.test(value))) {
+    if (typeof value === "string" && independentPrivacyStringInvalid(value)) {
       errors.push(`privacy:value:${location}`);
     }
     return;
@@ -5876,6 +5971,7 @@ function independentSchemaPrivacy(value, location, errors) {
 /** Verifier-owned exact recursive allowlist for its public output bytes. */
 export function validateIndependentRecomputeSchema(value) {
   const errors = [];
+  try {
   const observer = value?.expectation === "OBSERVER";
   const keys = ["version", "writeMode", "collectorOutputSha256", "expectation", "disposition", "selectedBranch",
     "identityManifestSha256", "collectorContractSha256", "environmentManifestSha256", "environmentId",
@@ -5982,7 +6078,14 @@ export function validateIndependentRecomputeSchema(value) {
       || value.scenarioResults?.length !== expectedRuns.length))) {
     errors.push("independent:lane-shape");
   }
-  independentSchemaPrivacy(value, "", errors);
+  } catch {
+    errors.push("independent:schema-exception");
+  }
+  try {
+    independentSchemaPrivacy(value, "", errors);
+  } catch {
+    errors.push("independent:privacy-exception");
+  }
   return { pass: errors.length === 0, errors };
 }
 

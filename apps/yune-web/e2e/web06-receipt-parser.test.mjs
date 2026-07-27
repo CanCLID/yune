@@ -33,7 +33,9 @@ import {
   WEB06_BEHAVIOR_PREDICATE_VERSION,
   WEB06_METRIC_CONTRACT_VERSION,
   WEB06_SCENARIO_REGISTRY_VERSION,
+  WEB06_THRESHOLDS,
   SCENARIO_REGISTRY,
+  SCENARIO_RUN_REGISTRY,
   WEB06_PRESSURE_PAIR_REGISTRY,
   evaluateAttemptSeries,
   expandScenarioExpectedTimeline,
@@ -48,7 +50,9 @@ import {
   independentlyRecomputeFiveRoundSummary,
   independentlyRecomputeRoundSummary,
   independentlyProjectSummarySemantics,
+  independentlyProjectObserverModeRawEvidence,
   independentlyRecomputeIncompleteAttemptFacts,
+  independentlyValidateObserverModeProjectionSchema,
   independentlyValidatePointerFreePrivacy,
   independentlyValidateRawSentinelIntegrity,
   independentlyValidateActionTiming,
@@ -61,12 +65,15 @@ import {
 } from "./web06-independent-verifier.mjs";
 import {
   WEB06_COLLECTOR_CONTRACT_SHA256,
+  WEB06_BINDING_SCENARIO_ORDER,
   buildIncompleteObserverModeProjection,
   combinedAttemptFacts,
   parseAndCompactCommonReceipt,
   retainedRawReceiptBehaviorErrors,
+  resolveCommonSamples,
   sentinelLedgerIntegrityErrors,
   validateCompletedRawDecisionShape,
+  validateWeb06ObserverModeProjectionSchema,
 } from "./web06-collector.mjs";
 
 const COMMIT = "0123456789abcdef0123456789abcdef01234567";
@@ -692,6 +699,7 @@ function validReceipt() {
 }
 
 function validRawEnvelope(privateReceipt) {
+  privateReceipt.roundId = `${privateReceipt.scenarioId}-round-1`;
   const runnerObservation = runnerSourceObservation({
     toolingManifestSha256: privateReceipt.source.runnerToolingManifestSha256,
   });
@@ -886,6 +894,7 @@ function validRawEnvelope(privateReceipt) {
     scenarioId: privateReceipt.scenarioId,
     schemaId: privateReceipt.schemaId,
     attemptId: privateReceipt.attemptId,
+    attemptNumber: 1,
     identityManifestSha256: privateReceipt.source.identityManifestSha256,
     runnerSourceManifestSha256: privateReceipt.source.runnerSourceManifestSha256,
     scenarioIdsSha256: privateReceipt.source.scenarioIdsSha256,
@@ -1018,6 +1027,16 @@ test("completed raw decision shapes are rejected once before either semantic sum
     ["inherited scenario run", (copy) => { copy.scenarioRunId = "toString"; }],
     ["prototype scenario run", (copy) => { copy.scenarioRunId = "__proto__"; }],
     ["constructor scenario run", (copy) => { copy.scenarioRunId = "constructor"; }],
+    ["missing attempt number", (copy) => { delete copy.attemptNumber; }],
+    ["mutually forged attempt ordinal", (copy) => {
+      copy.attemptNumber = 7;
+      copy.commonReceipt.roundId = `${copy.scenarioId}-round-7`;
+      copy.privateReceipt.roundId = `${copy.scenarioId}-round-7`;
+    }],
+    ["mutually forged round", (copy) => {
+      copy.commonReceipt.roundId = "forged-unrelated-round";
+      copy.privateReceipt.roundId = "forged-unrelated-round";
+    }],
     ["schema identity mismatch", (copy) => {
       copy.schemaId = copy.schemaId === "luna_pinyin" ? "jyut6ping3" : "luna_pinyin";
     }],
@@ -1082,6 +1101,55 @@ test("completed sentinel callback evidence is structurally finite and semantical
   assert.deepEqual(sentinelLedgerIntegrityErrors(exact.sentinel), []);
   assert.deepEqual(independentlyValidateRawSentinelIntegrity(exact.sentinel), { pass: true, errors: [] });
   assert.deepEqual(independentlyAuditRawEnvelope(exact, expectedIdentity), { pass: true, errors: [] });
+
+  const signed = structuredClone(exact);
+  Object.assign(signed.sentinel.callbackLedger[0], {
+    startedAt: 100,
+    finishedAt: 99,
+    durationMs: -1,
+  });
+  signed.sentinel.sentinelCallbacksMs = [-1];
+  signed.sentinel.sentinelTotalPerEventMs = [-1, 0, 0, 0, 0, 0];
+  signed.sentinel.sentinelTotalPerWindowMs = [-1];
+  const completePageSizeSetup = {
+    measuredUiPageSize: "6",
+    uiTransition: [6, 7, 6],
+    configuredPageSize: 6,
+    sevenRows: 7,
+    restoredControlValue: "6",
+    realPreferencesControl: true,
+  };
+  signed.pageSizeSetup = structuredClone(completePageSizeSetup);
+  signed.commonReceipt.pageSizeSetup = structuredClone(completePageSizeSetup);
+  assert.ok(sentinelLedgerIntegrityErrors(signed.sentinel)
+    .includes("SENTINEL_CALLBACK_TIMING_INVALID"));
+  assert.deepEqual(independentlyValidateRawSentinelIntegrity(signed.sentinel),
+    { pass: true, errors: [] }, "finite signed evidence remains reconcilable");
+  assert.deepEqual(independentlyAuditRawEnvelope(signed, expectedIdentity),
+    { pass: true, errors: [] }, "finite signed evidence remains source-bound");
+  const signedProjection = independentlyProjectObserverModeRawEvidence(signed);
+  assert.equal(signedProjection.callbackAttributionComplete, false);
+  assert.equal(signedProjection.measurementValid, false);
+  assert.equal(signedProjection.hardRedBindingValid, false);
+  assert.equal(signedProjection.commonVerdict, "SETUP_INVALID");
+  assert.equal(signedProjection.internalVerdict, "SETUP_INVALID");
+  assert.equal(signedProjection.hardRedObserved, false);
+
+  const signedBehavior = structuredClone(signed);
+  signedBehavior.sentinel.snapshots[0].domObserved.candidates[0].text = "forged-candidate";
+  signedBehavior.commonReceipt.commonSamples = resolveCommonSamples({
+    scenarioId: signedBehavior.scenarioId,
+    events: signedBehavior.sentinel.events,
+    snapshots: signedBehavior.sentinel.snapshots,
+  });
+  assert.deepEqual(independentlyAuditRawEnvelope(signedBehavior, expectedIdentity),
+    { pass: true, errors: [] });
+  const signedBehaviorProjection = independentlyProjectObserverModeRawEvidence(signedBehavior);
+  assert.equal(signedBehaviorProjection.callbackAttributionComplete, false);
+  assert.equal(signedBehaviorProjection.measurementValid, false);
+  assert.equal(signedBehaviorProjection.commonVerdict, "RED_BEHAVIOR");
+  assert.equal(signedBehaviorProjection.internalVerdict, "RED_BEHAVIOR");
+  assert.equal(signedBehaviorProjection.hardRedObserved, true);
 
   for (const [label, mutate, expectedError] of [
     ["count mismatch", (copy) => { copy.sentinel.sentinelAccountedCallbackCount = 0; },
@@ -2132,20 +2200,70 @@ test("privacy contract rejects pointers, secrets, and local absolute paths", () 
   assert.equal(validatePointerFreePrivacy({ note: "\\\\server\\share\\raw.json" }).pass, false);
   assert.equal(validatePointerFreePrivacy({ servedUrl: "https://example.test/tmp/yune-web.js" }).pass, true);
   assert.equal(validatePointerFreePrivacy({ authorization: "Bearer secret" }).pass, false);
-  for (const secret of [
-    "failure(/Users/alice/private/raw.json)",
-    "error(path:/private/tmp/web06/raw.json)",
-    "failure(/opt/web06/raw.json)",
-    "request failed: Bearer eyJhbGciOi.test-token",
-    "request failed: sk-proj-test_secret",
-    "https://alice:password@example.test/evidence",
-  ]) {
+  const assertPrivate = (secret) => {
     const producer = validatePointerFreePrivacy({ note: secret });
     assert.equal(producer.pass, false, secret);
     const independentlyChecked = independentlyValidatePointerFreePrivacy({ note: secret });
     assert.equal(independentlyChecked.pass, false, secret);
     assert.ok(independentlyChecked.errors.some((error) => error.includes("PUBLIC_PRIVACY_VALUE")), secret);
+  };
+  const sensitiveValues = [
+    "failure(/Users/alice/private/raw.json)",
+    "error(path:/private/tmp/web06/raw.json)",
+    "failure(/opt/web06/raw.json)",
+    "file:///Users/alice/private/raw.json",
+    "request failed: Bearer eyJhbGciOi.test-token",
+    "request failed: sk-proj-test_secret",
+    "https://alice:password@example.test/evidence",
+  ];
+  for (const secret of sensitiveValues) {
+    assertPrivate(secret);
+    assertPrivate(encodeURIComponent(secret));
+    assertPrivate(encodeURIComponent(encodeURIComponent(secret)));
   }
+  const encodeEveryByte = (value) => [...Buffer.from(value, "utf8")]
+    .map((byte) => `%${byte.toString(16).padStart(2, "0")}`)
+    .join("");
+  const nestEncoding = (value, additionalPasses) =>
+    Array.from({ length: additionalPasses }, () => undefined)
+      .reduce((encoded) => encodeURIComponent(encoded), value);
+  for (const secret of [
+    "Bearer eyJhbGciOi.test-token",
+    "sk-proj-test_secret",
+  ]) {
+    assertPrivate(
+      nestEncoding(encodeEveryByte(secret), 3),
+    );
+  }
+  assertPrivate(
+    nestEncoding("progress%20complete", 20),
+  );
+  assertPrivate("%41".repeat(22_000));
+  for (const encoded of [
+    "https%3A%2F%2Fuser%3Apassword%40example.test%2F",
+    "%2FUsers%2Falice%2Fraw.json",
+    "%2Fprivate%2Ftmp%2Fraw.json",
+    "file%3A%2F%2F%2FUsers%2Falice%2Fraw.json",
+    "Bearer%20abcdefghijklmnop",
+    "sk%2Dproj%2Dtest_secret",
+    "%30%78%31%32%33%34%61%62%63%64",
+    "%2530%2578%2531%2532%2533%2534%2561%2562%2563%2564",
+    "https%253A%252F%252Fuser%253Apassword%2540example.test%252F",
+    "%252FUsers%252Falice%252Fraw.json",
+    "https%3A%2F%2Fuser%ZZ",
+    "%2FUsers%2Falice%ZZ",
+    "Bearer%20abcdefghijklmnop%ZZ",
+    "sk%2Dproj%2Dtest%ZZ",
+  ]) {
+    assertPrivate(encoded);
+  }
+  assert.equal(validatePointerFreePrivacy({ note: "progress%20complete" }).pass, true);
+  assert.equal(independentlyValidatePointerFreePrivacy({ note: "progress%20complete" }).pass, true);
+  const fourLayerInnocuous = nestEncoding(encodeURIComponent("progress complete"), 3);
+  assert.equal(validatePointerFreePrivacy({ note: fourLayerInnocuous }).pass, true);
+  assert.equal(independentlyValidatePointerFreePrivacy({ note: fourLayerInnocuous }).pass, true);
+  assert.equal(validatePointerFreePrivacy({ note: "100% ready" }).pass, true);
+  assert.equal(independentlyValidatePointerFreePrivacy({ note: "100% ready" }).pass, true);
 });
 
 test("compact public receipt exposes only source/count/verdict digests", () => {
@@ -2504,7 +2622,7 @@ test("public receipt and pooled summaries reject recursive schema and identity m
   }
 });
 
-test("independent verifier audits preserved premeasurement and partial behavior packets", () => {
+test("independent verifier audits preserved premeasurement and partial behavior packets", async () => {
   const partialEnvelope = (measurementStarted, code, dimension,
     target = { id: "BASE_FULL", protocolMode: "full" }) => ({
     version: "web06-raw-attempt-v1",
@@ -2513,6 +2631,7 @@ test("independent verifier audits preserved premeasurement and partial behavior 
     scenarioId: "fair-peer-short",
     schemaId: "luna_pinyin",
     attemptId: "attempt-1",
+    attemptNumber: 1,
     measurementStarted,
     measurementCompleted: false,
     runnerSourceBefore: runnerSourceObservation(),
@@ -2710,8 +2829,28 @@ test("independent verifier audits preserved premeasurement and partial behavior 
     };
     return envelope;
   };
+  const addCausativeCommonBehavior = (envelope) => {
+    envelope.sentinel.snapshots[0].domObserved.candidates[0].text = "forged-candidate";
+    envelope.commonReceipt.commonSamples = resolveCommonSamples({
+      scenarioId: envelope.scenarioId,
+      events: envelope.sentinel.events,
+      snapshots: envelope.sentinel.snapshots,
+    });
+  };
+  const receiptOnlyBehavior = partialFromCompleted(validReceipt());
+  receiptOnlyBehavior.commonReceipt.commonSamples[0].outcome = "forged-outcome";
+  assert.equal(independentlyAuditRawEnvelope(
+    receiptOnlyBehavior,
+    { ...expected, measurementStarted: true },
+  ).pass, false, "receipt-only behavior cannot diverge from the raw sentinel snapshots");
+  assert.deepEqual(retainedRawReceiptBehaviorErrors(receiptOnlyBehavior), []);
+  assert.equal(independentlyRecomputeIncompleteAttemptFacts(receiptOnlyBehavior, {
+    attemptId: "attempt-1",
+    measurementStarted: true,
+  }).classification, "SETUP_INVALID");
+
   const retainedBehavior = partialFromCompleted(validReceipt());
-  retainedBehavior.commonReceipt.commonSamples[0].outcome = "forged-outcome";
+  addCausativeCommonBehavior(retainedBehavior);
   const producerBehaviorErrors = retainedRawReceiptBehaviorErrors(retainedBehavior);
   assert.ok(producerBehaviorErrors.length > 0);
   assert.deepEqual(independentlyRecomputeIncompleteAttemptFacts(retainedBehavior, {
@@ -2725,14 +2864,28 @@ test("independent verifier audits preserved premeasurement and partial behavior 
     retainedHardRed: true,
     retryEligible: false,
     validRedObserved: true,
-  }, "retained common behavior evidence survives a malformed callback snapshot");
+  }, "raw-causative common behavior evidence survives a malformed callback snapshot");
 
   for (const [label, mutate] of [
     ["attempt", (copy) => { copy.commonReceipt.attemptId = "attempt-forged"; }],
     ["mode", (copy) => { copy.privateReceipt.mode = "BASE_MINIMAL"; }],
     ["source", (copy) => { copy.commonReceipt.source.commit = "f".repeat(40); }],
     ["round", (copy) => { copy.privateReceipt.roundId = "fair-peer-short-round-2"; }],
+    ["mutually forged round", (copy) => {
+      copy.commonReceipt.roundId = "forged-unrelated-round";
+      copy.privateReceipt.roundId = "forged-unrelated-round";
+    }],
+    ["missing attempt number", (copy) => { delete copy.attemptNumber; }],
+    ["mutually forged attempt ordinal", (copy) => {
+      copy.attemptNumber = 7;
+      copy.commonReceipt.roundId = `${copy.scenarioId}-round-7`;
+      copy.privateReceipt.roundId = `${copy.scenarioId}-round-7`;
+    }],
     ["envelope attempt", (copy) => { copy.attemptId = "attempt-forged"; }],
+    ["guard summary", (copy) => {
+      copy.commonReceipt.source.artifactResponseGuardSummarySha256 = "f".repeat(64);
+      copy.privateReceipt.source.artifactResponseGuardSummarySha256 = "f".repeat(64);
+    }],
     ["measurement projection", (copy) => { copy.measurementEvidence.idleFrameIntervalsMs = [999]; }],
     ["shared projection", (copy) => {
       copy.commonReceipt.assetsRequestedDuringWindow = [{
@@ -2811,7 +2964,7 @@ test("independent verifier audits preserved premeasurement and partial behavior 
   };
   const causativeBehaviorReceipt = validReceipt();
   const causativeBehavior = persistCausativeShapeFailure(causativeBehaviorReceipt, (completed) => {
-    completed.commonReceipt.commonSamples[0].outcome = "forged-outcome";
+    addCausativeCommonBehavior(completed);
     completed.sentinel.callbackLedger = [{
       kind: "event",
       pageInstanceId: PAGE_ID,
@@ -2842,6 +2995,16 @@ test("independent verifier audits preserved premeasurement and partial behavior 
   assert.equal(behaviorCompact.commonVerdict, "RED_BEHAVIOR");
   assert.equal(behaviorCompact.internalVerdict, "RED_BEHAVIOR");
   assert.equal(behaviorCompact.hardRedObserved, true);
+  assert.deepEqual(
+    validateWeb06ObserverModeProjectionSchema(behaviorCompact, "full"),
+    { pass: true, errors: [] },
+    "producer public schema preserves causative malformed behavior as a hard RED",
+  );
+  assert.deepEqual(
+    independentlyValidateObserverModeProjectionSchema(behaviorCompact, "full"),
+    { pass: true, errors: [] },
+    "independent public schema preserves causative malformed behavior as a hard RED",
+  );
 
   const causativeNumericReceipt = validReceipt();
   causativeNumericReceipt.actions[0].paintObservedAt =
@@ -2869,6 +3032,306 @@ test("independent verifier audits preserved premeasurement and partial behavior 
   assert.equal(numericCompact.commonVerdict, "SETUP_INVALID");
   assert.equal(numericCompact.internalVerdict, "SETUP_INVALID");
   assert.equal(numericCompact.hardRedObserved, false);
+  assert.deepEqual(
+    validateWeb06ObserverModeProjectionSchema(numericCompact, "full"),
+    { pass: true, errors: [] },
+    "producer public schema preserves causative malformed numeric evidence as setup-invalid",
+  );
+  assert.deepEqual(
+    independentlyValidateObserverModeProjectionSchema(numericCompact, "full"),
+    { pass: true, errors: [] },
+    "independent public schema preserves causative malformed numeric evidence as setup-invalid",
+  );
+
+  const verifyBaselineFixture = async ({
+    fairEnvelope,
+    fairAttemptFacts,
+    fairAttemptCount,
+    fairRunnerSummaries = () => ({}),
+  }) => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "web06-baseline-causative-"));
+    try {
+      const rawDirectory = path.join(root, "raw");
+      await mkdir(rawDirectory);
+      const scenarioRuns = [...WEB06_BINDING_SCENARIO_ORDER];
+      const scenarioIdsSha256 = createHash("sha256")
+        .update(JSON.stringify(scenarioRuns), "utf8").digest("hex");
+      const runnerTooling = {
+        version: "web06-runner-tooling-v1",
+        files: [{ path: "apps/yune-web/e2e/fixture.mjs", sha256: HASH_A }],
+      };
+      const runnerToolingManifestSha256 = createHash("sha256")
+        .update(JSON.stringify(runnerTooling), "utf8").digest("hex");
+      const runnerSourceManifest = {
+        version: "web06-runner-source-v1",
+        sourceCommit: COMMIT,
+        sourceTree: TREE,
+        sourceTreeState: "clean",
+        tooling: runnerTooling,
+        toolingManifestSha256: runnerToolingManifestSha256,
+      };
+      const runnerSourceManifestSha256 = createHash("sha256")
+        .update(JSON.stringify(runnerSourceManifest), "utf8").digest("hex");
+      const sourceObservation = runnerSourceObservation({
+        toolingManifestSha256: runnerToolingManifestSha256,
+      });
+      const environmentObservation = observedEnvironmentObservation();
+      const environmentId = "macbook-ac-60hz-clean-cache";
+      const bindBaselineProvenance = (envelope, run) => {
+        envelope.expectation = "BASELINE";
+        envelope.scenarioRunId = run.runId;
+        envelope.scenarioId = run.scenarioId;
+        envelope.schemaId = run.schema;
+        envelope.identityManifestSha256 = HASH_A;
+        envelope.runnerSourceManifestSha256 = runnerSourceManifestSha256;
+        envelope.scenarioIdsSha256 = scenarioIdsSha256;
+        envelope.environmentManifestSha256 = HASH_B;
+        envelope.environmentId = environmentId;
+        envelope.runnerSourceBefore = structuredClone(sourceObservation);
+        envelope.attemptSourceBefore = structuredClone(sourceObservation);
+        if (envelope.attemptSourceAfter !== undefined) {
+          envelope.attemptSourceAfter = structuredClone(sourceObservation);
+        }
+        envelope.observedEnvironment = structuredClone(environmentObservation);
+        envelope.target = {
+          ...envelope.target,
+          id: "BASE_FULL",
+          protocolMode: "full",
+          sourceCommit: COMMIT,
+          sourceTree: TREE,
+          treeState: "clean",
+          archiveSha256: envelope.target?.archiveSha256 ?? HASH_B,
+          buildInfoSha256: envelope.target?.buildInfoSha256 ?? HASH_B,
+          artifactSha256: envelope.target?.artifactSha256 ?? HASH_A,
+          artifactResponseGuardSha256: envelope.target?.artifactResponseGuardSha256 ?? HASH_A,
+          collectorContractSha256: WEB06_COLLECTOR_CONTRACT_SHA256,
+          pinnedSelectedBranch: "NONE",
+          pinnedDisposition: "SOURCE_CURRENT_BASELINE",
+        };
+        for (const receipt of [envelope.commonReceipt, envelope.privateReceipt]
+          .filter((value) => value !== undefined)) {
+          Object.assign(receipt, {
+            scenarioRunId: run.runId,
+            scenarioId: run.scenarioId,
+            schemaId: run.schema,
+            attemptId: envelope.attemptId,
+            mode: "BASE_FULL",
+          });
+          Object.assign(receipt.source, {
+            commit: COMMIT,
+            tree: TREE,
+            treeState: "clean",
+            archiveSha256: envelope.target.archiveSha256,
+            buildInfoSha256: envelope.target.buildInfoSha256,
+            artifactSha256: envelope.target.artifactSha256,
+            artifactResponseGuardSha256: envelope.target.artifactResponseGuardSha256,
+            artifactResponseGuardSummarySha256: envelope.artifactResponseGuard?.summarySha256,
+            identityManifestSha256: HASH_A,
+            runnerSourceManifestSha256,
+            runnerToolingManifestSha256,
+            runnerSourceObservationSha256: sourceObservation.observationSha256,
+            runnerSourcePostObservationSha256: sourceObservation.observationSha256,
+            observedEnvironmentSha256: environmentObservation.observationSha256,
+            collectorContractSha256: WEB06_COLLECTOR_CONTRACT_SHA256,
+            scenarioIdsSha256,
+            selectedBranch: "NONE",
+            disposition: "SOURCE_CURRENT_BASELINE",
+            environmentManifestSha256: HASH_B,
+            environmentId,
+          });
+        }
+        return envelope;
+      };
+      const setupInvalidFacts = {
+        classification: "SETUP_INVALID",
+        retainedMeasured: false,
+        retainedLogicalRound: false,
+        validForLatencyFrame: false,
+        retainedHardRed: false,
+        retryEligible: true,
+        validRedObserved: false,
+      };
+      const writeAttempt = async (scenarioIndex, attemptNumber, envelope) => {
+        const relativePath = `raw/${scenarioIndex + 1}-${attemptNumber}.json`;
+        const bytes = Buffer.from(`${JSON.stringify(envelope)}\n`, "utf8");
+        await writeFile(path.join(root, relativePath), bytes);
+        return {
+          relativePath,
+          bytes: bytes.length,
+          sha256: createHash("sha256").update(bytes).digest("hex"),
+        };
+      };
+      const scenarioResults = [];
+      for (const [scenarioIndex, scenarioRunId] of scenarioRuns.entries()) {
+        const run = SCENARIO_RUN_REGISTRY[scenarioRunId];
+        const isFairPeer = scenarioRunId === "fair-peer-short";
+        const attemptCount = isFairPeer
+          ? fairAttemptCount
+          : WEB06_THRESHOLDS.attempts.maximum;
+        const attempts = [];
+        for (let attemptNumber = 1; attemptNumber <= attemptCount; attemptNumber += 1) {
+          const attemptId = `attempt-${attemptNumber}`;
+          const isFairSeed = isFairPeer && attemptNumber === 1;
+          const envelope = isFairSeed
+            ? structuredClone(fairEnvelope)
+            : partialEnvelope(false, "WEB06_SETUP_FAILURE", "setup");
+          envelope.attemptId = attemptId;
+          if (!isFairSeed) envelope.attemptNumber = attemptNumber;
+          bindBaselineProvenance(envelope, run);
+          const rawPacket = await writeAttempt(scenarioIndex, attemptNumber, envelope);
+          const facts = isFairSeed ? fairAttemptFacts : setupInvalidFacts;
+          attempts.push({
+            attemptId,
+            measurementStarted: envelope.measurementStarted === true,
+            measurementCompleted: envelope.measurementCompleted === true,
+            ...facts,
+            rawPacket,
+            runnerSummaries: isFairSeed ? fairRunnerSummaries(envelope) : {},
+          });
+        }
+        const measuredRoundCount = attempts.filter((attempt) => attempt.retainedMeasured === true).length;
+        const validLatencyFrameRoundCount =
+          attempts.filter((attempt) => attempt.validForLatencyFrame === true).length;
+        const preservedHardRedAttemptIds =
+          attempts.filter((attempt) => attempt.retainedHardRed === true).map((attempt) => attempt.attemptId);
+        scenarioResults.push({
+          targetId: "BASE_FULL",
+          scenarioRunId,
+          scenarioId: run.scenarioId,
+          schemaId: run.schema,
+          verdict: "SETUP_NO_GO",
+          attempts,
+          measuredRoundCount,
+          validLatencyFrameRoundCount,
+          preservedHardRedAttemptIds,
+          preservedHardRedObserved: preservedHardRedAttemptIds.length > 0,
+          runnerFiveRoundSummaries: {},
+        });
+      }
+      const collector = {
+        version: "web06-collector-output-v1",
+        writeMode: "create-new",
+        expectation: "BASELINE",
+        disposition: "SOURCE_CURRENT_BASELINE",
+        selectedBranch: "NONE",
+        identityManifestSha256: HASH_A,
+        runnerSourceManifest,
+        runnerSourceManifestSha256,
+        runnerSourceObservationSha256: sourceObservation.observationSha256,
+        runnerSourcePostObservationSha256: sourceObservation.observationSha256,
+        collectorContractSha256: WEB06_COLLECTOR_CONTRACT_SHA256,
+        environmentManifestSha256: HASH_B,
+        environmentId,
+        scenarioRuns,
+        observerTriplets: [],
+        scenarioResults,
+      };
+      const collectorPath = path.join(root, "collector-output.json");
+      await writeFile(collectorPath, `${JSON.stringify(collector, null, 2)}\n`);
+      return await verifyCollectorOutput({
+        evidenceRoot: root,
+        collectorOutputPath: collectorPath,
+        verifyCurrentSource: false,
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  };
+
+  const behaviorVerified = await verifyBaselineFixture({
+    fairEnvelope: causativeBehavior,
+    fairAttemptFacts: {
+      classification: "RED",
+      retainedMeasured: false,
+      retainedLogicalRound: false,
+      validForLatencyFrame: false,
+      retainedHardRed: true,
+      retryEligible: false,
+      validRedObserved: true,
+    },
+    fairAttemptCount: 1,
+  });
+  assert.equal(behaviorVerified.verificationStatus, "PASS");
+  const behaviorScenario = behaviorVerified.scenarioResults
+    .find((scenario) => scenario.scenarioRunId === "fair-peer-short");
+  assert.deepEqual({
+    classification: behaviorScenario.attemptResults[0].classification,
+    preservedHardRedAttemptIds: behaviorScenario.preservedHardRedAttemptIds,
+    preservedHardRedObserved: behaviorScenario.preservedHardRedObserved,
+  }, {
+    classification: "RED",
+    preservedHardRedAttemptIds: ["attempt-1"],
+    preservedHardRedObserved: true,
+  });
+
+  const numericVerified = await verifyBaselineFixture({
+    fairEnvelope: causativeNumeric,
+    fairAttemptFacts: {
+      classification: "SETUP_INVALID",
+      retainedMeasured: false,
+      retainedLogicalRound: false,
+      validForLatencyFrame: false,
+      retainedHardRed: false,
+      retryEligible: true,
+      validRedObserved: false,
+    },
+    fairAttemptCount: WEB06_THRESHOLDS.attempts.maximum,
+  });
+  assert.equal(numericVerified.verificationStatus, "PASS");
+  const numericScenario = numericVerified.scenarioResults
+    .find((scenario) => scenario.scenarioRunId === "fair-peer-short");
+  assert.equal(numericScenario.attemptResults.length, WEB06_THRESHOLDS.attempts.maximum);
+  assert.deepEqual({
+    classification: numericScenario.attemptResults[0].classification,
+    preservedHardRedAttemptIds: numericScenario.preservedHardRedAttemptIds,
+    preservedHardRedObserved: numericScenario.preservedHardRedObserved,
+  }, {
+    classification: "SETUP_INVALID",
+    preservedHardRedAttemptIds: [],
+    preservedHardRedObserved: false,
+  });
+
+  const completedOrdinalForgery = validRawEnvelope(validReceipt());
+  completedOrdinalForgery.attemptNumber = 7;
+  completedOrdinalForgery.commonReceipt.roundId = `${completedOrdinalForgery.scenarioId}-round-7`;
+  completedOrdinalForgery.privateReceipt.roundId = `${completedOrdinalForgery.scenarioId}-round-7`;
+  await assert.rejects(() => verifyBaselineFixture({
+    fairEnvelope: completedOrdinalForgery,
+    fairAttemptFacts: {
+      classification: "PASS",
+      retainedMeasured: true,
+      retainedLogicalRound: true,
+      validForLatencyFrame: true,
+      retainedHardRed: false,
+      retryEligible: false,
+      validRedObserved: false,
+    },
+    fairAttemptCount: WEB06_THRESHOLDS.attempts.maximum,
+    fairRunnerSummaries: (envelope) => ({
+      internal: buildRoundEvidenceSummary(envelope.privateReceipt, { surface: "internal" }),
+      common: buildRoundEvidenceSummary(envelope.commonReceipt, { surface: "common" }),
+    }),
+  }), /WEB06_COMPLETED_RAW_DECISION_SHAPE_INVALID/,
+  "file-level verification rejects a completed attempt-1 mutually forged as ordinal seven");
+
+  const partialOrdinalForgery = structuredClone(causativeNumeric);
+  partialOrdinalForgery.attemptNumber = 7;
+  partialOrdinalForgery.commonReceipt.roundId = `${partialOrdinalForgery.scenarioId}-round-7`;
+  partialOrdinalForgery.privateReceipt.roundId = `${partialOrdinalForgery.scenarioId}-round-7`;
+  await assert.rejects(() => verifyBaselineFixture({
+    fairEnvelope: partialOrdinalForgery,
+    fairAttemptFacts: {
+      classification: "SETUP_INVALID",
+      retainedMeasured: false,
+      retainedLogicalRound: false,
+      validForLatencyFrame: false,
+      retainedHardRed: false,
+      retryEligible: true,
+      validRedObserved: false,
+    },
+    fairAttemptCount: WEB06_THRESHOLDS.attempts.maximum,
+  }), /raw-partial-attempt-ordinal/,
+  "file-level verification rejects a partial attempt-1 mutually forged as ordinal seven");
 
   const numericOnly = partialFromCompleted(validReceipt());
   numericOnly.privateReceipt.actions[0].paintObservedAt =
@@ -2937,6 +3400,7 @@ test("standalone independent verifier enforces the exact preview matrix and pres
         scenarioId,
         schemaId,
         attemptId: "attempt-1",
+        attemptNumber: 1,
         identityManifestSha256: HASH_A,
         runnerSourceManifestSha256,
         scenarioIdsSha256,

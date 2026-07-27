@@ -6,9 +6,20 @@
     "test:e2e": "playwright test --config playwright.config.ts",
     "test:e2e:smoke": "playwright test --config playwright.config.ts --grep @smoke",
     "test:e2e:input-latency": "playwright test --config playwright.latency.config.ts",
-    "test:e2e:input-latency:public": "node run-public-latency-gate.mjs"
+    "test:e2e:input-latency:public": "node run-public-latency-gate.mjs",
+    "test:e2e:web06": "playwright test --config playwright.web06.config.ts --grep @web06-full --workers=1 --retries=0",
+    "test:e2e:web06:matrix": "node run-web06-local-matrix.mjs",
+    "test:e2e:web06:public": "node run-public-web06-gate.mjs",
+    "test:e2e:web06:preview-reconcile": "node run-public-web06-gate.mjs --scope preview-canary --verify-only",
+    "test:e2e:web06:preview-canary": "node run-public-web06-gate.mjs --scope preview-canary",
+    "test:e2e:web06-peer-contract": "playwright test --config playwright.web06-peer.config.ts --grep @contract",
+    "run:e2e:web06-peer": "node --experimental-strip-types run-web06-peer-lane.ts",
+    "preview:web06:certified": "node run-web06-certified-preview.mjs",
+    "promote:web06:production": "node run-web06-production-promotion.mjs",
+    "test:web06-release-plumbing": "node --test web06-metric-contract.test.mjs web06-receipt-parser.test.mjs web06-collector.test.mjs web06-suite-attestation.test.mjs web06-sealed-artifact-server.test.mjs web06-workflow-attempt.test.mjs run-web06-local-matrix.test.mjs run-public-web06-gate.test.mjs run-web06-certified-preview.test.mjs run-web06-production-promotion.test.mjs web06-setup-retry.test.mjs production-artifact-verifier.test.mjs public-artifact-verifier.test.mjs && python3 -B -m unittest test_verify_archive_dist_identity.py && python3 -B ../../../scripts/tests/test_public_evidence_privacy.py"
   },
   "devDependencies": {
-    "@playwright/test": "1.61.0"
+    "@playwright/test": "1.61.0",
+    "wrangler": "4.111.0"
   }
 }

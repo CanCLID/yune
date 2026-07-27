@@ -64,6 +64,8 @@ if (!IS_LOOPBACK_PREVIEW && EXPECTED_SOURCE_COMMIT === undefined) {
 }
 const WORKER_ACTION_MULTIPLIER = IS_LOOPBACK_PREVIEW ? 4 : 1;
 const EVIDENCE_DIR = process.env.YUNE_WEB_LATENCY_EVIDENCE_DIR;
+const WORKFLOW_MEASUREMENT_STARTED_PATH =
+  process.env.YUNE_WEB_WORKFLOW_MEASUREMENT_STARTED_PATH;
 
 const RELEASE_P95_CEILING_MS = 750;
 const RELEASE_MAX_CEILING_MS = 1000;
@@ -1164,6 +1166,44 @@ async function writeOptionalEvidence(
   );
 }
 
+async function markWorkflowMeasurementStarted(scenarioId: string): Promise<void> {
+  if (!WORKFLOW_MEASUREMENT_STARTED_PATH) return;
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const payload = {
+    version: "web06-workflow-measurement-start-v1",
+    sourceCommit: EXPECTED_SOURCE_COMMIT ?? null,
+    scenarioId,
+    startedAt: new Date().toISOString(),
+  };
+  await fs.mkdir(path.dirname(WORKFLOW_MEASUREMENT_STARTED_PATH), {
+    recursive: true,
+  });
+  try {
+    await fs.writeFile(
+      WORKFLOW_MEASUREMENT_STARTED_PATH,
+      `${JSON.stringify(payload, null, 2)}\n`,
+      { encoding: "utf8", flag: "wx", mode: 0o600 },
+    );
+  } catch (error) {
+    if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") {
+      throw error;
+    }
+    const metadata = await fs.lstat(WORKFLOW_MEASUREMENT_STARTED_PATH);
+    const existing = JSON.parse(
+      await fs.readFile(WORKFLOW_MEASUREMENT_STARTED_PATH, "utf8"),
+    ) as { version?: unknown; sourceCommit?: unknown };
+    if (
+      !metadata.isFile() ||
+      metadata.isSymbolicLink() ||
+      existing.version !== payload.version ||
+      existing.sourceCommit !== payload.sourceCommit
+    ) {
+      throw new Error("Workflow measurement-start marker is not source-bound");
+    }
+  }
+}
+
 // Keep one worker and declaration order, but do not use Playwright's serial
 // failure semantics: a measured release red must not suppress the independent
 // exact normal-typing receipt that runs before it.
@@ -1264,6 +1304,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
     schemaSelectionRequests.jyut6ping3 = postReadyAssetRequests.slice(
       selectionStart,
     );
+    await markWorkflowMeasurementStarted("web03-release-hard-stop");
     scenarios.push(
       await measureBurst(
         page,
@@ -1645,6 +1686,7 @@ async function runNormalTypingCanary(
   await input.focus();
   const assetRequestStart = postReadyAssetRequests.length;
 
+  await markWorkflowMeasurementStarted("web03-normal-typing");
   await typeAtCadence(
     page,
     NORMAL_TYPING_INPUT,

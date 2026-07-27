@@ -6,16 +6,44 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      setup_retry_of:
-        description: URL or run ID of the setup failure being retried
+      operation:
+        description: Select a source-bound setup retry or an explicitly approved production promotion
         required: true
+        type: choice
+        options:
+          - setup-retry
+          - production-promotion
+      setup_retry_of:
+        description: Numeric attempt-1 run ID of the same-source setup-only failure
+        required: false
         type: string
       setup_retry_reason:
         description: Why the prior failure was setup-only (never a measured red)
-        required: true
+        required: false
+        type: string
+      approved_preview_run_id:
+        description: Successful attempt-1 preview workflow run ID approved for production
+        required: false
+        type: string
+      approved_source_commit:
+        description: Exact 40-character source commit from the approved preview run
+        required: false
+        type: string
+      approved_archive_sha256:
+        description: Exact 64-character certified archive SHA-256 from the approved preview run
+        required: false
+        type: string
+      production_approval_record:
+        description: Single-line user approval record (ticket, decision URL, or named approval)
+        required: false
+        type: string
+      production_confirmation:
+        description: Type PROMOTE_EXACT_PREVIEW_BYTES to authorize this one production promotion
+        required: false
         type: string
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -26,10 +54,13 @@ concurrency:
 jobs:
   classify:
     name: Classify release impact
+    if: github.event_name == 'push' || inputs.operation == 'setup-retry'
     runs-on: ubuntu-24.04
     outputs:
       release_required: ${{ steps.classify.outputs.release_required }}
       reason: ${{ steps.classify.outputs.reason }}
+      web06_handoff_required: ${{ steps.classify.outputs.web06_handoff_required }}
+      web06_reason: ${{ steps.classify.outputs.web06_reason }}
     steps:
       - name: Reject GitHub UI reruns
         run: |
@@ -44,6 +75,7 @@ jobs:
       - name: Classify changed paths
         id: classify
         env:
+          GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
           SOURCE_REF: ${{ github.ref }}
           HEAD_SHA: ${{ github.sha }}
@@ -63,6 +95,8 @@ jobs:
           if [ "$current_main" != "$HEAD_SHA" ]; then
             printf 'release_required=false\n' >> "$GITHUB_OUTPUT"
             printf 'reason=superseded by current main %s\n' "$current_main" >> "$GITHUB_OUTPUT"
+            printf 'web06_handoff_required=false\n' >> "$GITHUB_OUTPUT"
+            printf 'web06_reason=superseded before release classification\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
@@ -74,8 +108,43 @@ jobs:
               printf 'Setup retry metadata must be single-line text.\n' >&2
               exit 1
             fi
+            printf '%s\n' "$SETUP_RETRY_OF" | grep -Eq '^[1-9][0-9]*$' || {
+              printf 'setup_retry_of must be a numeric prior workflow run ID.\n' >&2
+              exit 1
+            }
+            prior_root="$RUNNER_TEMP/prior-web06-attempt"
+            mkdir -p "$prior_root"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SETUP_RETRY_OF" \
+              > "$prior_root/prior-run.json"
+            gh run download "$SETUP_RETRY_OF" \
+              --repo "$GITHUB_REPOSITORY" \
+              --name "yune-web-release-$HEAD_SHA-$SETUP_RETRY_OF-1" \
+              --dir "$prior_root/artifact"
+            receipt_count="$(find "$prior_root/artifact" -name web06-workflow-attempt.json -type f | wc -l | tr -d '[:space:]')"
+            test "$receipt_count" = "1" || {
+              printf 'Prior run must contain exactly one WEB06 workflow-attempt receipt.\n' >&2
+              exit 1
+            }
+            prior_receipt="$(find "$prior_root/artifact" -name web06-workflow-attempt.json -type f -print -quit)"
+            jq -n \
+              --arg runId "$GITHUB_RUN_ID" \
+              --argjson runAttempt "$GITHUB_RUN_ATTEMPT" \
+              --arg retryOf "$SETUP_RETRY_OF" \
+              --arg sourceCommit "$HEAD_SHA" \
+              --arg workflowPath ".github/workflows/deploy-yune-web.yml" \
+              '{runId: $runId, runAttempt: $runAttempt, retryOf: $retryOf, sourceCommit: $sourceCommit, workflowPath: $workflowPath}' \
+              > "$prior_root/current.json"
+            node apps/yune-web/e2e/web06-setup-retry.mjs \
+              "$prior_root/prior-run.json" "$prior_receipt" "$prior_root/current.json"
+            web06_handoff_required="$(jq -r '.web06HandoffRequired // false' "$prior_receipt")"
+            if [ "$web06_handoff_required" != true ] && [ "$web06_handoff_required" != false ]; then
+              printf 'Prior workflow receipt has an invalid WEB06 handoff classification.\n' >&2
+              exit 1
+            fi
             printf 'release_required=true\n' >> "$GITHUB_OUTPUT"
             printf 'reason=explicit source-bound setup retry\n' >> "$GITHUB_OUTPUT"
+            printf 'web06_handoff_required=%s\n' "$web06_handoff_required" >> "$GITHUB_OUTPUT"
+            printf 'web06_reason=classification retained from original attempt\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           base="$(git rev-list --max-parents=0 "$HEAD_SHA")"
@@ -109,17 +178,63 @@ jobs:
         run: |
           printf 'No yune-web release required: %s\n' "$REASON"
 
+  web06-measured-handoff-required:
+    name: Preserve pending WEB06 deployment identity
+    needs: classify
+    if: needs.classify.outputs.release_required == 'true' && needs.classify.outputs.web06_handoff_required == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reject GitHub UI reruns
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || {
+            printf 'GitHub UI reruns cannot supply WEB06 measured bytes.\n' >&2
+            exit 1
+          }
+      - name: Check out exact source without building
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Record create-new pending-identity receipt
+        env:
+          WEB06_REASON: ${{ needs.classify.outputs.web06_reason }}
+        run: |
+          receipt_root="$RUNNER_TEMP/web06-measured-handoff-required"
+          mkdir "$receipt_root"
+          test -z "$(git status --porcelain --untracked-files=all)" || {
+            printf 'WEB06 pending-identity receipt requires a clean exact checkout.\n' >&2
+            exit 1
+          }
+          source_tree="$(git rev-parse 'HEAD^{tree}')"
+          jq -n \
+            --arg sourceCommit "$GITHUB_SHA" \
+            --arg sourceTree "$source_tree" \
+            --arg reason "$WEB06_REASON" \
+            --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{version: "web06-ci-handoff-noop-v1", operation: "measured-artifact-handoff-required", sourceCommit: $sourceCommit, sourceTree: $sourceTree, sourceTreeState: "clean", reason: $reason, deploymentIdentityStatus: "pending", fullSuccessEligible: false, buildInvoked: false, measurementInvoked: false, previewMutationStarted: false, productionMutationStarted: false, generatedAt: $generatedAt, status: "no-op"}' \
+            > "$receipt_root/web06-ci-handoff-noop.json"
+          printf 'WEB06 release is a green CI no-op: no reviewed immutable handoff exists for the locally measured archive. Deployment identity remains pending and this receipt cannot satisfy WEB06 Full.\n'
+      - name: Preserve pending-identity receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: web06-measured-handoff-required-${{ github.sha }}-${{ github.run_id }}-1
+          path: ${{ runner.temp }}/web06-measured-handoff-required
+          if-no-files-found: error
+          retention-days: 90
+
   build-certify:
     name: Build and certify exact source
     needs: classify
-    if: needs.classify.outputs.release_required == 'true'
+    if: needs.classify.outputs.release_required == 'true' && needs.classify.outputs.web06_handoff_required != 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 90
     outputs:
       archive_sha256: ${{ steps.seal.outputs.archive_sha256 }}
       artifact_name: yune-web-release-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      certification_mode: ${{ steps.certification-mode.outputs.certification_mode }}
     env:
       CI: "1"
+      YUNE_WEB_RELEASE_CERTIFICATION_MODE: legacy
     steps:
       - name: Seed source-bound receipts before setup
         env:
@@ -130,7 +245,10 @@ jobs:
           printf 'EVIDENCE_ROOT=%s\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_OUTPUT_DIR=%s/latency\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_EVIDENCE_DIR=%s/latency\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
-          mkdir -p "$EVIDENCE_ROOT/latency"
+          printf 'YUNE_WEB06_EVIDENCE_ROOT=%s/web06\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB06_PLAYWRIGHT_OUTPUT_DIR=%s/web06/playwright\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_WORKFLOW_MEASUREMENT_STARTED_PATH=%s/web06-workflow-measurement-started.json\n' "$EVIDENCE_ROOT" >> "$GITHUB_ENV"
+          mkdir -p "$EVIDENCE_ROOT/latency" "$EVIDENCE_ROOT/web06/playwright"
           {
             printf 'source_commit=%s\n' "$GITHUB_SHA"
             printf 'source_tree_state=unavailable-before-checkout\n'
@@ -144,8 +262,9 @@ jobs:
           } > "$EVIDENCE_ROOT/environment.txt"
           {
             printf '%s\n' 'bash apps/yune-web/public-demo/build-public-release.sh'
-            printf '%s\n' 'bash apps/yune-web/public-demo/certify-public-release.sh'
-            printf '%s\n' 'tar certified public-demo/dist; hash exact archive'
+            printf '%s\n' 'tar built public-demo/dist once; hash exact archive'
+            printf '%s\n' 'safely extract and reconcile exact archive bytes'
+            printf '%s\n' 'bash apps/yune-web/public-demo/certify-public-release.sh (classifier-selected legacy exact-artifact WEB03 only)'
           } > "$EVIDENCE_ROOT/commands.txt"
       - name: Reject GitHub UI reruns
         run: |
@@ -153,6 +272,17 @@ jobs:
             printf 'GitHub reruns are prohibited because they can discard a measured red; use a fresh, explicitly named workflow_dispatch only for setup failure.\n' >&2
             exit 1
           fi
+      - name: Select legacy certification internally
+        id: certification-mode
+        env:
+          WEB06_HANDOFF_REQUIRED: ${{ needs.classify.outputs.web06_handoff_required }}
+        run: |
+          test "$WEB06_HANDOFF_REQUIRED" != true || {
+            printf 'A WEB06-governed range cannot select legacy certification.\n' >&2
+            exit 1
+          }
+          test "$YUNE_WEB_RELEASE_CERTIFICATION_MODE" = legacy
+          printf 'certification_mode=legacy\n' >> "$GITHUB_OUTPUT"
       - name: Check out exact source
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -163,11 +293,10 @@ jobs:
           printf 'checked_out_source_tree_state=%s\n' \
             "$(test -z "$(git status --porcelain --untracked-files=all)" && printf clean || printf dirty)" \
             >> "$EVIDENCE_ROOT/environment.txt"
+          printf 'YUNE_WEB06_EXPECTED_SOURCE_TREE=%s\n' "$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_ENV"
       - name: Build pinned public artifact
         run: bash apps/yune-web/public-demo/build-public-release.sh
-      - name: Run binding WEB03-11 certification once
-        run: bash apps/yune-web/public-demo/certify-public-release.sh
-      - name: Seal certified artifact
+      - name: Seal public artifact once before measurement
         id: seal
         run: |
           cp apps/yune-web/public-demo/dist/build-info.json "$EVIDENCE_ROOT/build-info.json"
@@ -176,7 +305,109 @@ jobs:
           archive_sha256="$(sha256sum "$EVIDENCE_ROOT/yune-web-dist.tar.gz" | awk '{print $1}')"
           printf '%s\n' "$archive_sha256" > "$EVIDENCE_ROOT/yune-web-dist.tar.gz.sha256"
           printf 'archive_sha256=%s\n' "$archive_sha256" >> "$GITHUB_OUTPUT"
+          printf 'sealed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$EVIDENCE_ROOT/environment.txt"
+      - name: Safely extract and reconcile sealed bytes
+        env:
+          ARCHIVE: ${{ runner.temp }}/yune-web-release-${{ github.sha }}/yune-web-dist.tar.gz
+          DESTINATION: ${{ runner.temp }}/certified-release-dist
+          EXPECTED_ARCHIVE_SHA256: ${{ steps.seal.outputs.archive_sha256 }}
+          YUNE_WEB_EXPECTED_DIST: ${{ runner.temp }}/certified-release-dist
+          YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+          YUNE_WEB_LOCAL_ARTIFACT_RECEIPT: ${{ runner.temp }}/yune-web-release-${{ github.sha }}/sealed-artifact-verification.json
+        run: |
+          sibling="$(tr -d '[:space:]' < "$ARCHIVE.sha256")"
+          actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          test "$actual" = "$sibling"
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import tarfile
+
+          archive = pathlib.Path(os.environ["ARCHIVE"])
+          destination = pathlib.Path(os.environ["DESTINATION"])
+          destination.mkdir(parents=True, exist_ok=False)
+          seen = set()
+          with tarfile.open(archive, "r:gz") as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  relative = pathlib.PurePosixPath(member.name)
+                  normalized = relative.as_posix()
+                  if normalized == "." and member.isdir():
+                      continue
+                  if (
+                      relative.is_absolute()
+                      or ".." in relative.parts
+                      or "\\" in member.name
+                      or not (member.isfile() or member.isdir())
+                      or normalized == "."
+                      or normalized in seen
+                  ):
+                      raise SystemExit(f"unsafe archive member: {member.name!r}")
+                  seen.add(normalized)
+              bundle.extractall(destination, members=members, filter="data")
+          PY
+          node apps/yune-web/e2e/verify-local-artifact.mjs
+      - name: Run classifier-selected legacy exact-artifact certification
+        id: certify
+        env:
+          YUNE_WEB06_CERTIFIED_ARCHIVE: ${{ runner.temp }}/yune-web-release-${{ github.sha }}/yune-web-dist.tar.gz
+          YUNE_WEB06_CERTIFIED_ARCHIVE_SHA256: ${{ steps.seal.outputs.archive_sha256 }}
+          YUNE_WEB06_CERTIFIED_DIST_ROOT: ${{ runner.temp }}/certified-release-dist
+          YUNE_WEB06_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          bash apps/yune-web/public-demo/certify-public-release.sh
           printf 'completed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$EVIDENCE_ROOT/environment.txt"
+      - name: Finalize immutable retry classification receipt
+        if: always()
+        env:
+          CERTIFY_OUTCOME: ${{ steps.certify.outcome }}
+          WEB06_HANDOFF_REQUIRED: ${{ needs.classify.outputs.web06_handoff_required }}
+        run: |
+          normalized_outcome=failure
+          [ "$CERTIFY_OUTCOME" = success ] && normalized_outcome=success
+          current="$RUNNER_TEMP/web06-workflow-attempt-input.json"
+          jq -n \
+            --arg workflowPath ".github/workflows/deploy-yune-web.yml" \
+            --arg sourceCommit "$GITHUB_SHA" \
+            --arg runId "$GITHUB_RUN_ID" \
+            --argjson runAttempt "$GITHUB_RUN_ATTEMPT" \
+            --argjson web06HandoffRequired "$WEB06_HANDOFF_REQUIRED" \
+            --arg certifyOutcome "$normalized_outcome" \
+            '{version: "web06-workflow-attempt-input-v1", workflowPath: $workflowPath, sourceCommit: $sourceCommit, runId: $runId, runAttempt: $runAttempt, web06HandoffRequired: $web06HandoffRequired, certifyOutcome: $certifyOutcome}' \
+            > "$current"
+          attempt_receipt="$EVIDENCE_ROOT/web06-workflow-attempt.json"
+          marker="$EVIDENCE_ROOT/web06-workflow-measurement-started.json"
+          if [ -f apps/yune-web/e2e/web06-workflow-attempt.mjs ]; then
+            node apps/yune-web/e2e/web06-workflow-attempt.mjs \
+              "$current" \
+              "$marker" \
+              "$EVIDENCE_ROOT/latency/input-latency-hard-stop.json" \
+              "$EVIDENCE_ROOT/latency/normal-typing-exact-input.json" \
+              "$EVIDENCE_ROOT/web06/legacy-local-certification.json" \
+              "$attempt_receipt"
+          else
+            measurement_started=false
+            failure_class=SETUP_ONLY
+            if [ -e "$marker" ]; then
+              measurement_started=true
+              failure_class=MEASUREMENT_OR_BEHAVIOR
+            elif [ "$normalized_outcome" = success ]; then
+              failure_class=EVIDENCE_INVALID
+            fi
+            jq -n \
+              --arg workflowPath ".github/workflows/deploy-yune-web.yml" \
+              --arg sourceCommit "$GITHUB_SHA" \
+              --arg runId "$GITHUB_RUN_ID" \
+              --argjson runAttempt "$GITHUB_RUN_ATTEMPT" \
+              --arg failureClass "$failure_class" \
+              --argjson measurementStarted "$measurement_started" \
+              '{version: "web06-workflow-attempt-v1", workflowPath: $workflowPath, sourceCommit: $sourceCommit, runId: $runId, runAttempt: $runAttempt, web06HandoffRequired: false, certifyOutcome: "failure", status: "failed", failureClass: $failureClass, measurementStarted: $measurementStarted, measurementCompleted: false, validRedObserved: false, canaryStarted: false, productionMutationStarted: false}' \
+              > "$attempt_receipt"
+          fi
+          if [ "$normalized_outcome" = success ]; then
+            jq -e '.status == "passed" and .failureClass == "NONE" and .measurementStarted == true and .measurementCompleted == true and .validRedObserved == false' "$attempt_receipt" >/dev/null
+          fi
       - name: Preserve build, gate, and artifact receipts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -483,14 +714,17 @@ jobs:
 
   preview-canary:
     name: Source-pinned preview canary
-    needs: deploy-preview
+    needs:
+      - build-certify
+      - deploy-preview
     if: needs.deploy-preview.outputs.current == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       CI: "1"
       YUNE_WEB_APP_URL: ${{ needs.deploy-preview.outputs.deployment_url }}
       YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+      YUNE_WEB_RELEASE_CERTIFICATION_MODE: ${{ needs.build-certify.outputs.certification_mode }}
       YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT: "1"
     steps:
       - name: Seed preview canary receipt
@@ -504,7 +738,7 @@ jobs:
             printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
             printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
             printf '  "seededAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            printf '  "measurementStarted": false,\n'
+            printf '  "canaryStarted": false,\n'
             printf '  "status": "setup-pending"\n'
             printf '}\n'
           } > "$RUNNER_TEMP/preview-canary/setup-status.json"
@@ -519,24 +753,80 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
+      - name: Download sealed bundle for preview reconciliation
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.build-certify.outputs.artifact_name }}
+          path: ${{ runner.temp }}/preview-release
+      - name: Safely extract and verify sealed preview reference
+        env:
+          ARCHIVE: ${{ runner.temp }}/preview-release/yune-web-dist.tar.gz
+          DESTINATION: ${{ runner.temp }}/preview-certified-dist
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
+          YUNE_WEB_EXPECTED_DIST: ${{ runner.temp }}/preview-certified-dist
+          YUNE_WEB_LOCAL_ARTIFACT_RECEIPT: ${{ runner.temp }}/preview-canary/sealed-artifact-verification.json
+        run: |
+          sibling="$(tr -d '[:space:]' < "$ARCHIVE.sha256")"
+          actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          test "$actual" = "$sibling"
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import tarfile
+
+          archive = pathlib.Path(os.environ["ARCHIVE"])
+          destination = pathlib.Path(os.environ["DESTINATION"])
+          destination.mkdir(parents=True, exist_ok=False)
+          seen = set()
+          with tarfile.open(archive, "r:gz") as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  relative = pathlib.PurePosixPath(member.name)
+                  normalized = relative.as_posix()
+                  if normalized == "." and member.isdir():
+                      continue
+                  if (
+                      relative.is_absolute()
+                      or ".." in relative.parts
+                      or "\\" in member.name
+                      or not (member.isfile() or member.isdir())
+                      or normalized == "."
+                      or normalized in seen
+                  ):
+                      raise SystemExit(f"unsafe archive member: {member.name!r}")
+                  seen.add(normalized)
+              bundle.extractall(destination, members=members, filter="data")
+          PY
+          node apps/yune-web/e2e/verify-local-artifact.mjs
+      - name: Reconcile every deployed preview byte before timing
+        env:
+          YUNE_WEB_EXPECTED_DIST: ${{ runner.temp }}/preview-certified-dist
+          YUNE_WEB_DEPLOYMENT_RECEIPT: ${{ runner.temp }}/preview-canary/deployed-artifact-verification.json
+        run: node apps/yune-web/e2e/verify-deployed-artifact.mjs
       - name: Install source-pinned canary runtime
         run: |
           npm --prefix apps/yune-web/e2e ci
           PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/ms-playwright" \
             node apps/yune-web/e2e/node_modules/@playwright/test/cli.js install --with-deps chromium
-      - name: Run deployed canary once
+      - name: Run the unchanged legacy WEB03 preview canary once
         run: |
+          web03_status=failed
           if npm --prefix apps/yune-web/e2e run test:e2e:input-latency; then
-            status=passed
-          else
-            status=failed
+            web03_status=passed
           fi
+          status=failed
+          [ "$web03_status" = passed ] && status=passed
           {
             printf '{\n'
             printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
             printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
             printf '  "completedAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            printf '  "measurementStarted": true,\n'
+            printf '  "certificationMode": "legacy",\n'
+            printf '  "canaryStarted": true,\n'
+            printf '  "web03Status": "%s",\n' "$web03_status"
+            printf '  "web06Status": "not-run",\n'
+            printf '  "web06ClaimMade": false,\n'
             printf '  "status": "%s"\n' "$status"
             printf '}\n'
           } > "$RUNNER_TEMP/preview-canary/setup-status.json"
@@ -550,54 +840,273 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+  # A green preview run is terminal. Production starts only in a distinct,
+  # explicitly confirmed workflow_dispatch and reuses that run's exact bytes.
   authorize-production:
-    name: Reconfirm candidate before production
-    needs: preview-canary
+    name: Authorize an exact preview artifact for production
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'production-promotion'
     runs-on: ubuntu-24.04
     outputs:
-      current: ${{ steps.current.outputs.current }}
+      authorized: ${{ steps.authorize.outputs.authorized }}
+      source_commit: ${{ steps.authorize.outputs.source_commit }}
+      archive_sha256: ${{ steps.authorize.outputs.archive_sha256 }}
+      preview_run_id: ${{ steps.authorize.outputs.preview_run_id }}
+      artifact_name: ${{ steps.authorize.outputs.artifact_name }}
+      canary_artifact_name: ${{ steps.authorize.outputs.canary_artifact_name }}
+      preview_deployment_artifact_name: ${{ steps.authorize.outputs.preview_deployment_artifact_name }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      APPROVED_PREVIEW_RUN_ID: ${{ inputs.approved_preview_run_id }}
+      APPROVED_SOURCE_COMMIT: ${{ inputs.approved_source_commit }}
+      APPROVED_ARCHIVE_SHA256: ${{ inputs.approved_archive_sha256 }}
+      PRODUCTION_APPROVAL_RECORD: ${{ inputs.production_approval_record }}
+      PRODUCTION_CONFIRMATION: ${{ inputs.production_confirmation }}
+      SETUP_RETRY_OF: ${{ inputs.setup_retry_of }}
+      SETUP_RETRY_REASON: ${{ inputs.setup_retry_reason }}
     steps:
-      - name: Reject GitHub UI reruns
+      - name: Reject reruns and mixed dispatch modes
         run: |
           test "$GITHUB_RUN_ATTEMPT" = "1" || {
-            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
+            printf 'GitHub UI reruns are prohibited; dispatch a fresh production promotion.\n' >&2
             exit 1
           }
-      - name: Classify current-main state
-        id: current
+          test "$GITHUB_REF" = "refs/heads/main" || {
+            printf 'Production promotion dispatches are main-only.\n' >&2
+            exit 1
+          }
+          test -z "$SETUP_RETRY_OF" && test -z "$SETUP_RETRY_REASON" || {
+            printf 'Production promotion cannot carry setup-retry metadata.\n' >&2
+            exit 1
+          }
+      - name: Validate explicit production authorization
+        id: authorize
         run: |
+          printf '%s\n' "$APPROVED_PREVIEW_RUN_ID" | grep -Eq '^[1-9][0-9]*$' || {
+            printf 'approved_preview_run_id must be a prior numeric workflow run ID.\n' >&2
+            exit 1
+          }
+          printf '%s\n' "$APPROVED_SOURCE_COMMIT" | grep -Eq '^[0-9a-f]{40}$' || {
+            printf 'approved_source_commit must be a full lowercase Git SHA.\n' >&2
+            exit 1
+          }
+          printf '%s\n' "$APPROVED_ARCHIVE_SHA256" | grep -Eq '^[0-9a-f]{64}$' || {
+            printf 'approved_archive_sha256 must be a full lowercase SHA-256.\n' >&2
+            exit 1
+          }
+          test "$PRODUCTION_CONFIRMATION" = "PROMOTE_EXACT_PREVIEW_BYTES" || {
+            printf 'Production requires the exact PROMOTE_EXACT_PREVIEW_BYTES confirmation.\n' >&2
+            exit 1
+          }
+          test -n "$PRODUCTION_APPROVAL_RECORD" || {
+            printf 'A production_approval_record is required.\n' >&2
+            exit 1
+          }
+          printf '%s' "$PRODUCTION_APPROVAL_RECORD" | grep -Eq '[^[:space:]]' || {
+            printf 'production_approval_record must contain non-whitespace text.\n' >&2
+            exit 1
+          }
+          if printf '%s' "$PRODUCTION_APPROVAL_RECORD" | LC_ALL=C grep -q '[[:cntrl:]]'; then
+            printf 'production_approval_record must be single-line text without control characters.\n' >&2
+            exit 1
+          fi
+          test "$APPROVED_PREVIEW_RUN_ID" != "$GITHUB_RUN_ID" || {
+            printf 'Production must reference a distinct prior preview run.\n' >&2
+            exit 1
+          }
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$APPROVED_PREVIEW_RUN_ID" \
+            > "$RUNNER_TEMP/approved-preview-run.json"
+          jq -e \
+            --argjson run_id "$APPROVED_PREVIEW_RUN_ID" \
+            --arg sha "$APPROVED_SOURCE_COMMIT" \
+            --arg workflow_path ".github/workflows/deploy-yune-web.yml" \
+            '.id == $run_id and
+             .status == "completed" and
+             .conclusion == "success" and
+             .run_attempt == 1 and
+             .head_sha == $sha and
+             .path == $workflow_path and
+             (.event == "push" or .event == "workflow_dispatch")' \
+            "$RUNNER_TEMP/approved-preview-run.json" >/dev/null
+
           current_main="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk 'NF {print $1; exit}')"
           printf '%s\n' "$current_main" | grep -Eq '^[0-9a-f]{40}$' || {
-            printf 'Could not prove the current main SHA; refusing to authorize production.\n' >&2
+            printf 'Could not prove current main; refusing production authorization.\n' >&2
             exit 1
           }
-          if [ "$current_main" = "$GITHUB_SHA" ]; then
-            printf 'current=true\n' >> "$GITHUB_OUTPUT"
-          else
-            printf 'current=false\n' >> "$GITHUB_OUTPUT"
-            printf 'Preview-proven source %s is superseded by %s; production promotion is skipped.\n' "$GITHUB_SHA" "$current_main"
-          fi
+          test "$current_main" = "$APPROVED_SOURCE_COMMIT" || {
+            printf 'Approved source %s is superseded by current main %s.\n' "$APPROVED_SOURCE_COMMIT" "$current_main" >&2
+            exit 1
+          }
+          test "$GITHUB_SHA" = "$APPROVED_SOURCE_COMMIT" || {
+            printf 'Dispatch workflow source does not equal the approved source.\n' >&2
+            exit 1
+          }
 
-  superseded-after-preview:
-    name: Preview-proven candidate superseded
+          mkdir -p "$RUNNER_TEMP/production-authorization"
+          jq -n \
+            --arg sourceCommit "$APPROVED_SOURCE_COMMIT" \
+            --arg archiveSha256 "$APPROVED_ARCHIVE_SHA256" \
+            --arg previewRunId "$APPROVED_PREVIEW_RUN_ID" \
+            --arg approvalRecord "$PRODUCTION_APPROVAL_RECORD" \
+            --arg authorizedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{sourceCommit: $sourceCommit, archiveSha256: $archiveSha256, previewRunId: $previewRunId, approvalRecord: $approvalRecord, confirmation: "PROMOTE_EXACT_PREVIEW_BYTES", authorizedAt: $authorizedAt}' \
+            > "$RUNNER_TEMP/production-authorization/authorization.json"
+          cp "$RUNNER_TEMP/approved-preview-run.json" "$RUNNER_TEMP/production-authorization/approved-preview-run.json"
+          printf 'authorized=true\n' >> "$GITHUB_OUTPUT"
+          printf 'source_commit=%s\n' "$APPROVED_SOURCE_COMMIT" >> "$GITHUB_OUTPUT"
+          printf 'archive_sha256=%s\n' "$APPROVED_ARCHIVE_SHA256" >> "$GITHUB_OUTPUT"
+          printf 'preview_run_id=%s\n' "$APPROVED_PREVIEW_RUN_ID" >> "$GITHUB_OUTPUT"
+          printf 'artifact_name=yune-web-release-%s-%s-1\n' "$APPROVED_SOURCE_COMMIT" "$APPROVED_PREVIEW_RUN_ID" >> "$GITHUB_OUTPUT"
+          printf 'canary_artifact_name=yune-web-preview-canary-%s-%s-1\n' "$APPROVED_SOURCE_COMMIT" "$APPROVED_PREVIEW_RUN_ID" >> "$GITHUB_OUTPUT"
+          printf 'preview_deployment_artifact_name=yune-web-preview-deployment-%s-%s-1\n' "$APPROVED_SOURCE_COMMIT" "$APPROVED_PREVIEW_RUN_ID" >> "$GITHUB_OUTPUT"
+      - name: Preserve explicit production authorization
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: yune-web-production-authorization-${{ inputs.approved_source_commit }}-${{ github.run_id }}-1
+          path: ${{ runner.temp }}/production-authorization
+          if-no-files-found: error
+          retention-days: 90
+
+  validate-approved-preview:
+    name: Revalidate the approved prior-run archive and preview receipts
     needs: authorize-production
-    if: needs.authorize-production.outputs.current != 'true'
+    if: needs.authorize-production.outputs.authorized == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - name: Reject GitHub UI reruns
+      - name: Check out verifier at the approved source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ needs.authorize-production.outputs.source_commit }}
+          fetch-depth: 1
+      - name: Download exact certified archive from the approved preview run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.authorize-production.outputs.artifact_name }}
+          path: ${{ runner.temp }}/approved-release
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ needs.authorize-production.outputs.preview_run_id }}
+      - name: Download exact canary receipts from the approved preview run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.authorize-production.outputs.canary_artifact_name }}
+          path: ${{ runner.temp }}/approved-canary
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ needs.authorize-production.outputs.preview_run_id }}
+      - name: Download exact deployment receipt from the approved preview run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.authorize-production.outputs.preview_deployment_artifact_name }}
+          path: ${{ runner.temp }}/approved-preview-deployment
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ needs.authorize-production.outputs.preview_run_id }}
+      - name: Verify exact archive identity and safely extract it
+        env:
+          ARCHIVE: ${{ runner.temp }}/approved-release/yune-web-dist.tar.gz
+          DESTINATION: ${{ runner.temp }}/approved-release-dist
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.authorize-production.outputs.archive_sha256 }}
         run: |
-          test "$GITHUB_RUN_ATTEMPT" = "1" || {
-            printf 'GitHub UI reruns are prohibited; dispatch a fresh, explicitly named setup-only retry.\n' >&2
-            exit 1
-          }
-      - run: printf 'Preview-proven source was superseded; certified production bytes were not changed.\n'
+          sibling="$(tr -d '[:space:]' < "$ARCHIVE.sha256")"
+          actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          test "$actual" = "$sibling"
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import tarfile
+
+          archive = pathlib.Path(os.environ["ARCHIVE"])
+          destination = pathlib.Path(os.environ["DESTINATION"])
+          destination.mkdir(parents=True, exist_ok=False)
+          seen = set()
+          with tarfile.open(archive, "r:gz") as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  relative = pathlib.PurePosixPath(member.name)
+                  normalized = relative.as_posix()
+                  if normalized == "." and member.isdir():
+                      continue
+                  if (
+                      relative.is_absolute()
+                      or ".." in relative.parts
+                      or "\\" in member.name
+                      or not (member.isfile() or member.isdir())
+                      or normalized == "."
+                      or normalized in seen
+                  ):
+                      raise SystemExit(f"unsafe archive member: {member.name!r}")
+                  seen.add(normalized)
+              bundle.extractall(destination, members=members, filter="data")
+          PY
+      - name: Reconcile source, toolchain, inventory, and every local file
+        env:
+          YUNE_WEB_EXPECTED_DIST: ${{ runner.temp }}/approved-release-dist
+          YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ needs.authorize-production.outputs.source_commit }}
+          YUNE_WEB_LOCAL_ARTIFACT_RECEIPT: ${{ runner.temp }}/approved-preview-validation/local-artifact-verification.json
+        run: |
+          mkdir -p "$RUNNER_TEMP/approved-preview-validation"
+          node --test apps/yune-web/e2e/public-artifact-verifier.test.mjs
+          node apps/yune-web/e2e/verify-local-artifact.mjs
+      - name: Require green preview reconciliation and frozen canaries
+        env:
+          APPROVED_SOURCE_COMMIT: ${{ needs.authorize-production.outputs.source_commit }}
+          APPROVED_ARCHIVE_SHA256: ${{ needs.authorize-production.outputs.archive_sha256 }}
+        run: |
+          grep -Fx "source_commit=$APPROVED_SOURCE_COMMIT" \
+            "$RUNNER_TEMP/approved-preview-deployment/deployment.txt" >/dev/null
+          grep -Fx "archive_sha256=$APPROVED_ARCHIVE_SHA256" \
+            "$RUNNER_TEMP/approved-preview-deployment/deployment.txt" >/dev/null
+          grep -Fx "status=uploaded" \
+            "$RUNNER_TEMP/approved-preview-deployment/deployment.txt" >/dev/null
+          jq -e \
+            --arg sha "$APPROVED_SOURCE_COMMIT" \
+            '.environment == "preview" and .latest_stage.status == "success" and .deployment_trigger.type == "ad_hoc" and .deployment_trigger.metadata.commit_hash == $sha and .deployment_trigger.metadata.commit_dirty == false' \
+            "$RUNNER_TEMP/approved-preview-deployment/deployment.json" >/dev/null
+          jq -e \
+            '.source.config.production_deployments_enabled == false and .source.config.preview_deployment_setting == "none"' \
+            "$RUNNER_TEMP/approved-preview-deployment/project-interlock.json" >/dev/null
+          jq -e \
+            --arg sha "$APPROVED_SOURCE_COMMIT" \
+            '.sourceCommit == $sha and .certificationMode == "legacy" and .canaryStarted == true and .web03Status == "passed" and .web06Status == "not-run" and .web06ClaimMade == false and .status == "passed"' \
+            "$RUNNER_TEMP/approved-canary/setup-status.json" >/dev/null
+          jq -e \
+            --arg sha "$APPROVED_SOURCE_COMMIT" \
+            '.expectedSourceCommit == $sha and .passed == true and (.verified | length) > 0' \
+            "$RUNNER_TEMP/approved-canary/deployed-artifact-verification.json" >/dev/null
+          mkdir -p "$RUNNER_TEMP/approved-preview-validation/approved-receipts"
+          cp "$RUNNER_TEMP/approved-preview-deployment/deployment.txt" \
+            "$RUNNER_TEMP/approved-preview-deployment/deployment.json" \
+            "$RUNNER_TEMP/approved-preview-deployment/project-interlock.json" \
+            "$RUNNER_TEMP/approved-canary/setup-status.json" \
+            "$RUNNER_TEMP/approved-canary/deployed-artifact-verification.json" \
+            "$RUNNER_TEMP/approved-preview-validation/approved-receipts/"
+          {
+            printf '{\n'
+            printf '  "sourceCommit": "%s",\n' "$APPROVED_SOURCE_COMMIT"
+            printf '  "archiveSha256": "%s",\n' "$APPROVED_ARCHIVE_SHA256"
+            printf '  "validatedAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf '  "status": "passed"\n'
+            printf '}\n'
+          } > "$RUNNER_TEMP/approved-preview-validation/status.json"
+      - name: Preserve approved-preview revalidation receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: yune-web-approved-preview-validation-${{ needs.authorize-production.outputs.source_commit }}-${{ github.run_id }}-1
+          path: ${{ runner.temp }}/approved-preview-validation
+          if-no-files-found: error
+          retention-days: 90
 
   deploy-production:
     name: Promote identical bytes to production
     needs:
-      - build-certify
       - authorize-production
-    if: needs.authorize-production.outputs.current == 'true'
+      - validate-approved-preview
+    if: needs.authorize-production.outputs.authorized == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: yune-web-production
@@ -605,6 +1114,11 @@ jobs:
       deployment_url: ${{ steps.resolve.outputs.deployment_url }}
       deployment_id: ${{ steps.resolve.outputs.deployment_id }}
       current: ${{ steps.late-current.outputs.current }}
+    env:
+      APPROVED_SOURCE_COMMIT: ${{ needs.authorize-production.outputs.source_commit }}
+      APPROVED_ARCHIVE_SHA256: ${{ needs.authorize-production.outputs.archive_sha256 }}
+      APPROVED_PREVIEW_RUN_ID: ${{ needs.authorize-production.outputs.preview_run_id }}
+      PRODUCTION_APPROVAL_RECORD: ${{ inputs.production_approval_record }}
     steps:
       - name: Reject GitHub UI reruns
         run: |
@@ -616,24 +1130,32 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/production-deployment"
           {
-            printf 'source_commit=%s\n' "$GITHUB_SHA"
+            printf 'source_commit=%s\n' "$APPROVED_SOURCE_COMMIT"
+            printf 'archive_sha256=%s\n' "$APPROVED_ARCHIVE_SHA256"
+            printf 'approved_preview_run_id=%s\n' "$APPROVED_PREVIEW_RUN_ID"
+            printf 'approval_record=%s\n' "$PRODUCTION_APPROVAL_RECORD"
             printf 'attempted_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             printf 'status=setup-pending\n'
           } > "$RUNNER_TEMP/production-deployment/deployment.txt"
       - name: Download certified bundle
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: ${{ needs.build-certify.outputs.artifact_name }}
+          name: ${{ needs.authorize-production.outputs.artifact_name }}
           path: ${{ runner.temp }}/release
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ needs.authorize-production.outputs.preview_run_id }}
       - name: Verify digest and safely extract certified bundle
         env:
           ARCHIVE: ${{ runner.temp }}/release/yune-web-dist.tar.gz
           DESTINATION: ${{ runner.temp }}/release-dist
-          EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.authorize-production.outputs.archive_sha256 }}
         run: |
+          sibling="$(tr -d '[:space:]' < "$ARCHIVE.sha256")"
           actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
           test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
-          printf 'archive_sha256=%s\nstatus=artifact-validated\n' "$actual" >> "$RUNNER_TEMP/production-deployment/deployment.txt"
+          test "$actual" = "$sibling"
+          printf 'status=artifact-validated\n' >> "$RUNNER_TEMP/production-deployment/deployment.txt"
           python3 - <<'PY'
           import os
           import pathlib
@@ -662,11 +1184,11 @@ jobs:
             printf 'Could not prove the current main SHA; refusing to use Cloudflare credentials.\n' >&2
             exit 1
           }
-          if [ "$current_main" = "$GITHUB_SHA" ]; then
+          if [ "$current_main" = "$APPROVED_SOURCE_COMMIT" ]; then
             printf 'current=true\n' >> "$GITHUB_OUTPUT"
           else
             printf 'current=false\n' >> "$GITHUB_OUTPUT"
-            printf 'Candidate %s was superseded by %s during environment admission; production upload is a green no-op.\n' "$GITHUB_SHA" "$current_main"
+            printf 'Candidate %s was superseded by %s during environment admission; production upload is a green no-op.\n' "$APPROVED_SOURCE_COMMIT" "$current_main"
           fi
       - name: Assert Cloudflare Git auto-deploy remains disabled
         if: steps.late-current.outputs.current == 'true'
@@ -694,7 +1216,7 @@ jobs:
           wrangler pages deploy "$RUNNER_TEMP/release-dist" \
             --project-name yune-web \
             --branch main \
-            --commit-hash "$GITHUB_SHA" \
+            --commit-hash "$APPROVED_SOURCE_COMMIT" \
             --commit-dirty=false 2>&1 | tee "$RUNNER_TEMP/production-deployment/wrangler.log"
       - name: Resolve and assert production deployment identity
         id: resolve
@@ -711,7 +1233,7 @@ jobs:
               -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
               "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/yune-web/deployments" \
               > "$RUNNER_TEMP/production-deployments-response.json"
-            selected="$(jq -c --arg url "$deployment_url" --arg sha "$GITHUB_SHA" \
+            selected="$(jq -c --arg url "$deployment_url" --arg sha "$APPROVED_SOURCE_COMMIT" \
               '[.result[] | select(.url == $url and .environment == "production" and .deployment_trigger.metadata.commit_hash == $sha and .deployment_trigger.metadata.branch == "main") | {id, url, environment, created_on, deployment_trigger: {type: .deployment_trigger.type, metadata: {branch: .deployment_trigger.metadata.branch, commit_hash: .deployment_trigger.metadata.commit_hash, commit_dirty: .deployment_trigger.metadata.commit_dirty}}, latest_stage: {status: .latest_stage.status}}] | sort_by(.created_on) | last' \
               "$RUNNER_TEMP/production-deployments-response.json")"
             [ "$selected" != "null" ] && break
@@ -743,7 +1265,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: yune-web-production-deployment-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: yune-web-production-deployment-${{ needs.authorize-production.outputs.source_commit }}-${{ github.run_id }}-1
           path: ${{ runner.temp }}/production-deployment
           if-no-files-found: error
           retention-days: 90
@@ -751,14 +1273,14 @@ jobs:
   verify-production:
     name: Verify production identity and bytes
     needs:
-      - build-certify
+      - authorize-production
       - deploy-production
     if: needs.deploy-production.outputs.current == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       YUNE_WEB_APP_URL: https://yune-web.pages.dev/
-      YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+      YUNE_WEB_EXPECTED_SOURCE_COMMIT: ${{ needs.authorize-production.outputs.source_commit }}
     steps:
       - name: Reject GitHub UI reruns
         run: |
@@ -771,7 +1293,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/production-verification"
           {
             printf '{\n'
-            printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
+            printf '  "sourceCommit": "%s",\n' "$YUNE_WEB_EXPECTED_SOURCE_COMMIT"
             printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
             printf '  "seededAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             printf '  "status": "setup-pending"\n'
@@ -780,21 +1302,26 @@ jobs:
       - name: Check out verifier at exact source
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.authorize-production.outputs.source_commit }}
           fetch-depth: 1
       - name: Download certified bundle
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: ${{ needs.build-certify.outputs.artifact_name }}
+          name: ${{ needs.authorize-production.outputs.artifact_name }}
           path: ${{ runner.temp }}/release
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ needs.authorize-production.outputs.preview_run_id }}
       - name: Verify digest and safely extract certified bundle
         env:
           ARCHIVE: ${{ runner.temp }}/release/yune-web-dist.tar.gz
           DESTINATION: ${{ runner.temp }}/release-dist
-          EXPECTED_ARCHIVE_SHA256: ${{ needs.build-certify.outputs.archive_sha256 }}
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.authorize-production.outputs.archive_sha256 }}
         run: |
+          sibling="$(tr -d '[:space:]' < "$ARCHIVE.sha256")"
           actual="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
           test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          test "$actual" = "$sibling"
           python3 - <<'PY'
           import os
           import pathlib
@@ -826,7 +1353,7 @@ jobs:
           [ "$VERIFY_OUTCOME" = success ] && status=passed
           {
             printf '{\n'
-            printf '  "sourceCommit": "%s",\n' "$GITHUB_SHA"
+            printf '  "sourceCommit": "%s",\n' "$YUNE_WEB_EXPECTED_SOURCE_COMMIT"
             printf '  "appUrl": "%s",\n' "$YUNE_WEB_APP_URL"
             printf '  "completedAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             printf '  "status": "%s"\n' "$status"
@@ -836,7 +1363,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: yune-web-production-verification-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: yune-web-production-verification-${{ needs.authorize-production.outputs.source_commit }}-${{ github.run_id }}-1
           path: ${{ runner.temp }}/production-verification
           if-no-files-found: error
           retention-days: 90

@@ -39,12 +39,12 @@ comparator = load_module(
 class M59Increment4cResidualClassifierTests(unittest.TestCase):
     ORACLE = (
         REPO_ROOT
-        / "docs/reports/evidence/m59-canonical-jyutping-reachability-parity"
+        / "scripts/tests/fixtures/m59-canonical-jyutping-reachability-parity"
         / "increment-1-executable-evidence/lane-a-oracle.json"
     )
     INVENTORY = (
         REPO_ROOT
-        / "docs/reports/evidence/m59-canonical-jyutping-reachability-parity"
+        / "scripts/tests/fixtures/m59-canonical-jyutping-reachability-parity"
         / "increment-2-profile-paging/opencc-same-code-inventory.csv"
     )
     OPENCC = REPO_ROOT / "crates/yune-core/src/opencc/data/HKVariantsFull.txt"

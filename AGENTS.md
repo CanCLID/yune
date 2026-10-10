@@ -29,85 +29,64 @@ TypeDuck profile split).
 
 ## Current State
 
-- **Phase 1 engine/basic oracle parity is complete for the named target set.**
-  M0-M24 are complete, including M10 TypeDuck-Windows backend compatibility
-  smoke through the named TypeDuck profile ABI and the M24 historical
-  TypeDuck-Web-derived dogfooding/demo-hardening batch. Future `yune-web`
-  dogfood reports should start a new scoped plan rather than reopening Phase 1.
+- **Phase 1 engine/basic oracle parity is complete for the named target set**
+  (M0-M24), including TypeDuck-Windows backend compatibility smoke through the
+  named TypeDuck profile ABI and the TypeDuck-Web-derived dogfooding batches.
 - **Windows product/platform work is externally owned.** The dedicated Windows
   Yune repository owns the TypeDuck-Windows frontend/product schedule. This
-  repository retains the superseded handoff record at
-  `docs/plans/completed/p2-win01-plan-typeduck-windows-next.md` and owns only the
-  engine/package contract, named profile API, oracle fixtures, and separately
-  reviewed cross-repository engine proposals. Windows product needs must not
-  widen Yune's default upstream ABI.
-- **M59 canonical reachability and exact-order closure is complete.** The final
-  accepted state has Lane A strict `13/13` across 5,705 captured positions,
-  Lane B exact for all seven captured inputs, Cangjie marked `12/12` with its
-  owning suite `3 passed / 0 ignored`, deployed 37/59 Luna page-shape parity,
-  schema-general default-on reachability coverage across all shipped schema
-  assets, and a source-current `443cc636` performance ratchet of `32/32`
-  aggregate rows and `160/160` individual observations. Completed plan:
-  `docs/plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`.
-- **M60 (schema-general reachability formalism) is complete.** Formalized
-  M59's shipped default-on single-character reachability without changing
-  engine behavior. The live registry retains `m59-reach03-v1`, adds
-  `m60-reachability-v1`, and has exactly `reachabilityOptOuts: []`. A
-  production-semantic read-only Rust audit plus the mandatory checker
-  classify every tracked schema root and enforce the exact namespaced
-  explicit-false/opt-out bijection. New product schemas remain
-  blocking-open; the canonical contract records per-input
-  `prefix_fallback_owned` precedence. Completed plan:
-  `docs/plans/completed/m60-plan-schema-general-single-character-reachability.md`.
-- **M61 (native Track A memory-owner reduction) is complete as a measured
-  partial/no-go.** Five exact-source owned rounds plus five byte-backed
-  rounds at correction source `91f59696` all passed `17/17` candidate parity
-  and green Track B/signed guards. The byte-backed diagnostic projected a
-  `116,162,560 B` median Track A peak, but owner reconciliation explained
-  only `74.61%` of the private delta, leaving a `6,371,950 B` residual above
-  its `5,019,238 B` bound. Disposition D explicitly reverted the correction
-  (`01a62f2a`), restoring runtime tree
-  `f1c36a0079d85628f5cbef140bd94288930cc2e8`. No production-default memory
-  reduction or supplemental-ratchet claim was accepted. Completed plan:
-  `docs/plans/completed/m61-plan-native-track-a-memory-owner-reduction.md`.
-- **M47 (iOS-budget native memory reduction) is complete for its portable scope.**
-  Phase 0 + RED-01…RED-08 byte-backed the native footprint (table, prism, *and*
-  rich comment/lookup payloads served from mmap'd compiled storage like
-  librime/Cantoboard), taking the comments-intact `jyut6ping3_mobile` keyboard
-  profile from `~298 MB` to `~67 MB` working set / `~22 MB` private (the iOS-dirty
-  proxy, under the 48 MB target) with the full multilingual TypeDuck dictionary
-  retained and parity-clean. **All numbers are Windows proxies, not iOS
-  `phys_footprint` — "iOS budget proven" is not claimed.** On-device measurement
-  remains a far-future platform validation gate, and RED-09/10/11 remain optional
-  future engine-optimization candidates; none is a newly opened numbered
-  milestone. Completed plan:
-  `docs/plans/completed/m47-plan-ios-budget-native-memory-reduction.md`; current
-  result: `docs/reports/yune-vs-librime-performance.md`; full chronology:
-  `docs/reports/history/2026-06-29-ios-memory-budget-pre-consolidation.md`.
+  repository owns only the engine/package contract, the named profile API,
+  oracle fixtures, and separately reviewed cross-repository engine proposals.
+  Windows product needs must not widen Yune's default upstream ABI.
+- **Canonical reachability and exact-order closure (M59/M60) is complete.**
+  Lane A strict `13/13` across 5,705 captured positions, Lane B exact for all
+  seven captured inputs, Cangjie `12/12`, deployed 37/59 Luna page-shape
+  parity, schema-general default-on single-character reachability for every
+  shipped schema, and a source-current `443cc636` performance ratchet of
+  `32/32` aggregate rows. The live registry has exactly `reachabilityOptOuts: []`.
+- **Native memory reduction (M61) closed as a measured no-go.** The byte-backed
+  correction was reverted; no production-default memory reduction is claimed.
+  Any new native-memory attempt needs fresh source-bound owner attribution.
+- **iOS-budget native memory work (M47) is complete for its portable scope.**
+  The comments-intact `jyut6ping3_mobile` keyboard profile went from about
+  `298 MB` to about `67 MB` working set / `22 MB` private, measured as Windows
+  proxies, not iOS `phys_footprint`; on-device validation is a planned issue.
   Lean probe: `crates/yune-rime-api/tests/native_memory_probe.rs`.
-- **AI foundation exists.** M11 completed the core/CLI AI layer. M13 exposed it
-  in the web harness now canonical as `yune-web`: default-off, local-only,
-  second-pass `stage_ai` flow.
-  Remote providers, richer contextual translation, and native frontend AI UX
-  remain future product tracks.
+- **AI foundation exists.** The core/CLI AI layer (M11) and its default-off,
+  local-only, second-pass `stage_ai` exposure in `yune-web` (M13) are done.
+  Remote providers and native frontend AI UX remain future product tracks.
+
+Completed milestones, with closing commits and former plan paths, are listed in
+[docs/history.md](./docs/history.md). Current numbers are in
+[docs/performance.md](./docs/performance.md).
+
+## Planning Happens In GitHub Issues
+
+Planned and in-progress work lives in
+[GitHub issues](https://github.com/CanCLID/yune/issues). The pinned issue
+labelled `roadmap` is the parent of every planned item; children carry
+"blocked by" relationships. Do not create plan files under `docs/`. Issues
+are public: state the user-visible outcome in the title, gloss internal
+jargon on first use, and keep host-specific paths and private data out.
+Pull request descriptions carry the closeout: the exact verification commands
+run and their results.
 
 ## Canonical Docs - Read These
 
 - **[docs/conventions.md](./docs/conventions.md) - start here.** The single
   reference for architecture, stack, repo structure, coding/testing
   conventions, C ABI rules, integrations, and current risks.
-- [docs/roadmap.md](./docs/roadmap.md) - current dashboard, active sequence,
-  scope boundaries, and milestone readiness/closeout state.
-- [docs/ledgers/milestone-history.md](./docs/ledgers/milestone-history.md) - completed milestone
-  ledger and historical plan/evidence pointers.
-- [docs/decisions.md](./docs/decisions.md) - the decision log (standing
-  principles plus `D-*` entries).
-- [docs/requirements.md](./docs/requirements.md) - requirement IDs and status.
-- [docs/ledgers/fork-parity-ledger.md](./docs/ledgers/fork-parity-ledger.md) - source of truth
-  for Cantoboard/TypeDuck fork improvements versus upstream `1.17.0`. Consult
-  this before touching TypeDuck/Cantonese parity.
-- [docs/plans/](./docs/plans) - active, reference, and completed execution records.
-  Finished plans live under `docs/plans/completed/`.
+- [docs/contracts/engine-support-contract.md](./docs/contracts/engine-support-contract.md)
+  - supported targets, oracle precedence, ABI boundaries, evidence lanes, and
+  the standing requirements.
+- [docs/decisions.md](./docs/decisions.md) - standing principles plus the
+  decisions that still bind code.
+- [docs/contracts/fork-parity.md](./docs/contracts/fork-parity.md) - source of
+  truth for Cantoboard/TypeDuck fork improvements versus upstream `1.17.0`.
+  Consult this before touching TypeDuck/Cantonese parity.
+- [docs/history.md](./docs/history.md) - completed milestone ledger with
+  closing commits; full plan text is in git history.
+- [docs/performance.md](./docs/performance.md) - the current performance
+  scorecard and bottleneck disposition.
 
 ## Key Constraints
 

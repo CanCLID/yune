@@ -6,7 +6,7 @@
 //   $env:YUNE_MEM_SCHEMA="jyut6ping3_mobile"
 //   $env:YUNE_MEM_DEFAULT="jyut6ping3_mobile"
 //   $env:YUNE_MEM_DISABLE_DICTIONARY_LOOKUP_RECORDS="1"
-//   $env:YUNE_MEM_EVIDENCE_DIR="docs/reports/evidence/m47-ios-budget-native-memory-attribution-2026-06-28"
+//   $env:YUNE_MEM_EVIDENCE_DIR="$HOME/yune-evidence/m47-native-memory"   # any external dir
 //   cargo test -p yune-rime-api --test native_memory_probe -- --ignored --exact native_memory_probe_reports_working_set --nocapture
 use std::{
     alloc::{GlobalAlloc, Layout, System},

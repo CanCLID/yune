@@ -1,7 +1,0 @@
-area,metric,ratio,current,status
-Native Track A peak memory,Yune / librime max peak working set,10.995,188.4 MB vs 17.1 MB,blocker
-Browser Luna memory,Yune public demo / My RIME WASM peak,4.000,64.0 MiB vs 16.0 MiB,blocker
-Native short key ni,Yune / librime median latency,3.156,45.450 us vs 14.400 us,blocker
-Native 37-char pinyin,Yune / librime median latency,3.074,890.689 us vs 289.773 us,blocker
-Browser Luna startup,Yune public demo / My RIME ready-to-input,1.577,1000 ms vs 634 ms,watch
-Browser Jyutping memory guard,Yune / My RIME peak; not same dictionary,2.353,160.0 MiB vs 68.0 MiB,guard_only

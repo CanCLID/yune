@@ -5,7 +5,7 @@ export const OCTAGRAM_MODEL_FILENAME = `${OCTAGRAM_MODEL_ID}.gram`;
 export const OCTAGRAM_DEV_MODEL_ASSET_PATH = `dev/octagram/${OCTAGRAM_MODEL_FILENAME}`;
 export const OCTAGRAM_MODEL_SHA256 = "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3";
 export const OCTAGRAM_MODEL_BYTES = 10513408;
-// Source pin lives in docs/reports/evidence/m54-native-octagram-grammar-support/external-pins.json.
+// Source pin lives in apps/yune-web/scripts/octagram-external-pins.json.
 
 export interface GrammarModelRequest {
   modelId: string;

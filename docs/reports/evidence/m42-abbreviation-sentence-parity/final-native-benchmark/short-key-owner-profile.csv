@@ -1,3 +1,0 @@
-﻿"input","samples","process_key_us_per_op","translator_us_per_op","abi_get_context_us_per_call","abi_free_context_us_per_call","context_page_candidates_per_op","abi_c_string_allocations_per_op","abi_c_string_bytes_per_op","rsmarisa_exact_lookup_calls_per_op","rsmarisa_prefix_lookup_calls_per_op","owned_candidates_per_op"
-"ni","80","56.25","53","0.9","0.1","2.5","6","21","1","0.5","20"
-"hao","80","38.2","34.7","1","0.1","1.667","4","16","1","0.667","20"

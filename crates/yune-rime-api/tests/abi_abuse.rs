@@ -238,9 +238,7 @@ fn brace_delta(line: &str) -> i32 {
 }
 
 fn phase0_ledger_export_count(root: &std::path::Path) -> usize {
-    let ledger = root.join(
-        "docs/reports/evidence/m56-productization-hardening/phase-0-inventory/abi-entry-ledger.csv",
-    );
+    let ledger = root.join("crates/yune-rime-api/tests/fixtures/m56-abi-entry-ledger.csv");
     fs::read_to_string(ledger)
         .expect("Phase 0 ABI ledger should be readable")
         .lines()

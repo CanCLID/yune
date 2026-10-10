@@ -1,10 +1,10 @@
 # Yune Conventions & Reference
 
 This is the repository's canonical architecture, stack, ownership, testing,
-integration, and documentation reference. It supersedes the removed
-`.planning/codebase/` maps. Current sequencing lives in
-[`roadmap.md`](./roadmap.md); completed outcomes live in
-[`ledgers/milestone-history.md`](./ledgers/milestone-history.md).
+integration, and documentation reference. Current and planned work lives in
+[GitHub issues](https://github.com/CanCLID/yune/issues) (the pinned issue
+labelled `roadmap` is the entry point); completed outcomes live in
+[`history.md`](./history.md).
 
 Paths and symbol names below are authoritative. Line numbers in historical
 plans or evidence are source-bound hints; locate current symbols by name.
@@ -141,9 +141,9 @@ and deployment scripts may pin their own toolchains and must record them.
 | `crates/yune-cli/src/` | CLI surrogate and fixture/transcript rendering |
 | `packages/yune-web-runtime/` | TypeScript Emscripten runtime wrapper |
 | `apps/yune-web/` | Tracked browser harness, public demo, Playwright gates, shipped schema assets |
-| `scripts/` | Build, benchmark, packaging, curation, evidence, and policy tools |
+| `scripts/` | Build, benchmark, packaging, oracle-capture, and release-policy tools |
 | `fixtures/` | CLI and frontend-trace fixtures |
-| `docs/` | Contracts, roadmap, requirements, decisions, plans, ledgers, reports, provenance |
+| `docs/` | Conventions, contracts, decisions, history, performance, provenance |
 
 **Where to add behavior:**
 
@@ -252,6 +252,17 @@ exported function table or `yune_web_*` surface. Dynamic-loader tests load the
 actual cdylib. Browser-visible claims require real-browser, real-asset evidence;
 native fallback tests do not prove browser behavior.
 
+**Oracle fixture trees separate lanes by directory.** `upstream-1.17.0/` holds
+core-oracle fixtures, `typeduck-v1.1.2/` holds TypeDuck-profile fixtures, and
+hybrid lanes get their own directory (`upstream-jyutping/`, `upstream-octagram/`).
+Never mix lanes in one directory.
+
+**Browser input-latency gate.** `npm --prefix apps/yune-web/e2e run
+test:e2e:input-latency:public` is a binding release gate: in the throttled lane
+p95 must stay at or under 750 ms and no key over 1,000 ms, no schema or
+manifest fetch may occur during timed typing, the exact unamplified canary
+runs first, and a measured red is never retried into green.
+
 **Blocked and evidence-only tests are explicit.** A behavior blocker uses
 `#[ignore = "blocked: ..."]` with a `panic!()` body. Evidence-only probes use
 an `evidence-only:`/`evidence capture:` reason and explicit output location.
@@ -283,8 +294,8 @@ test/unwind behavior.
   require a named target and oracle evidence.
 - **Local storage:** user dictionaries and AI memory are local, separate
   namespaces with explicit lifecycle and privacy rules.
-- **Automation:** `.github/workflows/evidence-growth.yml` enforces the tracked
-  evidence-growth policy. The engine has no required hosted service, auth,
+- **Automation:** `.github/workflows/deploy-yune-web.yml` is the certified
+  browser release path. The engine has no required hosted service, auth,
   database, or HTTP-webhook dependency.
 
 ---
@@ -310,50 +321,43 @@ test/unwind behavior.
   correct engine behavior. Keep fail-closed product and deployment gates.
 - **Performance evidence:** native, browser, product, and platform counters are
   separate lanes. Current results and bottlenecks live only in the
-  [`performance dashboard`](./reports/yune-vs-librime-performance.md).
+  [`performance page`](./performance.md).
 - **Approximation boundaries:** local userdb storage and the focused OpenCC
   implementation preserve named observable behavior; they are not claims of
   LevelDB or full OpenCC implementation parity.
 
 ---
 
-## 10. Planning Docs
+## 10. Planning, History, And Evidence
 
-Canonical ownership:
+**Where things live.** The docs tree describes what is true about the system;
+intent lives in issues.
 
-- `roadmap.md`: current sequence, scope, and readiness.
-- `requirements.md`: requirement definitions, status, and traceability.
-- `decisions.md`: durable decisions and rationale.
-- `ledgers/milestone-history.md`: completed milestone outcomes.
-- `plans/active`, `plans/reference`, `plans/completed`: execution authority,
-  reference designs, and historical completed records amended only by an
-  explicit dated correction or addendum.
+- `conventions.md` (this file), `contracts/`, and `decisions.md`: binding rules.
+  `decisions.md` keeps the standing principles plus only the decisions that
+  still constrain code, scope, oracle choice, or test design.
+- `history.md`: one row per completed milestone or record, with the closing
+  commit and the former plan path. Full plan text and evidence packets are in
+  git history before the 2026-10 docs consolidation commit.
+- `performance.md`: the current performance scorecard.
+- GitHub issues: every planned or in-progress piece of work, with
+  parent/child and "blocked by" relationships. There is no `TODO`/`FIXME` in
+  code. Issues are public: state the user-visible outcome in the title, gloss
+  internal jargon, and never paste host-specific paths or private data.
+- Pull requests carry the closeout: the exact verification commands run and
+  their results, in the description.
 
-**Evidence retention.** Raw native benchmark output belongs under the
-user-level external evidence root selected by benchmark scripts, never in a Git
-worktree. Import only the curator allowlist with
-`scripts/curate-compact-evidence.py`. Run
-`python3 scripts/check-evidence-growth.py --repo-root .` for evidence changes.
-The policy rejects raw metric classes, unexcepted files over 5 MiB, and curated
-packets over 10 MiB. Removed historical leaves remain recoverable through
-`docs/ledgers/evidence-pruning/current-ledger.csv`; do not rewrite signed
-history.
+**Evidence retention.** Raw benchmark output belongs under the user-level
+external evidence root selected by the benchmark scripts
+(`scripts/evidence-output-path.py`), never in a Git worktree. Compact curated
+receipts that a test needs are checked in as test fixtures next to that test.
+Historical evidence packets removed from the tree remain in git history before
+the consolidation commit; do not rewrite signed history.
 
 **Markdown.** `docs/.prettierrc.json` uses `proseWrap: "never"`. Prefer one
 source line per paragraph/list item where practical; tables, code, paths, and
 commands may stay long. Validate with `markdownlint-cli2` when a docs gate
 requires it.
-
-**Plan records.** Every plan under `plans/active`, `plans/reference`, or
-`plans/completed` opens immediately below its title with a status banner whose
-separate `Status` and `Milestone` fields name its state and owning
-milestone/stage. Use
-`Updated` for active/reopened/parked records and `Closed` for
-complete/finished/superseded records. Plan filenames use the established
-`m<nn>-<type>-<topic>.md` or Phase 2
-`p<phase>-<track><number>-<type>-<topic>.md` form. Finished or superseded plans
-move to `plans/completed/`, never disappear. Keep plan state consistent with
-the roadmap and milestone ledger.
 
 Behavior-sensitive commits with generic subjects include a short body or
 evidence pointer so the invariant is recoverable without reconstructing the
@@ -367,7 +371,7 @@ are reviewed; an explicit `false` requires an exact, unexpired opt-out entry.
 
 ---
 
-_Last reviewed: 2026-07-15. M59 is complete; WEB03-11 is maintenance;
-schema-general reachability onboarding follows its canonical contract. Windows
-product execution is external, while this repo retains
+_Last reviewed: 2026-10-10, at the docs consolidation. Planning moved to
+GitHub issues; schema-general reachability onboarding follows its canonical
+contract; Windows product execution is external, while this repo retains
 engine/package/profile-API ownership._

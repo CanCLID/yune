@@ -1,2 +1,0 @@
-Now drawing from 'AC Power'
- -InternalBattery-0 (id=26804323)	75%; charging; 1:00 remaining present: true

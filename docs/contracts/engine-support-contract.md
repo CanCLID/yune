@@ -160,7 +160,7 @@ Default upstream ABI rules:
 - `RimeLeversApi` remains covered by upstream-shaped layout expectations.
 - New default `RimeApi` fields, reordered fields, or `RimeCandidate` widening
   require a new named upstream target, header evidence, layout tests, and a
-  roadmap/requirement update.
+  update to this contract and the roadmap issue.
 
 ## TypeDuck And Yune Windows Profile ABI Contract
 
@@ -371,6 +371,42 @@ Changing a support boundary requires:
 
 1. Name the target, oracle, and owner module.
 2. Capture or cite the oracle/header evidence before implementation.
-3. Update this contract and the relevant requirement or roadmap row.
+3. Update this contract and the roadmap issue.
 4. Add or update focused layout, profile, export-list, or behavior tests.
 5. Keep evidence lanes separate in reports and closeout docs.
+
+## Standing Requirements Carried From The Former Requirements Register
+
+These statements were the still-binding rows of the former
+`docs/requirements.md` (removed in the 2026-10 docs consolidation; the full
+register with every requirement ID remains in git history). Each one
+constrains current code and is not stated elsewhere in this contract.
+
+- **Forward-navigation policy (formerly M59-NAV-01).** One `Engine` policy keyed
+  on `SchemaBehaviorProfile`, never on a schema id: the Standard profile
+  completes the candidate list before paging; TypeDuck inputs of two characters
+  or fewer keep bounded output and longer inputs complete; physical and API
+  paging are equivalent.
+- **Workspace deployment (formerly M59-DEPLOY-01).** Deployment mirrors librime
+  `WorkspaceUpdate`: a missing top-level schema lets valid siblings deploy but
+  reports aggregate failure; a malformed present schema or dependency fails;
+  an absent dependency is diagnosed and skipped, never recorded as built.
+- **Caller-owned config storage (formerly P2-WIN02-BOUNDARY-04).**
+  Config-returning ABI calls such as `RimeSchemaOpen` treat a non-null caller
+  `RimeConfig.ptr` as uninitialized storage: overwrite it, never free it.
+  TypeDuck-Windows passes garbage slots and this stays tolerated.
+- **Upstream MARISA table allowlist (formerly M57-PARITY-02).** Known upstream
+  `luna_pinyin` MARISA table checksum pairs form an explicit allowlist gated on
+  dictionary name, string-table size 1,574,520, and the (source, table)
+  checksum tuple. A new payload needs a new tuple plus fixture, never a
+  loosened gate.
+- **Gloss-column selection is UI-owned (formerly FORK-PARITY-09).** The engine
+  emits stable, ordered dictionary-lookup payloads and performs no engine-side
+  `display_languages` filtering; the frontend selects gloss columns.
+- **Mobile behavior is data-driven (formerly IOS-DEV-04).** Any future mobile or
+  iOS behavior (near-key correction maps, layout differences) is data/config
+  driven or UI-owned, never a hardcoded desktop-versus-mobile engine branch.
+- **Reachability deploy matrix rows (formerly M59-REACH-03).** The
+  transformed-algebra reachability deploy matrix keeps default-on and
+  explicit-false rows for Double Pinyin and Bopomofo even while unshipped, with
+  Stroke as the identity/null-map control.

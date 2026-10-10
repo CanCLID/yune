@@ -7,9 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This repo already maintains authoritative agent-facing docs. Treat them as the
 source of truth and read them before non-trivial work:
 
-- **[AGENTS.md](AGENTS.md)** — project orientation, current phase/milestone state, key constraints, workflow preferences, and the release quality gate.
+- **[AGENTS.md](AGENTS.md)** — project orientation, current state, where planning lives, key constraints, workflow preferences, and the release quality gate.
 - **[docs/conventions.md](docs/conventions.md)** — the single reference for architecture, stack, repo structure, coding/testing conventions, and C ABI rules. Sections are numbered; cite them when explaining decisions.
-- **[docs/roadmap.md](docs/roadmap.md)** — active milestone sequence and scope boundaries. There is no `TODO`/`FIXME` in code; the roadmap + conventions are the live issue inventory.
+- **[GitHub issues](https://github.com/CanCLID/yune/issues)** — planning and the live issue inventory. The pinned issue labelled `roadmap` lists current and planned work with parent and blocked-by links; there is no `TODO`/`FIXME` in code. Completed milestones are in [docs/history.md](docs/history.md).
 - Subtree guides override the root for their area: [apps/yune-web/AGENTS.md](apps/yune-web/AGENTS.md) and [packages/yune-web-runtime/AGENTS.md](packages/yune-web-runtime/AGENTS.md).
 
 ## What This Is

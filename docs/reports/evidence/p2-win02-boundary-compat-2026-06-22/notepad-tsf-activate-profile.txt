@@ -1,4 +1,0 @@
-﻿CoInitializeEx=0x00000000
-CoCreateInstance(ITfInputProcessorProfileMgr)=0x00000000
-ActivateProfile(flags=0x00000004)=0x00000000
-GetActiveProfile=0x00000000 type=1 langid=0x0c04 hkl=0x0000000000000000 flags=0x00000003

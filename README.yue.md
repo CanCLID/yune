@@ -105,7 +105,7 @@ deterministic core 係 safe Rust。workspace 預設禁止 unsafe code，但
 - **AI 姿態：** AI layer 已經存在，但喺 web harness 入面預設熄咗、只行本地，而且
   唔會走入 classic deterministic input path。
 
-詳情睇 [docs/roadmap.md](docs/roadmap.md)。
+計劃緊同進行緊嘅工作喺 [GitHub issues](https://github.com/CanCLID/yune/issues) 追蹤（標籤 `roadmap` 嘅置頂 issue 係入口）；已完成嘅 milestone 列喺 [docs/history.md](docs/history.md)。
 
 ## 兼容性
 
@@ -145,7 +145,7 @@ deployed 47-key 正常打字以 `51 ms` p95 / `55 ms` max、零 worker queue
 
 目前單一 dashboard：
 
-- [所有平台結果、圖表同 bottleneck 分析](docs/reports/yune-vs-librime-performance.md)
+- [所有平台結果、圖表同 bottleneck 分析](docs/performance.md)
 
 ## 快速開始
 
@@ -220,12 +220,13 @@ Browser 層嘅聲明需要 Playwright 或者等價嘅真 browser 驗證。
 
 - [docs/conventions.md](docs/conventions.md) — 架構、技術棧、coding rules、test
   conventions、ABI rules、integrations、current risks。
-- [docs/roadmap.md](docs/roadmap.md) — 活躍 roadmap 同 milestone 關卡。
+- [GitHub issues](https://github.com/CanCLID/yune/issues) — 計劃緊同進行緊嘅工作。
 - [docs/decisions.md](docs/decisions.md) — decision log 同長期原則。
-- [docs/requirements.md](docs/requirements.md) — requirement IDs 同 status。
-- [docs/ledgers/fork-parity-ledger.md](docs/ledgers/fork-parity-ledger.md) —
+- [docs/contracts/engine-support-contract.md](docs/contracts/engine-support-contract.md) — 支援目標、oracle 優先次序、ABI 邊界同長期要求。
+- [docs/contracts/fork-parity.md](docs/contracts/fork-parity.md) —
   Cantoboard 同 TypeDuck fork 相對上游嘅差異。
-- [docs/plans/](docs/plans/) — 活躍、參考同已完成嘅 execution records。
+- [docs/history.md](docs/history.md) — 已完成 milestone 同收尾 commit。
+- [docs/performance.md](docs/performance.md) — 目前嘅效能記分板。
 
 ## 非目標
 

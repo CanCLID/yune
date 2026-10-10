@@ -1,3 +1,0 @@
-﻿"input","samples","process_key_us_per_op","translator_us_per_op","upstream_sentence_model_us_per_call","upstream_sentence_model_calls_per_op","table_entries_considered_per_op","vocabulary_entries_considered_per_op","graph_edges_per_op","exact_lookup_calls_per_op","prefix_lookup_calls_per_op"
-"cszysmsrsd","80","4126.81","4118.6","2278.911","1.8","1109.4","15.1","1115.6","1","1"
-"zybfshmsru","80","4256.38","4246.34","2348.833","1.8","877.8","8.9","883.3","1","1"

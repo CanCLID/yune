@@ -10,10 +10,6 @@ fn fixture_root(name: &str) -> std::path::PathBuf {
         .join(name)
 }
 
-fn repo_root() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..")
-}
-
 #[test]
 fn oracle_fixture_roots_have_machine_readable_provenance() {
     assert_manifest(
@@ -149,44 +145,18 @@ fn upstream_octagram_fixtures_have_non_circular_source_provenance_and_verificati
     assert_no_local_absolute_paths(&lmdg_path, &lmdg);
     assert_no_local_absolute_paths(&synthetic_path, &synthetic);
 
-    let report_path = repo_root()
-        .join("docs")
-        .join("reports")
-        .join("evidence")
-        .join("m54-native-octagram-grammar-support")
-        .join("phase-3-yune-core-verification.json");
+    // Moved from docs/reports/evidence/m54-native-octagram-grammar-support/ in the
+    // 2026-10 docs consolidation; kept outside the upstream-octagram manifest root.
+    let report_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .join("octagram-phase-3-yune-core-verification.json");
     let report = read_json(&report_path);
     assert_eq!(report["models_vendored"], false);
     assert_eq!(report["full_reports_ignored"], true);
     assert_no_local_absolute_paths(&report_path, &report);
     assert_octagram_verification_lane(&report_path, &report, &lotem);
     assert_octagram_verification_lane(&report_path, &report, &lmdg);
-}
-
-#[test]
-fn m58_canonical_cantonese_capture_has_sanitized_provenance() {
-    let path = repo_root()
-        .join("docs")
-        .join("reports")
-        .join("evidence")
-        .join("m58-jyutping-exact-before-fuzzy")
-        .join("phase-1")
-        .join("canonical-rime-cantonese-capture.json");
-    let capture = read_json(&path);
-    assert_eq!(capture["milestone"], "M58", "{path:?}");
-    assert_eq!(capture["canonical"], true, "{path:?}");
-    assert_eq!(capture["oracle"]["engine"], "rime/librime", "{path:?}");
-    assert_eq!(capture["oracle"]["version"], "1.17.0", "{path:?}");
-    assert_eq!(
-        capture["oracle"]["commit"], "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
-        "{path:?}"
-    );
-    assert_eq!(
-        capture["schema"]["source_repo"], "rime/rime-cantonese",
-        "{path:?}"
-    );
-    assert_eq!(capture["reported_case"]["input"], "zijiguk", "{path:?}");
-    assert_no_local_absolute_paths(&path, &capture);
 }
 
 #[test]

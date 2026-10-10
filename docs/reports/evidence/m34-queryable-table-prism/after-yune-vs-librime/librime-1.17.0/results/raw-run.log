@@ -1,4 +1,0 @@
-﻿engine=librime-1.17.0
-samples=93
-summary=C:\Users\laubonghaudoi\Documents\GitHub\yune\docs\reports\evidence\m34-queryable-table-prism\after-yune-vs-librime\librime-1.17.0\results\summary.csv
-E20260623 13:26:09.815691 25904 level_db.cc:259] Error opening db 'luna_pinyin': IO error: C:\Users\laubonghaudoi\Documents\GitHub\yune\target\yune-vs-librime-benchmark\after-yune-vs-librime\librime-1.17.0\user\luna_pinyin.userdb/000002.dbtmp: Unable to remove the file to be replaced.

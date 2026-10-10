@@ -108,7 +108,7 @@ Yune 是一个活跃的引擎项目。
 - **AI 姿态：** AI 层已经存在，但在 web harness 中默认关闭、仅本地运行，并且不进入
   classic deterministic input path。
 
-详见 [docs/roadmap.md](docs/roadmap.md)。
+计划中和进行中的工作在 [GitHub issues](https://github.com/CanCLID/yune/issues) 跟踪（标签为 `roadmap` 的置顶 issue 是入口）；已完成的里程碑列在 [docs/history.md](docs/history.md)。
 
 ## 兼容性
 
@@ -147,7 +147,7 @@ RSS 约为 `11.8x`。最新公平浏览器对照中，WASM 内存为 `4.000x`，
 
 当前单一仪表盘：
 
-- [所有平台结果、可视化和瓶颈分析](docs/reports/yune-vs-librime-performance.md)
+- [所有平台结果、可视化和瓶颈分析](docs/performance.md)
 
 ## 快速开始
 
@@ -222,12 +222,13 @@ npm --prefix packages/yune-web-runtime run build
 
 - [docs/conventions.md](docs/conventions.md) — 架构、技术栈、代码规范、测试约定、
   ABI 规则、集成方式以及当前风险。
-- [docs/roadmap.md](docs/roadmap.md) — 活跃路线图与里程碑关卡。
+- [GitHub issues](https://github.com/CanCLID/yune/issues) — 计划中和进行中的工作。
 - [docs/decisions.md](docs/decisions.md) — 决策记录与长期原则。
-- [docs/requirements.md](docs/requirements.md) — 需求 ID 与状态。
-- [docs/ledgers/fork-parity-ledger.md](docs/ledgers/fork-parity-ledger.md) —
+- [docs/contracts/engine-support-contract.md](docs/contracts/engine-support-contract.md) — 支持目标、oracle 优先级、ABI 边界与长期要求。
+- [docs/contracts/fork-parity.md](docs/contracts/fork-parity.md) —
   Cantoboard 与 TypeDuck fork 相对上游的差异。
-- [docs/plans/](docs/plans/) — 活跃、参考及已完成的执行记录。
+- [docs/history.md](docs/history.md) — 已完成的里程碑及收尾 commit。
+- [docs/performance.md](docs/performance.md) — 当前性能记分板。
 
 ## 非目标
 

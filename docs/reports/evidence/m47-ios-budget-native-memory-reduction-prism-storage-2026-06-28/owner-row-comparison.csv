@@ -1,7 +1,0 @@
-owner,before_class,before_estimated_bytes,current_class,current_estimated_bytes,delta_bytes,verdict
-prism.double_array_units,heap_owned_required,8896560,mmap_file_backed,8896512,-48,moved from parsed heap Vec<u32> to byte-backed runtime reads
-prism.spelling_map,heap_owned_required,31337240,mmap_file_backed,11955056,-19382184,moved from parsed Vec<Vec<descriptor>> heap to lazy byte-backed descriptor reads
-prism.corrections_tolerance,heap_owned_required,96,heap_owned_required,96,0,unchanged small parsed metadata
-prism.tips_payload,heap_owned_required,0,mmap_file_backed,0,0,no tips payload in this profile
-compact_table.lookup_records,heap_owned_required,45689298,heap_owned_required,45689298,0,remaining top heap owner for RED-03
-compact_table.syllabary_codes,heap_owned_reducible,4850892,heap_owned_reducible,4850892,0,remaining secondary heap owner

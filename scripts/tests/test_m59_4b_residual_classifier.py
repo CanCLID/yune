@@ -665,12 +665,12 @@ class M59Increment4bClassifierTests(unittest.TestCase):
     def real_cli_fixture(self, root):
         oracle = (
             REPO_ROOT
-            / "docs/reports/evidence/m59-canonical-jyutping-reachability-parity"
+            / "scripts/tests/fixtures/m59-canonical-jyutping-reachability-parity"
             / "increment-1-executable-evidence/lane-a-oracle.json"
         )
         inventory = (
             REPO_ROOT
-            / "docs/reports/evidence/m59-canonical-jyutping-reachability-parity"
+            / "scripts/tests/fixtures/m59-canonical-jyutping-reachability-parity"
             / "increment-2-profile-paging/opencc-same-code-inventory.csv"
         )
         opencc = REPO_ROOT / "crates/yune-core/src/opencc/data/HKVariantsFull.txt"

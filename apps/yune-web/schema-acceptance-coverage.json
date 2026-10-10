@@ -18,11 +18,6 @@
       "path": "crates/yune-rime-api/tests/fixtures/",
       "classification": "test-fixture",
       "disposition": "non-product-test-fixture"
-    },
-    {
-      "path": "docs/reports/evidence/",
-      "classification": "historical-evidence",
-      "disposition": "non-product-historical-evidence"
     }
   ],
   "reachabilityOptOuts": [],

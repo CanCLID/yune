@@ -13,7 +13,8 @@
 //! UPSTREAM rime-cangjie rows (`source_slice`), never from Yune output.
 //!
 //! Historical pre-4d divergence (finding CJ-1 — see
-//! `docs/reports/evidence/m59-cangjie5-order-parity/`): on THIS upstream rime-cangjie
+//! the `m59-cangjie5-order-parity` packet in git history before the 2026-10 docs
+//! consolidation): on THIS upstream rime-cangjie
 //! lane Yune's sentence scorer picked the eight single-letter roots `竹田一女尸手廿廿`
 //! (h|w|m|v|s|q|t|t) over the correct `hwmvs|qtt`→粵拼. The shipped PRODUCT
 //! cangjie5 already composed `hwmvsqtt`→粵拼@0, establishing that the gap was the

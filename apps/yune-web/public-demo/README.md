@@ -81,8 +81,9 @@ helper dictionaries, with launch prisms at `Rime::Prism/4.0`.
 
 Current WEB-03 browser evidence shows the shipped Jyutping launch/full path
 byte-backs and peaks at `160.0 MiB`; the old `893.1 MiB` row is retained only as
-a synthetic no-launch-assets negative control. Evidence:
-[`../../../docs/reports/evidence/web03-three-schema-launch-readiness/`](../../../docs/reports/evidence/web03-three-schema-launch-readiness/).
+a synthetic no-launch-assets negative control. The WEB-03 evidence packet is
+kept in git history before the 2026-10 docs consolidation commit at
+`docs/reports/evidence/web03-three-schema-launch-readiness/`.
 
 Deploy with Wrangler Pages only from a certified artifact:
 

@@ -1,8 +1,0 @@
-﻿"track","schema_id","workload","input","yune_median_us","librime_median_us","yune_librime_median_ratio","absolute_gap_us","yune_max_peak_working_set_bytes","librime_max_peak_working_set_bytes","yune_median_private_bytes","librime_median_private_bytes"
-"track-a-comparison","luna_pinyin","key_sequence_process_with_context","ceshiyixiachangjushuruxingnengzenyang","895.178","293.211","3.053","601.967","188383232","15835136","193626112","4796416"
-"track-a-comparison","luna_pinyin","key_sequence_process_with_context","hao","24.967","11.633","2.146","13.334","188383232","13783040","192831488","5021696"
-"track-a-comparison","luna_pinyin","key_sequence_process_with_context","n","60.300","21.400","2.818","38.900","188383232","13602816","191250432","4620288"
-"track-a-comparison","luna_pinyin","key_sequence_process_with_context","ni","44.950","14.300","3.143","30.650","188383232","13783040","191250432","4481024"
-"track-a-comparison","luna_pinyin","key_sequence_process_with_context","zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong","1545.754","687.795","2.247","857.959","188383232","17276928","194252800","6049792"
-"track-a-comparison","luna_pinyin","session_create_select_destroy","","23404.000","23390.700","1.001","13.300","188383232","13602816","190455808","3420160"
-"track-a-comparison","luna_pinyin","startup_warm_shared_assets_runtime_ready","","24139.200","21686.900","1.113","2452.300","188383232","13443072","190308352","3825664"

@@ -100,71 +100,37 @@ default, with explicit ABI/FFI exceptions in `yune-rime-api` and `yune-cli`.
 
 ## Current Status
 
-Yune is an active engine project.
+Yune is an active engine project. Planned and in-progress work is tracked in
+[GitHub issues](https://github.com/CanCLID/yune/issues); the pinned issue
+labelled `roadmap` is the entry point. Completed milestones are summarized in
+[docs/history.md](docs/history.md).
 
 - **Compatibility baseline:** Phase 1 is complete for its captured named
   target suites. Mandarin `luna_pinyin` is measured against upstream
-  `rime/librime 1.17.0`; TypeDuck Cantonese profile behavior is measured
-  against TypeDuck-HK/librime `v1.1.2` through the TypeDuck profile. Per the
-  2026-07-05 D-31 amendment, canonical `jyut6ping3` candidate ordering,
-  segmentation, fallback, and completion now use upstream `rime/librime
-  1.17.0` plus pinned `rime/rime-cantonese`; M58 completed the fresh canonical
-  capture at `f780410c`, including the user-specified `zijiguk` / `諮議局`
-  case, which returns `諮議局` first and did not produce a canonical fix. The
-  M55 expanded oracle sentence fixtures also surfaced known, recorded gaps.
-  M59's current named acceptance closes canonical Lane A strict `13/13` over
-  5,705 candidate positions, marked Cangjie strict `12/12` with `3 passed / 0
-  ignored`, and the seven-input upstream Luna Lane B page- and position-exact,
-  including the deployed 37/59 one-best-sentence-then-phrase page shape. This
-  is exact parity for those captured lanes, not a universal all-Luna or
-  all-schema ordering claim. `yune-web` has real in-browser validation
-  (TypeDuck-Web); the
-  TypeDuck-Windows backend has package/header, profile-ABI, and stock
-  real-server IPC compatibility smoke through the named profile accessor,
-  while the dedicated Windows Yune repository owns interactive TSF typing and
-  visible candidate UI product work.
-- **Current work:** milestones M38-M60 are complete, with M55 closed under a
-  2026-07-04 corrective re-baseline: the benchmark now reads context after
-  every keypress (the interactive shape), three pre-corrective closeout
-  mechanisms were identified as measurement artifacts and reverted, and the
-  standing regression gate (startup, session, eight Track A key rows, Track A
-  peak memory, win rows locked `<1.00x`, TypeDuck Track B absolutes) is green
-  twice on the honest metric and re-run green at M58 closeout. M58 also fixed
-  current `yune-web` TypeDuck/profile reachability for `beingo` / `畀` and
-  `zi` / `諮` by short-input profile-ranked paging, without first-page promotion.
-  M59 is complete under the full D-47/D-48 contract. Final behavior source
-  `443cc636` passes all 32 aggregate and all 160 individual signed-ratchet
-  observations in the source-current follow-up packet, while `5fa986d8`
-  reconciles the exact 60-asset shipped schema
-  tree to 10 schema-asset dispositions, three configuration carriers, and nine
-  executable validation rows. Fail-closed Emscripten, app/public builds, native
-  recovery, and functional Playwright gates remain source-bound to closeout
-  source `5fa986d8`; no browser rerun is claimed for the later native collector
-  repair. All five WEB-04 requirements are complete. The
-  independent closeout follow-up at `07845e02` makes manifest reconciliation
-  bidirectional for the full tree, and `443cc636` fixes the shipping-source
-  transformed-tie regression it exposed; the clean canonical recapture is
-  again exact at 13/13 and all 5,705 positions without an exception.
-  M60 formalizes that already-shipped reachability capability without changing
-  engine behavior: the live registry retains `m59-reach03-v1`, declares
-  `m60-reachability-v1`, contains exactly `reachabilityOptOuts: []`, and is
-  checked against 17 production-derived translator tuples plus classified
-  tracked schema roots. New product schemas remain blocking-open until their
-  real deploy path is accepted. See the
-  [M60 evidence packet](docs/reports/evidence/m60-schema-general-reachability-formalism/README.md).
-  A later five-round Mac diagnostic at `0111cf47` has all 17 Track A medians
-  and pooled worsts below `1.0x`; complete-input pages are exact on `16/17`,
-  including 37/59. It is not source-matched to Windows `443cc636`, so no
-  current platform-speed delta is claimed. The signed Windows baseline and
-  ceilings remain unchanged.
+  `rime/librime 1.17.0`; canonical `jyut6ping3` candidate ordering,
+  segmentation, fallback, and completion use upstream `rime/librime 1.17.0`
+  plus pinned `rime/rime-cantonese`; TypeDuck multilingual and comment
+  behavior is measured against TypeDuck-HK/librime `v1.1.2` through the
+  TypeDuck profile. The current named acceptance closes canonical Lane A
+  strict `13/13` over 5,705 candidate positions, Cangjie strict `12/12`, and
+  the seven-input upstream Luna Lane B page- and position-exact, including the
+  deployed 37/59 one-best-sentence-then-phrase page shape. This is exact
+  parity for those captured lanes, not a universal all-schema ordering claim.
+- **Reachability:** every shipped schema gets default-on single-character
+  reachability automatically on install, formalized by a registry with
+  exactly `reachabilityOptOuts: []` and a mandatory checker.
+- **Native performance and memory:** per-key latency is below librime on all
+  17 Windows and macOS reference inputs; native memory is roughly 9x to 12x
+  librime's working set and is the clearest native deficit. The last reduction
+  attempt closed as a measured no-go. See [docs/performance.md](docs/performance.md).
 - **Public demo:** `yune-web` is deployed at <https://yune-web.pages.dev>. The
-  current `ef485b10` exact 47-key normal-typing canary passes at `43 ms` p95 /
-  `44 ms` max with zero worker queue buildup; browser startup and footprint
-  remain separate open deficits.
+  47-key normal-typing canary passes at `43 ms` p95 / `44 ms` max with zero
+  worker queue buildup; browser startup and footprint remain open deficits.
 - **AI posture:** the AI layer exists but is default-off, local-only in the web
   harness, and outside the classic deterministic input path.
-
-See [docs/roadmap.md](docs/roadmap.md) for the detailed milestone plan.
+- **Windows product:** owned by
+  [CanCLID/yune-windows](https://github.com/CanCLID/yune-windows); this
+  repository owns the engine, the profile ABI, and oracle fixtures.
 
 ## Compatibility
 
@@ -234,9 +200,9 @@ batch-shaped numbers are not comparable.
 
 Current dashboard:
 
-- [All-platform performance results, visualizations, and bottleneck analysis](docs/reports/yune-vs-librime-performance.md)
-- [M59 final evidence ledger](docs/reports/evidence/m59-canonical-jyutping-reachability-parity/README.md)
-- [M60 reachability-formalism evidence](docs/reports/evidence/m60-schema-general-reachability-formalism/README.md)
+- [All-platform performance results, visualizations, and bottleneck analysis](docs/performance.md)
+- Evidence packets behind these numbers are kept in git history before the
+  2026-10 docs consolidation commit; see [docs/history.md](docs/history.md).
 
 ## Quick Start
 
@@ -303,7 +269,7 @@ Browser-visible claims need Playwright or equivalent real-browser evidence.
 | `crates/yune-cli` | Developer CLI: feed it keystrokes, get JSON output for testing and debugging. |
 | `packages/yune-web-runtime` | TypeScript wrapper for the WASM build. |
 | `apps/yune-web` | Browser demo app — the public face of the project. |
-| `docs` | Roadmap, architecture decisions, conventions, reports. |
+| `docs` | Conventions, contracts, decisions, history, performance. |
 | `fixtures` | Deterministic test fixtures (expected engine output for given inputs). |
 | `scripts` | Build helpers, benchmarks, oracle-capture tooling. |
 
@@ -311,13 +277,18 @@ Browser-visible claims need Playwright or equivalent real-browser evidence.
 
 - [docs/conventions.md](docs/conventions.md) — architecture, stack, coding rules,
   testing conventions, ABI rules, integrations, and current risks.
-- [docs/roadmap.md](docs/roadmap.md) — active roadmap and milestone gates.
-- [docs/decisions.md](docs/decisions.md) — decision log and standing principles.
-- [docs/requirements.md](docs/requirements.md) — requirement IDs and status.
-- [docs/ledgers/fork-parity-ledger.md](docs/ledgers/fork-parity-ledger.md) —
+- [docs/contracts/engine-support-contract.md](docs/contracts/engine-support-contract.md)
+  — supported targets, oracle precedence, ABI boundaries, and standing
+  requirements.
+- [docs/decisions.md](docs/decisions.md) — standing principles and the decisions
+  that still bind code.
+- [docs/contracts/fork-parity.md](docs/contracts/fork-parity.md) —
   Cantoboard and TypeDuck fork deltas versus upstream.
-- [docs/plans/](docs/plans/) — active, reference, and completed execution
-  records.
+- [docs/history.md](docs/history.md) — completed milestones with closing
+  commits.
+- [docs/performance.md](docs/performance.md) — current performance scorecard.
+- [GitHub issues](https://github.com/CanCLID/yune/issues) — planned and
+  in-progress work.
 
 ## Non-Goals
 

@@ -1,5 +1,0 @@
-﻿# Commands
-
-- cargo build --release -p yune-rime-api
-- PATH included target/m42-phase1-yune-smoke/yune
-- RimeProbe.Capture(shared_data_dir, user_data_dir, prebuilt_data_dir, schema=luna_pinyin, modules=[default], inputs=[cszysmsrsd, zybfshmsru]) against target/release/yune_rime_api.dll renamed to rime.dll

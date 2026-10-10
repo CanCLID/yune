@@ -214,13 +214,23 @@ fn upstream_algebra_property_fixture_is_pinned_to_librime_1_17_0() {
     }
 }
 
+/// The preserved M59 Increment 3b text packet moved from
+/// `docs/reports/evidence/.../correction-oracle-text/` into the crate fixtures
+/// in the 2026-10 docs consolidation. The fixture JSON keeps the historical
+/// evidence path strings because its bytes are hash-pinned, so map them here.
+fn relocated_evidence_path(crate_root: &Path, recorded: &str) -> std::path::PathBuf {
+    const OLD_PREFIX: &str = "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/correction-oracle-text/";
+    let relative = recorded.strip_prefix(OLD_PREFIX).unwrap_or_else(|| {
+        panic!("preserved evidence path should start with {OLD_PREFIX}: {recorded}")
+    });
+    crate_root
+        .join("tests/fixtures/upstream-1.17.0/m59-correction-oracle-text")
+        .join(relative)
+}
+
 #[test]
 fn correction_spelling_fixture_and_preserved_text_packet_are_hash_bound() {
     let crate_root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let repo_root = crate_root
-        .parent()
-        .and_then(Path::parent)
-        .expect("crate should live two levels below repository root");
     let fixture_path = crate_root.join(CORRECTION_FIXTURE);
     assert_eq!(sha256(&fixture_path), CORRECTION_FIXTURE_SHA256);
     let fixture = read_json(&fixture_path);
@@ -240,7 +250,8 @@ fn correction_spelling_fixture_and_preserved_text_packet_are_hash_bound() {
     );
 
     let source_capture = &fixture["source_capture"];
-    let source_path = repo_root.join(
+    let source_path = relocated_evidence_path(
+        crate_root,
         source_capture["path"]
             .as_str()
             .expect("preserved capture path should be text"),
@@ -251,7 +262,8 @@ fn correction_spelling_fixture_and_preserved_text_packet_are_hash_bound() {
             .as_str()
             .expect("preserved capture SHA should be text")
     );
-    let subset_path = repo_root.join(
+    let subset_path = relocated_evidence_path(
+        crate_root,
         source_capture["repo_text_subset_manifest"]
             .as_str()
             .expect("subset manifest path should be text"),
@@ -262,7 +274,8 @@ fn correction_spelling_fixture_and_preserved_text_packet_are_hash_bound() {
             .as_str()
             .expect("subset manifest SHA should be text")
     );
-    let decoder_path = repo_root.join(
+    let decoder_path = relocated_evidence_path(
+        crate_root,
         source_capture["decoder_path"]
             .as_str()
             .expect("decoder path should be text"),

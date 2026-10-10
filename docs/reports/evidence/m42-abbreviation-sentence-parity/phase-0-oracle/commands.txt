@@ -1,3 +1,0 @@
-﻿cargo build --release -p yune-rime-api
-powershell -NoProfile -ExecutionPolicy Bypass -File target/m42-phase0-capture/librime-1.17.0/capture.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File target/m42-phase0-capture/yune/capture.ps1

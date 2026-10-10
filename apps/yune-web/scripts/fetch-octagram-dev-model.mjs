@@ -6,14 +6,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const appRoot = join(scriptDir, "..");
 const repoRoot = join(appRoot, "..", "..");
-const pinsPath = join(
-  repoRoot,
-  "docs",
-  "reports",
-  "evidence",
-  "m54-native-octagram-grammar-support",
-  "external-pins.json",
-);
+const pinsPath = join(scriptDir, "octagram-external-pins.json");
 const outputPath = join(
   appRoot,
   "public",

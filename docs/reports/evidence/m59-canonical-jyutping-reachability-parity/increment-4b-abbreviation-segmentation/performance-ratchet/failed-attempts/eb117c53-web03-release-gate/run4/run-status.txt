@@ -1,3 +1,0 @@
-﻿status=complete
-date_utc=2026-07-12T10:45:17.8729744Z
-detail=

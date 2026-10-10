@@ -109,8 +109,9 @@ import it separately; the wrapper never overwrites a tracked fixture.
   schema/dependency commit and Git-tree identities. The curator derives owner
   targets from captured candidate zero, verifies their ASCII U+ declarations,
   links the atomic candidates, and embeds the complete pinned source cohorts.
-- The tracked fixture is byte-identical to the reviewed curated oracle in
-  `docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/`.
+- The tracked fixture is byte-identical to the reviewed curated oracle in the
+  `m59-cangjie5-order-parity/increment-1-executable-evidence/` packet, kept in
+  git history before the 2026-10 docs consolidation.
   The packet preserves the untouched raw oracle, Yune capture, strict exact
   diff, same-path replay, and the still-red CJ-1 disposition.
 - The manifest recapture command writes raw and curated create-new outputs under

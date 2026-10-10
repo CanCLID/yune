@@ -29,9 +29,8 @@ const WINDOWS_BOUNDARY_NGOHAIG_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-windows-boundary-ngohaig.json");
 const M28_UPSTREAM_JYUTPING_COMPOSITION_ORACLE: &str =
     include_str!("fixtures/upstream-jyutping/jyutping-m28-followup-composition.json");
-const M58_TYPEDUCK_PROFILE_REACHABILITY_ORACLE: &str = include_str!(
-    "../../../docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/typeduck-profile-reachability-capture.json"
-);
+const M58_TYPEDUCK_PROFILE_REACHABILITY_ORACLE: &str =
+    include_str!("fixtures/typeduck-v1.1.2/m58-typeduck-profile-reachability-capture.json");
 const FORK_PARITY_01_REAL_DICTIONARY_FUZZY_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-fork-parity-01-real-dictionary-fuzzy.json");
 const FORK_PARITY_02_PREFER_USER_PHRASE_ORACLE: &str =

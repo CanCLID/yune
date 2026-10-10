@@ -1,0 +1,36 @@
+name: Task
+description: Measurement, tooling, decision, or cleanup work that is neither a bug nor a feature.
+type: Task
+body:
+  - type: markdown
+    attributes:
+      value: |
+        After submitting, set **Priority** and **Effort** in the Fields panel. Use the `decision-needed` label if the task is blocked on a maintainer decision.
+  - type: dropdown
+    id: lane
+    attributes:
+      label: Lane
+      options:
+        - engine
+        - web
+        - abi
+        - platform
+        - docs
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+    validations:
+      required: true
+  - type: textarea
+    id: verify
+    attributes:
+      label: How verified

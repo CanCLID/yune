@@ -1,0 +1,47 @@
+name: Feature
+description: New behavior for a named target, schema, or platform.
+type: Feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Yune is target-driven: a librime feature is implemented only when a named target needs it. After submitting, set **Priority** and **Effort** in the Fields panel.
+  - type: dropdown
+    id: lane
+    attributes:
+      label: Lane
+      options:
+        - engine
+        - web
+        - abi
+        - platform
+    validations:
+      required: true
+  - type: textarea
+    id: target
+    attributes:
+      label: Named target and oracle
+      description: Which schema or frontend needs this, and which reference build (librime 1.17.0, TypeDuck v1.1.2, other) defines correct behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: The user-visible outcome, in plain language.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Checkbox list of observable results.
+    validations:
+      required: true
+  - type: textarea
+    id: verify
+    attributes:
+      label: How verified
+      description: Named commands or gates.
+    validations:
+      required: true

@@ -344,6 +344,12 @@ intent lives in issues.
   parent/child and "blocked by" relationships. There is no `TODO`/`FIXME` in
   code. Issues are public: state the user-visible outcome in the title, gloss
   internal jargon, and never paste host-specific paths or private data.
+  Metadata is split three ways and never duplicated: Type (Bug, Feature,
+  Task) says what it is; the Priority and Effort fields say how it ranks;
+  labels name the area (`engine`, `web`, `abi`, `platform`, `documentation`)
+  and the kind of work (`perf`, `memory`, `parity`, `ux`, `test`,
+  `decision-needed`, `roadmap`). The issue forms under `.github/ISSUE_TEMPLATE/`
+  preset the Type, and the `issue-metadata` workflow applies the lane label.
 - Pull requests carry the closeout: the exact verification commands run and
   their results, in the description.
 
@@ -351,6 +357,9 @@ intent lives in issues.
 external evidence root selected by the benchmark scripts
 (`scripts/evidence-output-path.py`), never in a Git worktree. Compact curated
 receipts that a test needs are checked in as test fixtures next to that test.
+The signed native Track A ceiling registry lives at
+`scripts/native-ratchet/m55-thresholds.csv`; it is the acceptance authority for
+native per-key latency and is never re-baselined in place.
 Historical evidence packets removed from the tree remain in git history before
 the consolidation commit; do not rewrite signed history.
 

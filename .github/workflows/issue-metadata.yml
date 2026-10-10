@@ -1,0 +1,39 @@
+name: Issue metadata
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  lane-label:
+    name: Apply lane label from the form and remind about Type and Fields
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const lanes = ["engine", "web", "abi", "platform"];
+            const laneToLabel = { engine: "engine", web: "web", abi: "abi", platform: "platform", docs: "documentation" };
+            const issue = context.payload.issue;
+            const body = issue.body || "";
+            // Issue forms render a dropdown as "### Lane\n\n<value>".
+            const match = body.match(/### Lane\s*\n\s*([a-z]+)/i);
+            const chosen = match ? match[1].toLowerCase() : null;
+            const current = issue.labels.map(l => l.name);
+            if (chosen && laneToLabel[chosen] && !current.includes(laneToLabel[chosen])) {
+              await github.rest.issues.addLabels({ ...context.repo, issue_number: issue.number, labels: [laneToLabel[chosen]] });
+            }
+            if (context.payload.action !== "opened") return;
+            const hasLane = current.some(l => lanes.includes(l) || l === "documentation") || (chosen && laneToLabel[chosen]);
+            const missing = [];
+            if (!issue.type) missing.push("a **Type** (Bug, Feature, or Task)");
+            if (!hasLane) missing.push("a lane label (`engine`, `web`, `abi`, `platform`, or `documentation`)");
+            missing.push("**Priority** and **Effort** in the Fields panel (this check cannot read them)");
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: issue.number,
+              body: `Thanks. Before this issue is picked up, please make sure it has ${missing.join(", ")}. Labels describe the area and the kind of work; Type and Fields describe what it is and how it ranks.`,
+            });

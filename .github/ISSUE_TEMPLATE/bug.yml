@@ -1,0 +1,46 @@
+name: Bug
+description: Something behaves wrongly in the engine, the ABI, or the browser demo.
+type: Bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        After submitting, set **Priority** and **Effort** in the Fields panel on the right. A maintainer adds the lane label from your answer below.
+  - type: dropdown
+    id: lane
+    attributes:
+      label: Lane
+      description: Which part of Yune is affected?
+      options:
+        - engine
+        - web
+        - abi
+        - platform
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Which schema, platform, browser, or frontend. Include the demo URL build if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happens, what you expected, and the exact keys typed. Numbers need a source.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: Minimal steps or a CLI command (`cargo run -p yune-cli -- frontend ...`).
+    validations:
+      required: true
+  - type: textarea
+    id: verify
+    attributes:
+      label: How a fix is verified
+      description: The gate or test that must fail before and pass after.

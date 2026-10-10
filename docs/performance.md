@@ -311,7 +311,8 @@ lanes with their own acceptance contracts.
 - M61 Windows measured-no-go packet:
   `m61-native-track-a-memory-owner-reduction/` (git history: `docs/reports/evidence/m61-native-track-a-memory-owner-reduction/`)
 - Standing signed Windows ceiling registry:
-  `m55-thresholds.csv` (git history: `docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`)
+  [`scripts/native-ratchet/m55-thresholds.csv`](../scripts/native-ratchet/m55-thresholds.csv)
+  (restored from the former evidence tree; passed to `scripts/aggregate-native-ratchet.py --thresholds`)
 - Reviewed current-source Mac packet and portable report:
   `m59-current-source-macos-20260714/` (git history: `docs/reports/evidence/m59-current-source-macos-20260714/`)
 - Latest measured Mac derived rows and reproducible chart source:

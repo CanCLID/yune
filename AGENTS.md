@@ -67,8 +67,19 @@ labelled `roadmap` is the parent of every planned item; children carry
 "blocked by" relationships. Do not create plan files under `docs/`. Issues
 are public: state the user-visible outcome in the title, gloss internal
 jargon on first use, and keep host-specific paths and private data out.
+
+Every issue carries three kinds of metadata, and they do not overlap:
+
+- **Type** (Bug, Feature, Task): what it is. The issue forms preset it.
+- **Fields** (Priority: Urgent/High/Medium/Low; Effort: High/Medium/Low): how
+  it ranks. Set them in the Fields panel when the issue is opened or triaged.
+- **Labels**: the area (`engine`, `web`, `abi`, `platform`, `documentation`)
+  plus the kind of work (`perf`, `memory`, `parity`, `ux`, `test`,
+  `decision-needed`, `roadmap`). There is no `bug` or `enhancement` label;
+  Type covers that.
+
 Pull request descriptions carry the closeout: the exact verification commands
-run and their results.
+run and their results, and `Closes #N` for the issue.
 
 ## Canonical Docs - Read These
 

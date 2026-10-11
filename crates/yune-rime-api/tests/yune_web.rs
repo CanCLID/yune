@@ -2836,6 +2836,71 @@ fn yune_web_adapter_real_assets_page_size_customize_limits_context_page() {
     }
 }
 
+const BOUNDED_PAGE_SYLLABLES: &[&str] = &[
+    "jau", "jan", "jat", "dik", "hai", "daai", "ceot", "dou", "bat", "gwo", "dei", "dak", "hau",
+    "jiu", "tung", "ngo", "gwok", "gong", "zau", "gaa", "sing", "daan", "cin", "keoi", "zoi",
+    "hoi", "jung", "heoi", "kei", "coeng", "jap", "mou", "wui", "deoi", "hou", "sau", "dim", "sam",
+    "zyu", "bun", "wai", "fan", "man", "lei", "zung", "siu", "wan",
+];
+
+#[test]
+fn yune_web_adapter_real_assets_bounded_syllable_page_matches_complete_refresh() {
+    let _guard = test_guard();
+    let runtime = YuneWebRuntime::create_with_schema(
+        "browser-real-bounded-syllable-page",
+        "jyut6ping3_mobile",
+    );
+    runtime.write_browser_real_assets();
+
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+    let config_id = CString::new("jyut6ping3_mobile.schema").expect("config id should be valid");
+    let key = CString::new("menu/page_size").expect("custom key should be valid");
+    let value = CString::new("6").expect("custom value should be valid");
+    assert_eq!(
+        unsafe { yune_web_customize(state, config_id.as_ptr(), key.as_ptr(), value.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(unsafe { yune_web_deploy(state) }, TRUE);
+
+    let mut mismatches = Vec::new();
+    for input in BOUNDED_PAGE_SYLLABLES {
+        let bounded = process_input(state, input);
+        assert_eq!(bounded["context"]["page_size"], Value::from(6), "{input}");
+        assert_eq!(bounded["context"]["page_no"], Value::from(0), "{input}");
+        let bounded_page = classic_candidate_projection(&bounded);
+        let forward = response_json(unsafe { yune_web_flip_page(state, FALSE) });
+        let complete = if forward["context"]["page_no"] == 0 {
+            forward
+        } else {
+            let back = response_json(unsafe { yune_web_flip_page(state, TRUE) });
+            assert_eq!(back["context"]["page_no"], Value::from(0), "{input}");
+            back
+        };
+        let complete_page = classic_candidate_projection(&complete);
+        if bounded_page != complete_page {
+            mismatches.push(format!(
+                "{input}\n  bounded {bounded_page}\n  complete {complete_page}"
+            ));
+        }
+        let _ = response_json(unsafe { yune_web_process_key(state, 0xff1b, 0) });
+    }
+    assert!(
+        mismatches.is_empty(),
+        "bounded page 0 diverged from the complete page:\n{}",
+        mismatches.join("\n")
+    );
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
 #[test]
 fn yune_web_adapter_real_assets_sentence_mode_commits_multisyllable_phrase() {
     let _guard = test_guard();

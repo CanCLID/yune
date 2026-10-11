@@ -1313,7 +1313,7 @@ fn typeduck_profile_userdb_navigation_completes_long_and_short_lists() {
 }
 
 #[test]
-fn typeduck_profile_multi_segment_exact_userdb_retains_complete_refresh() {
+fn typeduck_profile_multi_segment_exact_userdb_keeps_refresh_bounded() {
     let _guard = super::m37_metrics_test_guard();
     let mut userdb = UserDb::default();
     userdb.learn_entry("ngo hai go", "MULTI-SEGMENT-EXACT", 3, 3.0, 3);
@@ -1325,10 +1325,10 @@ fn typeduck_profile_multi_segment_exact_userdb_retains_complete_refresh() {
     let metrics = crate::m37_metrics_snapshot();
     crate::m37_metrics_enable(false);
 
-    assert_eq!(metrics.candidate_request_bounded_calls, 0);
-    assert_eq!(metrics.candidate_request_unbounded_calls, 1);
-    assert_eq!(metrics.full_list_translation_calls, 1);
-    assert!(engine.candidate_list_complete());
+    assert_eq!(metrics.candidate_request_bounded_calls, 1);
+    assert_eq!(metrics.candidate_request_unbounded_calls, 0);
+    assert_eq!(metrics.full_list_translation_calls, 0);
+    assert!(!engine.candidate_list_complete());
 }
 
 #[test]

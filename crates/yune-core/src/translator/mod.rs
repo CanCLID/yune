@@ -461,13 +461,6 @@ fn normalize_original_merge_quality(raw_quality: f32) -> f32 {
     }
 }
 
-fn distinct_ref_texts(rows: &[PendingLookupCandidateRef<'_>]) -> usize {
-    rows.iter()
-        .map(|row| row.candidate.text())
-        .collect::<HashSet<_>>()
-        .len()
-}
-
 fn retain_collapsed_page(rows: &mut Vec<PendingLookupCandidateRef<'_>>, limit: usize) {
     if limit == 0 {
         rows.clear();
@@ -4706,31 +4699,17 @@ impl StaticTableTranslator {
         candidates: &mut Vec<PendingLookupCandidateRef<'_>>,
         limit: usize,
     ) {
+        // Same ordering as the plain bounded path, but without the output
+        // limit: duplicate texts are collapsed only after this step, so the
+        // page is cut on distinct texts instead of raw rows. Running the whole
+        // merge keeps a limited prediction at the position the complete list
+        // gives it, instead of sorting it behind every exact row.
         if self.sort_by_weight {
             candidates.sort_by(|left, right| self.lookup_candidate_ref_order(left, right));
-            retain_collapsed_page(candidates, limit);
-            return;
+        } else {
+            self.order_original_lookup_refs(candidates, None);
         }
-
-        let mut exact = Vec::new();
-        let mut rest = Vec::new();
-        for candidate in std::mem::take(candidates) {
-            if self.lookup_candidate_ref_category(&candidate) == 0 && !candidate.limited_prediction
-            {
-                exact.push(candidate);
-            } else {
-                rest.push(candidate);
-            }
-        }
-        self.order_original_lookup_refs(&mut exact, None);
-        if distinct_ref_texts(&exact) >= limit {
-            retain_collapsed_page(&mut exact, limit);
-            *candidates = exact;
-            return;
-        }
-        self.order_original_lookup_refs(&mut rest, Some(limit));
-        exact.extend(rest);
-        *candidates = exact;
+        retain_collapsed_page(candidates, limit);
     }
 
     fn materialized_quality(

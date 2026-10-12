@@ -646,12 +646,18 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("PROMOTE_EXACT_PREVIEW_BYTES", production)
         self.assertIn("YUNE_WEB06_PRODUCTION_APPROVAL_RECORD", production)
-        self.assertIn('open(consumptionPath, "wx"', production)
-        self.assertIn('["ls-remote", "origin", "refs/heads/main"]', production)
+        # Approval consumption is create-exclusive under the 0700 ledger root.
+        self.assertIn("consumptionPath", production)
+        self.assertIn("fsConstants.O_EXCL", production)
+        # The candidate must be the canonical repository's main head, not a
+        # local remote name.
+        self.assertIn('CANONICAL_REPOSITORY_URL = "https://github.com/CanCLID/yune.git"', production)
+        self.assertIn('CANONICAL_MAIN_REF = "refs/heads/main"', production)
+        self.assertIn('"ls-remote"', production)
         self.assertIn("validateGreenPreviewReceipt", production)
         self.assertIn("validatePreviewCanaryStatus", production)
         self.assertIn("reconcileRemoteBundle", production)
-        self.assertIn('"--branch",\n        "main"', production)
+        self.assertRegex(production, r'"--branch",\s*"main"')
         self.assertIn("buildInvoked: false", production)
         self.assertIn("CLOUDFLARE_PRODUCTION_ACCOUNT_ID", production)
         self.assertIn("CLOUDFLARE_PRODUCTION_API_TOKEN", production)

@@ -458,6 +458,59 @@ fn typeduck_v112_m21_sentence_composition_fixture_is_locked() {
 }
 
 #[test]
+fn typeduck_prediction_row_stays_on_bounded_first_page_at_product_page_size() {
+    // The bounded first page must keep the TypeDuck prediction row where the
+    // complete list puts it. Page size 6 is the product default; the M21
+    // oracle captured the complete order, so its row 1 is the prediction.
+    let fixture = m21_prediction_ranking_fixture();
+    let mut engine = typeduck_jyut6ping3_mobile_engine(false);
+    engine.set_menu_page_size(6);
+    for input in ["santai", "sigin", "gwongdung", "hoenggong"] {
+        let case = m21_prediction_case(&fixture, input);
+        let expected_prediction = case["selected_candidates"][1]["text"]
+            .as_str()
+            .expect("M21 case should capture a second candidate");
+        engine.set_input(input);
+        assert!(
+            !engine.candidate_list_complete(),
+            "{input} should start from a bounded refresh"
+        );
+        let bounded = engine
+            .context()
+            .candidates
+            .iter()
+            .take(6)
+            .map(|candidate| candidate.text.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            bounded.get(1).map(String::as_str),
+            Some(expected_prediction),
+            "{input} bounded page should keep the prediction row at index 1: {bounded:?}"
+        );
+        engine.ensure_complete_candidate_list();
+        let complete = engine
+            .context()
+            .candidates
+            .iter()
+            .take(6)
+            .map(|candidate| candidate.text.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            bounded, complete,
+            "{input} bounded page 0 must equal the complete page 0"
+        );
+    }
+}
+
+#[test]
+#[ignore = "blocked: issue #17 needs TypeDuck-HK/librime v1.1.2 page-size-6 oracle rows for fan, hou, man, lei, zung, dou, siu, wui, and wan (syllables whose exact readings share texts); capture with the pinned fork build, then assert the bounded first page against them"]
+fn typeduck_bounded_first_page_oracle_for_duplicate_text_syllables_is_blocked() {
+    panic!(
+        "capture the TypeDuck v1.1.2 oracle first pages for the nine duplicate-text syllables before enabling this parity assertion"
+    );
+}
+
+#[test]
 fn typeduck_v112_m21_prediction_ranking_fixture_is_locked() {
     let fixture = m21_prediction_ranking_fixture();
     assert_eq!(fixture["oracle"]["engine"], "TypeDuck-HK/librime");

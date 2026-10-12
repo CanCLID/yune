@@ -461,6 +461,24 @@ fn normalize_original_merge_quality(raw_quality: f32) -> f32 {
     }
 }
 
+fn retain_collapsed_page(rows: &mut Vec<PendingLookupCandidateRef<'_>>, limit: usize) {
+    if limit == 0 {
+        rows.clear();
+        return;
+    }
+    let mut page_texts = HashSet::new();
+    for row in rows.iter() {
+        page_texts.insert(row.candidate.text().to_owned());
+        if page_texts.len() == limit {
+            break;
+        }
+    }
+    if page_texts.len() < limit {
+        return;
+    }
+    rows.retain(|row| page_texts.contains(row.candidate.text()));
+}
+
 #[allow(clippy::too_many_arguments)]
 fn order_original_grouped_candidates<T>(
     candidates: &mut Vec<T>,
@@ -4642,6 +4660,10 @@ impl StaticTableTranslator {
         candidates: &mut Vec<PendingLookupCandidateRef<'_>>,
         limit: usize,
     ) {
+        if self.combine_candidates && self.prefix_fallback {
+            self.order_combined_bounded_lookup_refs(candidates, limit);
+            return;
+        }
         if self.sort_by_weight {
             candidates.sort_by(|left, right| self.lookup_candidate_ref_order(left, right));
             candidates.truncate(limit);
@@ -4652,9 +4674,17 @@ impl StaticTableTranslator {
         // Stop this shared constrained merge at the requested global prefix: the
         // old implementation rescanned every group for every retained row, built
         // the complete merged pool, and only then truncated it.
+        self.order_original_lookup_refs(candidates, Some(limit));
+    }
+
+    fn order_original_lookup_refs(
+        &self,
+        candidates: &mut Vec<PendingLookupCandidateRef<'_>>,
+        output_limit: Option<usize>,
+    ) {
         order_original_grouped_candidates(
             candidates,
-            Some(limit),
+            output_limit,
             |candidate| candidate.limited_prediction,
             |candidate| self.lookup_candidate_ref_category(candidate),
             |candidate| candidate.fetch_group,
@@ -4662,6 +4692,24 @@ impl StaticTableTranslator {
             |left, right| self.lookup_candidate_ref_weight_order(left, right),
             |prediction, ordinary| self.lookup_prediction_ref_precedes(prediction, ordinary),
         );
+    }
+
+    fn order_combined_bounded_lookup_refs(
+        &self,
+        candidates: &mut Vec<PendingLookupCandidateRef<'_>>,
+        limit: usize,
+    ) {
+        // Same ordering as the plain bounded path, but without the output
+        // limit: duplicate texts are collapsed only after this step, so the
+        // page is cut on distinct texts instead of raw rows. Running the whole
+        // merge keeps a limited prediction at the position the complete list
+        // gives it, instead of sorting it behind every exact row.
+        if self.sort_by_weight {
+            candidates.sort_by(|left, right| self.lookup_candidate_ref_order(left, right));
+        } else {
+            self.order_original_lookup_refs(candidates, None);
+        }
+        retain_collapsed_page(candidates, limit);
     }
 
     fn materialized_quality(
@@ -5158,6 +5206,7 @@ impl StaticTableTranslator {
             (record_short_key && crate::m37_metrics_enabled()).then(Instant::now);
         let mut short_key_rows_scanned = 0usize;
         let mut selected = Vec::new();
+        let mut capped_completions = Vec::new();
         let mut limited_predictions = Vec::new();
         let mut fetch_groups = HashMap::new();
         let mut retained_original_groups = HashMap::new();
@@ -5169,6 +5218,14 @@ impl StaticTableTranslator {
             .iter()
             .any(|spec| spec.correction_distance.is_some() || spec.spelling_correction);
         let can_stop_after_window = !include_full_count && !ordered_mode && self.sort_by_weight;
+        // Duplicate texts are collapsed only after this window is ordered.
+        // Capping exact rows at the page size first drops the next exact
+        // reading and lets prefix fallback pad the page.
+        let exact_retain_limit = if self.combine_candidates && self.prefix_fallback {
+            usize::MAX
+        } else {
+            limit
+        };
         let mut early_stopped = false;
         for lookup_spec in lookup_specs {
             let fetch_code = lookup_spec.code.as_str();
@@ -5221,12 +5278,16 @@ impl StaticTableTranslator {
                         &mut selected,
                         &mut retained_original_groups,
                         pending,
-                        limit,
+                        exact_retain_limit,
                     );
                 } else if ordered_mode {
-                    self.push_bounded_pending_by_lookup_order(&mut selected, pending, limit);
+                    self.push_bounded_pending_by_lookup_order(
+                        &mut selected,
+                        pending,
+                        exact_retain_limit,
+                    );
                 } else {
-                    self.push_bounded_pending(&mut selected, pending, limit);
+                    self.push_bounded_pending(&mut selected, pending, exact_retain_limit);
                 }
                 emission_order += 1;
                 if can_stop_after_window && selected.len() >= limit {
@@ -5303,11 +5364,19 @@ impl StaticTableTranslator {
                             );
                             full_count += 1;
                         } else if ordered_mode {
-                            self.push_bounded_pending_by_lookup_order(
-                                &mut selected,
-                                pending,
-                                limit,
-                            );
+                            if exact_retain_limit == usize::MAX {
+                                self.push_bounded_pending_by_lookup_order(
+                                    &mut capped_completions,
+                                    pending,
+                                    limit,
+                                );
+                            } else {
+                                self.push_bounded_pending_by_lookup_order(
+                                    &mut selected,
+                                    pending,
+                                    limit,
+                                );
+                            }
                             full_count += 1;
                         } else {
                             self.push_bounded_pending(&mut selected, pending, limit);
@@ -5347,6 +5416,7 @@ impl StaticTableTranslator {
             full_count += limited_predictions.len();
             selected.extend(limited_predictions);
         }
+        selected.extend(capped_completions);
         has_correction_lookup |= selected.iter().any(|pending| pending.spelling_correction);
         if matches!(
             self.sentence_policy,

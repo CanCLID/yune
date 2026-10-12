@@ -623,7 +623,11 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
         preview = (
             REPO_ROOT / "apps" / "yune-web" / "e2e" / "run-web06-certified-preview.mjs"
         ).read_text(encoding="utf-8")
-        self.assertIn('wrangler@${WRANGLER_VERSION}', preview)
+        # The preview lane installs wrangler only through the pinned runtime
+        # helper, keyed on the single exported version constant.
+        self.assertIn("WEB06_WRANGLER_VERSION", preview)
+        self.assertIn("installPinnedWranglerRuntime", preview)
+        self.assertNotIn("npx wrangler", preview)
         self.assertIn('operation: "preview-only-no-build"', preview)
         self.assertIn("reconcileRemoteBundle", preview)
         self.assertIn("assertNoPriorPreviewDeployment", preview)

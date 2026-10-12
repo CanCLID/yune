@@ -2954,6 +2954,89 @@ fn yune_web_adapter_real_assets_bounded_syllable_page_matches_complete_refresh()
 }
 
 #[test]
+fn yune_web_adapter_real_assets_learned_multisegment_page_matches_complete_refresh() {
+    let _guard = test_guard();
+    let runtime =
+        YuneWebRuntime::create_with_schema("browser-real-learned-page", "jyut6ping3_mobile");
+    runtime.write_browser_real_assets();
+    fs::write(
+        runtime.user.join("jyut6ping3.userdb"),
+        "\
+# yune userdb
+/db_name\tjyut6ping3
+/db_type\tuserdb
+/tick\t311
+/user_id\tunknown
+/rime_version\t0.1.0
+sik6gaa3 nei5 \t\u{98df}\u{50f9}\u{4f60}\tc=5 d=4.134706437831298 t=234
+ngo5 hai6 hoeng1 gong2 jan4 \tLONG-LEARNED\tc=1 d=1 t=1
+fa n6 \tFAN-LEARNED\tc=1 d=1 t=1
+",
+    )
+    .expect("seeded userdb should be written");
+
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+    let config_id = CString::new("jyut6ping3_mobile.schema").expect("config id should be valid");
+    let key = CString::new("menu/page_size").expect("custom key should be valid");
+    let value = CString::new("6").expect("custom value should be valid");
+    assert_eq!(
+        unsafe { yune_web_customize(state, config_id.as_ptr(), key.as_ptr(), value.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(unsafe { yune_web_deploy(state) }, TRUE);
+
+    let mut mismatches = Vec::new();
+    for input in ["sikgaanei", "ngohaihoenggongjan", "fan"] {
+        let bounded = process_input(state, input);
+        assert_eq!(bounded["context"]["page_size"], Value::from(6), "{input}");
+        assert_eq!(bounded["context"]["page_no"], Value::from(0), "{input}");
+        let bounded_page = classic_candidate_projection(&bounded);
+        if input == "sikgaanei" {
+            let learned_rows = bounded_page
+                .as_array()
+                .expect("page should be an array")
+                .iter()
+                .filter(|row| row["text"] == "\u{98df}\u{50f9}\u{4f60}")
+                .count();
+            assert!(
+                learned_rows >= 2,
+                "{input} page 0 should keep the sentence row and the learned row: {bounded_page}"
+            );
+        }
+        let forward = response_json(unsafe { yune_web_flip_page(state, FALSE) });
+        let complete = if forward["context"]["page_no"] == 0 {
+            forward
+        } else {
+            let back = response_json(unsafe { yune_web_flip_page(state, TRUE) });
+            assert_eq!(back["context"]["page_no"], Value::from(0), "{input}");
+            back
+        };
+        let complete_page = classic_candidate_projection(&complete);
+        if bounded_page != complete_page {
+            mismatches.push(format!(
+                "{input}\n  bounded {bounded_page}\n  complete {complete_page}"
+            ));
+        }
+        let _ = response_json(unsafe { yune_web_process_key(state, 0xff1b, 0) });
+    }
+    assert!(
+        mismatches.is_empty(),
+        "learned retype page 0 diverged from the complete page:\n{}",
+        mismatches.join("\n")
+    );
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
 fn yune_web_adapter_real_assets_sentence_mode_commits_multisyllable_phrase() {
     let _guard = test_guard();
     let runtime =

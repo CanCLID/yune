@@ -1331,6 +1331,128 @@ fn typeduck_profile_multi_segment_exact_userdb_keeps_refresh_bounded() {
     assert!(!engine.candidate_list_complete());
 }
 
+fn typeduck_legacy_refresh_engine_with_dictionary(dictionary: &str, userdb: UserDb) -> Engine {
+    let mut engine = Engine::new();
+    engine.set_schema("arbitrary_profile_schema", "TypeDuck Profile Test");
+    engine.set_schema_behavior_profile(SchemaBehaviorProfile::TypeduckJyutping);
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(dictionary)
+            .expect("dictionary should parse")
+            .with_completion(true)
+            .with_sentence(false)
+            .with_sentence_policy(SentencePolicy::LegacyFallback)
+            .with_prediction_candidate_limit(1)
+            .with_prediction_never_first(true)
+            .with_prefix_fallback(true),
+    );
+    engine.set_prediction_never_first(true);
+    engine.set_userdb(userdb);
+    engine
+}
+
+#[test]
+fn typeduck_profile_multi_segment_exact_userdb_row_position_matches_complete_refresh() {
+    let _guard = super::m37_metrics_test_guard();
+    // Anchor inside the window: two exact rows for the full code, then rows
+    // under the shorter prefix `ngohai` that prefix fallback brings onto the
+    // page. The learned row inserts before the first shorter-code row (index
+    // 2) on both the bounded and the complete path.
+    let anchored = r#"
+---
+name: sample
+version: "0.1"
+sort: by_weight
+...
+
+exact-00	ngohaigo	100
+exact-01	ngohaigo	99
+short-00	ngohai	90
+short-01	ngohai	89
+short-02	ngohai	88
+short-03	ngohai	87
+short-04	ngohai	86
+short-05	ngohai	85
+"#;
+    // No anchor anywhere: every row carries the full code, so the learned row
+    // appends after the window on the bounded path and after the whole list on
+    // the complete path; page 0 is identical either way.
+    let mut appended = String::from(
+        r#"
+---
+name: sample
+version: "0.1"
+sort: by_weight
+...
+
+"#,
+    );
+    for index in 0..8 {
+        appended.push_str(&format!(
+            "exact-{index:02}\tngohaigo\t{}\n",
+            100.0 - index as f32
+        ));
+    }
+
+    for (label, dictionary, expected_bounded_index) in [
+        ("anchored", anchored.to_owned(), Some(2)),
+        ("appended", appended, None),
+    ] {
+        let mut userdb = UserDb::default();
+        userdb.learn_entry("ngo hai go", "MULTI-SEGMENT-EXACT", 3, 3.0, 3);
+        let mut engine = typeduck_legacy_refresh_engine_with_dictionary(&dictionary, userdb);
+
+        crate::m37_metrics_enable(true);
+        crate::m37_metrics_reset();
+        engine.set_input("ngohaigo");
+        let metrics = crate::m37_metrics_snapshot();
+        crate::m37_metrics_enable(false);
+        assert_eq!(metrics.candidate_request_bounded_calls, 1, "{label}");
+        assert_eq!(metrics.candidate_request_unbounded_calls, 0, "{label}");
+        assert!(!engine.candidate_list_complete(), "{label}");
+
+        let bounded_rows = engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.clone())
+            .collect::<Vec<_>>();
+        let bounded_index = bounded_rows
+            .iter()
+            .position(|text| text == "MULTI-SEGMENT-EXACT");
+        let bounded_page = bounded_rows.iter().take(5).cloned().collect::<Vec<_>>();
+        match expected_bounded_index {
+            Some(index) => assert_eq!(bounded_index, Some(index), "{label}: {bounded_rows:?}"),
+            None => assert!(
+                bounded_index.is_none_or(|index| index >= 5),
+                "{label}: learned row must stay off page 0: {bounded_rows:?}"
+            ),
+        }
+
+        engine.ensure_complete_candidate_list();
+        let complete_rows = engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.clone())
+            .collect::<Vec<_>>();
+        let complete_index = complete_rows
+            .iter()
+            .position(|text| text == "MULTI-SEGMENT-EXACT");
+        assert_eq!(
+            complete_rows.iter().take(5).cloned().collect::<Vec<_>>(),
+            bounded_page,
+            "{label}: bounded page 0 must equal complete page 0"
+        );
+        match expected_bounded_index {
+            Some(index) => assert_eq!(complete_index, Some(index), "{label}: {complete_rows:?}"),
+            None => assert!(
+                complete_index.is_none_or(|index| index >= 5),
+                "{label}: learned row must stay off page 0: {complete_rows:?}"
+            ),
+        }
+    }
+}
+
 #[test]
 fn canonical_jyutping_id_does_not_enable_typeduck_refresh_without_profile_marker() {
     let dictionary = bounded_refresh_dictionary_with_rows(80);

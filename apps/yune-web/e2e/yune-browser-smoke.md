@@ -114,6 +114,40 @@ or a change to the eight-scenario / 186-key stress matrix. The learned result
 is nested in `normal-typing-exact-input.json`; missing or incomplete learned
 evidence cannot produce a passing normal-typing receipt.
 
+Issue #17 has a separate, opt-in Jyutping bounded-page latency sweep. It uses
+the 47 bare syllables in the source-current Rust production-path sweep (155
+timed keys), a fresh browser profile, the six-row `jyut6ping3` page, and the
+same binding 4x/4x, 250 ms, p95 `<= 750 ms`, max `<= 1000 ms` profile. It
+checks page shape and timing only; candidate order remains blocked on the
+external TypeDuck v1.1.2 capture. The test is skipped unless
+`YUNE_WEB_ISSUE17_SWEEP=1`, so it does not change the default eight-scenario /
+186-key release receipt or WEB-06.
+
+Start a source-current pinned `public-demo/dist` preview in one terminal, then
+run the focused lane with a new external evidence directory:
+
+```bash
+npm --prefix apps/yune-web run preview -- --port 4173 --strictPort --outDir public-demo/dist
+```
+
+```bash
+YUNE_WEB_ISSUE17_SWEEP=1 \
+YUNE_WEB_APP_URL=http://127.0.0.1:4173/ \
+YUNE_WEB_EXPECTED_SOURCE_COMMIT="$(git rev-parse HEAD)" \
+YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT=1 \
+YUNE_WEB_LATENCY_EVIDENCE_DIR=/absolute/external/new-evidence-directory \
+YUNE_WEB_LATENCY_OUTPUT_DIR=/absolute/external/new-playwright-output-directory \
+npm --prefix apps/yune-web/e2e run test:e2e:input-latency -- \
+  --grep @issue17-sweep --workers=1 --retries=0
+```
+
+The test derives and records the tree for the expected commit from the clean
+local checkout, verifies the served artifact manifest and pinned toolchain,
+and exclusively creates `issue17-bounded-page-latency.json`. It refuses a path
+inside any Git worktree and refuses to overwrite an existing receipt. The
+receipt starts incomplete before browser setup and retains partial diagnostics
+and named failures if setup or measurement stops.
+
 The Playwright file remains declaration-ordered with one worker and zero
 retries, but its normal and stress tests have independent failure semantics. A red
 4x release row still blocks publication and is preserved, while the exact 1x

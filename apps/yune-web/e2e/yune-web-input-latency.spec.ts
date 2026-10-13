@@ -99,6 +99,60 @@ const LEARNED_RETYPE_INPUT = "sikgaanei";
 const LEARNED_RETYPE_TEXT = "\u98df\u50f9\u4f60";
 const LEARNED_RETYPE_SCENARIO_NAME = "typeduck-learned-userdb-retype";
 const LEARNED_USERDB_STATE_PROFILE = "typeduck-learned-userdb";
+const ISSUE17_SWEEP_ENABLED = process.env.YUNE_WEB_ISSUE17_SWEEP === "1";
+const ISSUE17_SWEEP_EVIDENCE_NAME =
+  "issue17-bounded-page-latency.json";
+const ISSUE17_SWEEP_INPUTS = [
+  "jau",
+  "jan",
+  "jat",
+  "dik",
+  "hai",
+  "daai",
+  "ceot",
+  "dou",
+  "bat",
+  "gwo",
+  "dei",
+  "dak",
+  "hau",
+  "jiu",
+  "tung",
+  "ngo",
+  "gwok",
+  "gong",
+  "zau",
+  "gaa",
+  "sing",
+  "daan",
+  "cin",
+  "keoi",
+  "zoi",
+  "hoi",
+  "jung",
+  "heoi",
+  "kei",
+  "coeng",
+  "jap",
+  "mou",
+  "wui",
+  "deoi",
+  "hou",
+  "sau",
+  "dim",
+  "sam",
+  "zyu",
+  "bun",
+  "wai",
+  "fan",
+  "man",
+  "lei",
+  "zung",
+  "siu",
+  "wan",
+] as const;
+const ISSUE17_SWEEP_EXPECTED_INPUT_COUNT = 47;
+const ISSUE17_SWEEP_EXPECTED_KEY_COUNT = 155;
 
 interface ScenarioRegistryEntry {
   name: string;
@@ -445,6 +499,74 @@ interface ScenarioEvidence {
   learnedCandidateVisible?: boolean;
   persistedAfterReload?: boolean;
   forcedCompleteFirstPageStable?: boolean;
+}
+
+interface Issue17SweepScenarioEvidence {
+  input: string;
+  inputLength: number;
+  measurementCompleted: boolean;
+  passed: boolean;
+  diagnosticCount: number;
+  summary: LatencySummary;
+  slowestKey: PerfDiagnostic | null;
+  diagnostics: PerfDiagnostic[];
+  cadence: CadenceEvidence;
+  finalVisibleCandidateOrder: CandidateRowSnapshot[];
+  candidateValidation: {
+    mode: "page-shape-only-no-external-oracle";
+    rationale: string;
+  };
+  assetRequestsDuringMeasurement: AssetRequest[];
+  checks: Record<string, boolean>;
+  failures: string[];
+}
+
+interface Issue17SweepEvidence {
+  version: "issue17-bounded-page-latency-v1";
+  generatedAt: string;
+  url: string | null;
+  measurementCompleted: boolean;
+  passed: boolean;
+  failurePhase: string;
+  source: {
+    commit: string | null;
+    tree: string | null;
+    treeState: string | null;
+    publicArtifactManifestSha256: string | null;
+    schemaManifestSha256: string | null;
+    wasmSha256: string | null;
+    toolchain: PublicBuildInfo["toolchain"];
+  };
+  profile: {
+    schemaId: "jyut6ping3";
+    expectedVisibleCandidateCount: number;
+    browserContext: "fresh-playwright-context";
+    userDictionaryState: "disabled-empty-profile";
+    keyIntervalMs: number;
+    mainThreadThrottle: number;
+    workerActionMultiplier: number;
+    ceilingsMs: { p95: number; max: number };
+  };
+  inputSet: {
+    serialization: "json-utf8";
+    sha256: string;
+    inputs: readonly string[];
+    inputCount: number;
+    expectedInputCount: number;
+    keyCount: number;
+    expectedKeyCount: number;
+  };
+  cpuProfile: CpuProfileEvidence | null;
+  aggregate: {
+    completedInputCount: number;
+    diagnosticCount: number;
+    summary: LatencySummary;
+  };
+  scenarios: Issue17SweepScenarioEvidence[];
+  startupAssetRequests: AssetRequest[];
+  schemaSelectionRequests: AssetRequest[];
+  checks: Record<string, boolean>;
+  failures: string[];
 }
 
 interface AssetRequest {
@@ -1438,6 +1560,173 @@ async function measureBurst(
   return scenario;
 }
 
+async function measureIssue17SweepInput(
+  page: Page,
+  inputText: string,
+  postReadyAssetRequests: AssetRequest[],
+): Promise<Issue17SweepScenarioEvidence> {
+  const assetRequestStart = postReadyAssetRequests.length;
+  let measurementCompleted = false;
+  let diagnostics: PerfDiagnostic[] = [];
+  let finalVisibleCandidateOrder: CandidateRowSnapshot[] = [];
+  let measurementFailure: string | null = null;
+
+  try {
+    await clearComposition(page);
+    await resetPerfDiagnostics(page);
+    const input = composeInput(page);
+    await input.focus();
+    await typeAtCadence(page, inputText, KEY_INTERVAL_MS);
+    await expect
+      .poll(async () => (await readPerfDiagnostics(page)).length, {
+        timeout: DIAGNOSTIC_TIMEOUT_MS,
+      })
+      .toBe(inputText.length);
+    diagnostics = (await readPerfDiagnostics(page)).map((diagnostic) => {
+      const baseMs = diagnostic.workerBaseElapsedMs;
+      const amplificationMs = diagnostic.workerAmplificationMs;
+      return {
+        ...diagnostic,
+        workerEffectiveMultiplier:
+          baseMs !== undefined && baseMs > 0 && amplificationMs !== undefined
+            ? (baseMs + amplificationMs) / baseMs
+            : undefined,
+      };
+    });
+    finalVisibleCandidateOrder = await readVisibleCandidateRows(page);
+    measurementCompleted = true;
+  } catch (error) {
+    measurementFailure =
+      error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    diagnostics = await readPerfDiagnostics(page).catch(
+      () => [] as PerfDiagnostic[],
+    );
+    finalVisibleCandidateOrder = await readVisibleCandidateRows(page).catch(
+      () => [] as CandidateRowSnapshot[],
+    );
+  }
+
+  const expectedPrefixes = Array.from(
+    { length: inputText.length },
+    (_, index) => inputText.slice(0, index + 1),
+  );
+  const summary = summarize(diagnostics);
+  const cadence = summarizeCadence(diagnostics);
+  const checks = {
+    measurementCompleted,
+    diagnosticCount: diagnostics.length === inputText.length,
+    exactPrefixes:
+      JSON.stringify(
+        diagnostics.map((diagnostic) =>
+          diagnostic.input.replace(/\s+/g, ""),
+        ),
+      ) === JSON.stringify(expectedPrefixes),
+    candidatePages:
+      diagnostics.length === inputText.length &&
+      diagnostics.every(
+        (diagnostic) =>
+          diagnostic.candidateCount === EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+          diagnostic.totalCandidateCount >= EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+          typeof diagnostic.firstCandidateText === "string" &&
+          diagnostic.firstCandidateText.trim().length > 0,
+      ),
+    completeTimings:
+      diagnostics.length === inputText.length &&
+      diagnostics.every(
+        (diagnostic, index) =>
+          diagnosticTimingIsValid(diagnostic) &&
+          (index === 0 ||
+            diagnostic.renderRevision > diagnostics[index - 1].renderRevision),
+      ),
+    workerStressProfile:
+      diagnostics.length === inputText.length &&
+      diagnostics.every((diagnostic) => {
+        const baseMs = diagnostic.workerBaseElapsedMs ?? Number.NaN;
+        const amplificationMs =
+          diagnostic.workerAmplificationMs ?? Number.NaN;
+        const amplificationFloorMs = Math.max(
+          0,
+          baseMs * (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 0.8,
+        );
+        const amplificationCeilingMs = Math.max(
+          10,
+          baseMs * (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 1.25 + 10,
+        );
+        return (
+          diagnostic.workerActionMultiplier ===
+            RELEASE_WORKER_ACTION_MULTIPLIER &&
+          workerAccountingIsValid(
+            diagnostic.workerProcessMs,
+            diagnostic.workerBaseElapsedMs,
+            diagnostic.workerAmplificationMs,
+          ) &&
+          Number.isFinite(diagnostic.workerEffectiveMultiplier) &&
+          (diagnostic.workerEffectiveMultiplier ?? 0) >=
+            1 + (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 0.8 &&
+          amplificationMs >= amplificationFloorMs &&
+          amplificationMs <= amplificationCeilingMs
+        );
+      }),
+    cadence:
+      cadence.count === Math.max(0, inputText.length - 1) && cadence.valid,
+    finalPage:
+      finalVisibleCandidateOrder.length === EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+      finalVisibleCandidateOrder.every(
+        (candidate) =>
+          typeof candidate.text === "string" &&
+          candidate.text.trim().length > 0 &&
+          (candidate.source === null || typeof candidate.source === "string"),
+      ),
+    finalDiagnostic:
+      diagnostics.at(-1)?.firstCandidateText ===
+      finalVisibleCandidateOrder[0]?.text,
+    noTimedAssetRequests:
+      postReadyAssetRequests.length === assetRequestStart,
+    p95:
+      summary.p95Ms !== null && summary.p95Ms <= RELEASE_P95_CEILING_MS,
+    max:
+      summary.maxMs !== null && summary.maxMs <= RELEASE_MAX_CEILING_MS,
+  };
+  const failures = Object.entries(checks)
+    .filter(([, passed]) => !passed)
+    .map(([name]) => name);
+  if (measurementFailure !== null) {
+    failures.push(measurementFailure);
+  }
+  const slowestKey = diagnostics.reduce<PerfDiagnostic | null>(
+    (slowest, diagnostic) =>
+      slowest === null ||
+      roundedRawDelta(diagnostic.keydownAt, diagnostic.paintObservedAt) >
+        roundedRawDelta(slowest.keydownAt, slowest.paintObservedAt)
+        ? diagnostic
+        : slowest,
+    null,
+  );
+
+  return {
+    input: inputText,
+    inputLength: inputText.length,
+    measurementCompleted,
+    passed: failures.length === 0,
+    diagnosticCount: diagnostics.length,
+    summary,
+    slowestKey,
+    diagnostics,
+    cadence,
+    finalVisibleCandidateOrder,
+    candidateValidation: {
+      mode: "page-shape-only-no-external-oracle",
+      rationale:
+        "Issue #17 times the production browser path and binds six-row page shape only; candidate order remains blocked on the external TypeDuck v1.1.2 capture.",
+    },
+    assetRequestsDuringMeasurement: postReadyAssetRequests.slice(
+      assetRequestStart,
+    ),
+    checks,
+    failures,
+  };
+}
+
 async function learnTypeDuckRow(page: Page): Promise<void> {
   const toggle = page.getByLabel(/User Dictionary|用戶詞庫/).last();
   await expect(toggle).toBeVisible({ timeout: 10_000 });
@@ -1481,6 +1770,92 @@ async function writeOptionalEvidence(
     `${JSON.stringify(value, null, 2)}\n`,
     "utf8",
   );
+}
+
+async function issue17RepositoryRoot(): Promise<string> {
+  const path = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  return path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../../..",
+  );
+}
+
+async function readIssue17LocalSourceIdentity(): Promise<{
+  commit: string;
+  tree: string;
+  treeState: "clean" | "dirty";
+}> {
+  const { execFileSync } = await import("node:child_process");
+  const repositoryRoot = await issue17RepositoryRoot();
+  const git = (args: string[]): string =>
+    execFileSync("git", args, {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+    })
+      .trim()
+      .toLowerCase();
+  const commit = git(["rev-parse", "HEAD"]);
+  const tree = git(["rev-parse", "HEAD^{tree}"]);
+  const status = git(["status", "--porcelain", "--untracked-files=all"]);
+  return {
+    commit,
+    tree,
+    treeState: status === "" ? "clean" : "dirty",
+  };
+}
+
+async function createIssue17EvidenceFile(
+  initial: Issue17SweepEvidence,
+): Promise<{
+  path: string;
+  update: (value: Issue17SweepEvidence) => Promise<void>;
+}> {
+  if (!EVIDENCE_DIR) {
+    throw new Error(
+      "YUNE_WEB_LATENCY_EVIDENCE_DIR is required for the issue #17 sweep",
+    );
+  }
+  const fs = await import("node:fs/promises");
+  const path = await import("node:path");
+  const { execFileSync } = await import("node:child_process");
+  const repositoryRoot = await issue17RepositoryRoot();
+  const evidenceRoot = execFileSync(
+    "python3",
+    [
+      "-B",
+      path.join(repositoryRoot, "scripts/evidence-output-path.py"),
+      "validate",
+      "--repo-root",
+      repositoryRoot,
+      "--path",
+      EVIDENCE_DIR,
+    ],
+    { cwd: repositoryRoot, encoding: "utf8" },
+  ).trim();
+  await fs.mkdir(evidenceRoot, { recursive: true });
+  const outputPath = path.join(evidenceRoot, ISSUE17_SWEEP_EVIDENCE_NAME);
+  await fs.writeFile(outputPath, `${JSON.stringify(initial, null, 2)}\n`, {
+    encoding: "utf8",
+    flag: "wx",
+    mode: 0o600,
+  });
+
+  return {
+    path: outputPath,
+    update: async (value) => {
+      const metadata = await fs.lstat(outputPath);
+      if (!metadata.isFile() || metadata.isSymbolicLink()) {
+        throw new Error(
+          "Refusing to replace a non-file issue #17 evidence path",
+        );
+      }
+      await fs.writeFile(outputPath, `${JSON.stringify(value, null, 2)}\n`, {
+        encoding: "utf8",
+        mode: 0o600,
+      });
+    },
+  };
 }
 
 async function markWorkflowMeasurementStarted(scenarioId: string): Promise<void> {
@@ -2490,3 +2865,343 @@ async function runNormalTypingCanary(
     throw error;
   }
 }
+
+test(
+  "issue #17 bounded-page syllable sweep stays within the browser latency ceiling @issue17-sweep",
+  async ({ page }, testInfo) => {
+    test.skip(
+      !ISSUE17_SWEEP_ENABLED,
+      "set YUNE_WEB_ISSUE17_SWEEP=1 to run the issue #17 evidence lane",
+    );
+
+    const { createHash } = await import("node:crypto");
+    const serializedInputs = JSON.stringify(ISSUE17_SWEEP_INPUTS);
+    const inputKeyCount = ISSUE17_SWEEP_INPUTS.reduce(
+      (total, input) => total + input.length,
+      0,
+    );
+    const postReadyAssetRequests: AssetRequest[] = [];
+    let startupAssetRequests: AssetRequest[] = [];
+    let schemaSelectionRequests: AssetRequest[] = [];
+    const scenarios: Issue17SweepScenarioEvidence[] = [];
+    let pageSession: CDPSession | null = null;
+    let receipt: Issue17SweepEvidence = {
+      version: "issue17-bounded-page-latency-v1",
+      generatedAt: new Date().toISOString(),
+      url: null,
+      measurementCompleted: false,
+      passed: false,
+      failurePhase: "setup-not-started",
+      source: {
+        commit: EXPECTED_SOURCE_COMMIT ?? null,
+        tree: null,
+        treeState: null,
+        publicArtifactManifestSha256: null,
+        schemaManifestSha256: null,
+        wasmSha256: null,
+        toolchain: null,
+      },
+      profile: {
+        schemaId: "jyut6ping3",
+        expectedVisibleCandidateCount: EXPECTED_VISIBLE_CANDIDATE_COUNT,
+        browserContext: "fresh-playwright-context",
+        userDictionaryState: "disabled-empty-profile",
+        keyIntervalMs: KEY_INTERVAL_MS,
+        mainThreadThrottle: CPU_THROTTLE_RATE,
+        workerActionMultiplier: WORKER_ACTION_MULTIPLIER,
+        ceilingsMs: {
+          p95: P95_CEILING_MS,
+          max: MAX_CEILING_MS,
+        },
+      },
+      inputSet: {
+        serialization: "json-utf8",
+        sha256: createHash("sha256").update(serializedInputs).digest("hex"),
+        inputs: ISSUE17_SWEEP_INPUTS,
+        inputCount: ISSUE17_SWEEP_INPUTS.length,
+        expectedInputCount: ISSUE17_SWEEP_EXPECTED_INPUT_COUNT,
+        keyCount: inputKeyCount,
+        expectedKeyCount: ISSUE17_SWEEP_EXPECTED_KEY_COUNT,
+      },
+      cpuProfile: null,
+      aggregate: {
+        completedInputCount: 0,
+        diagnosticCount: 0,
+        summary: summarize([]),
+      },
+      scenarios,
+      startupAssetRequests,
+      schemaSelectionRequests,
+      checks: {},
+      failures: ["setup-not-complete"],
+    };
+    const evidenceFile = await createIssue17EvidenceFile(receipt);
+    const refreshReceipt = (
+      failurePhase: string,
+      measurementCompleted: boolean,
+    ): void => {
+      const diagnostics = scenarios.flatMap((scenario) => scenario.diagnostics);
+      const checkFailures = Object.entries(receipt.checks)
+        .filter(([, passed]) => !passed)
+        .map(([name]) => name);
+      const scenarioFailures = scenarios.flatMap((scenario) =>
+        scenario.failures.map((failure) => `${scenario.input}:${failure}`),
+      );
+      const failures = [...checkFailures, ...scenarioFailures];
+      receipt = {
+        ...receipt,
+        generatedAt: new Date().toISOString(),
+        url: page.url() === "about:blank" ? null : page.url(),
+        measurementCompleted,
+        passed: measurementCompleted && failures.length === 0,
+        failurePhase,
+        cpuProfile:
+          receipt.cpuProfile === null
+            ? null
+            : {
+                ...receipt.cpuProfile,
+                verifiedKeyCount: diagnostics.length,
+              },
+        aggregate: {
+          completedInputCount: scenarios.filter(
+            (scenario) => scenario.measurementCompleted,
+          ).length,
+          diagnosticCount: diagnostics.length,
+          summary: summarize(diagnostics),
+        },
+        scenarios,
+        startupAssetRequests,
+        schemaSelectionRequests,
+        failures,
+      };
+    };
+    const persistReceipt = async (): Promise<void> => {
+      await evidenceFile.update(receipt);
+    };
+    const attachReceipt = async (): Promise<void> => {
+      await testInfo.attach("issue17-bounded-page-latency", {
+        body: `${JSON.stringify(receipt, null, 2)}\n`,
+        contentType: "application/json",
+      });
+    };
+
+    page.on("request", (request) => {
+      if (isPostReadySchemaRequest(request.url())) {
+        postReadyAssetRequests.push({
+          method: request.method(),
+          url: request.url(),
+        });
+      }
+    });
+
+    try {
+      receipt.failurePhase = "preflight";
+      receipt.checks = {
+        expectedSourceCommit:
+          EXPECTED_SOURCE_COMMIT !== undefined &&
+          /^[0-9a-f]{40}$/.test(EXPECTED_SOURCE_COMMIT),
+        exactInputCount:
+          ISSUE17_SWEEP_INPUTS.length ===
+          ISSUE17_SWEEP_EXPECTED_INPUT_COUNT,
+        exactKeyCount: inputKeyCount === ISSUE17_SWEEP_EXPECTED_KEY_COUNT,
+        uniqueInputs:
+          new Set(ISSUE17_SWEEP_INPUTS).size === ISSUE17_SWEEP_INPUTS.length,
+        loopbackPreview: IS_LOOPBACK_PREVIEW,
+        pinnedToolchainReceiptRequired: REQUIRE_PINNED_TOOLCHAIN_RECEIPT,
+        bindingMainThreadThrottle:
+          CPU_THROTTLE_RATE === RELEASE_CPU_THROTTLE_RATE,
+        bindingWorkerActionMultiplier:
+          WORKER_ACTION_MULTIPLIER === RELEASE_WORKER_ACTION_MULTIPLIER,
+        bindingKeyInterval: KEY_INTERVAL_MS === RELEASE_KEY_INTERVAL_MS,
+        bindingP95Ceiling: P95_CEILING_MS === RELEASE_P95_CEILING_MS,
+        bindingMaxCeiling: MAX_CEILING_MS === RELEASE_MAX_CEILING_MS,
+      };
+      refreshReceipt("preflight", false);
+      await persistReceipt();
+      const failedPreflight = Object.entries(receipt.checks)
+        .filter(([, passed]) => !passed)
+        .map(([name]) => name);
+      if (failedPreflight.length > 0) {
+        throw new Error(
+          `issue #17 sweep preflight failed: ${failedPreflight.join(", ")}`,
+        );
+      }
+
+      receipt.failurePhase = "source-identity";
+      const localSource = await readIssue17LocalSourceIdentity();
+      receipt.source = {
+        ...receipt.source,
+        commit: localSource.commit,
+        tree: localSource.tree,
+        treeState: localSource.treeState,
+      };
+      receipt.checks = {
+        ...receipt.checks,
+        localSourceCommit:
+          localSource.commit === EXPECTED_SOURCE_COMMIT &&
+          /^[0-9a-f]{40}$/.test(localSource.commit),
+        localSourceTree: /^[0-9a-f]{40}$/.test(localSource.tree),
+        cleanSourceTree: localSource.treeState === "clean",
+      };
+      refreshReceipt("source-identity", false);
+      await persistReceipt();
+      if (
+        !receipt.checks.localSourceCommit ||
+        !receipt.checks.localSourceTree ||
+        !receipt.checks.cleanSourceTree
+      ) {
+        throw new Error(
+          "issue #17 sweep requires the clean checkout named by YUNE_WEB_EXPECTED_SOURCE_COMMIT",
+        );
+      }
+
+      receipt.failurePhase = "browser-setup";
+      pageSession = await page.context().newCDPSession(page);
+      const mainThread = await applyAndVerifyMainThreadThrottle(
+        page,
+        pageSession,
+        CPU_THROTTLE_RATE,
+      );
+      receipt.cpuProfile = {
+        mainThread,
+        workerActionMultiplier: WORKER_ACTION_MULTIPLIER,
+        mechanism:
+          "main-cdp-plus-synthetic-keydown-worker-service-amplification",
+        workerStressScope: "loopback-preview",
+        verifiedKeyCount: 0,
+      };
+      await page.goto(
+        `/?yuneLatencyWorkerActionMultiplier=${WORKER_ACTION_MULTIPLIER}`,
+        {
+          waitUntil: "domcontentloaded",
+          timeout: APP_READY_TIMEOUT_MS,
+        },
+      );
+      await waitForAppReady(page);
+      startupAssetRequests = [...postReadyAssetRequests];
+      assertPublicSplitStartup(startupAssetRequests);
+      const buildInfo = await readPublicBuildInfo(page);
+      receipt.source = {
+        commit: buildInfo.sourceCommit,
+        tree: localSource.tree,
+        treeState: buildInfo.sourceTreeState,
+        publicArtifactManifestSha256:
+          buildInfo.publicArtifactManifestSha256,
+        schemaManifestSha256: buildInfo.schemaManifestSha256,
+        wasmSha256: buildInfo.wasmSha256,
+        toolchain: buildInfo.toolchain,
+      };
+      receipt.checks = {
+        ...receipt.checks,
+        servedSourceCommit: buildInfo.sourceCommit === localSource.commit,
+        servedCleanSource: buildInfo.sourceTreeState === "clean",
+        pinnedToolchain: buildInfo.toolchain !== null,
+        mainThreadThrottle:
+          mainThread.requestedRate === RELEASE_CPU_THROTTLE_RATE,
+      };
+
+      const schemaSelectionStart = postReadyAssetRequests.length;
+      await selectSchema(page, "jyut6ping3");
+      schemaSelectionRequests = postReadyAssetRequests.slice(
+        schemaSelectionStart,
+      );
+      const activeSchemaId = await page.evaluate(
+        () => document.documentElement.dataset.yuneActiveSchema ?? null,
+      );
+      const userDictionaryToggle = page
+        .getByLabel(/User Dictionary|\u7528\u6236\u8a5e\u5eab/)
+        .last();
+      await expect(userDictionaryToggle).toBeVisible({ timeout: 10_000 });
+      const userDictionaryEnabled = await userDictionaryToggle.isChecked();
+      receipt.checks = {
+        ...receipt.checks,
+        activeSchema: activeSchemaId === "jyut6ping3",
+        freshProfile: !userDictionaryEnabled,
+      };
+      refreshReceipt("browser-setup", false);
+      await persistReceipt();
+      const failedSetup = Object.entries(receipt.checks)
+        .filter(([, passed]) => !passed)
+        .map(([name]) => name);
+      if (failedSetup.length > 0) {
+        throw new Error(
+          `issue #17 sweep browser setup failed: ${failedSetup.join(", ")}`,
+        );
+      }
+
+      receipt.failurePhase = "measurement";
+      for (const input of ISSUE17_SWEEP_INPUTS) {
+        const scenario = await measureIssue17SweepInput(
+          page,
+          input,
+          postReadyAssetRequests,
+        );
+        scenarios.push(scenario);
+        refreshReceipt(
+          scenario.measurementCompleted
+            ? `measurement:${input}`
+            : `measurement-incomplete:${input}`,
+          false,
+        );
+        await persistReceipt();
+        if (!scenario.measurementCompleted) {
+          break;
+        }
+      }
+
+      const aggregateSummary = summarize(
+        scenarios.flatMap((scenario) => scenario.diagnostics),
+      );
+      receipt.checks = {
+        ...receipt.checks,
+        allInputsMeasured:
+          scenarios.length === ISSUE17_SWEEP_EXPECTED_INPUT_COUNT &&
+          scenarios.every((scenario) => scenario.measurementCompleted),
+        allInputChecksPassed:
+          scenarios.length === ISSUE17_SWEEP_EXPECTED_INPUT_COUNT &&
+          scenarios.every((scenario) => scenario.passed),
+        aggregateDiagnosticCount:
+          scenarios.reduce(
+            (total, scenario) => total + scenario.diagnosticCount,
+            0,
+          ) === ISSUE17_SWEEP_EXPECTED_KEY_COUNT,
+        aggregateP95:
+          aggregateSummary.p95Ms !== null &&
+          aggregateSummary.p95Ms <= RELEASE_P95_CEILING_MS,
+        aggregateMax:
+          aggregateSummary.maxMs !== null &&
+          aggregateSummary.maxMs <= RELEASE_MAX_CEILING_MS,
+        noTimedAssetRequests: scenarios.every(
+          (scenario) => scenario.assetRequestsDuringMeasurement.length === 0,
+        ),
+      };
+      const measurementCompleted =
+        scenarios.length === ISSUE17_SWEEP_EXPECTED_INPUT_COUNT &&
+        scenarios.every((scenario) => scenario.measurementCompleted);
+      refreshReceipt(
+        measurementCompleted ? "complete" : "measurement-incomplete",
+        measurementCompleted,
+      );
+      await persistReceipt();
+      await attachReceipt();
+
+      for (const failure of receipt.failures) {
+        expect.soft(false, `issue #17 sweep failed: ${failure}`).toBe(true);
+      }
+      expect.soft(receipt.passed, "issue #17 sweep receipt must pass").toBe(true);
+    } catch (error) {
+      const failure =
+        error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+      refreshReceipt(receipt.failurePhase, false);
+      if (!receipt.failures.includes(failure)) {
+        receipt.failures.push(failure);
+      }
+      receipt.passed = false;
+      await persistReceipt().catch(() => undefined);
+      await attachReceipt().catch(() => undefined);
+      throw error;
+    } finally {
+      await pageSession?.detach().catch(() => undefined);
+    }
+  },
+);

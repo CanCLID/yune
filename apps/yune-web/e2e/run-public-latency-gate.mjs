@@ -414,6 +414,7 @@ const temporaryOutput = process.env.YUNE_WEB_LATENCY_OUTPUT_DIR
   : await mkdtemp(path.join(tmpdir(), "yune-web-input-latency-"));
 const outputDir =
   process.env.YUNE_WEB_LATENCY_OUTPUT_DIR ?? temporaryOutput;
+const playwrightOutputDir = path.join(outputDir, "playwright");
 await mkdir(outputDir, { recursive: true });
 const gateStartedAt = new Date().toISOString();
 await Promise.all([
@@ -556,7 +557,7 @@ async function runLatencyGate() {
           ...process.env,
           YUNE_WEB_APP_URL: appUrl,
           YUNE_WEB_EXPECTED_SOURCE_COMMIT: currentHead,
-          YUNE_WEB_LATENCY_OUTPUT_DIR: outputDir,
+          YUNE_WEB_LATENCY_OUTPUT_DIR: playwrightOutputDir,
           YUNE_WEB_LATENCY_EVIDENCE_DIR: outputDir,
         },
         stdio: "inherit",
@@ -1446,15 +1447,29 @@ function learnedRetypeViolations(learned) {
         isNonemptyString(diagnostic?.firstCandidateText) &&
         diagnostic?.workerActionMultiplier === 1 &&
         Number.isFinite(diagnostic?.workerAmplificationMs) &&
-        diagnostic.workerAmplificationMs >= 0,
+        diagnostic.workerAmplificationMs >= 0 &&
+        Number.isFinite(diagnostic?.workerBaseElapsedMs) &&
+        diagnostic.workerBaseElapsedMs >= 0 &&
+        Number.isFinite(diagnostic?.workerProcessMs) &&
+        diagnostic.workerProcessMs >=
+          diagnostic.workerBaseElapsedMs +
+            diagnostic.workerAmplificationMs -
+            derivedDeltaRoundingToleranceMs,
     ) &&
       actions.every(
         (action) =>
           action?.workerActionMultiplier === 1 &&
           Number.isFinite(action?.workerAmplificationMs) &&
-          action.workerAmplificationMs >= 0,
+          action.workerAmplificationMs >= 0 &&
+          Number.isFinite(action?.workerBaseElapsedMs) &&
+          action.workerBaseElapsedMs >= 0 &&
+          Number.isFinite(action?.workerMs) &&
+          action.workerMs >=
+            action.workerBaseElapsedMs +
+              action.workerAmplificationMs -
+              derivedDeltaRoundingToleranceMs,
       ),
-    "learned retype must use the unamplified worker and render complete six-row pages",
+    "learned retype must use the 1x worker, reconcile base plus amplification to worker time, and render complete six-row pages",
   );
 
   const rawTimings = rawTimingSamples(diagnostics);
@@ -1602,8 +1617,8 @@ function assertNormalTypingReceipt(evidence) {
   requireValue(
     evidence?.measurementCompleted === true &&
       evidence.passed === true &&
-      evidence.buildInfo?.sourceCommit === currentHead,
-    "normal-typing receipt must be a passing measurement for current HEAD",
+      sameJson(evidence.buildInfo, buildInfo),
+    "normal-typing receipt must be a passing measurement for the exact validated public artifact",
   );
   requireValue(
     evidence?.typingMode === "normal-interactive-exact-input" &&
@@ -1895,6 +1910,14 @@ function selfTestNormalTypingValidator(evidence) {
     assertNormalTypingReceipt,
     evidence,
     (receipt) => {
+      receipt.buildInfo.wasmSha256 = "0".repeat(64);
+    },
+    "a normal receipt with a forged public build hash",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
       delete receipt.diagnostics[0].responseMappingStartedAt;
     },
     "a normal receipt with a raw timestamp removed",
@@ -2009,6 +2032,30 @@ function selfTestNormalTypingValidator(evidence) {
       receipt.learnedRetype.diagnostics[0].workerActionMultiplier = 4;
     },
     "a learned retype sample labeled with the 4x worker profile",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      const action = receipt.learnedRetype.actions[0];
+      const diagnostic = receipt.learnedRetype.diagnostics[0];
+      const workerMs = action.workerMs;
+      const workerBaseElapsedMs = Math.max(1, workerMs / 2);
+      const workerAmplificationMs =
+        workerMs - workerBaseElapsedMs + 10;
+      Object.assign(action, {
+        workerBaseElapsedMs,
+        workerAmplificationMs,
+      });
+      Object.assign(diagnostic, {
+        workerBaseElapsedMs,
+        workerAmplificationMs,
+        workerEffectiveMultiplier:
+          (workerBaseElapsedMs + workerAmplificationMs) /
+          workerBaseElapsedMs,
+      });
+    },
+    "a learned retype sample whose matching base and amplification exceed worker time",
   );
   assertMutationRejected(
     assertNormalTypingReceipt,

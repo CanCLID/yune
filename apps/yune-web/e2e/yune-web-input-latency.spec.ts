@@ -882,6 +882,25 @@ function actionMatchesPerfDiagnostic(
     );
 }
 
+function workerAccountingIsValid(
+  workerMs: number | undefined,
+  workerBaseElapsedMs: number | undefined,
+  workerAmplificationMs: number | undefined,
+): boolean {
+  return (
+    Number.isFinite(workerMs) &&
+    (workerMs ?? -1) >= 0 &&
+    Number.isFinite(workerBaseElapsedMs) &&
+    (workerBaseElapsedMs ?? -1) >= 0 &&
+    Number.isFinite(workerAmplificationMs) &&
+    (workerAmplificationMs ?? -1) >= 0 &&
+    (workerMs ?? Number.NEGATIVE_INFINITY) >=
+      (workerBaseElapsedMs ?? Number.POSITIVE_INFINITY) +
+        (workerAmplificationMs ?? Number.POSITIVE_INFINITY) -
+        DERIVED_DELTA_ROUNDING_TOLERANCE_MS
+  );
+}
+
 function summarize(diagnostics: PerfDiagnostic[]): LatencySummary {
   const raw = rawTimingSamples(diagnostics);
   return {
@@ -1955,27 +1974,18 @@ async function runNormalTypingCanary(
 ): Promise<void> {
   const postReadyAssetRequests: AssetRequest[] = [];
   let learnedRetype = learnedRetypeSeed(
-    null,
+    EXPECTED_SOURCE_COMMIT ?? null,
     "setup-or-measurement-incomplete",
   );
   let receipt: NormalTypingEvidence | null = null;
   let normalChecks: Record<string, boolean> | null = null;
   let normalPassed = false;
+  let normalAssetRequestStart: number | null = null;
+  let normalMeasurementStarted = false;
+  let normalMeasurementCaptured = false;
   let learnedChecks: Record<string, boolean> | null = null;
   let learnedAssetRequestStart: number | null = null;
   let learnedMeasurementStarted = false;
-  await writeOptionalEvidence("normal-typing-exact-input.json", {
-    generatedAt: new Date().toISOString(),
-    url: null,
-    measurementCompleted: false,
-    passed: false,
-    typingMode: "normal-interactive-exact-input",
-    schemaId: "jyut6ping3",
-    input: NORMAL_TYPING_INPUT,
-    inputLength: NORMAL_TYPING_INPUT.length,
-    failurePhase: "setup-or-measurement-incomplete",
-    learnedRetype,
-  });
   page.on("request", (request) => {
     if (isPostReadySchemaRequest(request.url())) {
       postReadyAssetRequests.push({
@@ -1998,14 +2008,47 @@ async function runNormalTypingCanary(
       buildInfo.sourceCommit,
       "learned-state-setup-incomplete",
     );
+    receipt = {
+      generatedAt: new Date().toISOString(),
+      url: page.url(),
+      measurementCompleted: false,
+      passed: false,
+      typingMode: "normal-interactive-exact-input",
+      schemaId: "jyut6ping3",
+      input: NORMAL_TYPING_INPUT,
+      inputLength: NORMAL_TYPING_INPUT.length,
+      diagnosticCount: 0,
+      keyIntervalMs: NORMAL_TYPING_KEY_INTERVAL_MS,
+      ceilingsMs: {
+        p95: NORMAL_TYPING_P95_CEILING_MS,
+        max: NORMAL_TYPING_MAX_CEILING_MS,
+        workerQueueWaitMax: NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS,
+      },
+      summary: summarize([]),
+      workerQueueWaitMaxMs: null,
+      cadence: summarizeCadence([], NORMAL_TYPING_KEY_INTERVAL_MS),
+      diagnostics: [],
+      finalVisibleCandidateOrder: [],
+      candidateValidation: {
+        mode: "page-shape-only-no-oracle-claim",
+        rationale:
+          "This exact product input has no pinned external candidate-order fixture. The canary binds responsiveness, every input prefix, and complete visible-page shape without treating Yune output as its own behavior oracle.",
+      },
+      assetRequestsDuringMeasurement: [],
+      buildInfo,
+      learnedRetype,
+    };
+    await writeOptionalEvidence("normal-typing-exact-input.json", receipt);
     await selectSchema(page, "jyut6ping3");
     await clearComposition(page);
     await resetPerfDiagnostics(page);
     const input = composeInput(page);
     await input.focus();
     const assetRequestStart = postReadyAssetRequests.length;
+    normalAssetRequestStart = assetRequestStart;
 
     await markWorkflowMeasurementStarted("web03-normal-typing");
+    normalMeasurementStarted = true;
     await typeAtCadence(
       page,
       NORMAL_TYPING_INPUT,
@@ -2090,35 +2133,19 @@ async function runNormalTypingCanary(
     };
     normalPassed = Object.values(normalChecks).every(Boolean);
     receipt = {
+      ...receipt,
       generatedAt: new Date().toISOString(),
       url: page.url(),
-      measurementCompleted: false,
-      passed: false,
-      typingMode: "normal-interactive-exact-input",
-      schemaId: "jyut6ping3",
-      input: NORMAL_TYPING_INPUT,
-      inputLength: NORMAL_TYPING_INPUT.length,
       diagnosticCount: diagnostics.length,
-      keyIntervalMs: NORMAL_TYPING_KEY_INTERVAL_MS,
-      ceilingsMs: {
-        p95: NORMAL_TYPING_P95_CEILING_MS,
-        max: NORMAL_TYPING_MAX_CEILING_MS,
-        workerQueueWaitMax: NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS,
-      },
       summary,
       workerQueueWaitMaxMs,
       cadence,
       diagnostics,
       finalVisibleCandidateOrder,
-      candidateValidation: {
-        mode: "page-shape-only-no-oracle-claim",
-        rationale:
-          "This exact product input has no pinned external candidate-order fixture. The canary binds responsiveness, every input prefix, and complete visible-page shape without treating Yune output as its own behavior oracle.",
-      },
       assetRequestsDuringMeasurement,
-      buildInfo,
       learnedRetype,
     };
+    normalMeasurementCaptured = true;
     await writeOptionalEvidence("normal-typing-exact-input.json", receipt);
 
     await clearComposition(page);
@@ -2278,14 +2305,20 @@ async function runNormalTypingCanary(
         learnedDiagnostics.every(
           (diagnostic) =>
             diagnostic.workerActionMultiplier === 1 &&
-            Number.isFinite(diagnostic.workerAmplificationMs) &&
-            (diagnostic.workerAmplificationMs ?? -1) >= 0,
+            workerAccountingIsValid(
+              diagnostic.workerProcessMs,
+              diagnostic.workerBaseElapsedMs,
+              diagnostic.workerAmplificationMs,
+            ),
         ) &&
         learnedActions.every(
           (action) =>
             action.workerActionMultiplier === 1 &&
-            Number.isFinite(action.workerAmplificationMs) &&
-            (action.workerAmplificationMs ?? -1) >= 0,
+            workerAccountingIsValid(
+              action.workerMs,
+              action.workerBaseElapsedMs,
+              action.workerAmplificationMs,
+            ),
         ),
       cadence: learnedCadence.valid,
       totalP95:
@@ -2359,6 +2392,43 @@ async function runNormalTypingCanary(
       expect.soft(passed, `learned retype check failed: ${name}`).toBe(true);
     }
   } catch (error) {
+    if (
+      normalMeasurementStarted &&
+      !normalMeasurementCaptured &&
+      receipt !== null
+    ) {
+      const partialDiagnostics = await readPerfDiagnostics(page).catch(
+        () => [] as PerfDiagnostic[],
+      );
+      const partialRows = await readVisibleCandidateRows(page).catch(
+        () => [] as CandidateRowSnapshot[],
+      );
+      const partialRawTimings = rawTimingSamples(partialDiagnostics);
+      receipt = {
+        ...receipt,
+        generatedAt: new Date().toISOString(),
+        url: page.url(),
+        measurementCompleted: false,
+        passed: false,
+        diagnosticCount: partialDiagnostics.length,
+        summary: summarize(partialDiagnostics),
+        workerQueueWaitMaxMs: percentile(
+          partialRawTimings.workerQueueWait,
+          1,
+        ),
+        cadence: summarizeCadence(
+          partialDiagnostics,
+          NORMAL_TYPING_KEY_INTERVAL_MS,
+        ),
+        diagnostics: partialDiagnostics,
+        finalVisibleCandidateOrder: partialRows,
+        assetRequestsDuringMeasurement:
+          normalAssetRequestStart === null
+            ? []
+            : postReadyAssetRequests.slice(normalAssetRequestStart),
+        learnedRetype,
+      };
+    }
     if (learnedMeasurementStarted) {
       const partialDiagnostics = await readPerfDiagnostics(page).catch(
         () => [] as PerfDiagnostic[],

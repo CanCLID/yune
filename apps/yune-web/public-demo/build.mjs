@@ -30,6 +30,7 @@ function publicBuildToolchain() {
 		emccVersion: process.env.YUNE_WEB_EMCC_VERSION,
 		rustcVersion: process.env.YUNE_WEB_RUSTC_VERSION,
 		nodeVersion: process.env.YUNE_WEB_NODE_VERSION,
+		npmVersion: process.env.YUNE_WEB_NPM_VERSION,
 	};
 	const present = Object.values(fields).filter(value => value !== undefined && value.trim() !== "");
 	if (present.length === 0) {

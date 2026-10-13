@@ -10,7 +10,9 @@ YUNE_WEB_EMSDK_REPOSITORY_COMMIT=db04e88298d9916fc51fcd3743045ca3eb695127
 YUNE_WEB_RUST_TOOLCHAIN_VERSION=1.96.1
 YUNE_WEB_EXPECTED_RUSTC_VERSION="rustc 1.96.1 (31fca3adb 2026-06-26)"
 YUNE_WEB_EXPECTED_NODE_VERSION=v22.16.0
+YUNE_WEB_NPM_VERSION=11.16.0
 YUNE_WEB_EMSDK_DIR=${YUNE_WEB_EMSDK_DIR:-"$YUNE_WEB_REPO_ROOT/.cache/emsdk"}
+YUNE_WEB_NPM_PREFIX=${YUNE_WEB_NPM_PREFIX:-"$YUNE_WEB_REPO_ROOT/.cache/npm-$YUNE_WEB_NPM_VERSION"}
 
 yune_web_ensure_rustup() {
 	if command -v rustup >/dev/null 2>&1; then
@@ -61,6 +63,20 @@ yune_web_ensure_emscripten() {
 	fi
 }
 
+yune_web_assert_npm_version() {
+	active_npm_version=$(npm --version)
+	if [ "$active_npm_version" != "$YUNE_WEB_NPM_VERSION" ]; then
+		echo "Active npm does not match the public-build pin: $active_npm_version (expected $YUNE_WEB_NPM_VERSION)" >&2
+		exit 1
+	fi
+}
+
+yune_web_activate_npm() {
+	npm install --prefix "$YUNE_WEB_NPM_PREFIX" --no-save --package-lock=false --ignore-scripts "npm@$YUNE_WEB_NPM_VERSION"
+	export PATH="$YUNE_WEB_NPM_PREFIX/node_modules/.bin:$PATH"
+	yune_web_assert_npm_version
+}
+
 yune_web_activate_release_toolchain() {
 	if [ -n "${RUSTFLAGS:-}" ] || [ -n "${CARGO_ENCODED_RUSTFLAGS:-}" ]; then
 		echo "Public release builds reject ambient RUSTFLAGS/CARGO_ENCODED_RUSTFLAGS because they change WASM bytes outside the pinned receipt." >&2
@@ -87,6 +103,7 @@ yune_web_activate_release_toolchain() {
 		echo "Active Node does not match the Emscripten public-build pin: $(node --version)" >&2
 		exit 1
 	fi
+	yune_web_activate_npm
 
 	export YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT=1
 	export YUNE_WEB_EMSDK_VERSION
@@ -95,4 +112,5 @@ yune_web_activate_release_toolchain() {
 	export YUNE_WEB_EMCC_VERSION
 	export YUNE_WEB_RUSTC_VERSION="$(rustc --version)"
 	export YUNE_WEB_NODE_VERSION="$(node --version)"
+	export YUNE_WEB_NPM_VERSION
 }

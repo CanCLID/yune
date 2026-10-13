@@ -95,8 +95,8 @@ const LUNA_37_INPUT = "ceshiyixiachangjushuruxingnengzenyang";
 const LUNA_59_INPUT =
   "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong";
 const LEARNED_INPUT = "ngohaigo";
-const LEARNED_RETYPE_INPUT = "sikgaanei";
-const LEARNED_RETYPE_TEXT = "\u98df\u50f9\u4f60";
+const LEARNED_RETYPE_INPUT = "cungfukhokzaap";
+const LEARNED_RETYPE_TEXT = "\u91cd\u8907\u5b78\u7fd2";
 const LEARNED_RETYPE_SCENARIO_NAME = "typeduck-learned-userdb-retype";
 const LEARNED_USERDB_STATE_PROFILE = "typeduck-learned-userdb";
 const ISSUE17_SWEEP_ENABLED = process.env.YUNE_WEB_ISSUE17_SWEEP === "1";

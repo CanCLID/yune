@@ -2968,8 +2968,8 @@ fn yune_web_adapter_real_assets_learned_multisegment_page_matches_complete_refre
 /tick\t311
 /user_id\tunknown
 /rime_version\t0.1.0
-sik6gaa3 nei5 \t\u{98df}\u{50f9}\u{4f60}\tc=5 d=4.134706437831298 t=234
-ngo5 hai6 hoeng1 gong2 jan4 \tLONG-LEARNED\tc=1 d=1 t=1
+cung4fuk1 hok6zaap6 \t重複學習\tc=5 d=4.134706437831298 t=234
+coeng4 jam1zit3 syu1jap6 cak1 si3 \t長音節輸入測試\tc=1 d=1 t=1
 fa n6 \tFAN-LEARNED\tc=1 d=1 t=1
 ",
     )
@@ -2993,21 +2993,33 @@ fa n6 \tFAN-LEARNED\tc=1 d=1 t=1
     assert_eq!(unsafe { yune_web_deploy(state) }, TRUE);
 
     let mut mismatches = Vec::new();
-    for input in ["sikgaanei", "ngohaihoenggongjan", "fan"] {
+    // Keep the learned, duplicate-heavy `fan` case alongside the natural phrases.
+    // The long phrase is explicitly seeded; it is not a fresh sentence-order pin.
+    for input in ["cungfukhokzaap", "coengjamzitsyujapcaksi", "fan"] {
         let bounded = process_input(state, input);
         assert_eq!(bounded["context"]["page_size"], Value::from(6), "{input}");
         assert_eq!(bounded["context"]["page_no"], Value::from(0), "{input}");
         let bounded_page = classic_candidate_projection(&bounded);
-        if input == "sikgaanei" {
+        if input == "cungfukhokzaap" {
             let learned_rows = bounded_page
                 .as_array()
                 .expect("page should be an array")
                 .iter()
-                .filter(|row| row["text"] == "\u{98df}\u{50f9}\u{4f60}")
+                .filter(|row| row["text"] == "重複學習")
                 .count();
             assert!(
                 learned_rows >= 2,
                 "{input} page 0 should keep the sentence row and the learned row: {bounded_page}"
+            );
+        }
+        if input == "coengjamzitsyujapcaksi" {
+            assert!(
+                bounded_page
+                    .as_array()
+                    .expect("page should be an array")
+                    .iter()
+                    .any(|row| row["text"] == "長音節輸入測試"),
+                "{input} page 0 should contain the seeded long learned phrase: {bounded_page}"
             );
         }
         let forward = response_json(unsafe { yune_web_flip_page(state, FALSE) });

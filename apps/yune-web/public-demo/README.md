@@ -60,7 +60,7 @@ build fail. Latency-gate failure logs retain gzip/base64 chunks of the complete
 JSON receipts plus hashes of their exact bytes.
 
 The default normal-typing receipt also includes a learned-phrase regression:
-commit `sikgaanei` as `食價你`, reload, then retype the complete code at 100 ms
+commit `cungfukhokzaap` as `重複學習`, reload, then retype all 14 keys at 100 ms
 intervals. The row must survive reload; total and worker latency must satisfy
 the normal `150/250 ms` p95/max ceilings, queue wait must stay at or below
 `100 ms`, and the final action's `workerMs` must be below `50 ms`. This uses

@@ -100,8 +100,8 @@ texts. Because this exact input has no pinned external
 candidate-order fixture, the canary deliberately binds responsiveness and page
 shape only; it does not promote Yune's own output into an oracle.
 
-The default normal-typing run then commits `sikgaanei` as `食價你`, reloads
-the same browser profile, and retypes all nine keys at the same 100 ms cadence.
+The default normal-typing run then commits `cungfukhokzaap` as `重複學習`, reloads
+the same browser profile, and retypes all 14 keys at the same 100 ms cadence.
 The `typeduck-learned-userdb-retype` registry row explicitly uses learned
 user-dictionary state. It must prove that the committed row survived reload,
 retain every exact prefix and six-row page, and fetch no schema assets while

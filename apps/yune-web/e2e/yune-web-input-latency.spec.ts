@@ -334,6 +334,7 @@ interface PerfDiagnostic {
   workerAmplificationMs?: number;
   workerActionMultiplier?: number;
   workerEffectiveMultiplier?: number;
+  workerStressClassification?: Issue17WorkerStressClassification;
   responseMappingMs: number;
   reactUpdateMs: number;
   paintProxyMs: number;
@@ -516,8 +517,40 @@ interface Issue17SweepScenarioEvidence {
     mode: "page-shape-only-no-external-oracle";
     rationale: string;
   };
+  workerStress: {
+    configuredMultiplier: number;
+    measuredRatioCount: number;
+    timerResolutionZeroCount: number;
+    invalidCount: number;
+    measuredRatioPrefixes: string[];
+    timerResolutionZeroPrefixes: string[];
+    invalidPrefixes: string[];
+  };
   assetRequestsDuringMeasurement: AssetRequest[];
   checks: Record<string, boolean>;
+  failures: string[];
+}
+
+type Issue17FontFaceStatus = "unloaded" | "loading" | "loaded" | "error";
+
+interface Issue17FontFaceIdentity {
+  family: string;
+  style: string;
+  weight: string;
+  stretch: string;
+  unicodeRange: string;
+  status: Issue17FontFaceStatus;
+}
+
+interface Issue17FontPreflightEvidence {
+  measurementCompleted: boolean;
+  passed: boolean;
+  fontSetStatus: "loading" | "loaded" | null;
+  faceCount: number;
+  loadedFaceCount: number;
+  identities: Issue17FontFaceIdentity[];
+  requests: AssetRequest[];
+  loadErrors: string[];
   failures: string[];
 }
 
@@ -545,8 +578,10 @@ interface Issue17SweepEvidence {
     keyIntervalMs: number;
     mainThreadThrottle: number;
     workerActionMultiplier: number;
+    crossContextClockToleranceMs: number;
     ceilingsMs: { p95: number; max: number };
   };
+  fontPreflight: Issue17FontPreflightEvidence;
   inputSet: {
     serialization: "json-utf8";
     sha256: string;
@@ -795,6 +830,7 @@ function percentile(values: number[], proportion: number): number | null {
 }
 
 const CROSS_CONTEXT_CLOCK_TOLERANCE_MS = 2;
+const ISSUE17_CROSS_CONTEXT_CLOCK_TOLERANCE_MS = 2.001;
 const DERIVED_DELTA_ROUNDING_TOLERANCE_MS = 1;
 
 function roundedRawDelta(start: number, end: number): number {
@@ -833,7 +869,23 @@ function rawTimingSamples(diagnostics: PerfDiagnostic[]) {
   };
 }
 
-function diagnosticTimingIsValid(diagnostic: PerfDiagnostic): boolean {
+function rawTimelineIsValid(
+  rawTimeline: number[],
+  crossContextClockToleranceMs = CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+): boolean {
+  return (
+    rawTimeline.every((value) => Number.isFinite(value) && value >= 0) &&
+    !rawTimeline.slice(1).some(
+      (value, index) =>
+        value + crossContextClockToleranceMs < rawTimeline[index],
+    )
+  );
+}
+
+function diagnosticTimingIsValid(
+  diagnostic: PerfDiagnostic,
+  crossContextClockToleranceMs = CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+): boolean {
   const rawTimeline = [
     diagnostic.keydownAt,
     diagnostic.workerQueuedAt,
@@ -846,13 +898,7 @@ function diagnosticTimingIsValid(diagnostic: PerfDiagnostic): boolean {
     diagnostic.stateAppliedAt,
     diagnostic.paintObservedAt,
   ];
-  if (
-    !rawTimeline.every((value) => Number.isFinite(value) && value >= 0) ||
-    rawTimeline.slice(1).some(
-      (value, index) =>
-        value + CROSS_CONTEXT_CLOCK_TOLERANCE_MS < rawTimeline[index],
-    )
-  ) {
+  if (!rawTimelineIsValid(rawTimeline, crossContextClockToleranceMs)) {
     return false;
   }
   const derived: Array<[number | undefined, number]> = [
@@ -1020,6 +1066,84 @@ function workerAccountingIsValid(
       (workerBaseElapsedMs ?? Number.POSITIVE_INFINITY) +
         (workerAmplificationMs ?? Number.POSITIVE_INFINITY) -
         DERIVED_DELTA_ROUNDING_TOLERANCE_MS
+  );
+}
+
+type Issue17WorkerStressClassification =
+  | "measured-ratio"
+  | "timer-resolution-zero"
+  | "invalid";
+
+type Issue17WorkerStressSample = Pick<
+  PerfDiagnostic,
+  | "workerStartedAt"
+  | "workerFinishedAt"
+  | "workerProcessMs"
+  | "workerBaseElapsedMs"
+  | "workerAmplificationMs"
+  | "workerActionMultiplier"
+  | "workerEffectiveMultiplier"
+>;
+
+interface Issue17WorkerStressEvaluation {
+  valid: boolean;
+  classification: Issue17WorkerStressClassification;
+}
+
+function evaluateIssue17WorkerStress(
+  diagnostic: Issue17WorkerStressSample,
+): Issue17WorkerStressEvaluation {
+  const baseMs = diagnostic.workerBaseElapsedMs ?? Number.NaN;
+  const amplificationMs =
+    diagnostic.workerAmplificationMs ?? Number.NaN;
+  const commonChecks =
+    diagnostic.workerActionMultiplier ===
+      RELEASE_WORKER_ACTION_MULTIPLIER &&
+    workerAccountingIsValid(
+      diagnostic.workerProcessMs,
+      diagnostic.workerBaseElapsedMs,
+      diagnostic.workerAmplificationMs,
+    );
+  const timerResolutionZero =
+    diagnostic.workerStartedAt === diagnostic.workerFinishedAt &&
+    diagnostic.workerProcessMs === 0 &&
+    diagnostic.workerBaseElapsedMs === 0 &&
+    diagnostic.workerAmplificationMs === 0 &&
+    diagnostic.workerEffectiveMultiplier === undefined;
+  if (commonChecks && timerResolutionZero) {
+    return { valid: true, classification: "timer-resolution-zero" };
+  }
+
+  const amplificationFloorMs = Math.max(
+    0,
+    baseMs * (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 0.8,
+  );
+  const amplificationCeilingMs = Math.max(
+    10,
+    baseMs * (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 1.25 + 10,
+  );
+  const measuredRatio =
+    commonChecks &&
+    baseMs > 0 &&
+    Number.isFinite(diagnostic.workerEffectiveMultiplier) &&
+    (diagnostic.workerEffectiveMultiplier ?? 0) >=
+      1 + (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 0.8 &&
+    amplificationMs >= amplificationFloorMs &&
+    amplificationMs <= amplificationCeilingMs;
+  return measuredRatio
+    ? { valid: true, classification: "measured-ratio" }
+    : { valid: false, classification: "invalid" };
+}
+
+function issue17WorkerStressProfileIsValid(
+  evaluations: Issue17WorkerStressEvaluation[],
+): boolean {
+  return (
+    evaluations.length > 0 &&
+    evaluations.every((evaluation) => evaluation.valid) &&
+    evaluations.some(
+      (evaluation) => evaluation.classification === "measured-ratio",
+    )
   );
 }
 
@@ -1322,6 +1446,112 @@ async function readPublicBuildInfo(
   return value;
 }
 
+async function preloadIssue17DeclaredFonts(
+  page: Page,
+  postReadyAssetRequests: AssetRequest[],
+): Promise<Issue17FontPreflightEvidence> {
+  const requestStart = postReadyAssetRequests.length;
+  try {
+    const browserEvidence = await page.evaluate(async () => {
+      const loadFailures = new Set<string>();
+      const identify = (face: FontFace) => ({
+        family: face.family,
+        style: face.style,
+        weight: face.weight,
+        stretch: face.stretch,
+        unicodeRange: face.unicodeRange,
+        status: face.status,
+      });
+      const identityKey = (
+        identity: ReturnType<typeof identify>,
+      ): string =>
+        JSON.stringify([
+          identity.family,
+          identity.style,
+          identity.weight,
+          identity.stretch,
+          identity.unicodeRange,
+        ]);
+      await document.fonts.ready;
+      const declaredFaces = Array.from(document.fonts);
+      const results = await Promise.allSettled(
+        declaredFaces.map((face) => face.load()),
+      );
+      for (const [index, result] of results.entries()) {
+        if (result.status === "rejected") {
+          const reason =
+            result.reason instanceof Error
+              ? `${result.reason.name}: ${result.reason.message}`
+              : String(result.reason);
+          const face = declaredFaces[index];
+          loadFailures.add(
+            `${face === undefined ? `face-${index}` : identityKey(identify(face))}: ${reason}`,
+          );
+        }
+      }
+      await document.fonts.ready;
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+
+      const identities = Array.from(document.fonts)
+        .map(identify)
+        .sort((left, right) => {
+          const leftKey = identityKey(left);
+          const rightKey = identityKey(right);
+          return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+        });
+      return {
+        fontSetStatus: document.fonts.status,
+        identities,
+        loadFailures: [...loadFailures],
+      };
+    });
+    const failures: string[] = [];
+    const loadedFaceCount = browserEvidence.identities.filter(
+      (identity) => identity.status === "loaded",
+    ).length;
+    if (browserEvidence.identities.length === 0) {
+      failures.push("no-declared-font-faces");
+    }
+    if (browserEvidence.fontSetStatus !== "loaded") {
+      failures.push(`font-set-status:${browserEvidence.fontSetStatus}`);
+    }
+    if (loadedFaceCount !== browserEvidence.identities.length) {
+      failures.push(
+        `font-faces-not-loaded:${loadedFaceCount}/${browserEvidence.identities.length}`,
+      );
+    }
+    return {
+      measurementCompleted: true,
+      passed: failures.length === 0,
+      fontSetStatus: browserEvidence.fontSetStatus,
+      faceCount: browserEvidence.identities.length,
+      loadedFaceCount,
+      identities: browserEvidence.identities,
+      requests: postReadyAssetRequests.slice(requestStart),
+      loadErrors: browserEvidence.loadFailures,
+      failures,
+    };
+  } catch (error) {
+    return {
+      measurementCompleted: false,
+      passed: false,
+      fontSetStatus: null,
+      faceCount: 0,
+      loadedFaceCount: 0,
+      identities: [],
+      requests: postReadyAssetRequests.slice(requestStart),
+      loadErrors: [],
+      failures: [
+        error instanceof Error
+          ? `${error.name}: ${error.message}`
+          : String(error),
+      ],
+    };
+  }
+}
+
 function assertPublicSplitStartup(requests: AssetRequest[]): void {
   const paths = requests.map((request) => new URL(request.url).pathname);
   expect(
@@ -1590,12 +1820,17 @@ async function measureIssue17SweepInput(
     diagnostics = (await readPerfDiagnostics(page)).map((diagnostic) => {
       const baseMs = diagnostic.workerBaseElapsedMs;
       const amplificationMs = diagnostic.workerAmplificationMs;
-      return {
+      const enrichedDiagnostic: PerfDiagnostic = {
         ...diagnostic,
         workerEffectiveMultiplier:
           baseMs !== undefined && baseMs > 0 && amplificationMs !== undefined
             ? (baseMs + amplificationMs) / baseMs
             : undefined,
+      };
+      return {
+        ...enrichedDiagnostic,
+        workerStressClassification:
+          evaluateIssue17WorkerStress(enrichedDiagnostic).classification,
       };
     });
     finalVisibleCandidateOrder = await readVisibleCandidateRows(page);
@@ -1617,6 +1852,41 @@ async function measureIssue17SweepInput(
   );
   const summary = summarize(diagnostics);
   const cadence = summarizeCadence(diagnostics);
+  const workerStressEvaluations = diagnostics.map(
+    evaluateIssue17WorkerStress,
+  );
+  const workerStress = {
+    configuredMultiplier: RELEASE_WORKER_ACTION_MULTIPLIER,
+    measuredRatioCount: workerStressEvaluations.filter(
+      (evaluation) => evaluation.classification === "measured-ratio",
+    ).length,
+    timerResolutionZeroCount: workerStressEvaluations.filter(
+      (evaluation) =>
+        evaluation.classification === "timer-resolution-zero",
+    ).length,
+    invalidCount: workerStressEvaluations.filter(
+      (evaluation) => evaluation.classification === "invalid",
+    ).length,
+    measuredRatioPrefixes: diagnostics
+      .filter(
+        (_, index) =>
+          workerStressEvaluations[index]?.classification === "measured-ratio",
+      )
+      .map((diagnostic) => diagnostic.input),
+    timerResolutionZeroPrefixes: diagnostics
+      .filter(
+        (_, index) =>
+          workerStressEvaluations[index]?.classification ===
+          "timer-resolution-zero",
+      )
+      .map((diagnostic) => diagnostic.input),
+    invalidPrefixes: diagnostics
+      .filter(
+        (_, index) =>
+          workerStressEvaluations[index]?.classification === "invalid",
+      )
+      .map((diagnostic) => diagnostic.input),
+  };
   const checks = {
     measurementCompleted,
     diagnosticCount: diagnostics.length === inputText.length,
@@ -1639,39 +1909,20 @@ async function measureIssue17SweepInput(
       diagnostics.length === inputText.length &&
       diagnostics.every(
         (diagnostic, index) =>
-          diagnosticTimingIsValid(diagnostic) &&
+          diagnosticTimingIsValid(
+            diagnostic,
+            ISSUE17_CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+          ) &&
           (index === 0 ||
             diagnostic.renderRevision > diagnostics[index - 1].renderRevision),
       ),
     workerStressProfile:
       diagnostics.length === inputText.length &&
-      diagnostics.every((diagnostic) => {
-        const baseMs = diagnostic.workerBaseElapsedMs ?? Number.NaN;
-        const amplificationMs =
-          diagnostic.workerAmplificationMs ?? Number.NaN;
-        const amplificationFloorMs = Math.max(
-          0,
-          baseMs * (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 0.8,
-        );
-        const amplificationCeilingMs = Math.max(
-          10,
-          baseMs * (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 1.25 + 10,
-        );
-        return (
-          diagnostic.workerActionMultiplier ===
-            RELEASE_WORKER_ACTION_MULTIPLIER &&
-          workerAccountingIsValid(
-            diagnostic.workerProcessMs,
-            diagnostic.workerBaseElapsedMs,
-            diagnostic.workerAmplificationMs,
-          ) &&
-          Number.isFinite(diagnostic.workerEffectiveMultiplier) &&
-          (diagnostic.workerEffectiveMultiplier ?? 0) >=
-            1 + (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 0.8 &&
-          amplificationMs >= amplificationFloorMs &&
-          amplificationMs <= amplificationCeilingMs
-        );
-      }),
+      issue17WorkerStressProfileIsValid(workerStressEvaluations),
+    workerMeasuredRatioCalibration:
+      workerStressEvaluations.some(
+        (evaluation) => evaluation.classification === "measured-ratio",
+      ),
     cadence:
       cadence.count === Math.max(0, inputText.length - 1) && cadence.valid,
     finalPage:
@@ -1724,6 +1975,7 @@ async function measureIssue17SweepInput(
       rationale:
         "Issue #17 times the production browser path and binds six-row page shape only; candidate order remains blocked on the external TypeDuck v1.1.2 capture.",
     },
+    workerStress,
     assetRequestsDuringMeasurement: postReadyAssetRequests.slice(
       assetRequestStart,
     ),
@@ -1967,6 +2219,72 @@ test("cadence scheduler rebases delayed host timers without a catch-up burst", (
   );
   expect(insufficientLoad.onTimeRatio).toBe(0);
   expect(insufficientLoad.valid).toBe(false);
+});
+
+test("issue #17 clock tolerance accepts the observed epoch ULP but rejects 2.01 ms", () => {
+  const workerSentAt = 1_791_889_003_401.6;
+  const workerStartedAt = 1_791_889_003_399.5999;
+  expect(workerSentAt - workerStartedAt).toBe(2.000244140625);
+  expect(rawTimelineIsValid([workerSentAt, workerStartedAt])).toBe(false);
+  expect(
+    rawTimelineIsValid(
+      [workerSentAt, workerStartedAt],
+      ISSUE17_CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+    ),
+  ).toBe(true);
+  expect(
+    rawTimelineIsValid(
+      [10, 7.99],
+      ISSUE17_CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+    ),
+  ).toBe(false);
+});
+
+test("issue #17 worker stress accepts only exact timer-resolution zero with a measured calibration", () => {
+  const timerResolutionZero: Issue17WorkerStressSample = {
+    workerStartedAt: 100,
+    workerFinishedAt: 100,
+    workerProcessMs: 0,
+    workerBaseElapsedMs: 0,
+    workerAmplificationMs: 0,
+    workerActionMultiplier: RELEASE_WORKER_ACTION_MULTIPLIER,
+    workerEffectiveMultiplier: undefined,
+  };
+  const measuredRatio: Issue17WorkerStressSample = {
+    workerStartedAt: 100,
+    workerFinishedAt: 100.8,
+    workerProcessMs: 0.8,
+    workerBaseElapsedMs: 0.2,
+    workerAmplificationMs: 0.6,
+    workerActionMultiplier: RELEASE_WORKER_ACTION_MULTIPLIER,
+    workerEffectiveMultiplier: 4,
+  };
+  const zeroEvaluation = evaluateIssue17WorkerStress(timerResolutionZero);
+  const measuredEvaluation = evaluateIssue17WorkerStress(measuredRatio);
+  expect(zeroEvaluation).toEqual({
+    valid: true,
+    classification: "timer-resolution-zero",
+  });
+  expect(measuredEvaluation).toEqual({
+    valid: true,
+    classification: "measured-ratio",
+  });
+  for (const inconsistent of [
+    { ...timerResolutionZero, workerAmplificationMs: 0.1 },
+    { ...timerResolutionZero, workerFinishedAt: 100.1 },
+    { ...timerResolutionZero, workerEffectiveMultiplier: 4 },
+    { ...timerResolutionZero, workerActionMultiplier: 1 },
+    { ...measuredRatio, workerEffectiveMultiplier: undefined },
+  ]) {
+    expect(evaluateIssue17WorkerStress(inconsistent)).toEqual({
+      valid: false,
+      classification: "invalid",
+    });
+  }
+  expect(issue17WorkerStressProfileIsValid([zeroEvaluation])).toBe(false);
+  expect(
+    issue17WorkerStressProfileIsValid([zeroEvaluation, measuredEvaluation]),
+  ).toBe(true);
 });
 
 test(
@@ -2937,10 +3255,23 @@ test(
         keyIntervalMs: KEY_INTERVAL_MS,
         mainThreadThrottle: CPU_THROTTLE_RATE,
         workerActionMultiplier: WORKER_ACTION_MULTIPLIER,
+        crossContextClockToleranceMs:
+          ISSUE17_CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
         ceilingsMs: {
           p95: P95_CEILING_MS,
           max: MAX_CEILING_MS,
         },
+      },
+      fontPreflight: {
+        measurementCompleted: false,
+        passed: false,
+        fontSetStatus: null,
+        faceCount: 0,
+        loadedFaceCount: 0,
+        identities: [],
+        requests: [],
+        loadErrors: [],
+        failures: ["font-preflight-not-complete"],
       },
       inputSet: {
         serialization: "json-utf8",
@@ -3132,6 +3463,28 @@ test(
         mainThreadThrottle:
           mainThread.requestedRate === RELEASE_CPU_THROTTLE_RATE,
       };
+
+      receipt.fontPreflight = await preloadIssue17DeclaredFonts(
+        page,
+        postReadyAssetRequests,
+      );
+      receipt.checks = {
+        ...receipt.checks,
+        fontPreflightCompleted: receipt.fontPreflight.measurementCompleted,
+        declaredFontFaces: receipt.fontPreflight.faceCount > 0,
+        fontFaceSetLoaded: receipt.fontPreflight.fontSetStatus === "loaded",
+        allDeclaredFontFacesLoaded:
+          receipt.fontPreflight.loadedFaceCount ===
+          receipt.fontPreflight.faceCount,
+        fontPreflightPassed: receipt.fontPreflight.passed,
+      };
+      refreshReceipt("browser-setup:font-preflight", false);
+      await persistReceipt();
+      if (!receipt.fontPreflight.passed) {
+        throw new Error(
+          `issue #17 font preflight failed: ${receipt.fontPreflight.failures.join(", ")}`,
+        );
+      }
 
       const schemaSelectionStart = postReadyAssetRequests.length;
       await selectSchema(page, "jyut6ping3");

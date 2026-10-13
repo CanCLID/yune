@@ -144,9 +144,18 @@ npm --prefix apps/yune-web/e2e run test:e2e:input-latency -- \
 The test derives and records the tree for the expected commit from the clean
 local checkout, verifies the served artifact manifest and pinned toolchain,
 and exclusively creates `issue17-bounded-page-latency.json`. It refuses a path
-inside any Git worktree and refuses to overwrite an existing receipt. The
-receipt starts incomplete before browser setup and retains partial diagnostics
-and named failures if setup or measurement stops.
+inside any Git worktree and refuses to overwrite an existing receipt. For this
+opt-in lane, every browser page request is recorded, and any request beginning
+during a timed input fails that input. The receipt starts incomplete before
+browser setup and retains partial diagnostics and named failures if setup or
+measurement stops.
+
+Before typing, this lane loads every declared font face and records its identity
+and final load status, so new candidate glyphs cannot trigger timed font fetches.
+It records exact zero-duration worker samples as `timer-resolution-zero`, without
+inventing an effective multiplier, and requires a positive measured amplification
+sample for every syllable. Its cross-context clock tolerance is 2.001 ms to cover
+epoch timestamp rounding; the default public gate retains its 2 ms tolerance.
 
 The Playwright file remains declaration-ordered with one worker and zero
 retries, but its normal and stress tests have independent failure semantics. A red

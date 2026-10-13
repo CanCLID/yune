@@ -250,6 +250,37 @@ afterEach(async () => {
 });
 
 describe("WEB-06 CandidatePanel protocol integration", () => {
+	it("keeps public latency timestamps absolute and private mapping timestamps relative", async () => {
+		document.documentElement.dataset.yunePerfDiagnostics = "[]";
+		const panel = await mountCandidatePanel();
+		await dispatchKey("n");
+		await emitSuccess(panel.worker, panel.worker.actions()[0]!, composingResult("n"));
+		await panel.flushAllRafs();
+
+		const diagnostics = JSON.parse(document.documentElement.dataset.yunePerfDiagnostics!);
+		expect(diagnostics).toHaveLength(1);
+		const diagnostic = diagnostics[0];
+		const snapshot = panel.debug.snapshot();
+		const action = snapshot.actions[0];
+		expect(snapshot.invalidations).toEqual([]);
+		expect(action.responseMappingStartedAt).toBeGreaterThanOrEqual(0);
+		expect(action.responseMappingFinishedAt).toBeLessThan(performance.timeOrigin);
+		expect(diagnostic.responseMappingStartedAt).toBe(performance.timeOrigin + action.responseMappingStartedAt);
+		expect(diagnostic.responseMappingFinishedAt).toBe(performance.timeOrigin + action.responseMappingFinishedAt);
+		const timestamps = [
+			diagnostic.keydownAt,
+			diagnostic.responseReceivedAt,
+			diagnostic.responseMappingStartedAt,
+			diagnostic.responseMappingFinishedAt,
+			diagnostic.stateAppliedAt,
+			diagnostic.paintObservedAt,
+		];
+		expect(timestamps.every(Number.isFinite)).toBe(true);
+		expect(timestamps).toEqual([...timestamps].sort((left, right) => left - right));
+		expect(diagnostic.reactUpdateMs).toBe(Math.round(diagnostic.stateAppliedAt - diagnostic.responseMappingFinishedAt));
+		expect(diagnostic.reactUpdateMs).toBeGreaterThanOrEqual(0);
+	});
+
 	it("reads the second queued result's before-state from the first committed DOM", async () => {
 		const panel = await mountCandidatePanel();
 		await dispatchKey("n");

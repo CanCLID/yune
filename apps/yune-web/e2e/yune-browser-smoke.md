@@ -100,11 +100,25 @@ texts. Because this exact input has no pinned external
 candidate-order fixture, the canary deliberately binds responsiveness and page
 shape only; it does not promote Yune's own output into an oracle.
 
+The default normal-typing run then commits `sikgaanei` as `食價你`, reloads
+the same browser profile, and retypes all nine keys at the same 100 ms cadence.
+The `typeduck-learned-userdb-retype` registry row explicitly uses learned
+user-dictionary state. It must prove that the committed row survived reload,
+retain every exact prefix and six-row page, and fetch no schema assets while
+typing. Both keydown-to-paint and worker processing use p95 `<= 150 ms` and
+max `<= 250 ms`; queue wait remains `<= 100 ms`. The final retyped key's
+`window.__YUNE_ACTION_DIAGNOSTICS__` `workerMs` must be strictly below `50 ms`.
+Ordered action samples are reconciled with performance timestamps, including
+repeated letters. This is an unamplified regression guard, not an oracle claim
+or a change to the eight-scenario / 186-key stress matrix. The learned result
+is nested in `normal-typing-exact-input.json`; missing or incomplete learned
+evidence cannot produce a passing normal-typing receipt.
+
 The Playwright file remains declaration-ordered with one worker and zero
-retries, but its two measurements have independent failure semantics. A red
+retries, but its normal and stress tests have independent failure semantics. A red
 4x release row still blocks publication and is preserved, while the exact 1x
-normal-typing canary runs first so its own receipt cannot be replaced by a
-skip. On failure the runner emits the complete JSON receipts and their SHA-256
+normal-typing canary and learned retype run first so their receipt cannot be
+replaced by a skip. On failure the runner emits the complete JSON receipts and their SHA-256
 hashes into the retained certification log in addition to the compact
 summaries. The complete receipts are gzip/base64 encoded into bounded log chunks
 and preserved in the source/run-attempt-named Actions artifact,

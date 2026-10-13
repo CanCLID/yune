@@ -199,6 +199,7 @@ await run(esbuild, [
 	"--format=iife",
 	"--outdir=public",
 	"--define:YUNE_PUBLIC_DEMO_BUILD=true",
+	'--define:import.meta.env.VITE_YUNE_PUBLIC_DEMO="1"',
 	"--minify",
 ], { cwd: appRoot });
 

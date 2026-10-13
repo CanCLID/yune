@@ -95,18 +95,77 @@ const LUNA_37_INPUT = "ceshiyixiachangjushuruxingnengzenyang";
 const LUNA_59_INPUT =
   "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong";
 const LEARNED_INPUT = "ngohaigo";
+const LEARNED_RETYPE_INPUT = "sikgaanei";
+const LEARNED_RETYPE_TEXT = "\u98df\u50f9\u4f60";
+const LEARNED_RETYPE_SCENARIO_NAME = "typeduck-learned-userdb-retype";
+const LEARNED_USERDB_STATE_PROFILE = "typeduck-learned-userdb";
 
-const SCENARIO_NAMES = [
-  "jyutping-short",
-  "jyutping-historical-long-1",
-  "jyutping-historical-long-2",
-  "typeduck-learned-userdb-prefix",
-  "luna-short",
-  "luna-37",
-  "luna-59",
-  "cangjie-short",
-] as const;
-type ScenarioName = (typeof SCENARIO_NAMES)[number];
+interface ScenarioRegistryEntry {
+  name: string;
+  lane: "stress" | "normal";
+  userDbStateProfile:
+    | "schema-empty-userdb"
+    | typeof LEARNED_USERDB_STATE_PROFILE;
+}
+
+const SCENARIO_REGISTRY = [
+  {
+    name: "jyutping-short",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "jyutping-historical-long-1",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "jyutping-historical-long-2",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "typeduck-learned-userdb-prefix",
+    lane: "stress",
+    userDbStateProfile: LEARNED_USERDB_STATE_PROFILE,
+  },
+  {
+    name: LEARNED_RETYPE_SCENARIO_NAME,
+    lane: "normal",
+    userDbStateProfile: LEARNED_USERDB_STATE_PROFILE,
+  },
+  {
+    name: "luna-short",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "luna-37",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "luna-59",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "cangjie-short",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+] as const satisfies readonly ScenarioRegistryEntry[];
+type ScenarioName = (typeof SCENARIO_REGISTRY)[number]["name"];
+type StressScenarioName = Exclude<
+  ScenarioName,
+  typeof LEARNED_RETYPE_SCENARIO_NAME
+>;
+const STRESS_SCENARIO_NAMES = SCENARIO_REGISTRY.filter(
+  (scenario) => scenario.lane === "stress",
+).map((scenario) => scenario.name) as StressScenarioName[];
+const LEARNED_RETYPE_REGISTRY = SCENARIO_REGISTRY.find(
+  (scenario) => scenario.name === LEARNED_RETYPE_SCENARIO_NAME,
+)!;
 
 const EXPECTED_RELEASE_DIAGNOSTIC_COUNT =
   3 +
@@ -118,7 +177,7 @@ const EXPECTED_RELEASE_DIAGNOSTIC_COUNT =
   LUNA_59_INPUT.length +
   1;
 const EXPECTED_RELEASE_CADENCE_GAP_COUNT =
-  EXPECTED_RELEASE_DIAGNOSTIC_COUNT - SCENARIO_NAMES.length;
+  EXPECTED_RELEASE_DIAGNOSTIC_COUNT - STRESS_SCENARIO_NAMES.length;
 
 interface FinalCandidateGuard {
   mode: "first-candidate-only";
@@ -130,7 +189,7 @@ interface FinalCandidateGuard {
 const PUBLIC_PAGE_SOURCE_RESIDUAL =
   "No pinned page-size-6 browser fixture records the complete visible text+data-source order. The binding production timing deliberately leaves yune_inspector disabled, so ordinary source labels are null; the run records all six text rows and nullable production source fields, while only the existing authoritative first candidate is a binding order guard.";
 
-const FINAL_CANDIDATE_GUARDS: Record<ScenarioName, FinalCandidateGuard> = {
+const FINAL_CANDIDATE_GUARDS: Record<StressScenarioName, FinalCandidateGuard> = {
   "jyutping-short": {
     mode: "first-candidate-only",
     expectedFirstCandidateText: "\u4fc2",
@@ -228,6 +287,23 @@ interface PerfDiagnostic {
   totalKeydownToPaintMs: number;
 }
 
+interface ActionDiagnostic {
+  action: string;
+  input?: string;
+  enqueuedAt?: number;
+  sentAt?: number;
+  receivedAt: number;
+  workerStartedAt?: number;
+  workerFinishedAt?: number;
+  queueWaitMs: number;
+  workerRoundtripMs: number;
+  workerMs?: number;
+  workerBaseElapsedMs?: number;
+  workerAmplificationMs?: number;
+  workerActionMultiplier?: number;
+  totalMs: number;
+}
+
 interface LatencySummary {
   medianMs: number | null;
   p95Ms: number | null;
@@ -267,6 +343,58 @@ interface CadenceEvidence {
   valid: boolean;
 }
 
+interface LearnedRetypeEvidence {
+  measurementCompleted: boolean;
+  passed: boolean;
+  source: {
+    sourceCommit: string | null;
+    evidenceKind: "browser-self-consistency-no-external-oracle";
+    actionDiagnostics: "window.__YUNE_ACTION_DIAGNOSTICS__";
+  };
+  registry: typeof LEARNED_RETYPE_REGISTRY;
+  schemaId: "jyut6ping3";
+  input: typeof LEARNED_RETYPE_INPUT;
+  inputLength: number;
+  diagnosticCount: number;
+  actionDiagnosticCount: number;
+  keyIntervalMs: number;
+  ceilingsMs: {
+    total: { p95: number; max: number };
+    worker: { p95: number; max: number };
+    workerQueueWaitMax: number;
+    finalActionWorkerExclusiveMax: number;
+  };
+  state: {
+    userDictionaryEnabledBeforeLearning: boolean | null;
+    committedText: string | null;
+    appReadyAfterReload: boolean | null;
+    schemaIdAfterReload: string | null;
+    userDictionaryEnabledAfterReload: boolean | null;
+  };
+  learning: {
+    candidateText: typeof LEARNED_RETYPE_TEXT;
+    preLearnCandidateCount: number | null;
+    postLearnCandidateCount: number | null;
+  };
+  summary: LatencySummary;
+  workerSummary: {
+    p95Ms: number | null;
+    maxMs: number | null;
+  };
+  workerQueueWaitMaxMs: number | null;
+  finalActionWorkerMs: number | null;
+  cadence: CadenceEvidence;
+  diagnostics: PerfDiagnostic[];
+  actions: ActionDiagnostic[];
+  finalVisibleCandidateOrder: CandidateRowSnapshot[];
+  candidateValidation: {
+    mode: "learned-row-growth-self-consistency-no-oracle-claim";
+    rationale: string;
+  };
+  assetRequestsDuringMeasurement: AssetRequest[];
+  failurePhase?: string;
+}
+
 interface NormalTypingEvidence {
   generatedAt: string;
   url: string;
@@ -294,6 +422,7 @@ interface NormalTypingEvidence {
   };
   assetRequestsDuringMeasurement: AssetRequest[];
   buildInfo: PublicBuildInfo;
+  learnedRetype: LearnedRetypeEvidence;
 }
 
 interface CandidateOrderVerification extends FinalCandidateGuard {
@@ -301,7 +430,7 @@ interface CandidateOrderVerification extends FinalCandidateGuard {
 }
 
 interface ScenarioEvidence {
-  name: ScenarioName;
+  name: StressScenarioName;
   schemaId: string;
   input: string;
   inputLength: number;
@@ -482,6 +611,11 @@ async function clearComposition(page: Page): Promise<void> {
 
 async function resetPerfDiagnostics(page: Page): Promise<void> {
   await page.evaluate(() => {
+    (
+      window as typeof window & {
+        __YUNE_ACTION_DIAGNOSTICS__?: unknown[];
+      }
+    ).__YUNE_ACTION_DIAGNOSTICS__ = [];
     document.documentElement.dataset.yuneActionDiagnostics = "[]";
     document.documentElement.dataset.yuneTypingDiagnostics = "[]";
     document.documentElement.dataset.yunePerfDiagnostics = "[]";
@@ -494,6 +628,19 @@ async function readPerfDiagnostics(page: Page): Promise<PerfDiagnostic[]> {
       document.documentElement.dataset.yunePerfDiagnostics ?? "[]",
     ),
   );
+}
+
+async function readDirectActionDiagnostics(
+  page: Page,
+): Promise<ActionDiagnostic[]> {
+  return page.evaluate(() => {
+    const diagnostics = (
+      window as typeof window & {
+        __YUNE_ACTION_DIAGNOSTICS__?: unknown[];
+      }
+    ).__YUNE_ACTION_DIAGNOSTICS__;
+    return (Array.isArray(diagnostics) ? diagnostics : []) as ActionDiagnostic[];
+  });
 }
 
 async function selectSchema(page: Page, schemaId: string): Promise<void> {
@@ -645,6 +792,115 @@ function diagnosticTimingIsValid(diagnostic: PerfDiagnostic): boolean {
     diagnostic.renderRevision > 0;
 }
 
+function actionTimingIsValid(diagnostic: ActionDiagnostic): boolean {
+  const rawTimeline = [
+    diagnostic.enqueuedAt,
+    diagnostic.sentAt,
+    diagnostic.workerStartedAt,
+    diagnostic.workerFinishedAt,
+    diagnostic.receivedAt,
+  ];
+  if (
+    !rawTimeline.every(
+      (value) => Number.isFinite(value) && (value ?? -1) >= 0,
+    ) ||
+    rawTimeline.slice(1).some(
+      (value, index) =>
+        (value ?? Number.NEGATIVE_INFINITY) +
+          CROSS_CONTEXT_CLOCK_TOLERANCE_MS <
+        (rawTimeline[index] ?? Number.POSITIVE_INFINITY),
+    )
+  ) {
+    return false;
+  }
+  const enqueuedAt = diagnostic.enqueuedAt ?? Number.NaN;
+  const sentAt = diagnostic.sentAt ?? Number.NaN;
+  const workerStartedAt = diagnostic.workerStartedAt ?? Number.NaN;
+  const workerFinishedAt = diagnostic.workerFinishedAt ?? Number.NaN;
+  const derived: Array<[number | undefined, number]> = [
+    [diagnostic.queueWaitMs, roundedRawDelta(enqueuedAt, sentAt)],
+    [
+      diagnostic.workerRoundtripMs,
+      roundedRawDelta(sentAt, diagnostic.receivedAt),
+    ],
+    [
+      diagnostic.workerMs,
+      roundedRawDelta(workerStartedAt, workerFinishedAt),
+    ],
+    [
+      diagnostic.totalMs,
+      roundedRawDelta(enqueuedAt, diagnostic.receivedAt),
+    ],
+  ];
+  return derived.every(
+    ([actual, expected]) =>
+      Number.isFinite(actual) &&
+      (actual ?? -1) >= 0 &&
+      Math.abs((actual ?? Number.NaN) - expected) <=
+        DERIVED_DELTA_ROUNDING_TOLERANCE_MS,
+  ) &&
+    Number.isFinite(diagnostic.workerBaseElapsedMs) &&
+    (diagnostic.workerBaseElapsedMs ?? -1) >= 0 &&
+    Number.isFinite(diagnostic.workerAmplificationMs) &&
+    (diagnostic.workerAmplificationMs ?? -1) >= 0;
+}
+
+function actionMatchesPerfDiagnostic(
+  action: ActionDiagnostic,
+  diagnostic: PerfDiagnostic,
+): boolean {
+  const timestampPairs: Array<[number | undefined, number]> = [
+    [action.enqueuedAt, diagnostic.workerQueuedAt],
+    [action.sentAt, diagnostic.workerSentAt],
+    [action.workerStartedAt, diagnostic.workerStartedAt],
+    [action.workerFinishedAt, diagnostic.workerFinishedAt],
+    [action.receivedAt, diagnostic.responseReceivedAt],
+  ];
+  const derivedPairs: Array<[number | undefined, number | undefined]> = [
+    [action.queueWaitMs, diagnostic.workerQueueWaitMs],
+    [action.workerMs, diagnostic.workerProcessMs],
+    [action.workerRoundtripMs, diagnostic.workerRoundtripMs],
+    [action.totalMs, diagnostic.totalWorkerActionMs],
+    [action.workerBaseElapsedMs, diagnostic.workerBaseElapsedMs],
+    [action.workerAmplificationMs, diagnostic.workerAmplificationMs],
+    [action.workerActionMultiplier, diagnostic.workerActionMultiplier],
+  ];
+  return timestampPairs.every(
+    ([actionValue, perfValue]) =>
+      Number.isFinite(actionValue) &&
+      Number.isFinite(perfValue) &&
+      Math.abs((actionValue ?? Number.NaN) - perfValue) <=
+        DERIVED_DELTA_ROUNDING_TOLERANCE_MS,
+  ) &&
+    derivedPairs.every(
+      ([actionValue, perfValue]) =>
+        Number.isFinite(actionValue) &&
+        Number.isFinite(perfValue) &&
+        Math.abs(
+          (actionValue ?? Number.NaN) - (perfValue ?? Number.NaN),
+        ) <= DERIVED_DELTA_ROUNDING_TOLERANCE_MS,
+    );
+}
+
+function workerAccountingIsValid(
+  workerMs: number | undefined,
+  workerBaseElapsedMs: number | undefined,
+  workerAmplificationMs: number | undefined,
+): boolean {
+  return (
+    Number.isFinite(workerMs) &&
+    (workerMs ?? -1) >= 0 &&
+    Number.isFinite(workerBaseElapsedMs) &&
+    (workerBaseElapsedMs ?? -1) >= 0 &&
+    Number.isFinite(workerAmplificationMs) &&
+    (workerAmplificationMs ?? -1) >= 0 &&
+    (workerMs ?? Number.NEGATIVE_INFINITY) >=
+      (workerBaseElapsedMs ?? Number.POSITIVE_INFINITY) +
+        (workerAmplificationMs ?? Number.POSITIVE_INFINITY) -
+        DERIVED_DELTA_ROUNDING_TOLERANCE_MS
+  );
+}
+
 function summarize(diagnostics: PerfDiagnostic[]): LatencySummary {
   const raw = rawTimingSamples(diagnostics);
   return {
@@ -716,6 +972,67 @@ function summarizeCadence(
       finiteGaps.length === gaps.length &&
       invalidGaps.length === 0 &&
       onTimeRatio >= CADENCE_MIN_ON_TIME_RATIO,
+  };
+}
+
+function learnedRetypeSeed(
+  sourceCommit: string | null,
+  failurePhase: string,
+): LearnedRetypeEvidence {
+  return {
+    measurementCompleted: false,
+    passed: false,
+    source: {
+      sourceCommit,
+      evidenceKind: "browser-self-consistency-no-external-oracle",
+      actionDiagnostics: "window.__YUNE_ACTION_DIAGNOSTICS__",
+    },
+    registry: LEARNED_RETYPE_REGISTRY,
+    schemaId: "jyut6ping3",
+    input: LEARNED_RETYPE_INPUT,
+    inputLength: LEARNED_RETYPE_INPUT.length,
+    diagnosticCount: 0,
+    actionDiagnosticCount: 0,
+    keyIntervalMs: NORMAL_TYPING_KEY_INTERVAL_MS,
+    ceilingsMs: {
+      total: {
+        p95: NORMAL_TYPING_P95_CEILING_MS,
+        max: NORMAL_TYPING_MAX_CEILING_MS,
+      },
+      worker: {
+        p95: NORMAL_TYPING_P95_CEILING_MS,
+        max: NORMAL_TYPING_MAX_CEILING_MS,
+      },
+      workerQueueWaitMax: NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS,
+      finalActionWorkerExclusiveMax: 50,
+    },
+    state: {
+      userDictionaryEnabledBeforeLearning: null,
+      committedText: null,
+      appReadyAfterReload: null,
+      schemaIdAfterReload: null,
+      userDictionaryEnabledAfterReload: null,
+    },
+    learning: {
+      candidateText: LEARNED_RETYPE_TEXT,
+      preLearnCandidateCount: null,
+      postLearnCandidateCount: null,
+    },
+    summary: summarize([]),
+    workerSummary: { p95Ms: null, maxMs: null },
+    workerQueueWaitMaxMs: null,
+    finalActionWorkerMs: null,
+    cadence: summarizeCadence([], NORMAL_TYPING_KEY_INTERVAL_MS),
+    diagnostics: [],
+    actions: [],
+    finalVisibleCandidateOrder: [],
+    candidateValidation: {
+      mode: "learned-row-growth-self-consistency-no-oracle-claim",
+      rationale:
+        "The browser proves that committing the shipped sentence grows the same Yune candidate page after reload. This is production-path self-consistency evidence, not an external-oracle candidate-order claim.",
+    },
+    assetRequestsDuringMeasurement: [],
+    failurePhase,
   };
 }
 
@@ -1047,7 +1364,7 @@ function assertScenario(scenario: ScenarioEvidence): void {
 
 async function measureBurst(
   page: Page,
-  name: ScenarioName,
+  name: StressScenarioName,
   schemaId: string,
   inputText: string,
   postReadyAssetRequests: AssetRequest[],
@@ -1442,7 +1759,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
       ? 1
       : cadenceOnTimeGapCount / cadenceGapCount;
     const candidatePageProfileValid =
-      scenarioNames.length === SCENARIO_NAMES.length &&
+      scenarioNames.length === STRESS_SCENARIO_NAMES.length &&
       scenarios.every(
         (scenario) =>
           scenario.diagnostics.length === scenario.inputLength &&
@@ -1457,7 +1774,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
           ),
       );
     const timingProfileValid =
-      scenarioNames.length === SCENARIO_NAMES.length &&
+      scenarioNames.length === STRESS_SCENARIO_NAMES.length &&
       scenarios.every((scenario) =>
         scenario.diagnostics.every(
           (diagnostic, index) =>
@@ -1468,7 +1785,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
         ),
       );
     const candidateOrderProfileValid =
-      scenarioNames.length === SCENARIO_NAMES.length &&
+      scenarioNames.length === STRESS_SCENARIO_NAMES.length &&
       scenarios.every(
         (scenario) =>
           scenario.finalVisibleCandidateOrder.length ===
@@ -1483,7 +1800,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
           scenario.candidateOrderVerification.matched,
       );
     const cadenceProfileValid =
-      scenarioNames.length === SCENARIO_NAMES.length &&
+      scenarioNames.length === STRESS_SCENARIO_NAMES.length &&
       cadenceGapCount === EXPECTED_RELEASE_CADENCE_GAP_COUNT &&
       cadenceOnTimeRatio >= CADENCE_MIN_ON_TIME_RATIO &&
       scenarios.every((scenario) => scenario.cadence.valid);
@@ -1499,7 +1816,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
       },
       candidateOrder: {
         scenarioCount: scenarios.length,
-        expectedScenarioCount: SCENARIO_NAMES.length,
+        expectedScenarioCount: STRESS_SCENARIO_NAMES.length,
         valid: candidateOrderProfileValid,
       },
       cadence: {
@@ -1556,7 +1873,10 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
     if (KEY_INTERVAL_MS !== RELEASE_KEY_INTERVAL_MS) {
       releaseProfileDeviations.push("key-interval");
     }
-    if (JSON.stringify(scenarioNames) !== JSON.stringify(SCENARIO_NAMES)) {
+    if (
+      JSON.stringify(scenarioNames) !==
+      JSON.stringify(STRESS_SCENARIO_NAMES)
+    ) {
       releaseProfileDeviations.push("scenario-order");
     }
     if (verifiedKeyCount !== EXPECTED_RELEASE_DIAGNOSTIC_COUNT) {
@@ -1618,7 +1938,8 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
           mechanism:
             "main-cdp-plus-synthetic-keydown-worker-service-amplification",
           workerStressScope: "loopback-preview",
-          scenarioNames: SCENARIO_NAMES,
+          scenarioNames: STRESS_SCENARIO_NAMES,
+          scenarioRegistry: SCENARIO_REGISTRY,
           verifiedKeyCount: EXPECTED_RELEASE_DIAGNOSTIC_COUNT,
         },
       },
@@ -1629,6 +1950,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
       typingMode: "sustained-interactive",
       keyIntervalMs: KEY_INTERVAL_MS,
       buildInfo,
+      scenarioRegistry: SCENARIO_REGISTRY,
       scenarios,
       startupAssetRequests,
       schemaSelectionRequests,
@@ -1651,17 +1973,19 @@ async function runNormalTypingCanary(
   testInfo: TestInfo,
 ): Promise<void> {
   const postReadyAssetRequests: AssetRequest[] = [];
-  await writeOptionalEvidence("normal-typing-exact-input.json", {
-    generatedAt: new Date().toISOString(),
-    url: null,
-    measurementCompleted: false,
-    passed: false,
-    typingMode: "normal-interactive-exact-input",
-    schemaId: "jyut6ping3",
-    input: NORMAL_TYPING_INPUT,
-    inputLength: NORMAL_TYPING_INPUT.length,
-    failurePhase: "setup-or-measurement-incomplete",
-  });
+  let learnedRetype = learnedRetypeSeed(
+    EXPECTED_SOURCE_COMMIT ?? null,
+    "setup-or-measurement-incomplete",
+  );
+  let receipt: NormalTypingEvidence | null = null;
+  let normalChecks: Record<string, boolean> | null = null;
+  let normalPassed = false;
+  let normalAssetRequestStart: number | null = null;
+  let normalMeasurementStarted = false;
+  let normalMeasurementCaptured = false;
+  let learnedChecks: Record<string, boolean> | null = null;
+  let learnedAssetRequestStart: number | null = null;
+  let learnedMeasurementStarted = false;
   page.on("request", (request) => {
     if (isPostReadySchemaRequest(request.url())) {
       postReadyAssetRequests.push({
@@ -1671,178 +1995,498 @@ async function runNormalTypingCanary(
     }
   });
 
-  // The public worker's diagnostic hook accepts only the binding 4x stress
-  // profile. Omitting it is the product's ordinary 1x path.
-  await page.goto("/", {
-    waitUntil: "domcontentloaded",
-    timeout: APP_READY_TIMEOUT_MS,
-  });
-  await waitForAppReady(page);
-  const buildInfo = await readPublicBuildInfo(page);
-  await selectSchema(page, "jyut6ping3");
-  await clearComposition(page);
-  await resetPerfDiagnostics(page);
-  const input = composeInput(page);
-  await input.focus();
-  const assetRequestStart = postReadyAssetRequests.length;
+  try {
+    // The public worker's diagnostic hook accepts only the binding 4x stress
+    // profile. Omitting it is the product's ordinary 1x path.
+    await page.goto("/", {
+      waitUntil: "domcontentloaded",
+      timeout: APP_READY_TIMEOUT_MS,
+    });
+    await waitForAppReady(page);
+    const buildInfo = await readPublicBuildInfo(page);
+    learnedRetype = learnedRetypeSeed(
+      buildInfo.sourceCommit,
+      "learned-state-setup-incomplete",
+    );
+    receipt = {
+      generatedAt: new Date().toISOString(),
+      url: page.url(),
+      measurementCompleted: false,
+      passed: false,
+      typingMode: "normal-interactive-exact-input",
+      schemaId: "jyut6ping3",
+      input: NORMAL_TYPING_INPUT,
+      inputLength: NORMAL_TYPING_INPUT.length,
+      diagnosticCount: 0,
+      keyIntervalMs: NORMAL_TYPING_KEY_INTERVAL_MS,
+      ceilingsMs: {
+        p95: NORMAL_TYPING_P95_CEILING_MS,
+        max: NORMAL_TYPING_MAX_CEILING_MS,
+        workerQueueWaitMax: NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS,
+      },
+      summary: summarize([]),
+      workerQueueWaitMaxMs: null,
+      cadence: summarizeCadence([], NORMAL_TYPING_KEY_INTERVAL_MS),
+      diagnostics: [],
+      finalVisibleCandidateOrder: [],
+      candidateValidation: {
+        mode: "page-shape-only-no-oracle-claim",
+        rationale:
+          "This exact product input has no pinned external candidate-order fixture. The canary binds responsiveness, every input prefix, and complete visible-page shape without treating Yune output as its own behavior oracle.",
+      },
+      assetRequestsDuringMeasurement: [],
+      buildInfo,
+      learnedRetype,
+    };
+    await writeOptionalEvidence("normal-typing-exact-input.json", receipt);
+    await selectSchema(page, "jyut6ping3");
+    await clearComposition(page);
+    await resetPerfDiagnostics(page);
+    const input = composeInput(page);
+    await input.focus();
+    const assetRequestStart = postReadyAssetRequests.length;
+    normalAssetRequestStart = assetRequestStart;
 
-  await markWorkflowMeasurementStarted("web03-normal-typing");
-  await typeAtCadence(
-    page,
-    NORMAL_TYPING_INPUT,
-    NORMAL_TYPING_KEY_INTERVAL_MS,
-  );
-  await expect
-    .poll(async () => (await readPerfDiagnostics(page)).length, {
-      timeout: DIAGNOSTIC_TIMEOUT_MS,
-    })
-    .toBe(NORMAL_TYPING_INPUT.length);
+    await markWorkflowMeasurementStarted("web03-normal-typing");
+    normalMeasurementStarted = true;
+    await typeAtCadence(
+      page,
+      NORMAL_TYPING_INPUT,
+      NORMAL_TYPING_KEY_INTERVAL_MS,
+    );
+    await expect
+      .poll(async () => (await readPerfDiagnostics(page)).length, {
+        timeout: DIAGNOSTIC_TIMEOUT_MS,
+      })
+      .toBe(NORMAL_TYPING_INPUT.length);
 
-  const diagnostics = await readPerfDiagnostics(page);
-  const summary = summarize(diagnostics);
-  const cadence = summarizeCadence(
-    diagnostics,
-    NORMAL_TYPING_KEY_INTERVAL_MS,
-  );
-  const workerQueueWaitMaxMs = percentile(
-    rawTimingSamples(diagnostics).workerQueueWait,
-    1,
-  );
-  const finalVisibleCandidateOrder = await readVisibleCandidateRows(page);
-  const assetRequestsDuringMeasurement = postReadyAssetRequests.slice(
-    assetRequestStart,
-  );
-  const expectedPrefixes = Array.from(
-    { length: NORMAL_TYPING_INPUT.length },
-    (_, index) => NORMAL_TYPING_INPUT.slice(0, index + 1),
-  );
-  const checks = {
-    diagnosticCount:
-      diagnostics.length === NORMAL_TYPING_INPUT.length,
-    exactPrefixes:
-      JSON.stringify(
-        diagnostics.map((diagnostic) =>
-          diagnostic.input.replace(/\s+/g, ""),
-        ),
-      ) === JSON.stringify(expectedPrefixes),
-    candidatePages: diagnostics.every(
-      (diagnostic) =>
-        diagnostic.candidateCount === EXPECTED_VISIBLE_CANDIDATE_COUNT &&
-        diagnostic.totalCandidateCount >= EXPECTED_VISIBLE_CANDIDATE_COUNT &&
-        typeof diagnostic.firstCandidateText === "string" &&
-        diagnostic.firstCandidateText.trim().length > 0,
-    ),
-    completeTimings: diagnostics.every(
-      (diagnostic, index) =>
-        diagnosticTimingIsValid(diagnostic) &&
-        (index === 0 ||
-          diagnostic.renderRevision >
-            diagnostics[index - 1].renderRevision),
-    ),
-    unamplifiedWorker: diagnostics.every(
-      (diagnostic) =>
-        diagnostic.workerActionMultiplier === 1 &&
-        Number.isFinite(diagnostic.workerAmplificationMs) &&
-        (diagnostic.workerAmplificationMs ?? -1) >= 0,
-    ),
-    cadence: cadence.valid,
-    p95:
-      summary.p95Ms !== null &&
-      summary.p95Ms <= NORMAL_TYPING_P95_CEILING_MS,
-    max:
-      summary.maxMs !== null &&
-      summary.maxMs <= NORMAL_TYPING_MAX_CEILING_MS,
-    queueWait:
-      workerQueueWaitMaxMs !== null &&
-      workerQueueWaitMaxMs <= NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS,
-    finalPage:
-      finalVisibleCandidateOrder.length ===
-        EXPECTED_VISIBLE_CANDIDATE_COUNT &&
-      finalVisibleCandidateOrder.every(
-        (candidate) =>
-          typeof candidate.text === "string" &&
-          candidate.text.trim().length > 0 &&
-          (candidate.source === null ||
-            typeof candidate.source === "string"),
+    const diagnostics = await readPerfDiagnostics(page);
+    const summary = summarize(diagnostics);
+    const cadence = summarizeCadence(
+      diagnostics,
+      NORMAL_TYPING_KEY_INTERVAL_MS,
+    );
+    const workerQueueWaitMaxMs = percentile(
+      rawTimingSamples(diagnostics).workerQueueWait,
+      1,
+    );
+    const finalVisibleCandidateOrder = await readVisibleCandidateRows(page);
+    const assetRequestsDuringMeasurement = postReadyAssetRequests.slice(
+      assetRequestStart,
+    );
+    const expectedPrefixes = Array.from(
+      { length: NORMAL_TYPING_INPUT.length },
+      (_, index) => NORMAL_TYPING_INPUT.slice(0, index + 1),
+    );
+    normalChecks = {
+      diagnosticCount: diagnostics.length === NORMAL_TYPING_INPUT.length,
+      exactPrefixes:
+        JSON.stringify(
+          diagnostics.map((diagnostic) =>
+            diagnostic.input.replace(/\s+/g, ""),
+          ),
+        ) === JSON.stringify(expectedPrefixes),
+      candidatePages: diagnostics.every(
+        (diagnostic) =>
+          diagnostic.candidateCount === EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+          diagnostic.totalCandidateCount >= EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+          typeof diagnostic.firstCandidateText === "string" &&
+          diagnostic.firstCandidateText.trim().length > 0,
       ),
-    finalDiagnostic:
-      diagnostics.at(-1)?.firstCandidateText ===
-      finalVisibleCandidateOrder[0]?.text,
-    noTimedAssetRequests: assetRequestsDuringMeasurement.length === 0,
-  };
-  const passed = Object.values(checks).every(Boolean);
-  const evidence: NormalTypingEvidence = {
-    generatedAt: new Date().toISOString(),
-    url: page.url(),
-    measurementCompleted: true,
-    passed,
-    typingMode: "normal-interactive-exact-input",
-    schemaId: "jyut6ping3",
-    input: NORMAL_TYPING_INPUT,
-    inputLength: NORMAL_TYPING_INPUT.length,
-    diagnosticCount: diagnostics.length,
-    keyIntervalMs: NORMAL_TYPING_KEY_INTERVAL_MS,
-    ceilingsMs: {
-      p95: NORMAL_TYPING_P95_CEILING_MS,
-      max: NORMAL_TYPING_MAX_CEILING_MS,
-      workerQueueWaitMax: NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS,
-    },
-    summary,
-    workerQueueWaitMaxMs,
-    cadence,
-    diagnostics,
-    finalVisibleCandidateOrder,
-    candidateValidation: {
-      mode: "page-shape-only-no-oracle-claim",
-      rationale:
-        "This exact product input has no pinned external candidate-order fixture. The canary binds responsiveness, every input prefix, and complete visible-page shape without treating Yune output as its own behavior oracle.",
-    },
-    assetRequestsDuringMeasurement,
-    buildInfo,
-  };
-  const serialized = `${JSON.stringify(evidence, null, 2)}\n`;
-  await testInfo.attach("normal-typing-exact-input", {
-    body: serialized,
-    contentType: "application/json",
-  });
-  await writeOptionalEvidence("normal-typing-exact-input.json", evidence);
+      completeTimings: diagnostics.every(
+        (diagnostic, index) =>
+          diagnosticTimingIsValid(diagnostic) &&
+          (index === 0 ||
+            diagnostic.renderRevision >
+              diagnostics[index - 1].renderRevision),
+      ),
+      unamplifiedWorker: diagnostics.every(
+        (diagnostic) =>
+          diagnostic.workerActionMultiplier === 1 &&
+          Number.isFinite(diagnostic.workerAmplificationMs) &&
+          (diagnostic.workerAmplificationMs ?? -1) >= 0,
+      ),
+      cadence: cadence.valid,
+      p95:
+        summary.p95Ms !== null &&
+        summary.p95Ms <= NORMAL_TYPING_P95_CEILING_MS,
+      max:
+        summary.maxMs !== null &&
+        summary.maxMs <= NORMAL_TYPING_MAX_CEILING_MS,
+      queueWait:
+        workerQueueWaitMaxMs !== null &&
+        workerQueueWaitMaxMs <= NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS,
+      finalPage:
+        finalVisibleCandidateOrder.length ===
+          EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+        finalVisibleCandidateOrder.every(
+          (candidate) =>
+            typeof candidate.text === "string" &&
+            candidate.text.trim().length > 0 &&
+            (candidate.source === null ||
+              typeof candidate.source === "string"),
+        ),
+      finalDiagnostic:
+        diagnostics.at(-1)?.firstCandidateText ===
+        finalVisibleCandidateOrder[0]?.text,
+      noTimedAssetRequests: assetRequestsDuringMeasurement.length === 0,
+    };
+    normalPassed = Object.values(normalChecks).every(Boolean);
+    receipt = {
+      ...receipt,
+      generatedAt: new Date().toISOString(),
+      url: page.url(),
+      diagnosticCount: diagnostics.length,
+      summary,
+      workerQueueWaitMaxMs,
+      cadence,
+      diagnostics,
+      finalVisibleCandidateOrder,
+      assetRequestsDuringMeasurement,
+      learnedRetype,
+    };
+    normalMeasurementCaptured = true;
+    await writeOptionalEvidence("normal-typing-exact-input.json", receipt);
 
-  expect.soft(checks.diagnosticCount, "every typed key must be measured").toBe(
-    true,
-  );
-  expect.soft(checks.exactPrefixes, "every exact input prefix must be observed").toBe(
-    true,
-  );
-  expect.soft(checks.candidatePages, "every key must render a complete candidate page").toBe(
-    true,
-  );
-  expect.soft(
-    checks.completeTimings,
-    "every typed key must retain a complete finite timing sample",
-  ).toBe(true);
-  expect.soft(checks.unamplifiedWorker, "normal typing must use the unamplified worker path").toBe(
-    true,
-  );
-  expect.soft(
-    cadence.valid,
-    `normal typing cadence must avoid catch-up gaps and keep at least ${CADENCE_MIN_ON_TIME_RATIO * 100}% of gaps within ${NORMAL_TYPING_KEY_INTERVAL_MIN_MS}..${NORMAL_TYPING_KEY_INTERVAL_MAX_MS} ms`,
-  ).toBe(true);
-  expect.soft(summary.p95Ms ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
-    NORMAL_TYPING_P95_CEILING_MS,
-  );
-  expect.soft(summary.maxMs ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
-    NORMAL_TYPING_MAX_CEILING_MS,
-  );
-  expect.soft(
-    workerQueueWaitMaxMs ?? Number.POSITIVE_INFINITY,
-  ).toBeLessThanOrEqual(NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS);
-  expect.soft(checks.finalPage, "the final visible page must contain six nonempty rows").toBe(
-    true,
-  );
-  expect.soft(checks.finalDiagnostic, "the final diagnostic and rendered first candidate must agree").toBe(
-    true,
-  );
-  expect.soft(checks.noTimedAssetRequests, "timed typing must not fetch schema assets").toBe(
-    true,
-  );
+    await clearComposition(page);
+    await selectSchema(page, "jyut6ping3");
+    const userDictionaryToggle = page
+      .getByLabel(/User Dictionary|用戶詞庫/)
+      .last();
+    await expect(userDictionaryToggle).toBeVisible({ timeout: 10_000 });
+    if (!(await userDictionaryToggle.isChecked())) {
+      await userDictionaryToggle.check({ force: true });
+      await waitForAppReady(page);
+    }
+    await expect(userDictionaryToggle).toBeChecked();
+    learnedRetype.state.userDictionaryEnabledBeforeLearning = true;
+
+    await clearComposition(page);
+    await input.focus();
+    await page.keyboard.type(LEARNED_RETYPE_INPUT, { delay: 0 });
+    await expect
+      .poll(
+        async () => (await readVisibleCandidateRows(page))[0]?.text ?? null,
+        { timeout: DIAGNOSTIC_TIMEOUT_MS },
+      )
+      .toBe(LEARNED_RETYPE_TEXT);
+    const preLearnRows = await readVisibleCandidateRows(page);
+    learnedRetype.learning.preLearnCandidateCount = preLearnRows.filter(
+      (row) => row.text === LEARNED_RETYPE_TEXT,
+    ).length;
+    await page.keyboard.press("Space");
+    await expect(input).toHaveValue(LEARNED_RETYPE_TEXT, {
+      timeout: DIAGNOSTIC_TIMEOUT_MS,
+    });
+    learnedRetype.state.committedText = LEARNED_RETYPE_TEXT;
+
+    learnedRetype.failurePhase = "reload-state-incomplete";
+    await page.reload({
+      waitUntil: "domcontentloaded",
+      timeout: APP_READY_TIMEOUT_MS,
+    });
+    await waitForAppReady(page);
+    learnedRetype.state.appReadyAfterReload = true;
+    const schemaIdAfterReload = await page.evaluate(
+      () => document.documentElement.dataset.yuneActiveSchema ?? null,
+    );
+    learnedRetype.state.schemaIdAfterReload = schemaIdAfterReload;
+    expect(schemaIdAfterReload).toBe("jyut6ping3");
+    const reloadedUserDictionaryToggle = page
+      .getByLabel(/User Dictionary|用戶詞庫/)
+      .last();
+    await expect(reloadedUserDictionaryToggle).toBeVisible({ timeout: 10_000 });
+    const userDictionaryEnabledAfterReload =
+      await reloadedUserDictionaryToggle.isChecked();
+    learnedRetype.state.userDictionaryEnabledAfterReload =
+      userDictionaryEnabledAfterReload;
+    expect(userDictionaryEnabledAfterReload).toBe(true);
+
+    await clearComposition(page);
+    await resetPerfDiagnostics(page);
+    await input.focus();
+    learnedAssetRequestStart = postReadyAssetRequests.length;
+    learnedMeasurementStarted = true;
+    learnedRetype.failurePhase = "timed-retype-incomplete";
+    await typeAtCadence(
+      page,
+      LEARNED_RETYPE_INPUT,
+      NORMAL_TYPING_KEY_INTERVAL_MS,
+    );
+    await expect
+      .poll(async () => (await readPerfDiagnostics(page)).length, {
+        timeout: DIAGNOSTIC_TIMEOUT_MS,
+      })
+      .toBe(LEARNED_RETYPE_INPUT.length);
+
+    const learnedDiagnostics = await readPerfDiagnostics(page);
+    const learnedActions = (await readDirectActionDiagnostics(page)).filter(
+      (diagnostic) => diagnostic.action === "processKey",
+    );
+    const learnedRawTimings = rawTimingSamples(learnedDiagnostics);
+    const learnedSummary = summarize(learnedDiagnostics);
+    const learnedWorkerSummary = {
+      p95Ms: percentile(learnedRawTimings.workerProcess, 0.95),
+      maxMs: percentile(learnedRawTimings.workerProcess, 1),
+    };
+    const learnedQueueWaitMaxMs = percentile(
+      learnedRawTimings.workerQueueWait,
+      1,
+    );
+    const learnedCadence = summarizeCadence(
+      learnedDiagnostics,
+      NORMAL_TYPING_KEY_INTERVAL_MS,
+    );
+    const learnedFinalRows = await readVisibleCandidateRows(page);
+    learnedRetype.learning.postLearnCandidateCount = learnedFinalRows.filter(
+      (row) => row.text === LEARNED_RETYPE_TEXT,
+    ).length;
+    const learnedAssetRequests = postReadyAssetRequests.slice(
+      learnedAssetRequestStart,
+    );
+    const learnedExpectedPrefixes = Array.from(
+      { length: LEARNED_RETYPE_INPUT.length },
+      (_, index) => LEARNED_RETYPE_INPUT.slice(0, index + 1),
+    );
+    const learnedExpectedActionInputs = [...LEARNED_RETYPE_INPUT].map(
+      (key) => `{${key}}`,
+    );
+    learnedChecks = {
+      state:
+        learnedRetype.state.userDictionaryEnabledBeforeLearning === true &&
+        learnedRetype.state.committedText === LEARNED_RETYPE_TEXT &&
+        learnedRetype.state.appReadyAfterReload === true &&
+        learnedRetype.state.schemaIdAfterReload === "jyut6ping3" &&
+        learnedRetype.state.userDictionaryEnabledAfterReload === true,
+      learning:
+        learnedRetype.learning.preLearnCandidateCount !== null &&
+        learnedRetype.learning.postLearnCandidateCount !== null &&
+        learnedRetype.learning.postLearnCandidateCount >
+          learnedRetype.learning.preLearnCandidateCount &&
+        learnedRetype.learning.postLearnCandidateCount >= 2,
+      diagnosticCount:
+        learnedDiagnostics.length === LEARNED_RETYPE_INPUT.length,
+      actionDiagnosticCount:
+        learnedActions.length === LEARNED_RETYPE_INPUT.length,
+      exactPrefixes:
+        JSON.stringify(
+          learnedDiagnostics.map((diagnostic) =>
+            diagnostic.input.replace(/\s+/g, ""),
+          ),
+        ) === JSON.stringify(learnedExpectedPrefixes),
+      orderedPerfKeys:
+        JSON.stringify(
+          learnedDiagnostics.map((diagnostic) => diagnostic.key),
+        ) === JSON.stringify([...LEARNED_RETYPE_INPUT]),
+      orderedActions:
+        JSON.stringify(learnedActions.map((action) => action.input)) ===
+        JSON.stringify(learnedExpectedActionInputs),
+      actionTimings: learnedActions.every(actionTimingIsValid),
+      actionPerfTimings:
+        learnedActions.length === learnedDiagnostics.length &&
+        learnedActions.every((action, index) =>
+          actionMatchesPerfDiagnostic(action, learnedDiagnostics[index]),
+        ),
+      candidatePages: learnedDiagnostics.every(
+        (diagnostic) =>
+          diagnostic.candidateCount === EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+          diagnostic.totalCandidateCount >= EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+          typeof diagnostic.firstCandidateText === "string" &&
+          diagnostic.firstCandidateText.trim().length > 0,
+      ),
+      completeTimings: learnedDiagnostics.every(
+        (diagnostic, index) =>
+          diagnosticTimingIsValid(diagnostic) &&
+          (index === 0 ||
+            diagnostic.renderRevision >
+              learnedDiagnostics[index - 1].renderRevision),
+      ),
+      unamplifiedWorker:
+        learnedDiagnostics.every(
+          (diagnostic) =>
+            diagnostic.workerActionMultiplier === 1 &&
+            workerAccountingIsValid(
+              diagnostic.workerProcessMs,
+              diagnostic.workerBaseElapsedMs,
+              diagnostic.workerAmplificationMs,
+            ),
+        ) &&
+        learnedActions.every(
+          (action) =>
+            action.workerActionMultiplier === 1 &&
+            workerAccountingIsValid(
+              action.workerMs,
+              action.workerBaseElapsedMs,
+              action.workerAmplificationMs,
+            ),
+        ),
+      cadence: learnedCadence.valid,
+      totalP95:
+        learnedSummary.p95Ms !== null &&
+        learnedSummary.p95Ms <= NORMAL_TYPING_P95_CEILING_MS,
+      totalMax:
+        learnedSummary.maxMs !== null &&
+        learnedSummary.maxMs <= NORMAL_TYPING_MAX_CEILING_MS,
+      workerP95:
+        learnedWorkerSummary.p95Ms !== null &&
+        learnedWorkerSummary.p95Ms <= NORMAL_TYPING_P95_CEILING_MS,
+      workerMax:
+        learnedWorkerSummary.maxMs !== null &&
+        learnedWorkerSummary.maxMs <= NORMAL_TYPING_MAX_CEILING_MS,
+      queueWait:
+        learnedQueueWaitMaxMs !== null &&
+        learnedQueueWaitMaxMs <= NORMAL_TYPING_QUEUE_WAIT_MAX_CEILING_MS,
+      finalActionWorker:
+        Number.isFinite(learnedActions.at(-1)?.workerMs) &&
+        (learnedActions.at(-1)?.workerMs ?? Number.POSITIVE_INFINITY) < 50,
+      finalPage:
+        learnedFinalRows.length === EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+        learnedFinalRows.every(
+          (candidate) =>
+            typeof candidate.text === "string" &&
+            candidate.text.trim().length > 0 &&
+            (candidate.source === null ||
+              typeof candidate.source === "string"),
+        ),
+      finalDiagnostic:
+        learnedDiagnostics.at(-1)?.firstCandidateText ===
+        learnedFinalRows[0]?.text,
+      noTimedAssetRequests: learnedAssetRequests.length === 0,
+    };
+    const learnedPassed = Object.values(learnedChecks).every(Boolean);
+    learnedRetype = {
+      ...learnedRetype,
+      measurementCompleted: true,
+      passed: learnedPassed,
+      diagnosticCount: learnedDiagnostics.length,
+      actionDiagnosticCount: learnedActions.length,
+      summary: learnedSummary,
+      workerSummary: learnedWorkerSummary,
+      workerQueueWaitMaxMs: learnedQueueWaitMaxMs,
+      finalActionWorkerMs: learnedActions.at(-1)?.workerMs ?? null,
+      cadence: learnedCadence,
+      diagnostics: learnedDiagnostics,
+      actions: learnedActions,
+      finalVisibleCandidateOrder: learnedFinalRows,
+      assetRequestsDuringMeasurement: learnedAssetRequests,
+      failurePhase: "complete",
+    };
+    receipt = {
+      ...receipt,
+      generatedAt: new Date().toISOString(),
+      measurementCompleted: true,
+      passed: normalPassed && learnedPassed,
+      learnedRetype,
+    };
+    const serialized = `${JSON.stringify(receipt, null, 2)}\n`;
+    await testInfo.attach("normal-typing-exact-input", {
+      body: serialized,
+      contentType: "application/json",
+    });
+    await writeOptionalEvidence("normal-typing-exact-input.json", receipt);
+
+    for (const [name, passed] of Object.entries(normalChecks)) {
+      expect.soft(passed, `normal exact input check failed: ${name}`).toBe(true);
+    }
+    for (const [name, passed] of Object.entries(learnedChecks)) {
+      expect.soft(passed, `learned retype check failed: ${name}`).toBe(true);
+    }
+  } catch (error) {
+    if (
+      normalMeasurementStarted &&
+      !normalMeasurementCaptured &&
+      receipt !== null
+    ) {
+      const partialDiagnostics = await readPerfDiagnostics(page).catch(
+        () => [] as PerfDiagnostic[],
+      );
+      const partialRows = await readVisibleCandidateRows(page).catch(
+        () => [] as CandidateRowSnapshot[],
+      );
+      const partialRawTimings = rawTimingSamples(partialDiagnostics);
+      receipt = {
+        ...receipt,
+        generatedAt: new Date().toISOString(),
+        url: page.url(),
+        measurementCompleted: false,
+        passed: false,
+        diagnosticCount: partialDiagnostics.length,
+        summary: summarize(partialDiagnostics),
+        workerQueueWaitMaxMs: percentile(
+          partialRawTimings.workerQueueWait,
+          1,
+        ),
+        cadence: summarizeCadence(
+          partialDiagnostics,
+          NORMAL_TYPING_KEY_INTERVAL_MS,
+        ),
+        diagnostics: partialDiagnostics,
+        finalVisibleCandidateOrder: partialRows,
+        assetRequestsDuringMeasurement:
+          normalAssetRequestStart === null
+            ? []
+            : postReadyAssetRequests.slice(normalAssetRequestStart),
+        learnedRetype,
+      };
+    }
+    if (learnedMeasurementStarted) {
+      const partialDiagnostics = await readPerfDiagnostics(page).catch(
+        () => [] as PerfDiagnostic[],
+      );
+      const partialActions = (await readDirectActionDiagnostics(page).catch(
+        () => [] as ActionDiagnostic[],
+      )).filter((diagnostic) => diagnostic.action === "processKey");
+      const partialRows = await readVisibleCandidateRows(page).catch(
+        () => [] as CandidateRowSnapshot[],
+      );
+      const partialRawTimings = rawTimingSamples(partialDiagnostics);
+      learnedRetype = {
+        ...learnedRetype,
+        diagnosticCount: partialDiagnostics.length,
+        actionDiagnosticCount: partialActions.length,
+        summary: summarize(partialDiagnostics),
+        workerSummary: {
+          p95Ms: percentile(partialRawTimings.workerProcess, 0.95),
+          maxMs: percentile(partialRawTimings.workerProcess, 1),
+        },
+        workerQueueWaitMaxMs: percentile(
+          partialRawTimings.workerQueueWait,
+          1,
+        ),
+        finalActionWorkerMs: partialActions.at(-1)?.workerMs ?? null,
+        cadence: summarizeCadence(
+          partialDiagnostics,
+          NORMAL_TYPING_KEY_INTERVAL_MS,
+        ),
+        diagnostics: partialDiagnostics,
+        actions: partialActions,
+        finalVisibleCandidateOrder: partialRows,
+        assetRequestsDuringMeasurement:
+          learnedAssetRequestStart === null
+            ? []
+            : postReadyAssetRequests.slice(learnedAssetRequestStart),
+      };
+    }
+    if (receipt !== null) {
+      receipt = {
+        ...receipt,
+        generatedAt: new Date().toISOString(),
+        measurementCompleted: false,
+        passed: false,
+        learnedRetype,
+      };
+      const serialized = `${JSON.stringify(receipt, null, 2)}\n`;
+      await testInfo
+        .attach("normal-typing-exact-input", {
+          body: serialized,
+          contentType: "application/json",
+        })
+        .catch(() => undefined);
+      await writeOptionalEvidence(
+        "normal-typing-exact-input.json",
+        receipt,
+      ).catch(() => undefined);
+    }
+    throw error;
+  }
 }

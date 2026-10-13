@@ -40,16 +40,63 @@ const normalTypingKeyIntervalMs = 100;
 const normalTypingP95CeilingMs = 150;
 const normalTypingMaxCeilingMs = 250;
 const normalTypingQueueWaitMaxCeilingMs = 100;
-const releaseScenarioNames = [
-  "jyutping-short",
-  "jyutping-historical-long-1",
-  "jyutping-historical-long-2",
-  "typeduck-learned-userdb-prefix",
-  "luna-short",
-  "luna-37",
-  "luna-59",
-  "cangjie-short",
+const learnedRetypeInput = "sikgaanei";
+const learnedRetypeText = "\u98df\u50f9\u4f60";
+const learnedRetypeScenarioName = "typeduck-learned-userdb-retype";
+const learnedUserdbStateProfile = "typeduck-learned-userdb";
+const scenarioRegistry = [
+  {
+    name: "jyutping-short",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "jyutping-historical-long-1",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "jyutping-historical-long-2",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "typeduck-learned-userdb-prefix",
+    lane: "stress",
+    userDbStateProfile: learnedUserdbStateProfile,
+  },
+  {
+    name: learnedRetypeScenarioName,
+    lane: "normal",
+    userDbStateProfile: learnedUserdbStateProfile,
+  },
+  {
+    name: "luna-short",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "luna-37",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "luna-59",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
+  {
+    name: "cangjie-short",
+    lane: "stress",
+    userDbStateProfile: "schema-empty-userdb",
+  },
 ];
+const learnedRetypeRegistry = scenarioRegistry.find(
+  (scenario) => scenario.name === learnedRetypeScenarioName,
+);
+const releaseScenarioNames = scenarioRegistry
+  .filter((scenario) => scenario.lane === "stress")
+  .map((scenario) => scenario.name);
 const releaseScenarioInputLengths = [3, 28, 52, 3, 3, 37, 59, 1];
 const releaseScenarioInputs = [
   "hai",
@@ -88,6 +135,90 @@ const releaseMechanism =
 const releaseWorkerStressScope = "loopback-preview";
 const releaseRustcVersion = "rustc 1.96.1 (31fca3adb 2026-06-26)";
 const releaseNodeVersion = "v22.16.0";
+
+function learnedRetypeSeed(sourceCommit, failurePhase) {
+  return {
+    measurementCompleted: false,
+    passed: false,
+    source: {
+      sourceCommit,
+      evidenceKind: "browser-self-consistency-no-external-oracle",
+      actionDiagnostics: "window.__YUNE_ACTION_DIAGNOSTICS__",
+    },
+    registry: learnedRetypeRegistry,
+    schemaId: "jyut6ping3",
+    input: learnedRetypeInput,
+    inputLength: learnedRetypeInput.length,
+    diagnosticCount: 0,
+    actionDiagnosticCount: 0,
+    keyIntervalMs: normalTypingKeyIntervalMs,
+    ceilingsMs: {
+      total: {
+        p95: normalTypingP95CeilingMs,
+        max: normalTypingMaxCeilingMs,
+      },
+      worker: {
+        p95: normalTypingP95CeilingMs,
+        max: normalTypingMaxCeilingMs,
+      },
+      workerQueueWaitMax: normalTypingQueueWaitMaxCeilingMs,
+      finalActionWorkerExclusiveMax: 50,
+    },
+    state: {
+      userDictionaryEnabledBeforeLearning: null,
+      committedText: null,
+      appReadyAfterReload: null,
+      schemaIdAfterReload: null,
+      userDictionaryEnabledAfterReload: null,
+    },
+    learning: {
+      candidateText: learnedRetypeText,
+      preLearnCandidateCount: null,
+      postLearnCandidateCount: null,
+    },
+    summary: {
+      medianMs: null,
+      p95Ms: null,
+      maxMs: null,
+      attributionP95Ms: {
+        workerQueueWait: null,
+        workerProcess: null,
+        workerRoundtrip: null,
+        responseMapping: null,
+        reactUpdate: null,
+        paintProxy: null,
+      },
+    },
+    workerSummary: { p95Ms: null, maxMs: null },
+    workerQueueWaitMaxMs: null,
+    finalActionWorkerMs: null,
+    cadence: {
+      expectedIntervalMs: normalTypingKeyIntervalMs,
+      acceptedRangeMs: { min: 80, max: 125 },
+      count: 0,
+      minMs: null,
+      medianMs: null,
+      p95Ms: null,
+      maxMs: null,
+      invalidGaps: [],
+      delayedGaps: [],
+      onTimeGapCount: 0,
+      onTimeRatio: 1,
+      minimumOnTimeRatio: cadenceMinOnTimeRatio,
+      valid: true,
+    },
+    diagnostics: [],
+    actions: [],
+    finalVisibleCandidateOrder: [],
+    candidateValidation: {
+      mode: "learned-row-growth-self-consistency-no-oracle-claim",
+      rationale:
+        "The browser proves that committing the shipped sentence grows the same Yune candidate page after reload. This is production-path self-consistency evidence, not an external-oracle candidate-order claim.",
+    },
+    assetRequestsDuringMeasurement: [],
+    failurePhase,
+  };
+}
 
 async function commandOutput(command, args, cwd) {
   return new Promise((resolve, reject) => {
@@ -283,6 +414,7 @@ const temporaryOutput = process.env.YUNE_WEB_LATENCY_OUTPUT_DIR
   : await mkdtemp(path.join(tmpdir(), "yune-web-input-latency-"));
 const outputDir =
   process.env.YUNE_WEB_LATENCY_OUTPUT_DIR ?? temporaryOutput;
+const playwrightOutputDir = path.join(outputDir, "playwright");
 await mkdir(outputDir, { recursive: true });
 const gateStartedAt = new Date().toISOString();
 await Promise.all([
@@ -298,6 +430,7 @@ await Promise.all([
         releaseGradeVerdict: "fail",
         failurePhase: "preview-or-browser-setup-incomplete",
         buildInfo,
+        scenarioRegistry,
       },
       null,
       2,
@@ -318,6 +451,10 @@ await Promise.all([
         inputLength: normalTypingInput.length,
         failurePhase: "preview-or-browser-setup-incomplete",
         buildInfo,
+        learnedRetype: learnedRetypeSeed(
+          buildInfo.sourceCommit,
+          "preview-or-browser-setup-incomplete",
+        ),
       },
       null,
       2,
@@ -420,7 +557,7 @@ async function runLatencyGate() {
           ...process.env,
           YUNE_WEB_APP_URL: appUrl,
           YUNE_WEB_EXPECTED_SOURCE_COMMIT: currentHead,
-          YUNE_WEB_LATENCY_OUTPUT_DIR: outputDir,
+          YUNE_WEB_LATENCY_OUTPUT_DIR: playwrightOutputDir,
           YUNE_WEB_LATENCY_EVIDENCE_DIR: outputDir,
         },
         stdio: "inherit",
@@ -624,6 +761,117 @@ function diagnosticTimingViolations(diagnostic, label) {
   return violations;
 }
 
+function actionTimingViolations(diagnostic, label) {
+  const violations = [];
+  const rawTimeline = [
+    ["enqueuedAt", diagnostic?.enqueuedAt],
+    ["sentAt", diagnostic?.sentAt],
+    ["workerStartedAt", diagnostic?.workerStartedAt],
+    ["workerFinishedAt", diagnostic?.workerFinishedAt],
+    ["receivedAt", diagnostic?.receivedAt],
+  ];
+  for (const [field, value] of rawTimeline) {
+    if (!Number.isFinite(value) || value < 0) {
+      violations.push(`${label} ${field} must be finite and nonnegative`);
+    }
+  }
+  for (let index = 1; index < rawTimeline.length; index += 1) {
+    const [previousField, previous] = rawTimeline[index - 1];
+    const [field, value] = rawTimeline[index];
+    if (
+      Number.isFinite(previous) &&
+      Number.isFinite(value) &&
+      value + crossContextClockToleranceMs < previous
+    ) {
+      violations.push(
+        `${label} raw timeline is not monotonic at ${previousField}->${field}`,
+      );
+    }
+  }
+  const derived = [
+    [
+      "queueWaitMs",
+      diagnostic?.queueWaitMs,
+      roundedRawDelta(diagnostic?.enqueuedAt, diagnostic?.sentAt),
+    ],
+    [
+      "workerRoundtripMs",
+      diagnostic?.workerRoundtripMs,
+      roundedRawDelta(diagnostic?.sentAt, diagnostic?.receivedAt),
+    ],
+    [
+      "workerMs",
+      diagnostic?.workerMs,
+      roundedRawDelta(
+        diagnostic?.workerStartedAt,
+        diagnostic?.workerFinishedAt,
+      ),
+    ],
+    [
+      "totalMs",
+      diagnostic?.totalMs,
+      roundedRawDelta(diagnostic?.enqueuedAt, diagnostic?.receivedAt),
+    ],
+  ];
+  for (const [field, actual, expected] of derived) {
+    if (!Number.isFinite(actual) || actual < 0) {
+      violations.push(`${label} ${field} must be finite and nonnegative`);
+    } else if (
+      !Number.isFinite(expected) ||
+      Math.abs(actual - expected) > derivedDeltaRoundingToleranceMs
+    ) {
+      violations.push(`${label} ${field} does not match its raw timestamps`);
+    }
+  }
+  for (const field of ["workerBaseElapsedMs", "workerAmplificationMs"]) {
+    if (!Number.isFinite(diagnostic?.[field]) || diagnostic[field] < 0) {
+      violations.push(`${label} ${field} must be finite and nonnegative`);
+    }
+  }
+  return violations;
+}
+
+function actionPerfTimingViolations(action, diagnostic, label) {
+  const violations = [];
+  const timestampPairs = [
+    ["enqueuedAt/workerQueuedAt", action?.enqueuedAt, diagnostic?.workerQueuedAt],
+    ["sentAt/workerSentAt", action?.sentAt, diagnostic?.workerSentAt],
+    [
+      "workerStartedAt",
+      action?.workerStartedAt,
+      diagnostic?.workerStartedAt,
+    ],
+    [
+      "workerFinishedAt",
+      action?.workerFinishedAt,
+      diagnostic?.workerFinishedAt,
+    ],
+    ["receivedAt/responseReceivedAt", action?.receivedAt, diagnostic?.responseReceivedAt],
+  ];
+  const derivedPairs = [
+    ["queueWaitMs", action?.queueWaitMs, diagnostic?.workerQueueWaitMs],
+    ["workerMs", action?.workerMs, diagnostic?.workerProcessMs],
+    ["workerRoundtripMs", action?.workerRoundtripMs, diagnostic?.workerRoundtripMs],
+    ["totalMs", action?.totalMs, diagnostic?.totalWorkerActionMs],
+    ["workerBaseElapsedMs", action?.workerBaseElapsedMs, diagnostic?.workerBaseElapsedMs],
+    ["workerAmplificationMs", action?.workerAmplificationMs, diagnostic?.workerAmplificationMs],
+    ["workerActionMultiplier", action?.workerActionMultiplier, diagnostic?.workerActionMultiplier],
+  ];
+  for (const [field, actionValue, perfValue] of [
+    ...timestampPairs,
+    ...derivedPairs,
+  ]) {
+    if (
+      !Number.isFinite(actionValue) ||
+      !Number.isFinite(perfValue) ||
+      Math.abs(actionValue - perfValue) > derivedDeltaRoundingToleranceMs
+    ) {
+      violations.push(`${label} ${field} does not match across action and paint diagnostics`);
+    }
+  }
+  return violations;
+}
+
 function releaseStressViolations(scenario, expectedMultiplier) {
   const violations = [];
   for (const [index, diagnostic] of scenario.diagnostics.entries()) {
@@ -768,6 +1016,10 @@ function assertReleaseLatencyReceipt(evidence) {
   const scenarios = Array.isArray(evidence.scenarios)
     ? evidence.scenarios
     : [];
+  requireValue(
+    sameJson(evidence.scenarioRegistry, scenarioRegistry),
+    "release receipt must preserve the exact stress/normal scenario registry and userdb state profiles",
+  );
   requireValue(
     sameJson(
       scenarios.map((scenario) => scenario?.name),
@@ -1029,7 +1281,17 @@ function assertReleaseLatencyReceipt(evidence) {
       evidence.releaseProfile?.valid === true &&
       evidence.releaseProfile?.diagnosticOverridesActive === false &&
       Array.isArray(evidence.releaseProfile?.deviations) &&
-      evidence.releaseProfile.deviations.length === 0,
+      evidence.releaseProfile.deviations.length === 0 &&
+      sameJson(
+        evidence.releaseProfile?.expected?.scenarioNames,
+        releaseScenarioNames,
+      ) &&
+      sameJson(
+        evidence.releaseProfile?.expected?.scenarioRegistry,
+        scenarioRegistry,
+      ) &&
+      evidence.releaseProfile?.expected?.verifiedKeyCount ===
+        releaseVerifiedKeyCount,
     "diagnostic overrides or non-loopback profiles cannot produce a release-grade pass",
   );
 
@@ -1038,6 +1300,278 @@ function assertReleaseLatencyReceipt(evidence) {
       `Latency evidence violates the binding release profile:\n- ${violations.join("\n- ")}`,
     );
   }
+}
+
+function learnedRetypeViolations(learned) {
+  const violations = [];
+  const requireValue = (condition, message) => {
+    if (!condition) {
+      violations.push(message);
+    }
+  };
+  const diagnostics = Array.isArray(learned?.diagnostics)
+    ? learned.diagnostics
+    : [];
+  const actions = Array.isArray(learned?.actions) ? learned.actions : [];
+  const expectedPrefixes = Array.from(
+    { length: learnedRetypeInput.length },
+    (_, index) => learnedRetypeInput.slice(0, index + 1),
+  );
+  const expectedActionInputs = [...learnedRetypeInput].map(
+    (key) => `{${key}}`,
+  );
+
+  requireValue(
+    learned?.measurementCompleted === true &&
+      learned?.passed === true &&
+      learned?.failurePhase === "complete",
+    "learned retype must be a completed passing measurement",
+  );
+  requireValue(
+    sameJson(learned?.source, {
+      sourceCommit: currentHead,
+      evidenceKind: "browser-self-consistency-no-external-oracle",
+      actionDiagnostics: "window.__YUNE_ACTION_DIAGNOSTICS__",
+    }),
+    "learned retype source must identify current HEAD, direct action diagnostics, and the no-oracle boundary",
+  );
+  requireValue(
+    sameJson(learned?.registry, learnedRetypeRegistry),
+    "learned retype must use the registered normal lane with learned userdb state",
+  );
+  requireValue(
+    learned?.schemaId === "jyut6ping3" &&
+      learned?.input === learnedRetypeInput &&
+      learned?.inputLength === learnedRetypeInput.length &&
+      learned?.keyIntervalMs === normalTypingKeyIntervalMs,
+    "learned retype must cover exact sikgaanei input on jyut6ping3 at 100 ms cadence",
+  );
+  requireValue(
+    learned?.state?.userDictionaryEnabledBeforeLearning === true &&
+      learned.state.committedText === learnedRetypeText &&
+      learned.state.appReadyAfterReload === true &&
+      learned.state.schemaIdAfterReload === "jyut6ping3" &&
+      learned.state.userDictionaryEnabledAfterReload === true,
+    "learned retype must prove the enabled userdb, exact commit, and ready persisted schema state",
+  );
+  const preLearnCount = learned?.learning?.preLearnCandidateCount;
+  const postLearnCount = learned?.learning?.postLearnCandidateCount;
+  requireValue(
+    learned?.learning?.candidateText === learnedRetypeText &&
+      Number.isSafeInteger(preLearnCount) &&
+      preLearnCount >= 0 &&
+      Number.isSafeInteger(postLearnCount) &&
+      postLearnCount >= 2 &&
+      postLearnCount > preLearnCount,
+    "learned retype must prove that the 食價你 row count grew and reached at least two",
+  );
+  requireValue(
+    sameJson(learned?.ceilingsMs, {
+      total: {
+        p95: normalTypingP95CeilingMs,
+        max: normalTypingMaxCeilingMs,
+      },
+      worker: {
+        p95: normalTypingP95CeilingMs,
+        max: normalTypingMaxCeilingMs,
+      },
+      workerQueueWaitMax: normalTypingQueueWaitMaxCeilingMs,
+      finalActionWorkerExclusiveMax: 50,
+    }),
+    "learned retype must preserve the binding total, worker, queue, and final-key ceilings",
+  );
+  requireValue(
+    learned?.diagnosticCount === learnedRetypeInput.length &&
+      diagnostics.length === learnedRetypeInput.length &&
+      learned?.actionDiagnosticCount === learnedRetypeInput.length &&
+      actions.length === learnedRetypeInput.length,
+    "learned retype must retain exactly nine paint and direct action diagnostics",
+  );
+  requireValue(
+    sameJson(
+      diagnostics.map((diagnostic) =>
+        typeof diagnostic?.input === "string"
+          ? diagnostic.input.replace(/\s+/g, "")
+          : null,
+      ),
+      expectedPrefixes,
+    ) &&
+      sameJson(
+        diagnostics.map((diagnostic) => diagnostic?.key),
+        [...learnedRetypeInput],
+      ),
+    "learned retype paint diagnostics must cover every exact prefix and ordered key occurrence",
+  );
+  requireValue(
+    sameJson(
+      actions.map((action) => action?.input),
+      expectedActionInputs,
+    ) && actions.every((action) => action?.action === "processKey"),
+    "learned retype direct actions must retain the exact ordered {s}..{i} occurrences",
+  );
+  const diagnosticViolations = diagnostics.flatMap((diagnostic, index) =>
+    diagnosticTimingViolations(
+      diagnostic,
+      `learned-retype diagnostic ${index + 1}`,
+    ),
+  );
+  requireValue(
+    diagnosticViolations.length === 0 &&
+      diagnostics.every(
+        (diagnostic, index) =>
+          index === 0 ||
+          diagnostic.renderRevision > diagnostics[index - 1].renderRevision,
+      ),
+    diagnosticViolations[0] ??
+      "learned retype paint diagnostics must use distinct committed render revisions",
+  );
+  const actionViolations = actions.flatMap((action, index) => [
+    ...actionTimingViolations(action, `learned-retype action ${index + 1}`),
+    ...actionPerfTimingViolations(
+      action,
+      diagnostics[index],
+      `learned-retype action ${index + 1}`,
+    ),
+  ]);
+  requireValue(
+    actionViolations.length === 0,
+    actionViolations[0] ??
+      "learned retype action and paint diagnostics must share the same ordered raw timestamps",
+  );
+  requireValue(
+    diagnostics.every(
+      (diagnostic) =>
+        diagnostic?.candidateCount === releaseVisibleCandidateCount &&
+        Number.isFinite(diagnostic?.totalCandidateCount) &&
+        diagnostic.totalCandidateCount >= releaseVisibleCandidateCount &&
+        isNonemptyString(diagnostic?.firstCandidateText) &&
+        diagnostic?.workerActionMultiplier === 1 &&
+        Number.isFinite(diagnostic?.workerAmplificationMs) &&
+        diagnostic.workerAmplificationMs >= 0 &&
+        Number.isFinite(diagnostic?.workerBaseElapsedMs) &&
+        diagnostic.workerBaseElapsedMs >= 0 &&
+        Number.isFinite(diagnostic?.workerProcessMs) &&
+        diagnostic.workerProcessMs >=
+          diagnostic.workerBaseElapsedMs +
+            diagnostic.workerAmplificationMs -
+            derivedDeltaRoundingToleranceMs,
+    ) &&
+      actions.every(
+        (action) =>
+          action?.workerActionMultiplier === 1 &&
+          Number.isFinite(action?.workerAmplificationMs) &&
+          action.workerAmplificationMs >= 0 &&
+          Number.isFinite(action?.workerBaseElapsedMs) &&
+          action.workerBaseElapsedMs >= 0 &&
+          Number.isFinite(action?.workerMs) &&
+          action.workerMs >=
+            action.workerBaseElapsedMs +
+              action.workerAmplificationMs -
+              derivedDeltaRoundingToleranceMs,
+      ),
+    "learned retype must use the 1x worker, reconcile base plus amplification to worker time, and render complete six-row pages",
+  );
+
+  const rawTimings = rawTimingSamples(diagnostics);
+  const expectedSummary = rawLatencySummary(diagnostics);
+  const expectedWorkerSummary = {
+    p95Ms: percentile(rawTimings.workerProcess, 0.95),
+    maxMs: percentile(rawTimings.workerProcess, 1),
+  };
+  requireValue(
+    sameJson(learned?.summary, expectedSummary) &&
+      expectedSummary.p95Ms <= normalTypingP95CeilingMs &&
+      expectedSummary.maxMs <= normalTypingMaxCeilingMs,
+    "learned retype total summary must be recomputed from raw timestamps and satisfy 150/250 ms",
+  );
+  requireValue(
+    sameJson(learned?.workerSummary, expectedWorkerSummary) &&
+      expectedWorkerSummary.p95Ms <= normalTypingP95CeilingMs &&
+      expectedWorkerSummary.maxMs <= normalTypingMaxCeilingMs,
+    "learned retype worker summary must be recomputed from raw timestamps and satisfy 150/250 ms",
+  );
+  const expectedQueueWaitMaxMs = percentile(rawTimings.workerQueueWait, 1);
+  requireValue(
+    learned?.workerQueueWaitMaxMs === expectedQueueWaitMaxMs &&
+      expectedQueueWaitMaxMs <= normalTypingQueueWaitMaxCeilingMs,
+    "learned retype queue maximum must be recomputed and stay at or below 100 ms",
+  );
+  requireValue(
+    learned?.finalActionWorkerMs === actions.at(-1)?.workerMs &&
+      Number.isFinite(learned?.finalActionWorkerMs) &&
+      learned.finalActionWorkerMs < 50,
+    "learned retype final direct processKey workerMs must stay below 50 ms",
+  );
+
+  const rawCadenceGaps = diagnostics.slice(1).map(
+    (diagnostic, index) => diagnostic?.keydownAt - diagnostics[index]?.keydownAt,
+  );
+  const rawCadenceRows = rawCadenceGaps.map((gapMs, index) => ({
+    afterKeyIndex: index + 1,
+    gapMs,
+  }));
+  const rawInvalidCadenceGaps = rawCadenceRows.filter(
+    (gap) => !Number.isFinite(gap.gapMs) || gap.gapMs < 80,
+  );
+  const rawDelayedCadenceGaps = rawCadenceRows.filter(
+    (gap) => Number.isFinite(gap.gapMs) && gap.gapMs > 125,
+  );
+  const rawOnTimeCadenceGapCount = rawCadenceRows.filter(
+    (gap) =>
+      Number.isFinite(gap.gapMs) && gap.gapMs >= 80 && gap.gapMs <= 125,
+  ).length;
+  const rawOnTimeCadenceRatio =
+    rawOnTimeCadenceGapCount / (learnedRetypeInput.length - 1);
+  requireValue(
+    learned?.cadence?.expectedIntervalMs === normalTypingKeyIntervalMs &&
+      sameJson(learned.cadence.acceptedRangeMs, { min: 80, max: 125 }) &&
+      learned.cadence.count === learnedRetypeInput.length - 1 &&
+      rawCadenceGaps.length === learnedRetypeInput.length - 1 &&
+      rawCadenceGaps.every(Number.isFinite) &&
+      rawInvalidCadenceGaps.length === 0 &&
+      rawOnTimeCadenceRatio >= cadenceMinOnTimeRatio &&
+      learned.cadence.minMs === percentile(rawCadenceGaps, 0) &&
+      learned.cadence.medianMs === percentile(rawCadenceGaps, 0.5) &&
+      learned.cadence.p95Ms === percentile(rawCadenceGaps, 0.95) &&
+      learned.cadence.maxMs === percentile(rawCadenceGaps, 1) &&
+      sameJson(learned.cadence.invalidGaps, rawInvalidCadenceGaps) &&
+      sameJson(learned.cadence.delayedGaps, rawDelayedCadenceGaps) &&
+      learned.cadence.onTimeGapCount === rawOnTimeCadenceGapCount &&
+      learned.cadence.onTimeRatio === rawOnTimeCadenceRatio &&
+      learned.cadence.minimumOnTimeRatio === cadenceMinOnTimeRatio &&
+      learned.cadence.valid === true,
+    "learned retype cadence must be recomputed from all eight 100 ms gaps and remain valid",
+  );
+
+  const finalRows = Array.isArray(learned?.finalVisibleCandidateOrder)
+    ? learned.finalVisibleCandidateOrder
+    : [];
+  const finalLearnedCount = finalRows.filter(
+    (candidate) => candidate?.text === learnedRetypeText,
+  ).length;
+  requireValue(
+    finalRows.length === releaseVisibleCandidateCount &&
+      finalRows.every(
+        (candidate) =>
+          isNonemptyString(candidate?.text) &&
+          (candidate?.source === null || typeof candidate?.source === "string"),
+      ) &&
+      diagnostics.at(-1)?.firstCandidateText === finalRows[0]?.text &&
+      finalLearnedCount === postLearnCount,
+    "learned retype final page must contain six rows, match the final diagnostic, and reproduce the learned count",
+  );
+  requireValue(
+    learned?.candidateValidation?.mode ===
+      "learned-row-growth-self-consistency-no-oracle-claim" &&
+      isNonemptyString(learned.candidateValidation.rationale),
+    "learned retype must preserve its explicit self-consistency and no-oracle boundary",
+  );
+  requireValue(
+    Array.isArray(learned?.assetRequestsDuringMeasurement) &&
+      learned.assetRequestsDuringMeasurement.length === 0,
+    "learned retype timed window must not fetch schema assets",
+  );
+  return violations;
 }
 
 function assertNormalTypingReceipt(evidence) {
@@ -1083,8 +1617,8 @@ function assertNormalTypingReceipt(evidence) {
   requireValue(
     evidence?.measurementCompleted === true &&
       evidence.passed === true &&
-      evidence.buildInfo?.sourceCommit === currentHead,
-    "normal-typing receipt must be a passing measurement for current HEAD",
+      sameJson(evidence.buildInfo, buildInfo),
+    "normal-typing receipt must be a passing measurement for the exact validated public artifact",
   );
   requireValue(
     evidence?.typingMode === "normal-interactive-exact-input" &&
@@ -1204,6 +1738,7 @@ function assertNormalTypingReceipt(evidence) {
       evidence.assetRequestsDuringMeasurement.length === 0,
     "normal-typing timed window must not fetch schema assets",
   );
+  violations.push(...learnedRetypeViolations(evidence?.learnedRetype));
 
   if (violations.length > 0) {
     throw new Error(
@@ -1332,6 +1867,16 @@ function selfTestReleaseValidator(evidence) {
     assertReleaseLatencyReceipt,
     evidence,
     (receipt) => {
+      receipt.scenarioRegistry.find(
+        (scenario) => scenario.name === learnedRetypeScenarioName,
+      ).lane = "stress";
+    },
+    "a receipt with the learned retype row moved into the stress lane",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
       receipt.scenarios[0].cadence.onTimeGapCount -= 1;
     },
     "a receipt with forged release cadence coverage",
@@ -1361,6 +1906,14 @@ function selfTestReleaseValidator(evidence) {
 }
 
 function selfTestNormalTypingValidator(evidence) {
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.buildInfo.wasmSha256 = "0".repeat(64);
+    },
+    "a normal receipt with a forged public build hash",
+  );
   assertMutationRejected(
     assertNormalTypingReceipt,
     evidence,
@@ -1420,6 +1973,148 @@ function selfTestNormalTypingValidator(evidence) {
       receipt.cadence.minimumOnTimeRatio = 0;
     },
     "a normal receipt with a loosened cadence coverage ratio",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      delete receipt.learnedRetype;
+    },
+    "a normal receipt with the learned retype measurement removed",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.learnedRetype.workerSummary.p95Ms += 10_000;
+    },
+    "a learned retype receipt with a forged worker summary",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.learnedRetype.registry.userDbStateProfile =
+        "schema-empty-userdb";
+    },
+    "a learned retype receipt mislabeled as fresh userdb state",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.learnedRetype.learning.preLearnCandidateCount =
+        receipt.learnedRetype.learning.postLearnCandidateCount;
+    },
+    "a learned retype receipt without learned-row growth",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      delete receipt.learnedRetype.actions[0].workerStartedAt;
+    },
+    "a learned retype receipt with a raw action timestamp removed",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.learnedRetype.actions[5].input = "{i}";
+    },
+    "a learned retype receipt with a forged repeated-key occurrence",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      receipt.learnedRetype.actions[0].workerActionMultiplier = 4;
+      receipt.learnedRetype.diagnostics[0].workerActionMultiplier = 4;
+    },
+    "a learned retype sample labeled with the 4x worker profile",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      const action = receipt.learnedRetype.actions[0];
+      const diagnostic = receipt.learnedRetype.diagnostics[0];
+      const workerMs = action.workerMs;
+      const workerBaseElapsedMs = Math.max(1, workerMs / 2);
+      const workerAmplificationMs =
+        workerMs - workerBaseElapsedMs + 10;
+      Object.assign(action, {
+        workerBaseElapsedMs,
+        workerAmplificationMs,
+      });
+      Object.assign(diagnostic, {
+        workerBaseElapsedMs,
+        workerAmplificationMs,
+        workerEffectiveMultiplier:
+          (workerBaseElapsedMs + workerAmplificationMs) /
+          workerBaseElapsedMs,
+      });
+    },
+    "a learned retype sample whose matching base and amplification exceed worker time",
+  );
+  assertMutationRejected(
+    assertNormalTypingReceipt,
+    evidence,
+    (receipt) => {
+      const learned = receipt.learnedRetype;
+      const action = learned.actions.at(-1);
+      const diagnostic = learned.diagnostics.at(-1);
+      const keydownAt = diagnostic.keydownAt;
+      Object.assign(action, {
+        enqueuedAt: keydownAt,
+        sentAt: keydownAt + 1,
+        workerStartedAt: keydownAt + 2,
+        workerFinishedAt: keydownAt + 52,
+        receivedAt: keydownAt + 53,
+        queueWaitMs: 1,
+        workerRoundtripMs: 52,
+        workerMs: 50,
+        workerBaseElapsedMs: 50,
+        workerAmplificationMs: 0,
+        workerActionMultiplier: 1,
+        totalMs: 53,
+      });
+      Object.assign(diagnostic, {
+        workerQueuedAt: keydownAt,
+        workerSentAt: keydownAt + 1,
+        workerStartedAt: keydownAt + 2,
+        workerFinishedAt: keydownAt + 52,
+        responseReceivedAt: keydownAt + 53,
+        responseMappingStartedAt: keydownAt + 53,
+        responseMappingFinishedAt: keydownAt + 54,
+        stateAppliedAt: keydownAt + 55,
+        paintObservedAt: keydownAt + 56,
+        workerQueueWaitMs: 1,
+        workerProcessMs: 50,
+        workerRoundtripMs: 52,
+        workerBaseElapsedMs: 50,
+        workerAmplificationMs: 0,
+        workerActionMultiplier: 1,
+        workerEffectiveMultiplier: 1,
+        responseMappingMs: 1,
+        reactUpdateMs: 1,
+        paintProxyMs: 1,
+        totalWorkerActionMs: 53,
+        totalKeydownToPaintMs: 56,
+      });
+      const rawTimings = rawTimingSamples(learned.diagnostics);
+      learned.summary = rawLatencySummary(learned.diagnostics);
+      learned.workerSummary = {
+        p95Ms: percentile(rawTimings.workerProcess, 0.95),
+        maxMs: percentile(rawTimings.workerProcess, 1),
+      };
+      learned.workerQueueWaitMaxMs = percentile(
+        rawTimings.workerQueueWait,
+        1,
+      );
+      learned.finalActionWorkerMs = action.workerMs;
+    },
+    "a learned retype final direct worker sample at the 50 ms hard stop",
   );
 }
 
@@ -1509,6 +2204,33 @@ async function reportNormalTypingEvidence(
       finalVisibleCandidateOrder: evidence.finalVisibleCandidateOrder,
       candidateValidation: evidence.candidateValidation,
       buildInfo: evidence.buildInfo,
+      learnedRetype: evidence.learnedRetype
+        ? {
+            measurementCompleted:
+              evidence.learnedRetype.measurementCompleted,
+            passed: evidence.learnedRetype.passed,
+            source: evidence.learnedRetype.source,
+            registry: evidence.learnedRetype.registry,
+            schemaId: evidence.learnedRetype.schemaId,
+            input: evidence.learnedRetype.input,
+            diagnosticCount: evidence.learnedRetype.diagnosticCount,
+            actionDiagnosticCount:
+              evidence.learnedRetype.actionDiagnosticCount,
+            state: evidence.learnedRetype.state,
+            learning: evidence.learnedRetype.learning,
+            keyIntervalMs: evidence.learnedRetype.keyIntervalMs,
+            ceilingsMs: evidence.learnedRetype.ceilingsMs,
+            summary: evidence.learnedRetype.summary,
+            workerSummary: evidence.learnedRetype.workerSummary,
+            workerQueueWaitMaxMs:
+              evidence.learnedRetype.workerQueueWaitMaxMs,
+            finalActionWorkerMs:
+              evidence.learnedRetype.finalActionWorkerMs,
+            cadence: evidence.learnedRetype.cadence,
+            finalVisibleCandidateOrder:
+              evidence.learnedRetype.finalVisibleCandidateOrder,
+          }
+        : null,
     };
     console.error(`${prefix}=${JSON.stringify(summary)}`);
     if (includeFullReceipt) {

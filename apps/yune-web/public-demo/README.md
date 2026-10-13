@@ -59,6 +59,15 @@ first, so a later 4x red cannot suppress its receipt; any red still makes the
 build fail. Latency-gate failure logs retain gzip/base64 chunks of the complete
 JSON receipts plus hashes of their exact bytes.
 
+The default normal-typing receipt also includes a learned-phrase regression:
+commit `sikgaanei` as `食價你`, reload, then retype the complete code at 100 ms
+intervals. The row must survive reload; total and worker latency must satisfy
+the normal `150/250 ms` p95/max ceilings, queue wait must stay at or below
+`100 ms`, and the final action's `workerMs` must be below `50 ms`. This uses
+the ordinary 1x worker path and leaves the eight-row 4x stress matrix intact.
+The gate independently validates the learned-state proof and raw timing samples;
+a missing learned result cannot pass.
+
 Set `YUNE_WEB_LATENCY_OUTPUT_DIR` to preserve its JSON packet outside the
 tracked tree. Rust/WASM changes must first rebuild and copy the source-current
 Emscripten artifacts as the release build below does. The release workflow

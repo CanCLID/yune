@@ -61,25 +61,27 @@ Completed milestones, with closing commits and former plan paths, are listed in
 
 ## Planning Happens In GitHub Issues
 
-Planned and in-progress work lives in
-[GitHub issues](https://github.com/CanCLID/yune/issues). The pinned issue
-labelled `roadmap` is the parent of every planned item; children carry
-"blocked by" relationships. Do not create plan files under `docs/`. Issues
-are public: state the user-visible outcome in the title, gloss internal
-jargon on first use, and keep host-specific paths and private data out.
+Before implementation, create or triage the owning
+[GitHub issue](https://github.com/CanCLID/yune/issues) with its outcome, scope,
+acceptance criteria, and verification. Keep it current through progress,
+decisions, blockers, PRs, and final evidence. Follow the complete
+[tracking rules in conventions](./docs/conventions.md#10-planning-history-and-evidence).
+Do not create plan files under `docs/`. Public issues and PRs must use plain
+language and omit host-specific paths and private data.
 
-Every issue carries three kinds of metadata, and they do not overlap:
+Every issue needs a native **Type** (Bug, Feature, Task), native **Priority**
+(Urgent/High/Medium/Low) and **Effort** (High/Medium/Low) fields, an area label,
+and any applicable work labels. Use GitHub's native parent relationship to the
+pinned `roadmap` issue and native "blocked by" relationships for actual
+dependencies; state `None` when there are no blockers. Check for concurrent
+changes before updating issue metadata or text.
 
-- **Type** (Bug, Feature, Task): what it is. The issue forms preset it.
-- **Fields** (Priority: Urgent/High/Medium/Low; Effort: High/Medium/Low): how
-  it ranks. Set them in the Fields panel when the issue is opened or triaged.
-- **Labels**: the area (`engine`, `web`, `abi`, `platform`, `documentation`)
-  plus the kind of work (`perf`, `memory`, `parity`, `ux`, `test`,
-  `decision-needed`, `roadmap`). There is no `bug` or `enhancement` label;
-  Type covers that.
-
-Pull request descriptions carry the closeout: the exact verification commands
-run and their results, and `Closes #N` for the issue.
+PRs link their owning issues and document the changes, rationale, documentation,
+exact verification commands and results, and remaining acceptance criteria.
+Use `Closes #N` only when the PR completes that issue's full acceptance criteria.
+For partial progress, use `References #N` and put the PR link in the issue body;
+keep the issue open and avoid auto-closing or sidebar closing links until all
+acceptance criteria are met.
 
 ## Canonical Docs - Read These
 

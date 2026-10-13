@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        After submitting, set **Priority** and **Effort** in the Fields panel. Use the `decision-needed` label if the task is blocked on a maintainer decision.
+        After submitting, set **Priority** and **Effort** in the Fields panel. Before implementation, confirm the native **Type**, area label and any applicable work labels, then set the native roadmap parent and actual **blocked by** relationships listed below. Use `decision-needed` when blocked on a maintainer decision.
   - type: dropdown
     id: lane
     attributes:
@@ -19,18 +19,33 @@ body:
     validations:
       required: true
   - type: textarea
+    id: relationships
+    attributes:
+      label: Relationships
+      description: Link the pinned roadmap parent and actual prerequisites. Set these as native GitHub relationships before implementation; this answer does not create them.
+      placeholder: |
+        Parent: #<roadmap issue>
+        Blocked by: #<prerequisite issue(s)> or None
+    validations:
+      required: true
+  - type: textarea
     id: goal
     attributes:
       label: Goal
+      description: The outcome and scope, in plain language.
     validations:
       required: true
   - type: textarea
     id: done
     attributes:
       label: Done when
+      description: Observable acceptance criteria.
     validations:
       required: true
   - type: textarea
     id: verify
     attributes:
       label: How verified
+      description: Commands or checks that demonstrate the acceptance criteria.
+    validations:
+      required: true

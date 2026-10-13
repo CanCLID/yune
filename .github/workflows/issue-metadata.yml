@@ -35,5 +35,5 @@ jobs:
             await github.rest.issues.createComment({
               ...context.repo,
               issue_number: issue.number,
-              body: `Thanks. Before this issue is picked up, please make sure it has ${missing.join(", ")}. Labels describe the area and the kind of work; Type and Fields describe what it is and how it ranks.`,
+              body: `Thanks. Before implementation, please make sure this issue has ${missing.join(", ")}, any applicable work labels, and a native parent relationship to the pinned roadmap issue. Set native blocked-by relationships for actual prerequisites, or state "Blocked by: None" in the issue. The Relationships form answer does not create these links. Type and Fields describe what it is and how it ranks; this reminder does not verify Fields or relationships.`,
             });

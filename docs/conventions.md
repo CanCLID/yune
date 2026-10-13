@@ -340,18 +340,50 @@ intent lives in issues.
   commit and the former plan path. Full plan text and evidence packets are in
   git history before the 2026-10 docs consolidation commit.
 - `performance.md`: the current performance scorecard.
-- GitHub issues: every planned or in-progress piece of work, with
-  parent/child and "blocked by" relationships. There is no `TODO`/`FIXME` in
-  code. Issues are public: state the user-visible outcome in the title, gloss
-  internal jargon, and never paste host-specific paths or private data.
-  Metadata is split three ways and never duplicated: Type (Bug, Feature,
-  Task) says what it is; the Priority and Effort fields say how it ranks;
-  labels name the area (`engine`, `web`, `abi`, `platform`, `documentation`)
-  and the kind of work (`perf`, `memory`, `parity`, `ux`, `test`,
-  `decision-needed`, `roadmap`). The issue forms under `.github/ISSUE_TEMPLATE/`
-  preset the Type, and the `issue-metadata` workflow applies the lane label.
-- Pull requests carry the closeout: the exact verification commands run and
-  their results, in the description.
+- GitHub issues: every planned or in-progress piece of work. There is no
+  `TODO`/`FIXME` in code and no plan file under `docs/`.
+- Pull requests: the changes and their verification, linked to the owning issues.
+
+**Before implementation.** Create or triage the owning issue first. State the
+user-visible outcome in a plain-language title, the scope, observable acceptance
+criteria, and how they will be verified. Public issues and PRs must gloss
+internal jargon and omit host-specific paths and private data.
+
+Every issue needs three distinct kinds of metadata: a native **Type** (Bug,
+Feature, Task); native **Priority** (Urgent/High/Medium/Low) and **Effort**
+(High/Medium/Low) fields; and an area label (`engine`, `web`, `abi`, `platform`,
+`documentation`) plus any applicable work labels (`perf`, `memory`, `parity`,
+`ux`, `test`, `decision-needed`, `roadmap`). Do not duplicate Type or Fields as
+labels, or add an irrelevant work label. The issue forms preset Type, and the
+`issue-metadata` workflow applies the area label from the lane answer; its
+reminder does not verify Fields or relationships.
+
+Use GitHub's native parent relationship to place each planned item under the
+pinned issue labelled `roadmap`. Record actual prerequisites with native
+"blocked by" relationships; when none exist, state `Blocked by: None` in the
+issue. The Relationships form answer records the intended links but does not
+create them: set the native relationships before implementation.
+
+**During development.** Keep the issue current with material progress, scope
+changes, decisions, blockers, PR links, and verification evidence. Before
+changing an issue body, metadata, or relationships, re-read its current state
+and preserve concurrent edits. Keep unresolved acceptance criteria explicit
+until the required evidence is available.
+
+**Pull requests and closeout.** Link every owning issue in the PR description
+and add the reciprocal PR link to each issue body. Explain what changed, why,
+which documentation was updated (or why none was needed), the exact verification
+commands and results, and any skipped checks with reasons. Record remaining
+acceptance criteria and blockers. Include relevant oracle and ABI evidence;
+mark those sections `N/A` when the change does not affect them.
+
+Use `Closes #N` only when merging the PR will complete that issue's full
+acceptance criteria. Partial work uses `References #N` with explicit remaining
+work; keep the issue open and do not add auto-closing keywords or sidebar
+closing links. A merged PR or local success alone does not close acceptance
+that still needs external evidence. Re-read the current PR and issue text before
+publishing updates, preserve concurrent edits, and verify the published links,
+metadata, and descriptions afterward.
 
 **Evidence retention.** Raw benchmark output belongs under the user-level
 external evidence root selected by the benchmark scripts

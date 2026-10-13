@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        After submitting, set **Priority** and **Effort** in the Fields panel on the right. A maintainer adds the lane label from your answer below.
+        After submitting, set **Priority** and **Effort** in the Fields panel. Before implementation, confirm the native **Type**, area label and any applicable work labels, then set the native roadmap parent and actual **blocked by** relationships listed below.
   - type: dropdown
     id: lane
     attributes:
@@ -19,6 +19,16 @@ body:
     validations:
       required: true
   - type: textarea
+    id: relationships
+    attributes:
+      label: Relationships
+      description: Link the pinned roadmap parent and actual prerequisites. Set these as native GitHub relationships before implementation; this answer does not create them.
+      placeholder: |
+        Parent: #<roadmap issue>
+        Blocked by: #<prerequisite issue(s)> or None
+    validations:
+      required: true
+  - type: textarea
     id: context
     attributes:
       label: Context
@@ -29,7 +39,7 @@ body:
     id: problem
     attributes:
       label: Problem
-      description: What happens, what you expected, and the exact keys typed. Numbers need a source.
+      description: The affected scope, what happens, the expected outcome, and the exact keys typed. Numbers need a source.
     validations:
       required: true
   - type: textarea
@@ -43,4 +53,6 @@ body:
     id: verify
     attributes:
       label: How a fix is verified
-      description: The gate or test that must fail before and pass after.
+      description: Observable acceptance criteria and the commands or checks that show the fix works.
+    validations:
+      required: true

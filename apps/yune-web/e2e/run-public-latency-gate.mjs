@@ -1779,6 +1779,19 @@ function selfTestReleaseValidator(evidence) {
     assertReleaseLatencyReceipt,
     evidence,
     (receipt) => {
+      const diagnostic = firstDiagnostic(receipt);
+      const workerDuration =
+        diagnostic.workerFinishedAt - diagnostic.workerStartedAt;
+      diagnostic.workerStartedAt = diagnostic.workerSentAt - 2.01;
+      diagnostic.workerFinishedAt =
+        diagnostic.workerStartedAt + workerDuration;
+    },
+    "a receipt with a cross-context clock reversal",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
       delete firstDiagnostic(receipt).totalKeydownToPaintMs;
     },
     "a receipt with totalKeydownToPaintMs removed",

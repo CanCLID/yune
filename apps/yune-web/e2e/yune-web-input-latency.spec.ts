@@ -833,7 +833,7 @@ function percentile(values: number[], proportion: number): number | null {
 }
 
 const CROSS_CONTEXT_CLOCK_TOLERANCE_MS = 2;
-// Epoch timestamps can differ by one floating-point ULP (about 0.000244 ms).
+// 0.001 ms covers about four floating-point ULPs at epoch magnitude.
 const CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS = 0.001;
 const DERIVED_DELTA_ROUNDING_TOLERANCE_MS = 1;
 
@@ -1245,6 +1245,7 @@ function summarizeIssue17Cadence(
       scenarios.every((scenario, index) =>
         scenario.diagnostics.length === scenario.input.length &&
         cadences[index].count === scenario.input.length - 1 &&
+        cadences[index].onTimeGapCount >= 1 &&
         cadences[index].valid,
       ) &&
       gapCount === expectedGapCount &&
@@ -1257,10 +1258,22 @@ function issue17InputsMatchProductionSource(source: string): boolean {
   const bareSyllables = source.match(
     /const BOUNDED_PAGE_SYLLABLES:.*?= &\[([\s\S]*?)\/\/ Multi-syllable inputs:/,
   )?.[1];
-  return bareSyllables !== undefined &&
-    JSON.stringify(Array.from(
-      bareSyllables.matchAll(/"([a-z]+)"/g), (match) => match[1],
-    )) === JSON.stringify(ISSUE17_SWEEP_INPUTS);
+  if (bareSyllables === undefined) {
+    return false;
+  }
+  const inputs: string[] = [];
+  for (const line of bareSyllables.split("\n")) {
+    const content = line.replace(/\/\/.*$/, "").trim();
+    if (content === "") {
+      continue;
+    }
+    const entry = content.match(/^"([a-z]+)",$/);
+    if (entry === null) {
+      return false;
+    }
+    inputs.push(entry[1]);
+  }
+  return JSON.stringify(inputs) === JSON.stringify(ISSUE17_SWEEP_INPUTS);
 }
 
 async function readIssue17ProductionSource(): Promise<string> {
@@ -2271,10 +2284,14 @@ test("cadence scheduler rebases delayed host timers without a catch-up burst", (
 });
 
 test("clock tolerance is uniform for key and action diagnostics at ordinary and epoch magnitudes", () => {
+  const exactBoundary =
+    CROSS_CONTEXT_CLOCK_TOLERANCE_MS + CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS;
   const epochSentAt = 1_791_889_003_401.6;
   const epochStartedAt = 1_791_889_003_399.5999;
   expect(epochSentAt - epochStartedAt).toBe(2.000244140625);
   for (const [sentAt, startedAt, valid] of [
+    [exactBoundary, 0, true],
+    [exactBoundary + 0.000001, 0, false],
     [100, 97.999755859375, true],
     [epochSentAt, epochStartedAt, true],
     [100, 97.99, false],
@@ -2337,6 +2354,18 @@ test("issue #17 cadence allows isolated delays across exactly 108 within-syllabl
   expect(summarizeCadence(isolatedDelay[0].diagnostics, 250, 0).delayedGaps)
     .toEqual([{ afterKeyIndex: 1, gapMs: 370 }]);
 
+  const fullyDelayedInput = samples();
+  fullyDelayedInput[0].diagnostics.forEach((sample, index) => {
+    sample.keydownAt += index * 120;
+  });
+  const fullyDelayedCadence = summarizeIssue17Cadence(fullyDelayedInput);
+  expect(fullyDelayedCadence.onTimeRatio).toBe(106 / 108);
+  expect(fullyDelayedCadence.valid).toBe(false);
+  expect(
+    summarizeCadence(fullyDelayedInput[0].diagnostics, 250, 0)
+      .onTimeGapCount,
+  ).toBe(0);
+
   const excessiveDelays = samples();
   excessiveDelays.slice(0, 11).forEach((scenario) => {
     scenario.diagnostics.slice(1).forEach((sample) => { sample.keydownAt += 120; });
@@ -2354,8 +2383,10 @@ test("issue #17 cadence allows isolated delays across exactly 108 within-syllabl
   }
 });
 
-test("issue #17 input guard detects a production-only syllable change", async () => {
-  const source = await readIssue17ProductionSource();
+test("issue #17 production-input parser ignores Rust line comments and rejects drift", () => {
+  const source = `const BOUNDED_PAGE_SYLLABLES: &[&str] = &[\n${ISSUE17_SWEEP_INPUTS
+    .map((input) => `    "${input}",`)
+    .join("\n")}\n    // Multi-syllable inputs:\n    "jigaa",\n];\n`;
   expect(issue17InputsMatchProductionSource(source)).toBe(true);
   const changed = source.replace(
     /(const BOUNDED_PAGE_SYLLABLES:[\s\S]*?)"jau"/, '$1"jaa"',
@@ -2365,6 +2396,12 @@ test("issue #17 input guard detects a production-only syllable change", async ()
   expect(issue17InputsMatchProductionSource(source.replace(
     "// Multi-syllable inputs:", "// Missing boundary:",
   ))).toBe(false);
+  expect(issue17InputsMatchProductionSource(source.replace(
+    '    "wan",', '    // "wan",',
+  ))).toBe(false);
+  expect(issue17InputsMatchProductionSource(source.replace(
+    '    "wan",', '    "wan", // active entry',
+  ))).toBe(true);
 });
 
 test("issue #17 worker stress accepts only exact timer-resolution zero with a measured calibration", () => {
@@ -3635,7 +3672,7 @@ async function runNormalTypingCanary(
         activeSchema: activeSchemaId === "jyut6ping3",
         userDictionaryEnabled,
       };
-      refreshReceipt("browser-setup", false);
+      refreshReceipt("browser-setup:schema-selection", false);
       await persistReceipt();
       const failedSetup = Object.entries(receipt.checks)
         .filter(([, passed]) => !passed)

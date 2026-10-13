@@ -35,7 +35,7 @@ The original seven-command Rust sequence remains recorded at `89d44076` in the e
 | `cargo test -p yune-rime-api --test yune_web yune_web_adapter_real_assets_learned_multisegment_page_matches_complete_refresh -- --exact` | 1 passed, 0 failed; both new phrases and retained learned `fan` pages match complete refresh |
 | `bash apps/yune-web/public-demo/build-public-release.sh` | Pass with the pinned toolchain and retained npm 11 wrapper; lockfiles unchanged |
 | `node node_modules/@playwright/test/cli.js test --config playwright.latency.config.ts --workers=1 --retries=0 --grep 'normal Jyutping typing stays responsive'` | Expected failure against the old artifact: learned final worker 408 ms, above the unchanged 50 ms limit |
-| `node node_modules/@playwright/test/cli.js test --config playwright.latency.config.ts --workers=1 --retries=0 --grep @issue17-sweep` | Pass: 47/155, aggregate p95 68 ms / max 197 ms; worst syllable p95 197 ms; zero timed page requests |
+| `node node_modules/@playwright/test/cli.js test --config playwright.latency.config.ts --workers=1 --retries=0 --grep @issue17-sweep` | Pass: 47/155, aggregate p95 68 ms; slowest observed key / overall max 197 ms; zero timed page requests |
 | `npm --prefix apps/yune-web/e2e run test:e2e:input-latency:public` | Pass: stress 8/186, p95 122 ms / max 157 ms; normal p95 50 ms / max 55 ms; learned retype p95/max 50/50 ms and final worker 1 ms |
 
 Focused Playwright commands ran in `apps/yune-web/e2e` with the pinned Node binary. The negative preview used port 4197 and `YUNE_WEB_EXPECTED_SOURCE_COMMIT=2653ecc36dbff381e8f8701a7fb099976eb99e67`; the sweep used port 4198 and expected source `97810ddc7e6fea5ab820b4952146bb14c0b048d9`, with `YUNE_WEB_ISSUE17_SWEEP=1`, required toolchain receipt, and the binding 4×/4×, 250 ms, 750/1000 ms profile. Evidence/output directories were fresh and external. The public runner used port 4199 with the opt-in flag unset. No measured result was retried.
@@ -44,7 +44,7 @@ Both old and current artifacts committed 重複學習, restored it after reload,
 
 For native timing, each 60-repeat sequence ran twice in the same seeded user directory. Second-run times were **3.197867458 s** for `cungfukhokzaa{Escape}` × 60 and **3.084229459 s** for `cungfukhokzaap{Escape}` × 60: full-minus-prefix **−0.113637999 s**, below the 0.6 s ceiling. All exits were 0; the userdb stayed byte-identical (`0b4028ddf207839061f5febed93f8e6f5d042a0b462a378752d5aa5ffb6cc35f`). This paired check is not a general speedup claim.
 
-Raw timings, prefixes, page shapes, amplification, cadence, learned-state proof and asset hashes were independently checked. The successful build was reused after correcting an external orchestration script's nonexistent source-binding path; that error occurred before any timing started.
+Raw timings, prefixes, page shapes, amplification, cadence, learned-state proof and asset hashes were independently checked. The successful build was reused after the local evidence wrapper retained outside Git referenced a nonexistent source-binding path. That wrapper error occurred before any timing started and did not change repository source.
 
 ## Hashes
 

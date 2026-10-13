@@ -66,7 +66,7 @@ npm --prefix apps/yune-web/e2e run test:e2e:input-latency:public
 
 | Lane | Result |
 | --- | --- |
-| New opt-in sweep | 47/47 syllables, 155/155 prefix diagnostics; aggregate p95 65 ms, max 185 ms; worst per-syllable p95 185 ms |
+| New opt-in sweep | 47/47 syllables, 155/155 prefix diagnostics; aggregate p95 65 ms; slowest observed key / overall max 185 ms |
 | Sweep profile | Page size 6; 250 ms cadence; 4× main thread and worker amplification; six final candidates for every input; zero timed page requests |
 | Font/stress evidence | All 1,491 declared font faces loaded before typing; 155 positive measured worker ratios; zero timer-resolution-zero samples in the accepted run |
 | Unchanged public stress gate | 8 scenarios / 186 keys; aggregate p95 123 ms, max 159 ms; release/profile/candidate guards passed |
@@ -77,9 +77,9 @@ Percentile/max values, prefixes, page sizes, cadence, amplification, request abs
 
 ## Failure retention and review
 
-The first sweep at `232c11a6` completed 47/155 but was rejected: lazy font requests occurred during typing, cross-context timestamp subtraction exceeded 2 ms by one floating-point unit, and one sub-clock-resolution worker sample lacked a finite amplification ratio. That raw red remains retained. Test-only corrections preload all declared font faces without typing or warming the engine, use a sweep-only 2.001 ms clock tolerance (default public gate stays 2 ms), and explicitly classify exact zero samples while requiring a positive calibration for each syllable. The accepted run used the corrected source; no measured run was retried without a diagnosed correction.
+The first sweep at `232c11a6` completed 47/155 but was rejected: lazy font requests occurred during typing, cross-context timestamp subtraction exceeded 2 ms by one floating-point unit, and one sub-clock-resolution worker sample lacked a finite amplification ratio. That raw red remains retained. At this historical source, the test-only corrections preloaded all declared font faces without typing or warming the engine, used a sweep-only 2.001 ms clock tolerance while the default public gate stayed at 2 ms, and explicitly classified exact zero samples while requiring a positive calibration for each syllable. Later source expresses the same 2.001 ms allowance in every latency lane as a nominal 2 ms tolerance plus 0.001 ms floating-point slack; that later refactor does not change this recorded run. The accepted run used the corrected source; no measured run was retried without a diagnosed correction.
 
-The two focused boundary tests passed: clock tolerance accepted the observed epoch ULP but rejected 2.01 ms, and worker-stress validation accepted only exact timer-resolution zero with a measured calibration. Earlier failure probes demonstrated that a failed atomic receipt replacement preserves the incomplete seed, a changed Cangjie prism is rejected before timing, existing receipt paths cannot be overwritten, worktree evidence paths are rejected, and relaxed ceilings fail preflight. Those probes are source-bound in their retained logs; they were not represented as full browser acceptance runs.
+At this historical source, the two focused boundary tests passed: the 2.001 ms clock allowance accepted the observed epoch rounding difference but rejected 2.01 ms, and worker-stress validation accepted only exact timer-resolution zero with a measured calibration. Earlier failure probes demonstrated that a failed atomic receipt replacement preserves the incomplete seed, a changed Cangjie prism is rejected before timing, existing receipt paths cannot be overwritten, worktree evidence paths are rejected, and relaxed ceilings fail preflight. Those probes are source-bound in their retained logs; they were not represented as full browser acceptance runs.
 
 ## Artifact and receipt hashes
 

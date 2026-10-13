@@ -117,17 +117,26 @@ evidence cannot produce a passing normal-typing receipt.
 Issue #17 has a separate, opt-in Jyutping bounded-page latency sweep. It uses
 the 47 bare syllables in the source-current Rust production-path sweep (155
 timed keys), a fresh browser profile, the six-row `jyut6ping3` page, and the
-same binding 4x/4x, 250 ms, p95 `<= 750 ms`, max `<= 1000 ms` profile. It
+same binding 4x/4x, 250 ms, p95 `<= 750 ms`, max `<= 1000 ms` profile.
+The source guard compares the ordered bare-syllable list with the Rust test
+before measurement and rejects drift. Each syllable has only 3-5 key samples,
+so its empirical p95 equals its maximum; this is a prefix sweep, not a
+repeated-sample estimate of each syllable's latency distribution.
+The v2 receipt applies the 90% cadence ratio across exactly 108 within-syllable
+gaps, allowing isolated host delays while retaining each input's delayed-gap
+evidence. Every input must still have its exact gap count, finite timestamps,
+and no catch-up gap below 200 ms; gaps between inputs are never counted. It
 checks page shape and timing only; candidate order remains blocked on the
 external TypeDuck v1.1.2 capture. The test is skipped unless
-`YUNE_WEB_ISSUE17_SWEEP=1`, so it does not change the default eight-scenario /
-186-key release receipt or WEB-06.
+`YUNE_WEB_ISSUE17_SWEEP=1`. The public runner explicitly disables this opt-in
+even if its parent environment enables it, preserving the eight-scenario /
+186-key release receipt. WEB-06 remains unchanged.
 
 Start a source-current pinned `public-demo/dist` preview in one terminal, then
 run the focused lane with a new external evidence directory:
 
 ```bash
-npm --prefix apps/yune-web run preview -- --port 4173 --strictPort --outDir public-demo/dist
+npm --prefix apps/yune-web run preview -- --host 127.0.0.1 --port 4173 --strictPort --outDir public-demo/dist
 ```
 
 ```bash
@@ -144,7 +153,10 @@ npm --prefix apps/yune-web/e2e run test:e2e:input-latency -- \
 The test derives and records the tree for the expected commit from the clean
 local checkout, verifies the served artifact manifest and pinned toolchain,
 and exclusively creates `issue17-bounded-page-latency.json`. It refuses a path
-inside any Git worktree and refuses to overwrite an existing receipt. For this
+inside a Git worktree and refuses to overwrite an existing receipt. Use a
+canonical absolute external path: the shared path checker requires Python 3 on
+`PATH` and has a known case-alias limitation tracked in
+[#26](https://github.com/CanCLID/yune/issues/26). For this
 opt-in lane, every browser page request is recorded, and any request beginning
 during a timed input fails that input. The receipt starts incomplete before
 browser setup and retains partial diagnostics and named failures if setup or
@@ -152,10 +164,14 @@ measurement stops.
 
 Before typing, this lane loads every declared font face and records its identity
 and final load status, so new candidate glyphs cannot trigger timed font fetches.
+This measures warmed font state and requires network access for external fonts;
+their URLs and statuses are recorded, but their bytes are not in the local
+artifact hash inventory.
 It records exact zero-duration worker samples as `timer-resolution-zero`, without
 inventing an effective multiplier, and requires a positive measured amplification
-sample for every syllable. Its cross-context clock tolerance is 2.001 ms to cover
-epoch timestamp rounding; the default public gate retains its 2 ms tolerance.
+sample for every syllable. All latency lanes and the independent public runner
+use a nominal 2 ms cross-context clock tolerance plus 0.001 ms floating-point
+rounding slack; a 2.01 ms reversal still fails.
 
 The Playwright file remains declaration-ordered with one worker and zero
 retries, but its normal and stress tests have independent failure semantics. A red

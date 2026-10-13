@@ -555,12 +555,13 @@ interface Issue17FontPreflightEvidence {
 }
 
 interface Issue17SweepEvidence {
-  version: "issue17-bounded-page-latency-v1";
+  version: "issue17-bounded-page-latency-v2";
   generatedAt: string;
   url: string | null;
   measurementCompleted: boolean;
   passed: boolean;
   failurePhase: string;
+  expectedSourceCommit: string | null;
   source: {
     commit: string | null;
     tree: string | null;
@@ -579,6 +580,7 @@ interface Issue17SweepEvidence {
     mainThreadThrottle: number;
     workerActionMultiplier: number;
     crossContextClockToleranceMs: number;
+    crossContextClockRoundingSlackMs: number;
     ceilingsMs: { p95: number; max: number };
   };
   fontPreflight: Issue17FontPreflightEvidence;
@@ -596,6 +598,7 @@ interface Issue17SweepEvidence {
     completedInputCount: number;
     diagnosticCount: number;
     summary: LatencySummary;
+    cadence: ReturnType<typeof summarizeIssue17Cadence>;
   };
   scenarios: Issue17SweepScenarioEvidence[];
   startupAssetRequests: AssetRequest[];
@@ -830,7 +833,8 @@ function percentile(values: number[], proportion: number): number | null {
 }
 
 const CROSS_CONTEXT_CLOCK_TOLERANCE_MS = 2;
-const ISSUE17_CROSS_CONTEXT_CLOCK_TOLERANCE_MS = 2.001;
+// Epoch timestamps can differ by one floating-point ULP (about 0.000244 ms).
+const CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS = 0.001;
 const DERIVED_DELTA_ROUNDING_TOLERANCE_MS = 1;
 
 function roundedRawDelta(start: number, end: number): number {
@@ -869,23 +873,18 @@ function rawTimingSamples(diagnostics: PerfDiagnostic[]) {
   };
 }
 
-function rawTimelineIsValid(
-  rawTimeline: number[],
-  crossContextClockToleranceMs = CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
-): boolean {
+function rawTimelineIsValid(rawTimeline: number[]): boolean {
   return (
     rawTimeline.every((value) => Number.isFinite(value) && value >= 0) &&
     !rawTimeline.slice(1).some(
       (value, index) =>
-        value + crossContextClockToleranceMs < rawTimeline[index],
+        rawTimeline[index] - value >
+        CROSS_CONTEXT_CLOCK_TOLERANCE_MS + CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS,
     )
   );
 }
 
-function diagnosticTimingIsValid(
-  diagnostic: PerfDiagnostic,
-  crossContextClockToleranceMs = CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
-): boolean {
+function diagnosticTimingIsValid(diagnostic: PerfDiagnostic): boolean {
   const rawTimeline = [
     diagnostic.keydownAt,
     diagnostic.workerQueuedAt,
@@ -898,7 +897,7 @@ function diagnosticTimingIsValid(
     diagnostic.stateAppliedAt,
     diagnostic.paintObservedAt,
   ];
-  if (!rawTimelineIsValid(rawTimeline, crossContextClockToleranceMs)) {
+  if (!rawTimelineIsValid(rawTimeline)) {
     return false;
   }
   const derived: Array<[number | undefined, number]> = [
@@ -968,17 +967,7 @@ function actionTimingIsValid(diagnostic: ActionDiagnostic): boolean {
     diagnostic.workerFinishedAt,
     diagnostic.receivedAt,
   ];
-  if (
-    !rawTimeline.every(
-      (value) => Number.isFinite(value) && (value ?? -1) >= 0,
-    ) ||
-    rawTimeline.slice(1).some(
-      (value, index) =>
-        (value ?? Number.NEGATIVE_INFINITY) +
-          CROSS_CONTEXT_CLOCK_TOLERANCE_MS <
-        (rawTimeline[index] ?? Number.POSITIVE_INFINITY),
-    )
-  ) {
+  if (!rawTimelineIsValid(rawTimeline.map((value) => value ?? Number.NaN))) {
     return false;
   }
   const enqueuedAt = diagnostic.enqueuedAt ?? Number.NaN;
@@ -1167,6 +1156,7 @@ function summarize(diagnostics: PerfDiagnostic[]): LatencySummary {
 function summarizeCadence(
   diagnostics: PerfDiagnostic[],
   expectedIntervalMs = KEY_INTERVAL_MS,
+  minimumOnTimeRatio = CADENCE_MIN_ON_TIME_RATIO,
 ): CadenceEvidence {
   const acceptedMinMs = expectedIntervalMs * 0.8;
   const acceptedMaxMs = expectedIntervalMs * 1.25;
@@ -1212,13 +1202,73 @@ function summarizeCadence(
     delayedGaps,
     onTimeGapCount,
     onTimeRatio,
-    minimumOnTimeRatio: CADENCE_MIN_ON_TIME_RATIO,
+    minimumOnTimeRatio,
     valid:
       gaps.length === Math.max(0, diagnostics.length - 1) &&
       finiteGaps.length === gaps.length &&
       invalidGaps.length === 0 &&
+      onTimeRatio >= minimumOnTimeRatio,
+  };
+}
+
+// Each short syllable has only 2-4 gaps. Apply the 90% load requirement to
+// all 108 within-syllable gaps, never to gaps between separate inputs.
+function summarizeIssue17Cadence(
+  scenarios: Array<Pick<Issue17SweepScenarioEvidence, "input" | "diagnostics">>,
+) {
+  const cadences = scenarios.map((scenario) =>
+    summarizeCadence(scenario.diagnostics, RELEASE_KEY_INTERVAL_MS, 0),
+  );
+  const expectedGapCount =
+    ISSUE17_SWEEP_EXPECTED_KEY_COUNT - ISSUE17_SWEEP_EXPECTED_INPUT_COUNT;
+  const gapCount = cadences.reduce((sum, cadence) => sum + cadence.count, 0);
+  const invalidGapCount = cadences.reduce(
+    (sum, cadence) => sum + cadence.invalidGaps.length, 0,
+  );
+  const onTimeGapCount = cadences.reduce(
+    (sum, cadence) => sum + cadence.onTimeGapCount, 0,
+  );
+  const onTimeRatio = gapCount === 0 ? 0 : onTimeGapCount / gapCount;
+  return {
+    expectedGapCount,
+    gapCount,
+    invalidGapCount,
+    delayedGapCount: cadences.reduce(
+      (sum, cadence) => sum + cadence.delayedGaps.length, 0,
+    ),
+    onTimeGapCount,
+    onTimeRatio,
+    minimumOnTimeRatio: CADENCE_MIN_ON_TIME_RATIO,
+    valid:
+      JSON.stringify(scenarios.map((scenario) => scenario.input)) ===
+        JSON.stringify(ISSUE17_SWEEP_INPUTS) &&
+      scenarios.every((scenario, index) =>
+        scenario.diagnostics.length === scenario.input.length &&
+        cadences[index].count === scenario.input.length - 1 &&
+        cadences[index].valid,
+      ) &&
+      gapCount === expectedGapCount &&
+      invalidGapCount === 0 &&
       onTimeRatio >= CADENCE_MIN_ON_TIME_RATIO,
   };
+}
+
+function issue17InputsMatchProductionSource(source: string): boolean {
+  const bareSyllables = source.match(
+    /const BOUNDED_PAGE_SYLLABLES:.*?= &\[([\s\S]*?)\/\/ Multi-syllable inputs:/,
+  )?.[1];
+  return bareSyllables !== undefined &&
+    JSON.stringify(Array.from(
+      bareSyllables.matchAll(/"([a-z]+)"/g), (match) => match[1],
+    )) === JSON.stringify(ISSUE17_SWEEP_INPUTS);
+}
+
+async function readIssue17ProductionSource(): Promise<string> {
+  const { readFile } = await import("node:fs/promises");
+  return readFile(
+    `${await issue17RepositoryRoot()}/crates/yune-rime-api/tests/yune_web.rs`,
+    "utf8",
+  );
 }
 
 function learnedRetypeSeed(
@@ -1817,22 +1867,7 @@ async function measureIssue17SweepInput(
         timeout: DIAGNOSTIC_TIMEOUT_MS,
       })
       .toBe(inputText.length);
-    diagnostics = (await readPerfDiagnostics(page)).map((diagnostic) => {
-      const baseMs = diagnostic.workerBaseElapsedMs;
-      const amplificationMs = diagnostic.workerAmplificationMs;
-      const enrichedDiagnostic: PerfDiagnostic = {
-        ...diagnostic,
-        workerEffectiveMultiplier:
-          baseMs !== undefined && baseMs > 0 && amplificationMs !== undefined
-            ? (baseMs + amplificationMs) / baseMs
-            : undefined,
-      };
-      return {
-        ...enrichedDiagnostic,
-        workerStressClassification:
-          evaluateIssue17WorkerStress(enrichedDiagnostic).classification,
-      };
-    });
+    diagnostics = await readPerfDiagnostics(page);
     finalVisibleCandidateOrder = await readVisibleCandidateRows(page);
     measurementCompleted = true;
   } catch (error) {
@@ -1846,12 +1881,29 @@ async function measureIssue17SweepInput(
     );
   }
 
+  diagnostics = diagnostics.map((diagnostic) => {
+    const baseMs = diagnostic.workerBaseElapsedMs;
+    const amplificationMs = diagnostic.workerAmplificationMs;
+    const enrichedDiagnostic = {
+      ...diagnostic,
+      workerEffectiveMultiplier:
+        baseMs !== undefined && baseMs > 0 && amplificationMs !== undefined
+          ? (baseMs + amplificationMs) / baseMs
+          : undefined,
+    };
+    return {
+      ...enrichedDiagnostic,
+      workerStressClassification:
+        evaluateIssue17WorkerStress(enrichedDiagnostic).classification,
+    };
+  });
+
   const expectedPrefixes = Array.from(
     { length: inputText.length },
     (_, index) => inputText.slice(0, index + 1),
   );
   const summary = summarize(diagnostics);
-  const cadence = summarizeCadence(diagnostics);
+  const cadence = summarizeCadence(diagnostics, KEY_INTERVAL_MS, 0);
   const workerStressEvaluations = diagnostics.map(
     evaluateIssue17WorkerStress,
   );
@@ -1909,10 +1961,7 @@ async function measureIssue17SweepInput(
       diagnostics.length === inputText.length &&
       diagnostics.every(
         (diagnostic, index) =>
-          diagnosticTimingIsValid(
-            diagnostic,
-            ISSUE17_CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
-          ) &&
+          diagnosticTimingIsValid(diagnostic) &&
           (index === 0 ||
             diagnostic.renderRevision > diagnostics[index - 1].renderRevision),
       ),
@@ -2221,23 +2270,101 @@ test("cadence scheduler rebases delayed host timers without a catch-up burst", (
   expect(insufficientLoad.valid).toBe(false);
 });
 
-test("issue #17 clock tolerance accepts the observed epoch ULP but rejects 2.01 ms", () => {
-  const workerSentAt = 1_791_889_003_401.6;
-  const workerStartedAt = 1_791_889_003_399.5999;
-  expect(workerSentAt - workerStartedAt).toBe(2.000244140625);
-  expect(rawTimelineIsValid([workerSentAt, workerStartedAt])).toBe(false);
-  expect(
-    rawTimelineIsValid(
-      [workerSentAt, workerStartedAt],
-      ISSUE17_CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
-    ),
-  ).toBe(true);
-  expect(
-    rawTimelineIsValid(
-      [10, 7.99],
-      ISSUE17_CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
-    ),
-  ).toBe(false);
+test("clock tolerance is uniform for key and action diagnostics at ordinary and epoch magnitudes", () => {
+  const epochSentAt = 1_791_889_003_401.6;
+  const epochStartedAt = 1_791_889_003_399.5999;
+  expect(epochSentAt - epochStartedAt).toBe(2.000244140625);
+  for (const [sentAt, startedAt, valid] of [
+    [100, 97.999755859375, true],
+    [epochSentAt, epochStartedAt, true],
+    [100, 97.99, false],
+    [epochSentAt, epochSentAt - 2.01, false],
+  ] as const) {
+    const action: ActionDiagnostic = {
+      action: "process_key",
+      enqueuedAt: sentAt - 1,
+      sentAt,
+      workerStartedAt: startedAt,
+      workerFinishedAt: startedAt + 4,
+      receivedAt: sentAt + 5,
+      queueWaitMs: 1,
+      workerRoundtripMs: 5,
+      workerMs: 4,
+      workerBaseElapsedMs: 4,
+      workerAmplificationMs: 0,
+      totalMs: 6,
+    };
+    const diagnostic: PerfDiagnostic = {
+      input: "a", renderedInput: "a", renderRevision: 1,
+      keydownAt: sentAt - 2,
+      workerQueuedAt: sentAt - 1,
+      workerSentAt: sentAt,
+      workerStartedAt: startedAt,
+      workerFinishedAt: startedAt + 4,
+      responseReceivedAt: sentAt + 5,
+      responseMappingStartedAt: sentAt + 5,
+      responseMappingFinishedAt: sentAt + 6,
+      stateAppliedAt: sentAt + 7,
+      paintObservedAt: sentAt + 8,
+      candidateCount: 6, totalCandidateCount: 6,
+      workerQueueWaitMs: 1, workerProcessMs: 4, workerRoundtripMs: 5,
+      workerBaseElapsedMs: 4, workerAmplificationMs: 0,
+      responseMappingMs: 1, reactUpdateMs: 1, paintProxyMs: 1,
+      totalWorkerActionMs: 6, totalKeydownToPaintMs: 10,
+    };
+    expect(rawTimelineIsValid([sentAt, startedAt])).toBe(valid);
+    expect(actionTimingIsValid(action)).toBe(valid);
+    expect(diagnosticTimingIsValid(diagnostic)).toBe(valid);
+  }
+});
+
+test("issue #17 cadence allows isolated delays across exactly 108 within-syllable gaps", () => {
+  const samples = () => ISSUE17_SWEEP_INPUTS.map((input, inputIndex) => ({
+    input,
+    diagnostics: Array.from({ length: input.length }, (_, index) => ({
+      keydownAt: inputIndex * 10_000 + index * 250,
+    }) as PerfDiagnostic),
+  }));
+  const isolatedDelay = samples();
+  isolatedDelay[0].diagnostics.slice(1).forEach((sample) => {
+    sample.keydownAt += 120;
+  });
+  const cadence = summarizeIssue17Cadence(isolatedDelay);
+  expect(cadence.gapCount).toBe(108);
+  expect(cadence.delayedGapCount).toBe(1);
+  expect(cadence.onTimeRatio).toBe(107 / 108);
+  expect(cadence.valid).toBe(true);
+  expect(summarizeCadence(isolatedDelay[0].diagnostics, 250, 0).delayedGaps)
+    .toEqual([{ afterKeyIndex: 1, gapMs: 370 }]);
+
+  const excessiveDelays = samples();
+  excessiveDelays.slice(0, 11).forEach((scenario) => {
+    scenario.diagnostics.slice(1).forEach((sample) => { sample.keydownAt += 120; });
+  });
+  expect(summarizeIssue17Cadence(excessiveDelays).valid).toBe(false);
+  for (const mutate of [
+    (rows: PerfDiagnostic[]) => { rows[1].keydownAt = rows[0].keydownAt + 199; },
+    (rows: PerfDiagnostic[]) => { rows[1].keydownAt = Number.NaN; },
+    (rows: PerfDiagnostic[]) => { rows.pop(); },
+    (rows: PerfDiagnostic[]) => { rows.push({ keydownAt: 750 } as PerfDiagnostic); },
+  ]) {
+    const malformed = samples();
+    mutate(malformed[0].diagnostics);
+    expect(summarizeIssue17Cadence(malformed).valid).toBe(false);
+  }
+});
+
+test("issue #17 input guard detects a production-only syllable change", async () => {
+  const source = await readIssue17ProductionSource();
+  expect(issue17InputsMatchProductionSource(source)).toBe(true);
+  const changed = source.replace(
+    /(const BOUNDED_PAGE_SYLLABLES:[\s\S]*?)"jau"/, '$1"jaa"',
+  );
+  expect(changed).not.toBe(source);
+  expect(issue17InputsMatchProductionSource(changed)).toBe(false);
+  expect(issue17InputsMatchProductionSource(source.replace(
+    "// Multi-syllable inputs:", "// Missing boundary:",
+  ))).toBe(false);
 });
 
 test("issue #17 worker stress accepts only exact timer-resolution zero with a measured calibration", () => {
@@ -2565,6 +2692,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
       },
       timings: {
         crossContextClockToleranceMs: CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+        crossContextClockRoundingSlackMs: CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS,
         derivedDeltaRoundingToleranceMs:
           DERIVED_DELTA_ROUNDING_TOLERANCE_MS,
         valid: timingProfileValid,
@@ -3212,14 +3340,9 @@ async function runNormalTypingCanary(
   }
 }
 
-test(
+(ISSUE17_SWEEP_ENABLED ? test : test.skip)(
   "issue #17 bounded-page syllable sweep stays within the browser latency ceiling @issue17-sweep",
   async ({ page }, testInfo) => {
-    test.skip(
-      !ISSUE17_SWEEP_ENABLED,
-      "set YUNE_WEB_ISSUE17_SWEEP=1 to run the issue #17 evidence lane",
-    );
-
     const { createHash } = await import("node:crypto");
     const serializedInputs = JSON.stringify(ISSUE17_SWEEP_INPUTS);
     const inputKeyCount = ISSUE17_SWEEP_INPUTS.reduce(
@@ -3232,14 +3355,15 @@ test(
     const scenarios: Issue17SweepScenarioEvidence[] = [];
     let pageSession: CDPSession | null = null;
     let receipt: Issue17SweepEvidence = {
-      version: "issue17-bounded-page-latency-v1",
+      version: "issue17-bounded-page-latency-v2",
       generatedAt: new Date().toISOString(),
       url: null,
       measurementCompleted: false,
       passed: false,
       failurePhase: "setup-not-started",
+      expectedSourceCommit: EXPECTED_SOURCE_COMMIT ?? null,
       source: {
-        commit: EXPECTED_SOURCE_COMMIT ?? null,
+        commit: null,
         tree: null,
         treeState: null,
         publicArtifactManifestSha256: null,
@@ -3255,8 +3379,8 @@ test(
         keyIntervalMs: KEY_INTERVAL_MS,
         mainThreadThrottle: CPU_THROTTLE_RATE,
         workerActionMultiplier: WORKER_ACTION_MULTIPLIER,
-        crossContextClockToleranceMs:
-          ISSUE17_CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+        crossContextClockToleranceMs: CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+        crossContextClockRoundingSlackMs: CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS,
         ceilingsMs: {
           p95: P95_CEILING_MS,
           max: MAX_CEILING_MS,
@@ -3287,6 +3411,7 @@ test(
         completedInputCount: 0,
         diagnosticCount: 0,
         summary: summarize([]),
+        cadence: summarizeIssue17Cadence([]),
       },
       scenarios,
       startupAssetRequests,
@@ -3327,6 +3452,7 @@ test(
           ).length,
           diagnosticCount: diagnostics.length,
           summary: summarize(diagnostics),
+          cadence: summarizeIssue17Cadence(scenarios),
         },
         scenarios,
         startupAssetRequests,
@@ -3361,6 +3487,9 @@ test(
           ISSUE17_SWEEP_INPUTS.length ===
           ISSUE17_SWEEP_EXPECTED_INPUT_COUNT,
         exactKeyCount: inputKeyCount === ISSUE17_SWEEP_EXPECTED_KEY_COUNT,
+        productionInputList: issue17InputsMatchProductionSource(
+          await readIssue17ProductionSource(),
+        ),
         uniqueInputs:
           new Set(ISSUE17_SWEEP_INPUTS).size === ISSUE17_SWEEP_INPUTS.length,
         loopbackPreview: IS_LOOPBACK_PREVIEW,
@@ -3464,6 +3593,7 @@ test(
           mainThread.requestedRate === RELEASE_CPU_THROTTLE_RATE,
       };
 
+      receipt.failurePhase = "browser-setup:font-preflight";
       receipt.fontPreflight = await preloadIssue17DeclaredFonts(
         page,
         postReadyAssetRequests,
@@ -3486,6 +3616,7 @@ test(
         );
       }
 
+      receipt.failurePhase = "browser-setup:schema-selection";
       const schemaSelectionStart = postReadyAssetRequests.length;
       await selectSchema(page, "jyut6ping3");
       schemaSelectionRequests = postReadyAssetRequests.slice(
@@ -3551,6 +3682,7 @@ test(
             (total, scenario) => total + scenario.diagnosticCount,
             0,
           ) === ISSUE17_SWEEP_EXPECTED_KEY_COUNT,
+        aggregateCadence: summarizeIssue17Cadence(scenarios).valid,
         aggregateP95:
           aggregateSummary.p95Ms !== null &&
           aggregateSummary.p95Ms <= RELEASE_P95_CEILING_MS,

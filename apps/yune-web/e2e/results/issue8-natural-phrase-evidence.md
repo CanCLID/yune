@@ -1,6 +1,8 @@
 # Natural learned-phrase verification — 2026-10-13
 
-This follow-up uses user-confirmed Cantonese phrases for the #8/#9 regression examples. The [earlier local verification](issue8-local-evidence.md) retains its original inputs and measurements. Issues #8 and #17 remain open for the TypeDuck oracle captures and Windows ratchet; WEB-06 remains deferred.
+This follow-up records the user-confirmed Cantonese phrases for the #8/#9 regression examples at source `97810ddc7e6fea5ab820b4952146bb14c0b048d9`. It supersedes the learned inputs and corresponding measurements in the [earlier local verification](issue8-local-evidence.md), which remains as a historical record. These results do not verify later PR revisions. Issues #8 and #17 remain open for the TypeDuck oracle captures and Windows ratchet; WEB-06 remains deferred.
+
+This is a narrative summary, not an oracle fixture or an input consumed by tests. Its raw packet is retained locally outside Git and is not published with this document. The hashes below identify the retained files; independent inspection of the raw measurements requires access to those files or a new source-bound run.
 
 ## Cases and scope
 
@@ -20,7 +22,7 @@ No engine, schema, ABI/export, or oracle fixture changed. The public registry, e
 - Negative-control artifact: `2653ecc36dbff381e8f8701a7fb099976eb99e67`, the retained #9 artifact containing the earlier faulty engine. The current test drives that artifact; its source is recorded separately from the artifact source.
 - Native CLI production source: `09195a983363153a03aa3c7f97f26a8b4f49b776`. Core, API source, CLI, Cargo configuration, scripts, runtime, app and schema objects were independently confirmed identical to the positive source. Only tests and documentation changed.
 - Raw packet outside Git: `issue8-natural-phrases/20261013T132900Z`. It contains native and CLI probes, exact commands, negative/positive raw diagnostics, source bindings, logs, toolchain identities and the archived public artifact. Earlier packets remain intact.
-- Toolchain: Emscripten 4.0.23, Rust 1.96.1, Node 22.16.0, npm 11.16.0; Playwright 1.61.0 / Chromium 149.0.7827.55 on macOS 26.6.2 arm64.
+- Toolchain: Emscripten 4.0.23, Rust 1.96.1, Node 22.16.0, npm 11.16.0; Playwright 1.61.0 / Chromium 149.0.7827.55 on macOS 26.6.2 arm64. The sweep JSON records the build toolchain; the separate, locally retained `browser-tooling.json` records the browser version and executable SHA-256 (`11e393326c7d20a7c56641a7c65def33ea9c280da3b0b74cf8563b07989a0ee3`).
 
 ## Verification
 
@@ -42,7 +44,7 @@ Both old and current artifacts committed 重複學習, restored it after reload,
 
 For native timing, each 60-repeat sequence ran twice in the same seeded user directory. Second-run times were **3.197867458 s** for `cungfukhokzaa{Escape}` × 60 and **3.084229459 s** for `cungfukhokzaap{Escape}` × 60: full-minus-prefix **−0.113637999 s**, below the 0.6 s ceiling. All exits were 0; the userdb stayed byte-identical (`0b4028ddf207839061f5febed93f8e6f5d042a0b462a378752d5aa5ffb6cc35f`). This paired check is not a general speedup claim.
 
-Requirement compliance and code-quality reviews passed. Raw timings, prefixes, page shapes, amplification, cadence, learned-state proof and asset hashes were independently checked. The successful build was reused after correcting an external orchestration script's nonexistent source-binding path; that error occurred before any timing started.
+Raw timings, prefixes, page shapes, amplification, cadence, learned-state proof and asset hashes were independently checked. The successful build was reused after correcting an external orchestration script's nonexistent source-binding path; that error occurred before any timing started.
 
 ## Hashes
 
@@ -56,5 +58,6 @@ Requirement compliance and code-quality reviews passed. Raw timings, prefixes, p
 | Positive normal/learned receipt | `4dfef7d6447de53c391b1bc5a1075e9a5e16ec5911d54584d0722531742fab83` |
 | Positive stress receipt | `22685b4986d24cd96eef08727b71f0b2b51f54113825576349313d240f7b08ba` |
 | Syllable sweep receipt | `6656767187bf83f974598957fcf1cbf55261d972f8fcb75e042c22bf2ddacc09` |
+| Separate browser/toolchain metadata | `6a5d92a4bc22ca2a042ab4a5d20a58f19e812873dbdc43c3ddd62aa068f2f4ca` |
 
 Still pending: TypeDuck v1.1.2 page-size-6 oracle captures and production-path comparisons for the nine affected syllables; the source-bound Windows ratchet with five complete runs and all 32 aggregate checks passing. The ignored oracle test remains blocked. No production deployment was performed.

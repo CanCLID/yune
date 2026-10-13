@@ -1,13 +1,15 @@
-# Issue #8 / #17 local verification — 2026-10-13
+# Historical issue #8 / #17 local verification — 2026-10-13
 
-The local verification passed. Issues #8 and #17 remain open for the TypeDuck reference captures and the source-bound Windows ratchet. This receipt records a local macOS browser build; no production deployment or WEB-06 work was performed.
+This records the original local verification at the sources below. The [natural learned-phrase verification](issue8-natural-phrase-evidence.md) supersedes its learned inputs and corresponding measurements; the `sikgaanei` and `ngohaihoenggongjan` results here are historical. These results do not verify later PR revisions. Issues #8 and #17 remain open for the TypeDuck reference captures and the source-bound Windows ratchet. No production deployment or WEB-06 work was performed.
+
+This is a narrative summary, not an oracle fixture or an input consumed by tests. Its raw packets are retained locally outside Git and are not published with this document. The hashes below identify those packets' files; independent inspection of the raw measurements requires access to those files or a new source-bound run.
 
 ## Source and evidence identity
 
 - Base/native executable source: `09195a983363153a03aa3c7f97f26a8b4f49b776` (merged #21 / #9).
 - Rust gate source: `89d440765de1efaf7b6e6eae098f0e4736b4032e`, tree `390ff30929f85f22eca5606661d30f6515419516`, clean throughout all seven commands.
-- Final browser source: `3a71792900b7e4c6d798286101a8b98843aabd06`, tree `224004ce6c6c026864e911c50fecabe59089e2ec`, clean at build and measurement.
-- The `crates`, `scripts`, `Cargo.toml`, `Cargo.lock`, runtime package, app source, schema assets, and public latency runner Git objects are identical across these three sources. Only the browser spec and its instructions changed after the Rust run; this receipt is a subsequent documentation-only addition.
+- Browser source for this historical run: `3a71792900b7e4c6d798286101a8b98843aabd06`, tree `224004ce6c6c026864e911c50fecabe59089e2ec`, clean at build and measurement.
+- The `crates`, `scripts`, `Cargo.toml`, `Cargo.lock`, runtime package, app source, schema assets, and public latency runner Git objects were identical across these three sources. Only the browser spec and its instructions changed between the Rust and browser runs. The later natural-phrase change modified the ABI test and public runner, as recorded in the follow-up.
 - Raw evidence is retained outside Git: packet `issue8-local-evidence/20261013T080035Z`, final browser attempt `attempt-2`; native packet `issue8-native-retype/20261013T080104Z`. The external packets include commands, logs, raw per-key diagnostics, failed attempts, toolchain metadata, source binding, and the archived public artifact.
 - Input identity: the 47 bare entries of Rust `BOUNDED_PAGE_SYLLABLES`, in order, 155 keystrokes. JSON UTF-8 SHA-256: `c928cace8b2103fe8c2f18bc2ca2dc1ae4190703e74585c09605bf45da0b0233`.
 
@@ -27,7 +29,7 @@ These commands ran once as the requested sequence. The workspace and explicit AB
 
 ## Native learned retype
 
-The release CLI used real `jyut6ping3_mobile` assets and one learned `sik6gaa3 nei5` / 食價你 row. Each sequence ran twice in the same user directory; the second run was measured, with 60 repeats per sequence. The independent parent-agent measurement was:
+The release CLI used real `jyut6ping3_mobile` assets and one learned `sik6gaa3 nei5` / 食價你 row. Each sequence ran twice in the same user directory; the second run was measured, with 60 repeats per sequence:
 
 | Sequence | Time |
 | --- | ---: |
@@ -41,7 +43,7 @@ Both commands exited 0. The userdb stayed byte-identical: SHA-256 `a7f3dc03aacef
 
 The pinned `bash apps/yune-web/public-demo/build-public-release.sh` succeeded with Emscripten 4.0.23, Rust 1.96.1, Node 22.16.0, and npm 11.16.0. The first npm 10.9.2 attempt failed frozen-lock validation on an existing optional Vite/esbuild peer. The npm 11 recovery kept all lockfiles unchanged; its exact package inventory and wrapper are retained externally. No dependency or application source was changed.
 
-Chromium headless shell 149.0.7827.55 / Playwright 1.61.0 ran on macOS 26.6.2 arm64. The receipt pins the SDK repository/release, compiler, Node, browser executable hash, and full served inventory. All 74 public artifact files were byte-verified before the sweep and independently rehashed afterward.
+Chromium headless shell 149.0.7827.55 / Playwright 1.61.0 ran on macOS 26.6.2 arm64. The sweep JSON records the SDK repository/release, compiler, Node, and served artifact identity; it has no browser identity field. The separate, locally retained `attempt-2/browser-tooling.json` records the browser version and executable SHA-256 (`11e393326c7d20a7c56641a7c65def33ea9c280da3b0b74cf8563b07989a0ee3`). All 74 public artifact files were byte-verified before the sweep and independently rehashed afterward.
 
 With the clean source commit above and a preview at `http://127.0.0.1:4198/`, the focused command was:
 
@@ -71,13 +73,13 @@ npm --prefix apps/yune-web/e2e run test:e2e:input-latency:public
 | Exact normal input | p95 50 ms, max 50 ms |
 | Learned `sikgaanei` retype | p95 49 ms, max 49 ms; final action worker **1 ms <50 ms** |
 
-The parent independently recomputed percentile/max values, prefixes, page sizes, cadence, amplification, request absence and artifact hashes from raw receipts. The existing scenario registry and runner remain unchanged. This sweep measures page shape and timing; the Rust comparisons prove bounded/complete self-consistency. Neither substitutes for external TypeDuck candidate-order captures.
+Percentile/max values, prefixes, page sizes, cadence, amplification, request absence and artifact hashes were recomputed from the raw receipts. The scenario registry and runner were unchanged through this run's `3a717929` source; the later follow-up changed the learned-retype input and its validator while retaining the eight stress scenarios. This sweep measures page shape and timing; the Rust comparisons prove bounded/complete self-consistency. Neither substitutes for external TypeDuck candidate-order captures.
 
 ## Failure retention and review
 
 The first sweep at `232c11a6` completed 47/155 but was rejected: lazy font requests occurred during typing, cross-context timestamp subtraction exceeded 2 ms by one floating-point unit, and one sub-clock-resolution worker sample lacked a finite amplification ratio. That raw red remains retained. Test-only corrections preload all declared font faces without typing or warming the engine, use a sweep-only 2.001 ms clock tolerance (default public gate stays 2 ms), and explicitly classify exact zero samples while requiring a positive calibration for each syllable. The accepted run used the corrected source; no measured run was retried without a diagnosed correction.
 
-Two focused boundary tests passed independently in the parent and both review agents. Separate requirement-compliance and code-quality/evidence reviews found no actionable issues. Earlier failure probes demonstrated that a failed atomic receipt replacement preserves the incomplete seed, a changed Cangjie prism is rejected before timing, existing receipt paths cannot be overwritten, worktree evidence paths are rejected, and relaxed ceilings fail preflight. Those probes are source-bound in their retained logs; they were not represented as full browser acceptance runs.
+The two focused boundary tests passed: clock tolerance accepted the observed epoch ULP but rejected 2.01 ms, and worker-stress validation accepted only exact timer-resolution zero with a measured calibration. Earlier failure probes demonstrated that a failed atomic receipt replacement preserves the incomplete seed, a changed Cangjie prism is rejected before timing, existing receipt paths cannot be overwritten, worktree evidence paths are rejected, and relaxed ceilings fail preflight. Those probes are source-bound in their retained logs; they were not represented as full browser acceptance runs.
 
 ## Artifact and receipt hashes
 
@@ -90,6 +92,7 @@ Two focused boundary tests passed independently in the parent and both review ag
 | Issue #17 raw sweep | `076dd16804791879c40359eb6241bea18c1164ed6a4cc5e52cfd2db0672fb47b` |
 | Public stress receipt | `e64261b4831b2df1bf1b41d89ef2839e0bad7b874f8562bd38da2b3c13301e0c` |
 | Normal/learned-retype receipt | `64dead785ef5fd0baad6c2de170a81d3d395e5dea8d8cfdaa9847a97b57b756b` |
+| Separate browser/toolchain metadata | `6a5d92a4bc22ca2a042ab4a5d20a58f19e812873dbdc43c3ddd62aa068f2f4ca` |
 
 ## Still pending
 

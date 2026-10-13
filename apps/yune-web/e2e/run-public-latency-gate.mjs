@@ -555,6 +555,7 @@ async function runLatencyGate() {
         cwd: e2eRoot,
         env: {
           ...process.env,
+          YUNE_WEB_ISSUE17_SWEEP: "0",
           YUNE_WEB_APP_URL: appUrl,
           YUNE_WEB_EXPECTED_SOURCE_COMMIT: currentHead,
           YUNE_WEB_LATENCY_OUTPUT_DIR: playwrightOutputDir,
@@ -596,6 +597,8 @@ function percentile(values, proportion) {
 }
 
 const crossContextClockToleranceMs = 2;
+// Match the spec: one epoch timestamp ULP must not fail the nominal 2 ms bound.
+const crossContextClockRoundingSlackMs = 0.001;
 const derivedDeltaRoundingToleranceMs = 1;
 
 function roundedRawDelta(start, end) {
@@ -676,7 +679,8 @@ function diagnosticTimingViolations(diagnostic, label) {
     if (
       Number.isFinite(previous) &&
       Number.isFinite(value) &&
-      value + crossContextClockToleranceMs < previous
+      previous - value >
+        crossContextClockToleranceMs + crossContextClockRoundingSlackMs
     ) {
       violations.push(
         `${label} raw timeline is not monotonic at ${previousField}->${field}`,
@@ -781,7 +785,8 @@ function actionTimingViolations(diagnostic, label) {
     if (
       Number.isFinite(previous) &&
       Number.isFinite(value) &&
-      value + crossContextClockToleranceMs < previous
+      previous - value >
+        crossContextClockToleranceMs + crossContextClockRoundingSlackMs
     ) {
       violations.push(
         `${label} raw timeline is not monotonic at ${previousField}->${field}`,
@@ -1250,6 +1255,8 @@ function assertReleaseLatencyReceipt(evidence) {
       evidence.profileValidity?.timings?.valid === true &&
       evidence.profileValidity?.timings?.crossContextClockToleranceMs ===
         crossContextClockToleranceMs &&
+      evidence.profileValidity?.timings?.crossContextClockRoundingSlackMs ===
+        crossContextClockRoundingSlackMs &&
       evidence.profileValidity?.timings?.derivedDeltaRoundingToleranceMs ===
         derivedDeltaRoundingToleranceMs &&
       evidence.profileValidity?.cadence?.valid === true &&

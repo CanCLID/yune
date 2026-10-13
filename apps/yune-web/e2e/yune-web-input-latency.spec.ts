@@ -541,7 +541,7 @@ interface Issue17SweepEvidence {
     schemaId: "jyut6ping3";
     expectedVisibleCandidateCount: number;
     browserContext: "fresh-playwright-context";
-    userDictionaryState: "disabled-empty-profile";
+    userDictionaryState: "enabled-empty-profile";
     keyIntervalMs: number;
     mainThreadThrottle: number;
     workerActionMultiplier: number;
@@ -1204,7 +1204,10 @@ function isPostReadySchemaRequest(url: string): boolean {
   );
 }
 
-async function readPublicBuildInfo(page: Page): Promise<PublicBuildInfo> {
+async function readPublicBuildInfo(
+  page: Page,
+  verifyAllFiles = false,
+): Promise<PublicBuildInfo> {
   const response = await page.request.get(
     new URL("/build-info.json", page.url()).toString(),
     { failOnStatusCode: false },
@@ -1291,18 +1294,20 @@ async function readPublicBuildInfo(page: Page): Promise<PublicBuildInfo> {
     [...files.keys()].some((pathname) => /^assets\/.*\.js$/.test(pathname)),
     "artifact inventory must include the rendered app JavaScript bundle",
   ).toBe(true);
-  const servedRuntimeFiles = artifactManifest.files.filter(
-    (file) =>
-      [
-        "index.html",
-        "worker.js",
-        "yune-web.js",
-        "yune-web.wasm",
-        "schema-asset-manifest.json",
-      ].includes(file.path) ||
-      /^assets\/.*\.(?:js|css)$/.test(file.path),
-  );
-  for (const file of servedRuntimeFiles) {
+  const servedFiles = verifyAllFiles
+    ? artifactManifest.files
+    : artifactManifest.files.filter(
+        (file) =>
+          [
+            "index.html",
+            "worker.js",
+            "yune-web.js",
+            "yune-web.wasm",
+            "schema-asset-manifest.json",
+          ].includes(file.path) ||
+          /^assets\/.*\.(?:js|css)$/.test(file.path),
+      );
+  for (const file of servedFiles) {
     expect(file.bytes).toBeGreaterThan(0);
     expect(file.sha256).toMatch(/^[0-9a-f]{64}$/);
     const asset = await page.request.get(new URL(`/${file.path}`, page.url()).toString(), {
@@ -1844,16 +1849,39 @@ async function createIssue17EvidenceFile(
   return {
     path: outputPath,
     update: async (value) => {
-      const metadata = await fs.lstat(outputPath);
-      if (!metadata.isFile() || metadata.isSymbolicLink()) {
-        throw new Error(
-          "Refusing to replace a non-file issue #17 evidence path",
+      const temporaryPath = path.join(
+        evidenceRoot,
+        `.${ISSUE17_SWEEP_EVIDENCE_NAME}.${process.pid}.${
+          (await import("node:crypto")).randomUUID()
+        }.tmp`,
+      );
+      let temporaryFile: Awaited<ReturnType<typeof fs.open>> | null = null;
+      let temporaryCreated = false;
+      try {
+        temporaryFile = await fs.open(temporaryPath, "wx", 0o600);
+        temporaryCreated = true;
+        await temporaryFile.writeFile(
+          `${JSON.stringify(value, null, 2)}\n`,
+          "utf8",
         );
+        await temporaryFile.sync();
+        await temporaryFile.close();
+        temporaryFile = null;
+
+        const metadata = await fs.lstat(outputPath);
+        if (!metadata.isFile() || metadata.isSymbolicLink()) {
+          throw new Error(
+            "Refusing to replace a non-file issue #17 evidence path",
+          );
+        }
+        await fs.rename(temporaryPath, outputPath);
+      } catch (error) {
+        await temporaryFile?.close().catch(() => undefined);
+        if (temporaryCreated) {
+          await fs.rm(temporaryPath, { force: true });
+        }
+        throw error;
       }
-      await fs.writeFile(outputPath, `${JSON.stringify(value, null, 2)}\n`, {
-        encoding: "utf8",
-        mode: 0o600,
-      });
     },
   };
 }
@@ -2905,7 +2933,7 @@ test(
         schemaId: "jyut6ping3",
         expectedVisibleCandidateCount: EXPECTED_VISIBLE_CANDIDATE_COUNT,
         browserContext: "fresh-playwright-context",
-        userDictionaryState: "disabled-empty-profile",
+        userDictionaryState: "enabled-empty-profile",
         keyIntervalMs: KEY_INTERVAL_MS,
         mainThreadThrottle: CPU_THROTTLE_RATE,
         workerActionMultiplier: WORKER_ACTION_MULTIPLIER,
@@ -2986,12 +3014,10 @@ test(
     };
 
     page.on("request", (request) => {
-      if (isPostReadySchemaRequest(request.url())) {
-        postReadyAssetRequests.push({
-          method: request.method(),
-          url: request.url(),
-        });
-      }
+      postReadyAssetRequests.push({
+        method: request.method(),
+        url: request.url(),
+      });
     });
 
     try {
@@ -3080,7 +3106,12 @@ test(
       await waitForAppReady(page);
       startupAssetRequests = [...postReadyAssetRequests];
       assertPublicSplitStartup(startupAssetRequests);
-      const buildInfo = await readPublicBuildInfo(page);
+      receipt.checks = {
+        ...receipt.checks,
+        servedManifestMatchesBuildInfo: false,
+        servedInventoryMatchesManifest: false,
+      };
+      const buildInfo = await readPublicBuildInfo(page, true);
       receipt.source = {
         commit: buildInfo.sourceCommit,
         tree: localSource.tree,
@@ -3093,6 +3124,8 @@ test(
       };
       receipt.checks = {
         ...receipt.checks,
+        servedManifestMatchesBuildInfo: true,
+        servedInventoryMatchesManifest: true,
         servedSourceCommit: buildInfo.sourceCommit === localSource.commit,
         servedCleanSource: buildInfo.sourceTreeState === "clean",
         pinnedToolchain: buildInfo.toolchain !== null,
@@ -3116,7 +3149,7 @@ test(
       receipt.checks = {
         ...receipt.checks,
         activeSchema: activeSchemaId === "jyut6ping3",
-        freshProfile: !userDictionaryEnabled,
+        userDictionaryEnabled,
       };
       refreshReceipt("browser-setup", false);
       await persistReceipt();

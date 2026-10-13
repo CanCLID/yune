@@ -84,18 +84,32 @@ cp "$YUNE_TEST_PINNED_NPM" "$2/node_modules/.bin/npm"
                 [str(root / "pinned" / "node_modules" / ".bin" / "npm"), "11.16.0"],
             )
             install = log.read_text(encoding="utf-8")
+            for name in ("package.json", "package-lock.json"):
+                self.assertEqual(
+                    (root / "pinned" / name).read_bytes(),
+                    (RELEASE_TOOLCHAIN.parent / "npm-toolchain" / name).read_bytes(),
+                )
         for argument in (
-            "install --prefix",
-            "--no-save",
-            "--package-lock=false",
+            "ci --prefix",
             "--ignore-scripts",
-            "npm@11.16.0",
+            "--registry=https://registry.npmjs.org",
         ):
             self.assertIn(argument, install)
         build = (
             REPO_ROOT / "apps" / "yune-web" / "public-demo" / "build.mjs"
         ).read_text(encoding="utf-8")
         self.assertIn("npmVersion: process.env.YUNE_WEB_NPM_VERSION", build)
+
+    def test_npm_bootstrap_lock_pins_registry_archive_integrity(self):
+        tool = RELEASE_TOOLCHAIN.parent / "npm-toolchain"
+        package = json.loads((tool / "package.json").read_text(encoding="utf-8"))
+        lock = json.loads((tool / "package-lock.json").read_text(encoding="utf-8"))
+        self.assertEqual(package["dependencies"], {"npm": "11.16.0"})
+        self.assertEqual(lock["packages"][""]["dependencies"], package["dependencies"])
+        npm = lock["packages"]["node_modules/npm"]
+        self.assertEqual(npm["version"], "11.16.0")
+        self.assertEqual(npm["resolved"], "https://registry.npmjs.org/npm/-/npm-11.16.0.tgz")
+        self.assertRegex(npm["integrity"], r"^sha512-[A-Za-z0-9+/]{86}==$")
 
     def test_public_release_toolchain_rejects_mismatched_npm(self):
         with tempfile.TemporaryDirectory() as directory:

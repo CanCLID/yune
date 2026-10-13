@@ -72,7 +72,11 @@ yune_web_assert_npm_version() {
 }
 
 yune_web_activate_npm() {
-	npm install --prefix "$YUNE_WEB_NPM_PREFIX" --no-save --package-lock=false --ignore-scripts "npm@$YUNE_WEB_NPM_VERSION"
+	mkdir -p "$YUNE_WEB_NPM_PREFIX"
+	cp "$YUNE_WEB_RELEASE_HELPER_DIR/npm-toolchain/package.json" \
+		"$YUNE_WEB_RELEASE_HELPER_DIR/npm-toolchain/package-lock.json" "$YUNE_WEB_NPM_PREFIX/"
+	# A frozen reinstall verifies the bootstrap archive and repairs altered cache files.
+	npm ci --prefix "$YUNE_WEB_NPM_PREFIX" --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org
 	export PATH="$YUNE_WEB_NPM_PREFIX/node_modules/.bin:$PATH"
 	yune_web_assert_npm_version
 }
@@ -112,5 +116,5 @@ yune_web_activate_release_toolchain() {
 	export YUNE_WEB_EMCC_VERSION
 	export YUNE_WEB_RUSTC_VERSION="$(rustc --version)"
 	export YUNE_WEB_NODE_VERSION="$(node --version)"
-	export YUNE_WEB_NPM_VERSION
+	export YUNE_WEB_NPM_VERSION="$active_npm_version"
 }

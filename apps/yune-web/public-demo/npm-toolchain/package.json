@@ -1,0 +1,7 @@
+{
+  "name": "yune-public-build-npm",
+  "private": true,
+  "dependencies": {
+    "npm": "11.16.0"
+  }
+}

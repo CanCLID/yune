@@ -51,8 +51,9 @@ The command starts an exact preview of the already-built
 `public-demo/dist`, requires its source/hash-bearing `build-info.json`, fully
 reconciles the local package to `public-artifact-manifest.json`, verifies the
 served worker/app/WASM/schema-manifest bytes, and proves the split Jyutping prism
-startup path. Release packaging pins Rust `1.96.1`, Emscripten `4.0.23`, and
-the SDK-provided Node `22.16.0`; the receipt rejects an ambient toolchain or a
+startup path. Release packaging pins Rust `1.96.1`, Emscripten `4.0.23`,
+the SDK-provided Node `22.16.0`, and npm `11.16.0` from its checked-in tool
+lockfile; the receipt rejects an ambient toolchain or a
 binary built by different versions. It uses
 keydown-to-double-`requestAnimationFrame` paint-proxy
 diagnostics (the established `totalKeydownToPaintMs` metric, not compositor

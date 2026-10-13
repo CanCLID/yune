@@ -91,7 +91,7 @@ npm --prefix packages/yune-web-runtime ci
 npm --prefix apps/yune-web ci'
 ```
 
-The version line must be `11.16.0`. The helper installs that npm release under the ignored repository `.cache/` directory; it does not write to the user-global npm prefix or change either lockfile. New release artifacts record the selected version as `build-info.json` → `toolchain.npmVersion`; older artifacts without that additive field remain valid.
+The version line must be `11.16.0`. The helper uses `npm ci` with the checked-in `npm-toolchain/package-lock.json`, including the npm archive URL and SHA-512 integrity, to reinstall the tool under the ignored repository `.cache/` directory. It does not write to the user-global npm prefix or change the app/runtime lockfiles. New release artifacts record the measured version as `build-info.json` → `toolchain.npmVersion`; older artifacts without that additive field remain valid.
 
 ## Launch Assets
 

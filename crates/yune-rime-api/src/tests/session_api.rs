@@ -384,6 +384,9 @@ fn get_context_uses_page_snapshot_without_full_candidate_clone() {
 
 #[test]
 fn m37_metrics_exports_snapshot_json_for_loaded_benchmarks() {
+    // The metrics are process-global in this crate's tests, so share the lock
+    // with every test that counts them.
+    let _guard = test_guard();
     crate::yune_m37_metrics_enable(TRUE);
     crate::yune_m37_metrics_reset();
     yune_core::m37_record_abi_candidates_exported(3);

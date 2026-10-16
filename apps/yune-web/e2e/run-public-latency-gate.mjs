@@ -40,8 +40,8 @@ const normalTypingKeyIntervalMs = 100;
 const normalTypingP95CeilingMs = 150;
 const normalTypingMaxCeilingMs = 250;
 const normalTypingQueueWaitMaxCeilingMs = 100;
-const learnedRetypeInput = "sikgaanei";
-const learnedRetypeText = "\u98df\u50f9\u4f60";
+const learnedRetypeInput = "cungfukhokzaap";
+const learnedRetypeText = "\u91cd\u8907\u5b78\u7fd2";
 const learnedRetypeScenarioName = "typeduck-learned-userdb-retype";
 const learnedUserdbStateProfile = "typeduck-learned-userdb";
 const scenarioRegistry = [
@@ -555,6 +555,7 @@ async function runLatencyGate() {
         cwd: e2eRoot,
         env: {
           ...process.env,
+          YUNE_WEB_ISSUE17_SWEEP: "0",
           YUNE_WEB_APP_URL: appUrl,
           YUNE_WEB_EXPECTED_SOURCE_COMMIT: currentHead,
           YUNE_WEB_LATENCY_OUTPUT_DIR: playwrightOutputDir,
@@ -596,6 +597,8 @@ function percentile(values, proportion) {
 }
 
 const crossContextClockToleranceMs = 2;
+// Match the spec: one epoch timestamp ULP must not fail the nominal 2 ms bound.
+const crossContextClockRoundingSlackMs = 0.001;
 const derivedDeltaRoundingToleranceMs = 1;
 
 function roundedRawDelta(start, end) {
@@ -676,7 +679,8 @@ function diagnosticTimingViolations(diagnostic, label) {
     if (
       Number.isFinite(previous) &&
       Number.isFinite(value) &&
-      value + crossContextClockToleranceMs < previous
+      previous - value >
+        crossContextClockToleranceMs + crossContextClockRoundingSlackMs
     ) {
       violations.push(
         `${label} raw timeline is not monotonic at ${previousField}->${field}`,
@@ -781,7 +785,8 @@ function actionTimingViolations(diagnostic, label) {
     if (
       Number.isFinite(previous) &&
       Number.isFinite(value) &&
-      value + crossContextClockToleranceMs < previous
+      previous - value >
+        crossContextClockToleranceMs + crossContextClockRoundingSlackMs
     ) {
       violations.push(
         `${label} raw timeline is not monotonic at ${previousField}->${field}`,
@@ -1250,6 +1255,8 @@ function assertReleaseLatencyReceipt(evidence) {
       evidence.profileValidity?.timings?.valid === true &&
       evidence.profileValidity?.timings?.crossContextClockToleranceMs ===
         crossContextClockToleranceMs &&
+      evidence.profileValidity?.timings?.crossContextClockRoundingSlackMs ===
+        crossContextClockRoundingSlackMs &&
       evidence.profileValidity?.timings?.derivedDeltaRoundingToleranceMs ===
         derivedDeltaRoundingToleranceMs &&
       evidence.profileValidity?.cadence?.valid === true &&
@@ -1344,7 +1351,7 @@ function learnedRetypeViolations(learned) {
       learned?.input === learnedRetypeInput &&
       learned?.inputLength === learnedRetypeInput.length &&
       learned?.keyIntervalMs === normalTypingKeyIntervalMs,
-    "learned retype must cover exact sikgaanei input on jyut6ping3 at 100 ms cadence",
+    `learned retype must cover exact ${learnedRetypeInput} input on jyut6ping3 at ${normalTypingKeyIntervalMs} ms cadence`,
   );
   requireValue(
     learned?.state?.userDictionaryEnabledBeforeLearning === true &&
@@ -1363,7 +1370,7 @@ function learnedRetypeViolations(learned) {
       Number.isSafeInteger(postLearnCount) &&
       postLearnCount >= 2 &&
       postLearnCount > preLearnCount,
-    "learned retype must prove that the 食價你 row count grew and reached at least two",
+    `learned retype must prove that the ${learnedRetypeText} row count grew and reached at least two`,
   );
   requireValue(
     sameJson(learned?.ceilingsMs, {
@@ -1385,7 +1392,7 @@ function learnedRetypeViolations(learned) {
       diagnostics.length === learnedRetypeInput.length &&
       learned?.actionDiagnosticCount === learnedRetypeInput.length &&
       actions.length === learnedRetypeInput.length,
-    "learned retype must retain exactly nine paint and direct action diagnostics",
+    `learned retype must retain exactly ${learnedRetypeInput.length} paint and direct action diagnostics`,
   );
   requireValue(
     sameJson(
@@ -1407,7 +1414,7 @@ function learnedRetypeViolations(learned) {
       actions.map((action) => action?.input),
       expectedActionInputs,
     ) && actions.every((action) => action?.action === "processKey"),
-    "learned retype direct actions must retain the exact ordered {s}..{i} occurrences",
+    `learned retype direct actions must retain the exact ordered ${expectedActionInputs[0]}..${expectedActionInputs.at(-1)} occurrences`,
   );
   const diagnosticViolations = diagnostics.flatMap((diagnostic, index) =>
     diagnosticTimingViolations(
@@ -1540,7 +1547,7 @@ function learnedRetypeViolations(learned) {
       learned.cadence.onTimeRatio === rawOnTimeCadenceRatio &&
       learned.cadence.minimumOnTimeRatio === cadenceMinOnTimeRatio &&
       learned.cadence.valid === true,
-    "learned retype cadence must be recomputed from all eight 100 ms gaps and remain valid",
+    `learned retype cadence must be recomputed from all ${learnedRetypeInput.length - 1} ${normalTypingKeyIntervalMs} ms gaps and remain valid`,
   );
 
   const finalRows = Array.isArray(learned?.finalVisibleCandidateOrder)
@@ -1767,6 +1774,19 @@ function selfTestReleaseValidator(evidence) {
       delete firstDiagnostic(receipt).workerSentAt;
     },
     "a receipt with workerSentAt removed",
+  );
+  assertMutationRejected(
+    assertReleaseLatencyReceipt,
+    evidence,
+    (receipt) => {
+      const diagnostic = firstDiagnostic(receipt);
+      const workerDuration =
+        diagnostic.workerFinishedAt - diagnostic.workerStartedAt;
+      diagnostic.workerStartedAt = diagnostic.workerSentAt - 2.01;
+      diagnostic.workerFinishedAt =
+        diagnostic.workerStartedAt + workerDuration;
+    },
+    "a receipt with a cross-context clock reversal",
   );
   assertMutationRejected(
     assertReleaseLatencyReceipt,
@@ -2020,7 +2040,7 @@ function selfTestNormalTypingValidator(evidence) {
     assertNormalTypingReceipt,
     evidence,
     (receipt) => {
-      receipt.learnedRetype.actions[5].input = "{i}";
+      receipt.learnedRetype.actions[12].input = "{z}";
     },
     "a learned retype receipt with a forged repeated-key occurrence",
   );

@@ -95,10 +95,64 @@ const LUNA_37_INPUT = "ceshiyixiachangjushuruxingnengzenyang";
 const LUNA_59_INPUT =
   "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong";
 const LEARNED_INPUT = "ngohaigo";
-const LEARNED_RETYPE_INPUT = "sikgaanei";
-const LEARNED_RETYPE_TEXT = "\u98df\u50f9\u4f60";
+const LEARNED_RETYPE_INPUT = "cungfukhokzaap";
+const LEARNED_RETYPE_TEXT = "\u91cd\u8907\u5b78\u7fd2";
 const LEARNED_RETYPE_SCENARIO_NAME = "typeduck-learned-userdb-retype";
 const LEARNED_USERDB_STATE_PROFILE = "typeduck-learned-userdb";
+const ISSUE17_SWEEP_ENABLED = process.env.YUNE_WEB_ISSUE17_SWEEP === "1";
+const ISSUE17_SWEEP_EVIDENCE_NAME =
+  "issue17-bounded-page-latency.json";
+const ISSUE17_SWEEP_INPUTS = [
+  "jau",
+  "jan",
+  "jat",
+  "dik",
+  "hai",
+  "daai",
+  "ceot",
+  "dou",
+  "bat",
+  "gwo",
+  "dei",
+  "dak",
+  "hau",
+  "jiu",
+  "tung",
+  "ngo",
+  "gwok",
+  "gong",
+  "zau",
+  "gaa",
+  "sing",
+  "daan",
+  "cin",
+  "keoi",
+  "zoi",
+  "hoi",
+  "jung",
+  "heoi",
+  "kei",
+  "coeng",
+  "jap",
+  "mou",
+  "wui",
+  "deoi",
+  "hou",
+  "sau",
+  "dim",
+  "sam",
+  "zyu",
+  "bun",
+  "wai",
+  "fan",
+  "man",
+  "lei",
+  "zung",
+  "siu",
+  "wan",
+] as const;
+const ISSUE17_SWEEP_EXPECTED_INPUT_COUNT = 47;
+const ISSUE17_SWEEP_EXPECTED_KEY_COUNT = 155;
 
 interface ScenarioRegistryEntry {
   name: string;
@@ -280,6 +334,7 @@ interface PerfDiagnostic {
   workerAmplificationMs?: number;
   workerActionMultiplier?: number;
   workerEffectiveMultiplier?: number;
+  workerStressClassification?: Issue17WorkerStressClassification;
   responseMappingMs: number;
   reactUpdateMs: number;
   paintProxyMs: number;
@@ -445,6 +500,111 @@ interface ScenarioEvidence {
   learnedCandidateVisible?: boolean;
   persistedAfterReload?: boolean;
   forcedCompleteFirstPageStable?: boolean;
+}
+
+interface Issue17SweepScenarioEvidence {
+  input: string;
+  inputLength: number;
+  measurementCompleted: boolean;
+  passed: boolean;
+  diagnosticCount: number;
+  summary: LatencySummary;
+  slowestKey: PerfDiagnostic | null;
+  diagnostics: PerfDiagnostic[];
+  cadence: CadenceEvidence;
+  finalVisibleCandidateOrder: CandidateRowSnapshot[];
+  candidateValidation: {
+    mode: "page-shape-only-no-external-oracle";
+    rationale: string;
+  };
+  workerStress: {
+    configuredMultiplier: number;
+    measuredRatioCount: number;
+    timerResolutionZeroCount: number;
+    invalidCount: number;
+    measuredRatioPrefixes: string[];
+    timerResolutionZeroPrefixes: string[];
+    invalidPrefixes: string[];
+  };
+  assetRequestsDuringMeasurement: AssetRequest[];
+  checks: Record<string, boolean>;
+  failures: string[];
+}
+
+type Issue17FontFaceStatus = "unloaded" | "loading" | "loaded" | "error";
+
+interface Issue17FontFaceIdentity {
+  family: string;
+  style: string;
+  weight: string;
+  stretch: string;
+  unicodeRange: string;
+  status: Issue17FontFaceStatus;
+}
+
+interface Issue17FontPreflightEvidence {
+  measurementCompleted: boolean;
+  passed: boolean;
+  fontSetStatus: "loading" | "loaded" | null;
+  faceCount: number;
+  loadedFaceCount: number;
+  identities: Issue17FontFaceIdentity[];
+  requests: AssetRequest[];
+  loadErrors: string[];
+  failures: string[];
+}
+
+interface Issue17SweepEvidence {
+  version: "issue17-bounded-page-latency-v2";
+  generatedAt: string;
+  url: string | null;
+  measurementCompleted: boolean;
+  passed: boolean;
+  failurePhase: string;
+  expectedSourceCommit: string | null;
+  source: {
+    commit: string | null;
+    tree: string | null;
+    treeState: string | null;
+    publicArtifactManifestSha256: string | null;
+    schemaManifestSha256: string | null;
+    wasmSha256: string | null;
+    toolchain: PublicBuildInfo["toolchain"];
+  };
+  profile: {
+    schemaId: "jyut6ping3";
+    expectedVisibleCandidateCount: number;
+    browserContext: "fresh-playwright-context";
+    userDictionaryState: "enabled-empty-profile";
+    keyIntervalMs: number;
+    mainThreadThrottle: number;
+    workerActionMultiplier: number;
+    crossContextClockToleranceMs: number;
+    crossContextClockRoundingSlackMs: number;
+    ceilingsMs: { p95: number; max: number };
+  };
+  fontPreflight: Issue17FontPreflightEvidence;
+  inputSet: {
+    serialization: "json-utf8";
+    sha256: string;
+    inputs: readonly string[];
+    inputCount: number;
+    expectedInputCount: number;
+    keyCount: number;
+    expectedKeyCount: number;
+  };
+  cpuProfile: CpuProfileEvidence | null;
+  aggregate: {
+    completedInputCount: number;
+    diagnosticCount: number;
+    summary: LatencySummary;
+    cadence: ReturnType<typeof summarizeIssue17Cadence>;
+  };
+  scenarios: Issue17SweepScenarioEvidence[];
+  startupAssetRequests: AssetRequest[];
+  schemaSelectionRequests: AssetRequest[];
+  checks: Record<string, boolean>;
+  failures: string[];
 }
 
 interface AssetRequest {
@@ -673,6 +833,8 @@ function percentile(values: number[], proportion: number): number | null {
 }
 
 const CROSS_CONTEXT_CLOCK_TOLERANCE_MS = 2;
+// 0.001 ms covers about four floating-point ULPs at epoch magnitude.
+const CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS = 0.001;
 const DERIVED_DELTA_ROUNDING_TOLERANCE_MS = 1;
 
 function roundedRawDelta(start: number, end: number): number {
@@ -711,6 +873,17 @@ function rawTimingSamples(diagnostics: PerfDiagnostic[]) {
   };
 }
 
+function rawTimelineIsValid(rawTimeline: number[]): boolean {
+  return (
+    rawTimeline.every((value) => Number.isFinite(value) && value >= 0) &&
+    !rawTimeline.slice(1).some(
+      (value, index) =>
+        rawTimeline[index] - value >
+        CROSS_CONTEXT_CLOCK_TOLERANCE_MS + CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS,
+    )
+  );
+}
+
 function diagnosticTimingIsValid(diagnostic: PerfDiagnostic): boolean {
   const rawTimeline = [
     diagnostic.keydownAt,
@@ -724,13 +897,7 @@ function diagnosticTimingIsValid(diagnostic: PerfDiagnostic): boolean {
     diagnostic.stateAppliedAt,
     diagnostic.paintObservedAt,
   ];
-  if (
-    !rawTimeline.every((value) => Number.isFinite(value) && value >= 0) ||
-    rawTimeline.slice(1).some(
-      (value, index) =>
-        value + CROSS_CONTEXT_CLOCK_TOLERANCE_MS < rawTimeline[index],
-    )
-  ) {
+  if (!rawTimelineIsValid(rawTimeline)) {
     return false;
   }
   const derived: Array<[number | undefined, number]> = [
@@ -800,17 +967,7 @@ function actionTimingIsValid(diagnostic: ActionDiagnostic): boolean {
     diagnostic.workerFinishedAt,
     diagnostic.receivedAt,
   ];
-  if (
-    !rawTimeline.every(
-      (value) => Number.isFinite(value) && (value ?? -1) >= 0,
-    ) ||
-    rawTimeline.slice(1).some(
-      (value, index) =>
-        (value ?? Number.NEGATIVE_INFINITY) +
-          CROSS_CONTEXT_CLOCK_TOLERANCE_MS <
-        (rawTimeline[index] ?? Number.POSITIVE_INFINITY),
-    )
-  ) {
+  if (!rawTimelineIsValid(rawTimeline.map((value) => value ?? Number.NaN))) {
     return false;
   }
   const enqueuedAt = diagnostic.enqueuedAt ?? Number.NaN;
@@ -901,6 +1058,84 @@ function workerAccountingIsValid(
   );
 }
 
+type Issue17WorkerStressClassification =
+  | "measured-ratio"
+  | "timer-resolution-zero"
+  | "invalid";
+
+type Issue17WorkerStressSample = Pick<
+  PerfDiagnostic,
+  | "workerStartedAt"
+  | "workerFinishedAt"
+  | "workerProcessMs"
+  | "workerBaseElapsedMs"
+  | "workerAmplificationMs"
+  | "workerActionMultiplier"
+  | "workerEffectiveMultiplier"
+>;
+
+interface Issue17WorkerStressEvaluation {
+  valid: boolean;
+  classification: Issue17WorkerStressClassification;
+}
+
+function evaluateIssue17WorkerStress(
+  diagnostic: Issue17WorkerStressSample,
+): Issue17WorkerStressEvaluation {
+  const baseMs = diagnostic.workerBaseElapsedMs ?? Number.NaN;
+  const amplificationMs =
+    diagnostic.workerAmplificationMs ?? Number.NaN;
+  const commonChecks =
+    diagnostic.workerActionMultiplier ===
+      RELEASE_WORKER_ACTION_MULTIPLIER &&
+    workerAccountingIsValid(
+      diagnostic.workerProcessMs,
+      diagnostic.workerBaseElapsedMs,
+      diagnostic.workerAmplificationMs,
+    );
+  const timerResolutionZero =
+    diagnostic.workerStartedAt === diagnostic.workerFinishedAt &&
+    diagnostic.workerProcessMs === 0 &&
+    diagnostic.workerBaseElapsedMs === 0 &&
+    diagnostic.workerAmplificationMs === 0 &&
+    diagnostic.workerEffectiveMultiplier === undefined;
+  if (commonChecks && timerResolutionZero) {
+    return { valid: true, classification: "timer-resolution-zero" };
+  }
+
+  const amplificationFloorMs = Math.max(
+    0,
+    baseMs * (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 0.8,
+  );
+  const amplificationCeilingMs = Math.max(
+    10,
+    baseMs * (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 1.25 + 10,
+  );
+  const measuredRatio =
+    commonChecks &&
+    baseMs > 0 &&
+    Number.isFinite(diagnostic.workerEffectiveMultiplier) &&
+    (diagnostic.workerEffectiveMultiplier ?? 0) >=
+      1 + (RELEASE_WORKER_ACTION_MULTIPLIER - 1) * 0.8 &&
+    amplificationMs >= amplificationFloorMs &&
+    amplificationMs <= amplificationCeilingMs;
+  return measuredRatio
+    ? { valid: true, classification: "measured-ratio" }
+    : { valid: false, classification: "invalid" };
+}
+
+function issue17WorkerStressProfileIsValid(
+  evaluations: Issue17WorkerStressEvaluation[],
+): boolean {
+  return (
+    evaluations.length > 0 &&
+    evaluations.every((evaluation) => evaluation.valid) &&
+    evaluations.some(
+      (evaluation) => evaluation.classification === "measured-ratio",
+    )
+  );
+}
+
 function summarize(diagnostics: PerfDiagnostic[]): LatencySummary {
   const raw = rawTimingSamples(diagnostics);
   return {
@@ -921,6 +1156,7 @@ function summarize(diagnostics: PerfDiagnostic[]): LatencySummary {
 function summarizeCadence(
   diagnostics: PerfDiagnostic[],
   expectedIntervalMs = KEY_INTERVAL_MS,
+  minimumOnTimeRatio = CADENCE_MIN_ON_TIME_RATIO,
 ): CadenceEvidence {
   const acceptedMinMs = expectedIntervalMs * 0.8;
   const acceptedMaxMs = expectedIntervalMs * 1.25;
@@ -966,13 +1202,86 @@ function summarizeCadence(
     delayedGaps,
     onTimeGapCount,
     onTimeRatio,
-    minimumOnTimeRatio: CADENCE_MIN_ON_TIME_RATIO,
+    minimumOnTimeRatio,
     valid:
       gaps.length === Math.max(0, diagnostics.length - 1) &&
       finiteGaps.length === gaps.length &&
       invalidGaps.length === 0 &&
+      onTimeRatio >= minimumOnTimeRatio,
+  };
+}
+
+// Each short syllable has only 2-4 gaps. Apply the 90% load requirement to
+// all 108 within-syllable gaps, never to gaps between separate inputs.
+function summarizeIssue17Cadence(
+  scenarios: Array<Pick<Issue17SweepScenarioEvidence, "input" | "diagnostics">>,
+) {
+  const cadences = scenarios.map((scenario) =>
+    summarizeCadence(scenario.diagnostics, RELEASE_KEY_INTERVAL_MS, 0),
+  );
+  const expectedGapCount =
+    ISSUE17_SWEEP_EXPECTED_KEY_COUNT - ISSUE17_SWEEP_EXPECTED_INPUT_COUNT;
+  const gapCount = cadences.reduce((sum, cadence) => sum + cadence.count, 0);
+  const invalidGapCount = cadences.reduce(
+    (sum, cadence) => sum + cadence.invalidGaps.length, 0,
+  );
+  const onTimeGapCount = cadences.reduce(
+    (sum, cadence) => sum + cadence.onTimeGapCount, 0,
+  );
+  const onTimeRatio = gapCount === 0 ? 0 : onTimeGapCount / gapCount;
+  return {
+    expectedGapCount,
+    gapCount,
+    invalidGapCount,
+    delayedGapCount: cadences.reduce(
+      (sum, cadence) => sum + cadence.delayedGaps.length, 0,
+    ),
+    onTimeGapCount,
+    onTimeRatio,
+    minimumOnTimeRatio: CADENCE_MIN_ON_TIME_RATIO,
+    valid:
+      JSON.stringify(scenarios.map((scenario) => scenario.input)) ===
+        JSON.stringify(ISSUE17_SWEEP_INPUTS) &&
+      scenarios.every((scenario, index) =>
+        scenario.diagnostics.length === scenario.input.length &&
+        cadences[index].count === scenario.input.length - 1 &&
+        cadences[index].onTimeGapCount >= 1 &&
+        cadences[index].valid,
+      ) &&
+      gapCount === expectedGapCount &&
+      invalidGapCount === 0 &&
       onTimeRatio >= CADENCE_MIN_ON_TIME_RATIO,
   };
+}
+
+function issue17InputsMatchProductionSource(source: string): boolean {
+  const bareSyllables = source.match(
+    /const BOUNDED_PAGE_SYLLABLES:.*?= &\[([\s\S]*?)\/\/ Multi-syllable inputs:/,
+  )?.[1];
+  if (bareSyllables === undefined) {
+    return false;
+  }
+  const inputs: string[] = [];
+  for (const line of bareSyllables.split("\n")) {
+    const content = line.replace(/\/\/.*$/, "").trim();
+    if (content === "") {
+      continue;
+    }
+    const entry = content.match(/^"([a-z]+)",$/);
+    if (entry === null) {
+      return false;
+    }
+    inputs.push(entry[1]);
+  }
+  return JSON.stringify(inputs) === JSON.stringify(ISSUE17_SWEEP_INPUTS);
+}
+
+async function readIssue17ProductionSource(): Promise<string> {
+  const { readFile } = await import("node:fs/promises");
+  return readFile(
+    `${await issue17RepositoryRoot()}/crates/yune-rime-api/tests/yune_web.rs`,
+    "utf8",
+  );
 }
 
 function learnedRetypeSeed(
@@ -1082,7 +1391,10 @@ function isPostReadySchemaRequest(url: string): boolean {
   );
 }
 
-async function readPublicBuildInfo(page: Page): Promise<PublicBuildInfo> {
+async function readPublicBuildInfo(
+  page: Page,
+  verifyAllFiles = false,
+): Promise<PublicBuildInfo> {
   const response = await page.request.get(
     new URL("/build-info.json", page.url()).toString(),
     { failOnStatusCode: false },
@@ -1169,18 +1481,20 @@ async function readPublicBuildInfo(page: Page): Promise<PublicBuildInfo> {
     [...files.keys()].some((pathname) => /^assets\/.*\.js$/.test(pathname)),
     "artifact inventory must include the rendered app JavaScript bundle",
   ).toBe(true);
-  const servedRuntimeFiles = artifactManifest.files.filter(
-    (file) =>
-      [
-        "index.html",
-        "worker.js",
-        "yune-web.js",
-        "yune-web.wasm",
-        "schema-asset-manifest.json",
-      ].includes(file.path) ||
-      /^assets\/.*\.(?:js|css)$/.test(file.path),
-  );
-  for (const file of servedRuntimeFiles) {
+  const servedFiles = verifyAllFiles
+    ? artifactManifest.files
+    : artifactManifest.files.filter(
+        (file) =>
+          [
+            "index.html",
+            "worker.js",
+            "yune-web.js",
+            "yune-web.wasm",
+            "schema-asset-manifest.json",
+          ].includes(file.path) ||
+          /^assets\/.*\.(?:js|css)$/.test(file.path),
+      );
+  for (const file of servedFiles) {
     expect(file.bytes).toBeGreaterThan(0);
     expect(file.sha256).toMatch(/^[0-9a-f]{64}$/);
     const asset = await page.request.get(new URL(`/${file.path}`, page.url()).toString(), {
@@ -1193,6 +1507,112 @@ async function readPublicBuildInfo(page: Page): Promise<PublicBuildInfo> {
     expect(actual, `${file.path} must match the artifact inventory`).toBe(file.sha256);
   }
   return value;
+}
+
+async function preloadIssue17DeclaredFonts(
+  page: Page,
+  postReadyAssetRequests: AssetRequest[],
+): Promise<Issue17FontPreflightEvidence> {
+  const requestStart = postReadyAssetRequests.length;
+  try {
+    const browserEvidence = await page.evaluate(async () => {
+      const loadFailures = new Set<string>();
+      const identify = (face: FontFace) => ({
+        family: face.family,
+        style: face.style,
+        weight: face.weight,
+        stretch: face.stretch,
+        unicodeRange: face.unicodeRange,
+        status: face.status,
+      });
+      const identityKey = (
+        identity: ReturnType<typeof identify>,
+      ): string =>
+        JSON.stringify([
+          identity.family,
+          identity.style,
+          identity.weight,
+          identity.stretch,
+          identity.unicodeRange,
+        ]);
+      await document.fonts.ready;
+      const declaredFaces = Array.from(document.fonts);
+      const results = await Promise.allSettled(
+        declaredFaces.map((face) => face.load()),
+      );
+      for (const [index, result] of results.entries()) {
+        if (result.status === "rejected") {
+          const reason =
+            result.reason instanceof Error
+              ? `${result.reason.name}: ${result.reason.message}`
+              : String(result.reason);
+          const face = declaredFaces[index];
+          loadFailures.add(
+            `${face === undefined ? `face-${index}` : identityKey(identify(face))}: ${reason}`,
+          );
+        }
+      }
+      await document.fonts.ready;
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+
+      const identities = Array.from(document.fonts)
+        .map(identify)
+        .sort((left, right) => {
+          const leftKey = identityKey(left);
+          const rightKey = identityKey(right);
+          return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+        });
+      return {
+        fontSetStatus: document.fonts.status,
+        identities,
+        loadFailures: [...loadFailures],
+      };
+    });
+    const failures: string[] = [];
+    const loadedFaceCount = browserEvidence.identities.filter(
+      (identity) => identity.status === "loaded",
+    ).length;
+    if (browserEvidence.identities.length === 0) {
+      failures.push("no-declared-font-faces");
+    }
+    if (browserEvidence.fontSetStatus !== "loaded") {
+      failures.push(`font-set-status:${browserEvidence.fontSetStatus}`);
+    }
+    if (loadedFaceCount !== browserEvidence.identities.length) {
+      failures.push(
+        `font-faces-not-loaded:${loadedFaceCount}/${browserEvidence.identities.length}`,
+      );
+    }
+    return {
+      measurementCompleted: true,
+      passed: failures.length === 0,
+      fontSetStatus: browserEvidence.fontSetStatus,
+      faceCount: browserEvidence.identities.length,
+      loadedFaceCount,
+      identities: browserEvidence.identities,
+      requests: postReadyAssetRequests.slice(requestStart),
+      loadErrors: browserEvidence.loadFailures,
+      failures,
+    };
+  } catch (error) {
+    return {
+      measurementCompleted: false,
+      passed: false,
+      fontSetStatus: null,
+      faceCount: 0,
+      loadedFaceCount: 0,
+      identities: [],
+      requests: postReadyAssetRequests.slice(requestStart),
+      loadErrors: [],
+      failures: [
+        error instanceof Error
+          ? `${error.name}: ${error.message}`
+          : String(error),
+      ],
+    };
+  }
 }
 
 function assertPublicSplitStartup(requests: AssetRequest[]): void {
@@ -1438,6 +1858,194 @@ async function measureBurst(
   return scenario;
 }
 
+async function measureIssue17SweepInput(
+  page: Page,
+  inputText: string,
+  postReadyAssetRequests: AssetRequest[],
+): Promise<Issue17SweepScenarioEvidence> {
+  const assetRequestStart = postReadyAssetRequests.length;
+  let measurementCompleted = false;
+  let diagnostics: PerfDiagnostic[] = [];
+  let finalVisibleCandidateOrder: CandidateRowSnapshot[] = [];
+  let measurementFailure: string | null = null;
+
+  try {
+    await clearComposition(page);
+    await resetPerfDiagnostics(page);
+    const input = composeInput(page);
+    await input.focus();
+    await typeAtCadence(page, inputText, KEY_INTERVAL_MS);
+    await expect
+      .poll(async () => (await readPerfDiagnostics(page)).length, {
+        timeout: DIAGNOSTIC_TIMEOUT_MS,
+      })
+      .toBe(inputText.length);
+    diagnostics = await readPerfDiagnostics(page);
+    finalVisibleCandidateOrder = await readVisibleCandidateRows(page);
+    measurementCompleted = true;
+  } catch (error) {
+    measurementFailure =
+      error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    diagnostics = await readPerfDiagnostics(page).catch(
+      () => [] as PerfDiagnostic[],
+    );
+    finalVisibleCandidateOrder = await readVisibleCandidateRows(page).catch(
+      () => [] as CandidateRowSnapshot[],
+    );
+  }
+
+  diagnostics = diagnostics.map((diagnostic) => {
+    const baseMs = diagnostic.workerBaseElapsedMs;
+    const amplificationMs = diagnostic.workerAmplificationMs;
+    const enrichedDiagnostic = {
+      ...diagnostic,
+      workerEffectiveMultiplier:
+        baseMs !== undefined && baseMs > 0 && amplificationMs !== undefined
+          ? (baseMs + amplificationMs) / baseMs
+          : undefined,
+    };
+    return {
+      ...enrichedDiagnostic,
+      workerStressClassification:
+        evaluateIssue17WorkerStress(enrichedDiagnostic).classification,
+    };
+  });
+
+  const expectedPrefixes = Array.from(
+    { length: inputText.length },
+    (_, index) => inputText.slice(0, index + 1),
+  );
+  const summary = summarize(diagnostics);
+  const cadence = summarizeCadence(diagnostics, KEY_INTERVAL_MS, 0);
+  const workerStressEvaluations = diagnostics.map(
+    evaluateIssue17WorkerStress,
+  );
+  const workerStress = {
+    configuredMultiplier: RELEASE_WORKER_ACTION_MULTIPLIER,
+    measuredRatioCount: workerStressEvaluations.filter(
+      (evaluation) => evaluation.classification === "measured-ratio",
+    ).length,
+    timerResolutionZeroCount: workerStressEvaluations.filter(
+      (evaluation) =>
+        evaluation.classification === "timer-resolution-zero",
+    ).length,
+    invalidCount: workerStressEvaluations.filter(
+      (evaluation) => evaluation.classification === "invalid",
+    ).length,
+    measuredRatioPrefixes: diagnostics
+      .filter(
+        (_, index) =>
+          workerStressEvaluations[index]?.classification === "measured-ratio",
+      )
+      .map((diagnostic) => diagnostic.input),
+    timerResolutionZeroPrefixes: diagnostics
+      .filter(
+        (_, index) =>
+          workerStressEvaluations[index]?.classification ===
+          "timer-resolution-zero",
+      )
+      .map((diagnostic) => diagnostic.input),
+    invalidPrefixes: diagnostics
+      .filter(
+        (_, index) =>
+          workerStressEvaluations[index]?.classification === "invalid",
+      )
+      .map((diagnostic) => diagnostic.input),
+  };
+  const checks = {
+    measurementCompleted,
+    diagnosticCount: diagnostics.length === inputText.length,
+    exactPrefixes:
+      JSON.stringify(
+        diagnostics.map((diagnostic) =>
+          diagnostic.input.replace(/\s+/g, ""),
+        ),
+      ) === JSON.stringify(expectedPrefixes),
+    candidatePages:
+      diagnostics.length === inputText.length &&
+      diagnostics.every(
+        (diagnostic) =>
+          diagnostic.candidateCount === EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+          diagnostic.totalCandidateCount >= EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+          typeof diagnostic.firstCandidateText === "string" &&
+          diagnostic.firstCandidateText.trim().length > 0,
+      ),
+    completeTimings:
+      diagnostics.length === inputText.length &&
+      diagnostics.every(
+        (diagnostic, index) =>
+          diagnosticTimingIsValid(diagnostic) &&
+          (index === 0 ||
+            diagnostic.renderRevision > diagnostics[index - 1].renderRevision),
+      ),
+    workerStressProfile:
+      diagnostics.length === inputText.length &&
+      issue17WorkerStressProfileIsValid(workerStressEvaluations),
+    workerMeasuredRatioCalibration:
+      workerStressEvaluations.some(
+        (evaluation) => evaluation.classification === "measured-ratio",
+      ),
+    cadence:
+      cadence.count === Math.max(0, inputText.length - 1) && cadence.valid,
+    finalPage:
+      finalVisibleCandidateOrder.length === EXPECTED_VISIBLE_CANDIDATE_COUNT &&
+      finalVisibleCandidateOrder.every(
+        (candidate) =>
+          typeof candidate.text === "string" &&
+          candidate.text.trim().length > 0 &&
+          (candidate.source === null || typeof candidate.source === "string"),
+      ),
+    finalDiagnostic:
+      diagnostics.at(-1)?.firstCandidateText ===
+      finalVisibleCandidateOrder[0]?.text,
+    noTimedAssetRequests:
+      postReadyAssetRequests.length === assetRequestStart,
+    p95:
+      summary.p95Ms !== null && summary.p95Ms <= RELEASE_P95_CEILING_MS,
+    max:
+      summary.maxMs !== null && summary.maxMs <= RELEASE_MAX_CEILING_MS,
+  };
+  const failures = Object.entries(checks)
+    .filter(([, passed]) => !passed)
+    .map(([name]) => name);
+  if (measurementFailure !== null) {
+    failures.push(measurementFailure);
+  }
+  const slowestKey = diagnostics.reduce<PerfDiagnostic | null>(
+    (slowest, diagnostic) =>
+      slowest === null ||
+      roundedRawDelta(diagnostic.keydownAt, diagnostic.paintObservedAt) >
+        roundedRawDelta(slowest.keydownAt, slowest.paintObservedAt)
+        ? diagnostic
+        : slowest,
+    null,
+  );
+
+  return {
+    input: inputText,
+    inputLength: inputText.length,
+    measurementCompleted,
+    passed: failures.length === 0,
+    diagnosticCount: diagnostics.length,
+    summary,
+    slowestKey,
+    diagnostics,
+    cadence,
+    finalVisibleCandidateOrder,
+    candidateValidation: {
+      mode: "page-shape-only-no-external-oracle",
+      rationale:
+        "Issue #17 times the production browser path and binds six-row page shape only; candidate order remains blocked on the external TypeDuck v1.1.2 capture.",
+    },
+    workerStress,
+    assetRequestsDuringMeasurement: postReadyAssetRequests.slice(
+      assetRequestStart,
+    ),
+    checks,
+    failures,
+  };
+}
+
 async function learnTypeDuckRow(page: Page): Promise<void> {
   const toggle = page.getByLabel(/User Dictionary|用戶詞庫/).last();
   await expect(toggle).toBeVisible({ timeout: 10_000 });
@@ -1481,6 +2089,115 @@ async function writeOptionalEvidence(
     `${JSON.stringify(value, null, 2)}\n`,
     "utf8",
   );
+}
+
+async function issue17RepositoryRoot(): Promise<string> {
+  const path = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  return path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../../..",
+  );
+}
+
+async function readIssue17LocalSourceIdentity(): Promise<{
+  commit: string;
+  tree: string;
+  treeState: "clean" | "dirty";
+}> {
+  const { execFileSync } = await import("node:child_process");
+  const repositoryRoot = await issue17RepositoryRoot();
+  const git = (args: string[]): string =>
+    execFileSync("git", args, {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+    })
+      .trim()
+      .toLowerCase();
+  const commit = git(["rev-parse", "HEAD"]);
+  const tree = git(["rev-parse", "HEAD^{tree}"]);
+  const status = git(["status", "--porcelain", "--untracked-files=all"]);
+  return {
+    commit,
+    tree,
+    treeState: status === "" ? "clean" : "dirty",
+  };
+}
+
+async function createIssue17EvidenceFile(
+  initial: Issue17SweepEvidence,
+): Promise<{
+  path: string;
+  update: (value: Issue17SweepEvidence) => Promise<void>;
+}> {
+  if (!EVIDENCE_DIR) {
+    throw new Error(
+      "YUNE_WEB_LATENCY_EVIDENCE_DIR is required for the issue #17 sweep",
+    );
+  }
+  const fs = await import("node:fs/promises");
+  const path = await import("node:path");
+  const { execFileSync } = await import("node:child_process");
+  const repositoryRoot = await issue17RepositoryRoot();
+  const evidenceRoot = execFileSync(
+    "python3",
+    [
+      "-B",
+      path.join(repositoryRoot, "scripts/evidence-output-path.py"),
+      "validate",
+      "--repo-root",
+      repositoryRoot,
+      "--path",
+      EVIDENCE_DIR,
+    ],
+    { cwd: repositoryRoot, encoding: "utf8" },
+  ).trim();
+  await fs.mkdir(evidenceRoot, { recursive: true });
+  const outputPath = path.join(evidenceRoot, ISSUE17_SWEEP_EVIDENCE_NAME);
+  await fs.writeFile(outputPath, `${JSON.stringify(initial, null, 2)}\n`, {
+    encoding: "utf8",
+    flag: "wx",
+    mode: 0o600,
+  });
+
+  return {
+    path: outputPath,
+    update: async (value) => {
+      const temporaryPath = path.join(
+        evidenceRoot,
+        `.${ISSUE17_SWEEP_EVIDENCE_NAME}.${process.pid}.${
+          (await import("node:crypto")).randomUUID()
+        }.tmp`,
+      );
+      let temporaryFile: Awaited<ReturnType<typeof fs.open>> | null = null;
+      let temporaryCreated = false;
+      try {
+        temporaryFile = await fs.open(temporaryPath, "wx", 0o600);
+        temporaryCreated = true;
+        await temporaryFile.writeFile(
+          `${JSON.stringify(value, null, 2)}\n`,
+          "utf8",
+        );
+        await temporaryFile.sync();
+        await temporaryFile.close();
+        temporaryFile = null;
+
+        const metadata = await fs.lstat(outputPath);
+        if (!metadata.isFile() || metadata.isSymbolicLink()) {
+          throw new Error(
+            "Refusing to replace a non-file issue #17 evidence path",
+          );
+        }
+        await fs.rename(temporaryPath, outputPath);
+      } catch (error) {
+        await temporaryFile?.close().catch(() => undefined);
+        if (temporaryCreated) {
+          await fs.rm(temporaryPath, { force: true });
+        }
+        throw error;
+      }
+    },
+  };
 }
 
 async function markWorkflowMeasurementStarted(scenarioId: string): Promise<void> {
@@ -1564,6 +2281,174 @@ test("cadence scheduler rebases delayed host timers without a catch-up burst", (
   );
   expect(insufficientLoad.onTimeRatio).toBe(0);
   expect(insufficientLoad.valid).toBe(false);
+});
+
+test("clock tolerance is uniform for key and action diagnostics at ordinary and epoch magnitudes", () => {
+  const exactBoundary =
+    CROSS_CONTEXT_CLOCK_TOLERANCE_MS + CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS;
+  const epochSentAt = 1_791_889_003_401.6;
+  const epochStartedAt = 1_791_889_003_399.5999;
+  expect(epochSentAt - epochStartedAt).toBe(2.000244140625);
+  for (const [sentAt, startedAt, valid] of [
+    [exactBoundary, 0, true],
+    [exactBoundary + 0.000001, 0, false],
+    [100, 97.999755859375, true],
+    [epochSentAt, epochStartedAt, true],
+    [100, 97.99, false],
+    [epochSentAt, epochSentAt - 2.01, false],
+  ] as const) {
+    const action: ActionDiagnostic = {
+      action: "process_key",
+      enqueuedAt: sentAt - 1,
+      sentAt,
+      workerStartedAt: startedAt,
+      workerFinishedAt: startedAt + 4,
+      receivedAt: sentAt + 5,
+      queueWaitMs: 1,
+      workerRoundtripMs: 5,
+      workerMs: 4,
+      workerBaseElapsedMs: 4,
+      workerAmplificationMs: 0,
+      totalMs: 6,
+    };
+    const diagnostic: PerfDiagnostic = {
+      input: "a", renderedInput: "a", renderRevision: 1,
+      keydownAt: sentAt - 2,
+      workerQueuedAt: sentAt - 1,
+      workerSentAt: sentAt,
+      workerStartedAt: startedAt,
+      workerFinishedAt: startedAt + 4,
+      responseReceivedAt: sentAt + 5,
+      responseMappingStartedAt: sentAt + 5,
+      responseMappingFinishedAt: sentAt + 6,
+      stateAppliedAt: sentAt + 7,
+      paintObservedAt: sentAt + 8,
+      candidateCount: 6, totalCandidateCount: 6,
+      workerQueueWaitMs: 1, workerProcessMs: 4, workerRoundtripMs: 5,
+      workerBaseElapsedMs: 4, workerAmplificationMs: 0,
+      responseMappingMs: 1, reactUpdateMs: 1, paintProxyMs: 1,
+      totalWorkerActionMs: 6, totalKeydownToPaintMs: 10,
+    };
+    expect(rawTimelineIsValid([sentAt, startedAt])).toBe(valid);
+    expect(actionTimingIsValid(action)).toBe(valid);
+    expect(diagnosticTimingIsValid(diagnostic)).toBe(valid);
+  }
+});
+
+test("issue #17 cadence allows isolated delays across exactly 108 within-syllable gaps", () => {
+  const samples = () => ISSUE17_SWEEP_INPUTS.map((input, inputIndex) => ({
+    input,
+    diagnostics: Array.from({ length: input.length }, (_, index) => ({
+      keydownAt: inputIndex * 10_000 + index * 250,
+    }) as PerfDiagnostic),
+  }));
+  const isolatedDelay = samples();
+  isolatedDelay[0].diagnostics.slice(1).forEach((sample) => {
+    sample.keydownAt += 120;
+  });
+  const cadence = summarizeIssue17Cadence(isolatedDelay);
+  expect(cadence.gapCount).toBe(108);
+  expect(cadence.delayedGapCount).toBe(1);
+  expect(cadence.onTimeRatio).toBe(107 / 108);
+  expect(cadence.valid).toBe(true);
+  expect(summarizeCadence(isolatedDelay[0].diagnostics, 250, 0).delayedGaps)
+    .toEqual([{ afterKeyIndex: 1, gapMs: 370 }]);
+
+  const fullyDelayedInput = samples();
+  fullyDelayedInput[0].diagnostics.forEach((sample, index) => {
+    sample.keydownAt += index * 120;
+  });
+  const fullyDelayedCadence = summarizeIssue17Cadence(fullyDelayedInput);
+  expect(fullyDelayedCadence.onTimeRatio).toBe(106 / 108);
+  expect(fullyDelayedCadence.valid).toBe(false);
+  expect(
+    summarizeCadence(fullyDelayedInput[0].diagnostics, 250, 0)
+      .onTimeGapCount,
+  ).toBe(0);
+
+  const excessiveDelays = samples();
+  excessiveDelays.slice(0, 11).forEach((scenario) => {
+    scenario.diagnostics.slice(1).forEach((sample) => { sample.keydownAt += 120; });
+  });
+  expect(summarizeIssue17Cadence(excessiveDelays).valid).toBe(false);
+  for (const mutate of [
+    (rows: PerfDiagnostic[]) => { rows[1].keydownAt = rows[0].keydownAt + 199; },
+    (rows: PerfDiagnostic[]) => { rows[1].keydownAt = Number.NaN; },
+    (rows: PerfDiagnostic[]) => { rows.pop(); },
+    (rows: PerfDiagnostic[]) => { rows.push({ keydownAt: 750 } as PerfDiagnostic); },
+  ]) {
+    const malformed = samples();
+    mutate(malformed[0].diagnostics);
+    expect(summarizeIssue17Cadence(malformed).valid).toBe(false);
+  }
+});
+
+test("issue #17 production-input parser ignores Rust line comments and rejects drift", () => {
+  const source = `const BOUNDED_PAGE_SYLLABLES: &[&str] = &[\n${ISSUE17_SWEEP_INPUTS
+    .map((input) => `    "${input}",`)
+    .join("\n")}\n    // Multi-syllable inputs:\n    "jigaa",\n];\n`;
+  expect(issue17InputsMatchProductionSource(source)).toBe(true);
+  const changed = source.replace(
+    /(const BOUNDED_PAGE_SYLLABLES:[\s\S]*?)"jau"/, '$1"jaa"',
+  );
+  expect(changed).not.toBe(source);
+  expect(issue17InputsMatchProductionSource(changed)).toBe(false);
+  expect(issue17InputsMatchProductionSource(source.replace(
+    "// Multi-syllable inputs:", "// Missing boundary:",
+  ))).toBe(false);
+  expect(issue17InputsMatchProductionSource(source.replace(
+    '    "wan",', '    // "wan",',
+  ))).toBe(false);
+  expect(issue17InputsMatchProductionSource(source.replace(
+    '    "wan",', '    "wan", // active entry',
+  ))).toBe(true);
+});
+
+test("issue #17 worker stress accepts only exact timer-resolution zero with a measured calibration", () => {
+  const timerResolutionZero: Issue17WorkerStressSample = {
+    workerStartedAt: 100,
+    workerFinishedAt: 100,
+    workerProcessMs: 0,
+    workerBaseElapsedMs: 0,
+    workerAmplificationMs: 0,
+    workerActionMultiplier: RELEASE_WORKER_ACTION_MULTIPLIER,
+    workerEffectiveMultiplier: undefined,
+  };
+  const measuredRatio: Issue17WorkerStressSample = {
+    workerStartedAt: 100,
+    workerFinishedAt: 100.8,
+    workerProcessMs: 0.8,
+    workerBaseElapsedMs: 0.2,
+    workerAmplificationMs: 0.6,
+    workerActionMultiplier: RELEASE_WORKER_ACTION_MULTIPLIER,
+    workerEffectiveMultiplier: 4,
+  };
+  const zeroEvaluation = evaluateIssue17WorkerStress(timerResolutionZero);
+  const measuredEvaluation = evaluateIssue17WorkerStress(measuredRatio);
+  expect(zeroEvaluation).toEqual({
+    valid: true,
+    classification: "timer-resolution-zero",
+  });
+  expect(measuredEvaluation).toEqual({
+    valid: true,
+    classification: "measured-ratio",
+  });
+  for (const inconsistent of [
+    { ...timerResolutionZero, workerAmplificationMs: 0.1 },
+    { ...timerResolutionZero, workerFinishedAt: 100.1 },
+    { ...timerResolutionZero, workerEffectiveMultiplier: 4 },
+    { ...timerResolutionZero, workerActionMultiplier: 1 },
+    { ...measuredRatio, workerEffectiveMultiplier: undefined },
+  ]) {
+    expect(evaluateIssue17WorkerStress(inconsistent)).toEqual({
+      valid: false,
+      classification: "invalid",
+    });
+  }
+  expect(issue17WorkerStressProfileIsValid([zeroEvaluation])).toBe(false);
+  expect(
+    issue17WorkerStressProfileIsValid([zeroEvaluation, measuredEvaluation]),
+  ).toBe(true);
 });
 
 test(
@@ -1844,6 +2729,7 @@ test("WEB-03 input latency hard stop covers all public schemas and learned TypeD
       },
       timings: {
         crossContextClockToleranceMs: CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+        crossContextClockRoundingSlackMs: CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS,
         derivedDeltaRoundingToleranceMs:
           DERIVED_DELTA_ROUNDING_TOLERANCE_MS,
         valid: timingProfileValid,
@@ -2490,3 +3376,387 @@ async function runNormalTypingCanary(
     throw error;
   }
 }
+
+(ISSUE17_SWEEP_ENABLED ? test : test.skip)(
+  "issue #17 bounded-page syllable sweep stays within the browser latency ceiling @issue17-sweep",
+  async ({ page }, testInfo) => {
+    const { createHash } = await import("node:crypto");
+    const serializedInputs = JSON.stringify(ISSUE17_SWEEP_INPUTS);
+    const inputKeyCount = ISSUE17_SWEEP_INPUTS.reduce(
+      (total, input) => total + input.length,
+      0,
+    );
+    const postReadyAssetRequests: AssetRequest[] = [];
+    let startupAssetRequests: AssetRequest[] = [];
+    let schemaSelectionRequests: AssetRequest[] = [];
+    const scenarios: Issue17SweepScenarioEvidence[] = [];
+    let pageSession: CDPSession | null = null;
+    let receipt: Issue17SweepEvidence = {
+      version: "issue17-bounded-page-latency-v2",
+      generatedAt: new Date().toISOString(),
+      url: null,
+      measurementCompleted: false,
+      passed: false,
+      failurePhase: "setup-not-started",
+      expectedSourceCommit: EXPECTED_SOURCE_COMMIT ?? null,
+      source: {
+        commit: null,
+        tree: null,
+        treeState: null,
+        publicArtifactManifestSha256: null,
+        schemaManifestSha256: null,
+        wasmSha256: null,
+        toolchain: null,
+      },
+      profile: {
+        schemaId: "jyut6ping3",
+        expectedVisibleCandidateCount: EXPECTED_VISIBLE_CANDIDATE_COUNT,
+        browserContext: "fresh-playwright-context",
+        userDictionaryState: "enabled-empty-profile",
+        keyIntervalMs: KEY_INTERVAL_MS,
+        mainThreadThrottle: CPU_THROTTLE_RATE,
+        workerActionMultiplier: WORKER_ACTION_MULTIPLIER,
+        crossContextClockToleranceMs: CROSS_CONTEXT_CLOCK_TOLERANCE_MS,
+        crossContextClockRoundingSlackMs: CROSS_CONTEXT_CLOCK_ROUNDING_SLACK_MS,
+        ceilingsMs: {
+          p95: P95_CEILING_MS,
+          max: MAX_CEILING_MS,
+        },
+      },
+      fontPreflight: {
+        measurementCompleted: false,
+        passed: false,
+        fontSetStatus: null,
+        faceCount: 0,
+        loadedFaceCount: 0,
+        identities: [],
+        requests: [],
+        loadErrors: [],
+        failures: ["font-preflight-not-complete"],
+      },
+      inputSet: {
+        serialization: "json-utf8",
+        sha256: createHash("sha256").update(serializedInputs).digest("hex"),
+        inputs: ISSUE17_SWEEP_INPUTS,
+        inputCount: ISSUE17_SWEEP_INPUTS.length,
+        expectedInputCount: ISSUE17_SWEEP_EXPECTED_INPUT_COUNT,
+        keyCount: inputKeyCount,
+        expectedKeyCount: ISSUE17_SWEEP_EXPECTED_KEY_COUNT,
+      },
+      cpuProfile: null,
+      aggregate: {
+        completedInputCount: 0,
+        diagnosticCount: 0,
+        summary: summarize([]),
+        cadence: summarizeIssue17Cadence([]),
+      },
+      scenarios,
+      startupAssetRequests,
+      schemaSelectionRequests,
+      checks: {},
+      failures: ["setup-not-complete"],
+    };
+    const evidenceFile = await createIssue17EvidenceFile(receipt);
+    const refreshReceipt = (
+      failurePhase: string,
+      measurementCompleted: boolean,
+    ): void => {
+      const diagnostics = scenarios.flatMap((scenario) => scenario.diagnostics);
+      const checkFailures = Object.entries(receipt.checks)
+        .filter(([, passed]) => !passed)
+        .map(([name]) => name);
+      const scenarioFailures = scenarios.flatMap((scenario) =>
+        scenario.failures.map((failure) => `${scenario.input}:${failure}`),
+      );
+      const failures = [...checkFailures, ...scenarioFailures];
+      receipt = {
+        ...receipt,
+        generatedAt: new Date().toISOString(),
+        url: page.url() === "about:blank" ? null : page.url(),
+        measurementCompleted,
+        passed: measurementCompleted && failures.length === 0,
+        failurePhase,
+        cpuProfile:
+          receipt.cpuProfile === null
+            ? null
+            : {
+                ...receipt.cpuProfile,
+                verifiedKeyCount: diagnostics.length,
+              },
+        aggregate: {
+          completedInputCount: scenarios.filter(
+            (scenario) => scenario.measurementCompleted,
+          ).length,
+          diagnosticCount: diagnostics.length,
+          summary: summarize(diagnostics),
+          cadence: summarizeIssue17Cadence(scenarios),
+        },
+        scenarios,
+        startupAssetRequests,
+        schemaSelectionRequests,
+        failures,
+      };
+    };
+    const persistReceipt = async (): Promise<void> => {
+      await evidenceFile.update(receipt);
+    };
+    const attachReceipt = async (): Promise<void> => {
+      await testInfo.attach("issue17-bounded-page-latency", {
+        body: `${JSON.stringify(receipt, null, 2)}\n`,
+        contentType: "application/json",
+      });
+    };
+
+    page.on("request", (request) => {
+      postReadyAssetRequests.push({
+        method: request.method(),
+        url: request.url(),
+      });
+    });
+
+    try {
+      receipt.failurePhase = "preflight";
+      receipt.checks = {
+        expectedSourceCommit:
+          EXPECTED_SOURCE_COMMIT !== undefined &&
+          /^[0-9a-f]{40}$/.test(EXPECTED_SOURCE_COMMIT),
+        exactInputCount:
+          ISSUE17_SWEEP_INPUTS.length ===
+          ISSUE17_SWEEP_EXPECTED_INPUT_COUNT,
+        exactKeyCount: inputKeyCount === ISSUE17_SWEEP_EXPECTED_KEY_COUNT,
+        productionInputList: issue17InputsMatchProductionSource(
+          await readIssue17ProductionSource(),
+        ),
+        uniqueInputs:
+          new Set(ISSUE17_SWEEP_INPUTS).size === ISSUE17_SWEEP_INPUTS.length,
+        loopbackPreview: IS_LOOPBACK_PREVIEW,
+        pinnedToolchainReceiptRequired: REQUIRE_PINNED_TOOLCHAIN_RECEIPT,
+        bindingMainThreadThrottle:
+          CPU_THROTTLE_RATE === RELEASE_CPU_THROTTLE_RATE,
+        bindingWorkerActionMultiplier:
+          WORKER_ACTION_MULTIPLIER === RELEASE_WORKER_ACTION_MULTIPLIER,
+        bindingKeyInterval: KEY_INTERVAL_MS === RELEASE_KEY_INTERVAL_MS,
+        bindingP95Ceiling: P95_CEILING_MS === RELEASE_P95_CEILING_MS,
+        bindingMaxCeiling: MAX_CEILING_MS === RELEASE_MAX_CEILING_MS,
+      };
+      refreshReceipt("preflight", false);
+      await persistReceipt();
+      const failedPreflight = Object.entries(receipt.checks)
+        .filter(([, passed]) => !passed)
+        .map(([name]) => name);
+      if (failedPreflight.length > 0) {
+        throw new Error(
+          `issue #17 sweep preflight failed: ${failedPreflight.join(", ")}`,
+        );
+      }
+
+      receipt.failurePhase = "source-identity";
+      const localSource = await readIssue17LocalSourceIdentity();
+      receipt.source = {
+        ...receipt.source,
+        commit: localSource.commit,
+        tree: localSource.tree,
+        treeState: localSource.treeState,
+      };
+      receipt.checks = {
+        ...receipt.checks,
+        localSourceCommit:
+          localSource.commit === EXPECTED_SOURCE_COMMIT &&
+          /^[0-9a-f]{40}$/.test(localSource.commit),
+        localSourceTree: /^[0-9a-f]{40}$/.test(localSource.tree),
+        cleanSourceTree: localSource.treeState === "clean",
+      };
+      refreshReceipt("source-identity", false);
+      await persistReceipt();
+      if (
+        !receipt.checks.localSourceCommit ||
+        !receipt.checks.localSourceTree ||
+        !receipt.checks.cleanSourceTree
+      ) {
+        throw new Error(
+          "issue #17 sweep requires the clean checkout named by YUNE_WEB_EXPECTED_SOURCE_COMMIT",
+        );
+      }
+
+      receipt.failurePhase = "browser-setup";
+      pageSession = await page.context().newCDPSession(page);
+      const mainThread = await applyAndVerifyMainThreadThrottle(
+        page,
+        pageSession,
+        CPU_THROTTLE_RATE,
+      );
+      receipt.cpuProfile = {
+        mainThread,
+        workerActionMultiplier: WORKER_ACTION_MULTIPLIER,
+        mechanism:
+          "main-cdp-plus-synthetic-keydown-worker-service-amplification",
+        workerStressScope: "loopback-preview",
+        verifiedKeyCount: 0,
+      };
+      await page.goto(
+        `/?yuneLatencyWorkerActionMultiplier=${WORKER_ACTION_MULTIPLIER}`,
+        {
+          waitUntil: "domcontentloaded",
+          timeout: APP_READY_TIMEOUT_MS,
+        },
+      );
+      await waitForAppReady(page);
+      startupAssetRequests = [...postReadyAssetRequests];
+      assertPublicSplitStartup(startupAssetRequests);
+      receipt.checks = {
+        ...receipt.checks,
+        servedManifestMatchesBuildInfo: false,
+        servedInventoryMatchesManifest: false,
+      };
+      const buildInfo = await readPublicBuildInfo(page, true);
+      receipt.source = {
+        commit: buildInfo.sourceCommit,
+        tree: localSource.tree,
+        treeState: buildInfo.sourceTreeState,
+        publicArtifactManifestSha256:
+          buildInfo.publicArtifactManifestSha256,
+        schemaManifestSha256: buildInfo.schemaManifestSha256,
+        wasmSha256: buildInfo.wasmSha256,
+        toolchain: buildInfo.toolchain,
+      };
+      receipt.checks = {
+        ...receipt.checks,
+        servedManifestMatchesBuildInfo: true,
+        servedInventoryMatchesManifest: true,
+        servedSourceCommit: buildInfo.sourceCommit === localSource.commit,
+        servedCleanSource: buildInfo.sourceTreeState === "clean",
+        pinnedToolchain: buildInfo.toolchain !== null,
+        mainThreadThrottle:
+          mainThread.requestedRate === RELEASE_CPU_THROTTLE_RATE,
+      };
+
+      receipt.failurePhase = "browser-setup:font-preflight";
+      receipt.fontPreflight = await preloadIssue17DeclaredFonts(
+        page,
+        postReadyAssetRequests,
+      );
+      receipt.checks = {
+        ...receipt.checks,
+        fontPreflightCompleted: receipt.fontPreflight.measurementCompleted,
+        declaredFontFaces: receipt.fontPreflight.faceCount > 0,
+        fontFaceSetLoaded: receipt.fontPreflight.fontSetStatus === "loaded",
+        allDeclaredFontFacesLoaded:
+          receipt.fontPreflight.loadedFaceCount ===
+          receipt.fontPreflight.faceCount,
+        fontPreflightPassed: receipt.fontPreflight.passed,
+      };
+      refreshReceipt("browser-setup:font-preflight", false);
+      await persistReceipt();
+      if (!receipt.fontPreflight.passed) {
+        throw new Error(
+          `issue #17 font preflight failed: ${receipt.fontPreflight.failures.join(", ")}`,
+        );
+      }
+
+      receipt.failurePhase = "browser-setup:schema-selection";
+      const schemaSelectionStart = postReadyAssetRequests.length;
+      await selectSchema(page, "jyut6ping3");
+      schemaSelectionRequests = postReadyAssetRequests.slice(
+        schemaSelectionStart,
+      );
+      const activeSchemaId = await page.evaluate(
+        () => document.documentElement.dataset.yuneActiveSchema ?? null,
+      );
+      const userDictionaryToggle = page
+        .getByLabel(/User Dictionary|\u7528\u6236\u8a5e\u5eab/)
+        .last();
+      await expect(userDictionaryToggle).toBeVisible({ timeout: 10_000 });
+      const userDictionaryEnabled = await userDictionaryToggle.isChecked();
+      receipt.checks = {
+        ...receipt.checks,
+        activeSchema: activeSchemaId === "jyut6ping3",
+        userDictionaryEnabled,
+      };
+      refreshReceipt("browser-setup:schema-selection", false);
+      await persistReceipt();
+      const failedSetup = Object.entries(receipt.checks)
+        .filter(([, passed]) => !passed)
+        .map(([name]) => name);
+      if (failedSetup.length > 0) {
+        throw new Error(
+          `issue #17 sweep browser setup failed: ${failedSetup.join(", ")}`,
+        );
+      }
+
+      receipt.failurePhase = "measurement";
+      for (const input of ISSUE17_SWEEP_INPUTS) {
+        const scenario = await measureIssue17SweepInput(
+          page,
+          input,
+          postReadyAssetRequests,
+        );
+        scenarios.push(scenario);
+        refreshReceipt(
+          scenario.measurementCompleted
+            ? `measurement:${input}`
+            : `measurement-incomplete:${input}`,
+          false,
+        );
+        await persistReceipt();
+        if (!scenario.measurementCompleted) {
+          break;
+        }
+      }
+
+      const aggregateSummary = summarize(
+        scenarios.flatMap((scenario) => scenario.diagnostics),
+      );
+      receipt.checks = {
+        ...receipt.checks,
+        allInputsMeasured:
+          scenarios.length === ISSUE17_SWEEP_EXPECTED_INPUT_COUNT &&
+          scenarios.every((scenario) => scenario.measurementCompleted),
+        allInputChecksPassed:
+          scenarios.length === ISSUE17_SWEEP_EXPECTED_INPUT_COUNT &&
+          scenarios.every((scenario) => scenario.passed),
+        aggregateDiagnosticCount:
+          scenarios.reduce(
+            (total, scenario) => total + scenario.diagnosticCount,
+            0,
+          ) === ISSUE17_SWEEP_EXPECTED_KEY_COUNT,
+        aggregateCadence: summarizeIssue17Cadence(scenarios).valid,
+        aggregateP95:
+          aggregateSummary.p95Ms !== null &&
+          aggregateSummary.p95Ms <= RELEASE_P95_CEILING_MS,
+        aggregateMax:
+          aggregateSummary.maxMs !== null &&
+          aggregateSummary.maxMs <= RELEASE_MAX_CEILING_MS,
+        noTimedAssetRequests: scenarios.every(
+          (scenario) => scenario.assetRequestsDuringMeasurement.length === 0,
+        ),
+      };
+      const measurementCompleted =
+        scenarios.length === ISSUE17_SWEEP_EXPECTED_INPUT_COUNT &&
+        scenarios.every((scenario) => scenario.measurementCompleted);
+      refreshReceipt(
+        measurementCompleted ? "complete" : "measurement-incomplete",
+        measurementCompleted,
+      );
+      await persistReceipt();
+      await attachReceipt();
+
+      for (const failure of receipt.failures) {
+        expect.soft(false, `issue #17 sweep failed: ${failure}`).toBe(true);
+      }
+      expect.soft(receipt.passed, "issue #17 sweep receipt must pass").toBe(true);
+    } catch (error) {
+      const failure =
+        error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+      refreshReceipt(receipt.failurePhase, false);
+      if (!receipt.failures.includes(failure)) {
+        receipt.failures.push(failure);
+      }
+      receipt.passed = false;
+      await persistReceipt().catch(() => undefined);
+      await attachReceipt().catch(() => undefined);
+      throw error;
+    } finally {
+      await pageSession?.detach().catch(() => undefined);
+    }
+  },
+);

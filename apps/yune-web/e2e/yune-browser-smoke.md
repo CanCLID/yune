@@ -101,8 +101,8 @@ texts. Because this exact input has no pinned external
 candidate-order fixture, the canary deliberately binds responsiveness and page
 shape only; it does not promote Yune's own output into an oracle.
 
-The default normal-typing run then commits `sikgaanei` as `食價你`, reloads
-the same browser profile, and retypes all nine keys at the same 100 ms cadence.
+The default normal-typing run then commits `cungfukhokzaap` as `重複學習`, reloads
+the same browser profile, and retypes all 14 keys at the same 100 ms cadence.
 The `typeduck-learned-userdb-retype` registry row explicitly uses learned
 user-dictionary state. It must prove that the committed row survived reload,
 retain every exact prefix and six-row page, and fetch no schema assets while
@@ -114,6 +114,69 @@ repeated letters. This is an unamplified regression guard, not an oracle claim
 or a change to the eight-scenario / 186-key stress matrix. The learned result
 is nested in `normal-typing-exact-input.json`; missing or incomplete learned
 evidence cannot produce a passing normal-typing receipt.
+
+Issue #17 has a separate, opt-in Jyutping bounded-page latency sweep. It uses
+the 47 bare syllables in the source-current Rust production-path sweep (155
+timed keys), a fresh browser profile, the six-row `jyut6ping3` page, and the
+same binding 4x/4x, 250 ms profile. The receipt retains the standard p95
+`<= 750 ms` and max `<= 1000 ms` fields.
+The source guard compares the ordered bare-syllable list with the Rust test
+before measurement and rejects drift. Each syllable has only 3-5 key samples,
+so its empirical p95 equals its maximum. The effective per-key ceiling is
+therefore 750 ms and the 1000 ms check is redundant in this lane. This is a
+prefix sweep, not a repeated-sample estimate of each syllable's latency
+distribution.
+The v2 receipt applies the 90% cadence ratio across exactly 108 within-syllable
+gaps, allowing isolated host delays while retaining each input's delayed-gap
+evidence. Every input must still have its exact gap count, finite timestamps,
+no catch-up gap below 200 ms, and at least one on-time gap; gaps between inputs
+are never counted. It checks page shape and timing only; candidate order remains
+blocked on the external TypeDuck v1.1.2 capture. The test is skipped unless
+`YUNE_WEB_ISSUE17_SWEEP=1`. The public runner explicitly disables this opt-in
+even if its parent environment enables it, preserving the eight-scenario /
+186-key release receipt. WEB-06 remains unchanged.
+
+Start a source-current pinned `public-demo/dist` preview in one terminal, then
+run the focused lane with a new external evidence directory:
+
+```bash
+npm --prefix apps/yune-web run preview -- --host 127.0.0.1 --port 4173 --strictPort --outDir public-demo/dist
+```
+
+```bash
+YUNE_WEB_ISSUE17_SWEEP=1 \
+YUNE_WEB_APP_URL=http://127.0.0.1:4173/ \
+YUNE_WEB_EXPECTED_SOURCE_COMMIT="$(git rev-parse HEAD)" \
+YUNE_WEB_REQUIRE_TOOLCHAIN_RECEIPT=1 \
+YUNE_WEB_LATENCY_EVIDENCE_DIR=/absolute/external/new-evidence-directory \
+YUNE_WEB_LATENCY_OUTPUT_DIR=/absolute/external/new-playwright-output-directory \
+npm --prefix apps/yune-web/e2e run test:e2e:input-latency -- \
+  --grep @issue17-sweep --workers=1 --retries=0
+```
+
+The test derives and records the tree for the expected commit from the clean
+local checkout, verifies the served artifact manifest and pinned toolchain,
+and exclusively creates `issue17-bounded-page-latency.json`. It refuses a path
+inside a Git worktree and refuses to overwrite an existing receipt. Use a
+canonical absolute external path: the shared path checker requires Python 3 on
+`PATH` and has a known case-alias limitation tracked in
+[#26](https://github.com/CanCLID/yune/issues/26). For this
+opt-in lane, every browser page request is recorded, and any request beginning
+during a timed input fails that input. The receipt starts incomplete before
+browser setup and retains partial diagnostics and named failures if setup or
+measurement stops.
+
+Before typing, this lane loads every declared font face and records its identity
+and final load status, so new candidate glyphs cannot trigger timed font fetches.
+This measures warmed font state and requires network access for external fonts;
+their URLs and statuses are recorded, but their bytes are not in the local
+artifact hash inventory.
+It records exact zero-duration worker samples as `timer-resolution-zero`, without
+inventing an effective multiplier, and requires a positive measured amplification
+sample for every syllable. All latency lanes and the independent public runner
+use a nominal 2 ms cross-context clock tolerance plus 0.001 ms floating-point
+rounding slack (about four ULPs at current epoch magnitude); a 2.01 ms reversal
+still fails.
 
 The Playwright file remains declaration-ordered with one worker and zero
 retries, but its normal and stress tests have independent failure semantics. A red

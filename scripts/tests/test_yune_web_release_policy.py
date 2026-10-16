@@ -407,6 +407,43 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
         self.assertIn('"buildInvoked": False', certify)
         self.assertNotIn("build-public-release.sh", certify)
 
+    def test_auto_promotion_only_dispatches_the_existing_gated_promotion(self):
+        workflows = REPO_ROOT / ".github" / "workflows"
+        deploy = (workflows / "deploy-yune-web.yml").read_text(encoding="utf-8")
+        rust = (workflows / "rust-checks.yml").read_text(encoding="utf-8")
+        auto = (workflows / "auto-promote-yune-web.yml").read_text(encoding="utf-8")
+        # workflow_run matches workflows by display name, and the promoter looks
+        # up the canary job and receipt artifact by name, so renaming any of them
+        # would silently stop every production release.
+        for workflow in (deploy, rust):
+            name = re.search(r"^name: (.+)$", workflow, re.MULTILINE).group(1)
+            self.assertIn(f"      - {name}\n", auto)
+        self.assertIn("    name: Source-pinned preview canary\n", deploy)
+        self.assertIn('select(.name == "Source-pinned preview canary")', auto)
+        self.assertIn(
+            "name: yune-web-preview-deployment-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            deploy,
+        )
+        self.assertIn("yune-web-preview-deployment-$SOURCE_SHA-$deploy_run-1", auto)
+        self.assertIn(
+            "if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'",
+            auto,
+        )
+        self.assertIn('[ "$current_main" = "$SOURCE_SHA" ]', auto)
+        self.assertIn('[ "$canary" = success ]', auto)
+        self.assertIn('[ "$rust_status/$rust_conclusion" = "completed/success" ]', auto)
+        self.assertIn("-f operation=production-promotion", auto)
+        self.assertIn("-f production_confirmation=PROMOTE_EXACT_PREVIEW_BYTES", auto)
+        # Credentials and uploads stay in deploy-yune-web.yml's upload jobs.
+        for forbidden in ("CLOUDFLARE", "wrangler", "secrets.", "actions/checkout"):
+            self.assertNotIn(forbidden, auto)
+        for command in (
+            "cargo fmt --check",
+            "cargo clippy --workspace --all-targets -- -D warnings",
+            "cargo test --workspace",
+        ):
+            self.assertIn(f"        run: {command}\n", rust)
+
     def test_certify_dist_alias_symlink_keeps_the_tree_clean(self):
         # certify-public-release.sh replaces public-demo/dist with a symlink to
         # the sealed extract, and the WEB03 gate then requires a clean tree. A

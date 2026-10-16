@@ -261,6 +261,16 @@ each credentialed upload reasserts that setting through the Pages API; the first
 green source-bound run then closes the migration. This changes pipeline placement, not engine behavior,
 latency/cadence policy, or the historical closeout evidence.
 
+2026-10-16 amendment: production promotion is automatic again. On 2026-07-19 the
+WEB-06 plan's per-milestone rule ("after a green preview, stop for explicit user
+approval") was copied into the shared workflow, which made every production
+release a manual `production-promotion` dispatch; no decision recorded that, and
+the rule now binds only WEB-06-measured bytes, which use the local promotion
+script. `auto-promote-yune-web.yml` now dispatches that same promotion once a
+push run's preview canary and the Rust checks both pass and the commit is still
+current `main`, so every exact-byte, receipt, and current-main check still runs.
+The added Rust checks gate stands in for the removed human approval.
+
 **D-47 / M59-DEFAULT-ON-REACHABILITY — Leading-single reachability is an
 engine-level default for every schema, and its measured per-keystroke cost gets a
 4-row owner-signed injection-on ceiling.** Per the owner amendment (2026-07-07,

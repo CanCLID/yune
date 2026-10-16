@@ -1,0 +1,100 @@
+name: Auto-promote yune-web
+
+# A push to main whose certified lane (build, certify, preview, deployed canary)
+# and Rust checks both pass is promoted to production by dispatching the
+# existing production-promotion operation of deploy-yune-web.yml. That run
+# re-checks the exact archive, the preview receipts, and that its source is
+# still current main before it uploads. Whichever of the two runs finishes
+# last triggers the dispatch; the other finds a gate not yet green and stops.
+on:
+  workflow_run:
+    workflows:
+      - Deploy yune-web certified artifact
+      - Rust checks
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  actions: write
+  contents: read
+
+# queue: max keeps every pending run. The default keeps only one, and a third
+# completion would cancel the pending run that was about to promote.
+concurrency:
+  group: auto-promote-yune-web
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  promote:
+    name: Dispatch production promotion for a fully green push
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Dispatch only when every gate passed for current main
+        run: |
+          set -euo pipefail
+          skip() {
+            printf 'No promotion for %s: %s\n' "$SOURCE_SHA" "$1"
+            exit 0
+          }
+          printf '%s\n' "$SOURCE_SHA" | grep -Eq '^[0-9a-f]{40}$' || {
+            printf 'workflow_run head_sha is not a full commit SHA.\n' >&2
+            exit 1
+          }
+
+          current_main="$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)"
+          [ "$current_main" = "$SOURCE_SHA" ] || skip "superseded by current main $current_main"
+
+          push_run() {
+            gh api "repos/$GH_REPO/actions/workflows/$1/runs?event=push&head_sha=$SOURCE_SHA&per_page=1" \
+              --jq '.workflow_runs[0] // empty | "\(.id) \(.status) \(.conclusion) \(.run_attempt)"'
+          }
+          deploy_line="$(push_run deploy-yune-web.yml)"
+          read -r deploy_run deploy_status deploy_conclusion deploy_attempt <<<"$deploy_line" || true
+          [ -n "${deploy_run:-}" ] || skip "no deploy push run"
+          [ "$deploy_status/$deploy_conclusion/$deploy_attempt" = "completed/success/1" ] \
+            || skip "deploy run $deploy_run is $deploy_status/$deploy_conclusion (attempt $deploy_attempt)"
+          canary="$(gh api "repos/$GH_REPO/actions/runs/$deploy_run/jobs?per_page=100" \
+            --jq '[.jobs[] | select(.name == "Source-pinned preview canary") | .conclusion][0] // "absent"')"
+          [ "$canary" = success ] || skip "deploy run $deploy_run has no green preview canary ($canary)"
+
+          rust_line="$(push_run rust-checks.yml)"
+          read -r rust_run rust_status rust_conclusion rust_attempt <<<"$rust_line" || true
+          [ -n "${rust_run:-}" ] || skip "no Rust checks push run"
+          [ "$rust_status/$rust_conclusion" = "completed/success" ] \
+            || skip "Rust checks run $rust_run is $rust_status/$rust_conclusion"
+
+          in_flight="$(gh api "repos/$GH_REPO/actions/workflows/deploy-yune-web.yml/runs?event=workflow_dispatch&head_sha=$SOURCE_SHA&per_page=100" \
+            --jq '[.workflow_runs[] | select(.status != "completed")] | length')"
+          [ "$in_flight" = 0 ] || skip "a deploy dispatch for this commit is already queued or running"
+          live="$(curl -fsSL --max-time 20 "https://yune-web.pages.dev/build-info.json?auto-promote=$GITHUB_RUN_ID" \
+            | jq -r '.sourceCommit // empty' || true)"
+          [ "$live" != "$SOURCE_SHA" ] || skip "production already serves it"
+
+          receipt="$RUNNER_TEMP/preview-deployment"
+          gh run download "$deploy_run" \
+            --name "yune-web-preview-deployment-$SOURCE_SHA-$deploy_run-1" \
+            --dir "$receipt"
+          grep -qx 'status=uploaded' "$receipt/deployment.txt" || skip "preview receipt does not record an upload"
+          archive="$(sed -n 's/^archive_sha256=//p' "$receipt/deployment.txt" | tail -n 1)"
+          printf '%s\n' "$archive" | grep -Eq '^[0-9a-f]{64}$' || {
+            printf 'Preview receipt has no archive SHA-256.\n' >&2
+            exit 1
+          }
+
+          gh workflow run deploy-yune-web.yml --ref main \
+            -f operation=production-promotion \
+            -f approved_preview_run_id="$deploy_run" \
+            -f approved_source_commit="$SOURCE_SHA" \
+            -f approved_archive_sha256="$archive" \
+            -f production_approval_record="auto-promote: deploy run $deploy_run (canary green) and Rust checks run $rust_run passed for $SOURCE_SHA" \
+            -f production_confirmation=PROMOTE_EXACT_PREVIEW_BYTES
+          printf 'Dispatched production promotion of %s from deploy run %s.\n' "$SOURCE_SHA" "$deploy_run"

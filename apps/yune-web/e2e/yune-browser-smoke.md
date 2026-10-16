@@ -137,8 +137,10 @@ The deployment-maintenance release boundary lives in
 `.github/workflows/deploy-yune-web.yml`. Cloudflare Pages does not run this
 timer-sensitive gate in its shared build VM. The workflow builds and certifies
 without secrets, uploads the exact archive to a preview, runs this deployed
-source-pinned canary there once, and stops. A separate, manually dispatched
-`production-promotion` run uploads the same archive only from a green preview run.
+source-pinned canary there once. When the Rust checks also pass and the commit is
+still current `main`, `auto-promote-yune-web.yml` dispatches the separate
+`production-promotion` run, which uploads the same archive only from a green
+preview run.
 The production alias then receives a source/toolchain/runtime-hash verification,
 not a duplicate latency measurement. Every `main` push is still classified;
 non-release documentation changes finish with a visible successful no-op.

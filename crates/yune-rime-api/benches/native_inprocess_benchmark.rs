@@ -2,7 +2,7 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     ffi::{CStr, CString},
     fmt, fs, mem,
-    os::raw::{c_char, c_int, c_void},
+    os::raw::{c_char, c_int},
     path::{Path, PathBuf},
     ptr,
     sync::Arc,
@@ -10,6 +10,10 @@ use std::{
 };
 
 use libloading::Library;
+
+// Only the Windows and macOS memory samplers take raw pointers.
+#[cfg(any(windows, target_os = "macos"))]
+use std::os::raw::c_void;
 use yune_core::{
     parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
     parse_rime_table_bin_advanced_data, parse_rime_table_bin_dictionary, rime_dict_source_checksum,

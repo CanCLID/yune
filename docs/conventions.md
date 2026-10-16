@@ -101,9 +101,11 @@ The repository spans Cargo/Rust, npm/TypeScript, and Emscripten/WASM.
   deployment-maintenance release boundary. It classifies every `main` push,
   builds and runs the unchanged
   WEB03-11 gate without deployment credentials, seals one source/hash-identified
-  artifact, and proves it on a Cloudflare preview; a separate, manually
-  dispatched `production-promotion` run then uploads those exact bytes by
-  Wrangler direct upload. A push whose own range touches a WEB-06 milestone
+  artifact, and proves it on a Cloudflare preview. When the Rust checks
+  (`rust-checks.yml`: fmt, clippy `-D warnings`, `cargo test --workspace`)
+  also pass and the commit is still current `main`, `auto-promote-yune-web.yml`
+  dispatches the separate `production-promotion` run, which uploads those exact
+  bytes by Wrangler direct upload. A push whose own range touches a WEB-06 milestone
   file is a recorded no-op until a later push without one. Cloudflare Git production/preview auto-builds are
   disabled before activation, and each credentialed upload checks that API
   interlock, so shared Pages build-host scheduling cannot turn benchmark timer

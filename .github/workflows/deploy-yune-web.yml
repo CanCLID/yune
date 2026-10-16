@@ -79,6 +79,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           SOURCE_REF: ${{ github.ref }}
           HEAD_SHA: ${{ github.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
           SETUP_RETRY_OF: ${{ inputs.setup_retry_of }}
           SETUP_RETRY_REASON: ${{ inputs.setup_retry_reason }}
         run: |
@@ -157,6 +158,7 @@ jobs:
           python3 scripts/classify_yune_web_release.py \
             --repo-root . \
             --base "$base" \
+            --marker-base "$PUSH_BEFORE_SHA" \
             --head "$HEAD_SHA" \
             --github-output "$GITHUB_OUTPUT"
 
@@ -730,7 +732,7 @@ jobs:
       - name: Seed preview canary receipt
         run: |
           printf 'PLAYWRIGHT_BROWSERS_PATH=%s/ms-playwright\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-          printf 'YUNE_WEB_LATENCY_OUTPUT_DIR=%s/preview-canary\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'YUNE_WEB_LATENCY_OUTPUT_DIR=%s/preview-canary/playwright\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
           printf 'YUNE_WEB_LATENCY_EVIDENCE_DIR=%s/preview-canary\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
           mkdir -p "$RUNNER_TEMP/preview-canary"
           {

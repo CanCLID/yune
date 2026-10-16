@@ -111,11 +111,15 @@ The deployment-maintenance path is
 `.github/workflows/deploy-yune-web.yml`. It runs on every `main` push so a
 documentation-only change receives an explicit successful no-op. A
 release-affecting change is built and measured once without secrets, sealed as
-a SHA-256-addressed archive, direct-uploaded to a preview, exercised by the
-source-pinned deployed canary, and then direct-uploaded unchanged to production.
-The final production check compares source, toolchain, manifest, WASM, schema,
-and runtime hashes with that archive. Measured reds have zero retries and never
-reach production.
+a SHA-256-addressed archive, direct-uploaded to a preview, and exercised by the
+source-pinned deployed canary. A green preview run stops there: production is a
+separate, manually dispatched `operation=production-promotion` run that uploads
+that exact archive unchanged. The final production check compares source,
+toolchain, manifest, WASM, schema, and runtime hashes with that archive.
+Measured reds have zero retries and never reach production. A push whose own
+commit range touches a WEB-06 milestone file (`WEB06_GOVERNED_PREFIXES` in
+`scripts/classify_yune_web_release.py`) is recorded as a WEB-06 handoff no-op
+instead; the next push without one builds `main` through this lane.
 
 Cloudflare project settings:
 
@@ -145,8 +149,9 @@ succeeded, and the source-pinned production canary passed. The public runtime
 keeps the status header but disables hidden diagnostics polling and excludes
 the development cockpit from the typing path.
 
-After migration activation, production releases are triggered automatically by
-release-affecting pushes to `main`. A manual workflow run is allowed only as an
-explicitly named premeasurement setup retry; a measured red is never rerun or
-discarded. Manual Wrangler uploads remain an emergency fallback and must use an
+Release-affecting pushes to `main` build, certify, and preview automatically;
+production changes only through the explicit `production-promotion` dispatch of
+a green preview run whose source is still current `main`. The only other manual
+workflow run is an explicitly named premeasurement setup retry; a measured red
+is never rerun or discarded. Manual Wrangler uploads remain an emergency fallback and must use an
 already-certified archive.

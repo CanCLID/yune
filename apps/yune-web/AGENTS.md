@@ -28,7 +28,8 @@ The shell is derived from the historical `TypeDuck-HK/TypeDuck-Web` app with pro
   WASM, and schema manifest must match it. The source-pinned GitHub release
   workflow is the maintenance release boundary: it runs this gate before any
   production upload, preserves every red, exercises the certified bytes through
-  a Cloudflare preview canary, and promotes the same hashed archive to production.
+  a Cloudflare preview canary, and stops; a manually dispatched
+  `production-promotion` run uploads the same hashed archive to production.
   Cloudflare Git auto-builds are disabled before the first direct-upload
   workflow is pushed, and each upload must reassert that setting through the
   Pages API. A post-upload artifact check does not replace

@@ -256,7 +256,8 @@ run_web03_gate() {
 }
 
 if [ "$certification_mode" = legacy ]; then
-	# The classifier alone selects this mode for a range with no WEB06 marker.
+	# The classifier alone selects this mode for a push whose own range has no
+	# WEB06 marker.
 	# It preserves the pre-WEB06 exact-artifact WEB03 gate and makes no WEB06
 	# evidence, canary, milestone, or Full claim.
 	run_web03_gate

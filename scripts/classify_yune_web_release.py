@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 from pathlib import Path, PurePosixPath
 
@@ -26,11 +27,13 @@ ROOT_RELEASE_PATHS = {
     "scripts/yune-web-wasm-build.sh",
 }
 
-# A commit range containing one of these milestone-owned paths cannot enter the
-# legacy build-on-push lane. WEB-06's binding browser evidence is attached to a
-# sealed local archive, and GitHub Actions has no reviewed immutable handoff for
-# those bytes. Keep this set deliberately narrow so a later, unrelated yune-web
-# release retains the pre-WEB-06 workflow.
+# A push whose own range (github.event.before..github.sha) adds, edits, or
+# deletes a milestone marker (WEB06_GOVERNED_PREFIXES) routes to the WEB06
+# handoff no-op instead of the legacy build-on-push lane. WEB-06's binding
+# browser evidence is attached to a sealed local archive, and GitHub Actions has
+# no reviewed immutable handoff for those bytes. The marker check is per push,
+# not per deployed range: the next push without a marker builds HEAD, including
+# earlier marker bytes, through the legacy lane, which makes no WEB06 claim.
 WEB06_GOVERNED_PATHS = {
     ".github/workflows/deploy-yune-web.yml",
     "apps/yune-web/e2e/package.json",
@@ -144,6 +147,26 @@ def changed_paths(repo_root: Path, base: str, head: str) -> list[str]:
     return [os.fsdecode(path) for path in result.stdout.split(b"\0") if path]
 
 
+def usable_marker_base(repo_root: Path, candidate: str, head: str) -> bool:
+    """A push's before SHA counts only if it is a real ancestor of head.
+
+    Branch creation (all zeros), a force push whose old tip is gone or not an
+    ancestor, or a missing value all fail this check.
+    """
+
+    if not re.fullmatch(r"[0-9a-f]{40}", candidate) or candidate == "0" * 40:
+        return False
+    return (
+        subprocess.run(
+            ["git", "merge-base", "--is-ancestor", candidate, head],
+            cwd=repo_root,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode
+        == 0
+    )
+
+
 def output_safe(value: str) -> str:
     """Keep one untrusted Git path from injecting a GitHub output record."""
 
@@ -155,59 +178,47 @@ def main() -> int:
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--base", required=True)
     parser.add_argument("--head", required=True)
+    # The push's github.event.before. Unusable values fall back to --base.
+    parser.add_argument("--marker-base", default="")
     parser.add_argument("--github-output", type=Path)
     args = parser.parse_args()
 
-    paths = changed_paths(args.repo_root.resolve(), args.base, args.head)
+    repo_root = args.repo_root.resolve()
+    paths = changed_paths(repo_root, args.base, args.head)
     release_paths = [path for path in paths if requires_release(path)]
-    web06_paths = [
-        path for path in release_paths if is_web06_governed_path(path)
-    ]
+    marker_base, fallback = args.marker_base, ""
+    if not usable_marker_base(repo_root, marker_base, args.head):
+        marker_base = args.base
+        fallback = " (push before SHA unusable; fell back to release base)"
+    marker_range = f"{marker_base}..{args.head}{fallback}"
     web06_markers = [
-        path for path in release_paths if is_web06_handoff_marker(path)
+        path
+        for path in changed_paths(repo_root, marker_base, args.head)
+        if requires_release(path) and is_web06_handoff_marker(path)
     ]
     required = bool(release_paths)
-    web06_handoff_required = bool(web06_markers)
     reason = (
         f"{len(release_paths)} release-affecting path(s): "
         f"{', '.join(output_safe(path) for path in release_paths[:12])}"
         if required
         else f"no release-affecting paths among {len(paths)} changed path(s)"
     )
-    print(f"release_required={'true' if required else 'false'}")
-    print(f"reason={reason}")
-    print(
-        "web06_handoff_required="
-        f"{'true' if web06_handoff_required else 'false'}"
+    web06_reason = (
+        f"{len(web06_markers)} milestone marker(s) in push range {marker_range}: "
+        f"{', '.join(output_safe(path) for path in web06_markers[:12])}"
+        if web06_markers
+        else f"no WEB06 milestone markers in push range {marker_range}"
     )
-    print(
-        "web06_reason="
-        + (
-            f"{len(web06_paths)} WEB06-governed path(s), "
-            f"{len(web06_markers)} milestone marker(s): "
-            f"{', '.join(output_safe(path) for path in web06_paths[:12])}"
-            if web06_handoff_required
-            else "no WEB06-governed release paths"
-        )
-    )
+    lines = [
+        f"release_required={'true' if required else 'false'}",
+        f"reason={reason}",
+        f"web06_handoff_required={'true' if web06_markers else 'false'}",
+        f"web06_reason={web06_reason}",
+    ]
+    print("\n".join(lines))
     if args.github_output is not None:
         with args.github_output.open("a", encoding="utf-8") as output:
-            output.write(f"release_required={'true' if required else 'false'}\n")
-            output.write(f"reason={reason}\n")
-            output.write(
-                "web06_handoff_required="
-                f"{'true' if web06_handoff_required else 'false'}\n"
-            )
-            output.write(
-                "web06_reason="
-                + (
-                    f"{len(web06_paths)} WEB06-governed path(s), "
-                    f"{len(web06_markers)} milestone marker(s): "
-                    f"{', '.join(output_safe(path) for path in web06_paths[:12])}\n"
-                    if web06_handoff_required
-                    else "no WEB06-governed release paths\n"
-                )
-            )
+            output.write("".join(f"{line}\n" for line in lines))
     return 0
 
 

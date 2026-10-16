@@ -28,6 +28,76 @@ def workflow_job(workflow: str, name: str) -> str:
     return match.group(0)
 
 
+def git(repo: Path, *args: str) -> str:
+    return subprocess.check_output(["git", *args], cwd=repo, text=True).strip()
+
+
+def commit_files(repo: Path, message: str, *relatives: str) -> str:
+    for relative in relatives:
+        target = repo / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(message + "\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-qm", message)
+    return git(repo, "rev-parse", "HEAD")
+
+
+def classify(repo: Path, base: str, head: str, marker_base: str) -> str:
+    return subprocess.run(
+        [
+            "python3",
+            str(REPO_ROOT / "scripts" / "classify_yune_web_release.py"),
+            "--repo-root", str(repo),
+            "--base", base,
+            "--marker-base", marker_base,
+            "--head", head,
+        ],
+        check=True, stdout=subprocess.PIPE, text=True,
+    ).stdout
+
+
+class PushRangeMarkerTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.repo = Path(self.directory.name)
+        git(self.repo, "init", "-q")
+        git(self.repo, "config", "user.email", "release-policy@example.invalid")
+        git(self.repo, "config", "user.name", "Release Policy Test")
+        self.deployed = commit_files(self.repo, "deployed", "placeholder")
+        self.marker_push = commit_files(
+            self.repo, "marker", "apps/yune-web/e2e/web06-collector.mjs"
+        )
+        self.head = commit_files(self.repo, "later", "apps/yune-web/src/rime.ts")
+
+    def test_marker_in_push_range_requires_handoff(self):
+        out = classify(self.repo, self.deployed, self.marker_push, self.deployed)
+        self.assertIn("release_required=true\n", out)
+        self.assertIn("web06_handoff_required=true\n", out)
+        self.assertIn("milestone marker(s) in push range", out)
+
+    def test_marker_only_in_deployed_range_ships_through_legacy(self):
+        out = classify(self.repo, self.deployed, self.head, self.marker_push)
+        self.assertIn("release_required=true\n", out)
+        self.assertIn("reason=2 release-affecting path(s)", out)
+        self.assertIn("web06_handoff_required=false\n", out)
+        self.assertIn("no WEB06 milestone markers in push range", out)
+
+    def test_unusable_before_falls_back_to_release_base(self):
+        for before in (
+            "",
+            "0" * 40,
+            "1234567890abcdef1234567890abcdef12345678",
+            self.head,  # not an ancestor of marker_push
+            git(self.repo, "rev-parse", "HEAD^{tree}"),
+            self.marker_push.upper(),
+        ):
+            with self.subTest(before=before):
+                out = classify(self.repo, self.deployed, self.marker_push, before)
+                self.assertIn("web06_handoff_required=true\n", out)
+                self.assertIn("fell back to release base", out)
+
+
 class YuneWebReleasePolicyTests(unittest.TestCase):
     def test_workflow_does_not_override_reserved_github_environment_names(self):
         workflow = (
@@ -337,11 +407,42 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
         self.assertIn('"buildInvoked": False', certify)
         self.assertNotIn("build-public-release.sh", certify)
 
+    def test_certify_dist_alias_symlink_keeps_the_tree_clean(self):
+        # certify-public-release.sh replaces public-demo/dist with a symlink to
+        # the sealed extract, and the WEB03 gate then requires a clean tree. A
+        # trailing-slash pattern matches directories only, not that symlink.
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory) / "repo"
+            demo = repo / "apps" / "yune-web" / "public-demo"
+            demo.mkdir(parents=True)
+            (demo / ".gitignore").write_bytes(
+                (REPO_ROOT / "apps" / "yune-web" / "public-demo" / ".gitignore").read_bytes()
+            )
+            git(repo, "init", "-q")
+            git(repo, "config", "user.email", "release-policy@example.invalid")
+            git(repo, "config", "user.name", "Release Policy Test")
+            git(repo, "add", ".")
+            git(repo, "commit", "-qm", "baseline")
+            sealed = Path(directory) / "sealed-dist"
+            sealed.mkdir()
+            (demo / "dist").symlink_to(sealed, target_is_directory=True)
+            self.assertEqual(
+                git(repo, "status", "--porcelain", "--untracked-files=all"), ""
+            )
+
     def test_preview_stops_and_manual_production_reuses_prior_run_bytes(self):
         workflow = (
             REPO_ROOT / ".github" / "workflows" / "deploy-yune-web.yml"
         ).read_text(encoding="utf-8")
         preview_canary = workflow_job(workflow, "preview-canary")
+        # Playwright empties its outputDir on start, so the canary receipts that
+        # production promotion re-reads must live outside it.
+        self.assertIn(
+            "YUNE_WEB_LATENCY_OUTPUT_DIR=%s/preview-canary/playwright\\n", preview_canary
+        )
+        self.assertIn(
+            "YUNE_WEB_LATENCY_EVIDENCE_DIR=%s/preview-canary\\n", preview_canary
+        )
         classify = workflow_job(workflow, "classify")
         authorize_production = workflow_job(workflow, "authorize-production")
         validate_approved_preview = workflow_job(
@@ -519,6 +620,8 @@ class YuneWebReleasePolicyTests(unittest.TestCase):
         classify = workflow_job(workflow, "classify")
         self.assertIn("python3 -m unittest scripts.tests.test_yune_web_release_policy", classify)
         self.assertIn("python3 scripts/classify_yune_web_release.py", classify)
+        self.assertIn("PUSH_BEFORE_SHA: ${{ github.event.before }}", classify)
+        self.assertIn('--marker-base "$PUSH_BEFORE_SHA"', classify)
 
         secret_jobs = []
         for name in re.findall(r"^  ([a-zA-Z0-9_-]+):$", workflow, re.MULTILINE):

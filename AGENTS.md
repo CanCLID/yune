@@ -83,6 +83,10 @@ For partial progress, use `References #N` and put the PR link in the issue body;
 keep the issue open and avoid auto-closing or sidebar closing links until all
 acceptance criteria are met.
 
+Direct pushes to `main` are allowed; the maintainer works that way. Record the
+commit SHA and the exact verification commands and results in the owning issue,
+or in the commit message for maintenance or docs-only changes that have no issue.
+
 ## Canonical Docs - Read These
 
 - **[docs/conventions.md](./docs/conventions.md) - start here.** The single

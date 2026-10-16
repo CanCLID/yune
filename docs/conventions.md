@@ -385,6 +385,11 @@ that still needs external evidence. Re-read the current PR and issue text before
 publishing updates, preserve concurrent edits, and verify the published links,
 metadata, and descriptions afterward.
 
+**Direct pushes.** Pushing straight to `main` is allowed; the maintainer works
+that way. Record the commit SHA and the exact verification commands and results
+in the owning issue, or in the commit message for maintenance or docs-only
+changes that have no issue.
+
 **Evidence retention.** Raw benchmark output belongs under the user-level
 external evidence root selected by the benchmark scripts
 (`scripts/evidence-output-path.py`), never in a Git worktree. Compact curated

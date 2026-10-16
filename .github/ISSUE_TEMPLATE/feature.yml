@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Yune is target-driven: a librime feature is implemented only when a named target needs it. After submitting, set **Priority** and **Effort** in the Fields panel.
+        Yune is target-driven: a librime feature is implemented only when a named target needs it. After submitting, set **Priority** and **Effort** in the Fields panel. Before implementation, confirm the native **Type**, area label and any applicable work labels, then set the native roadmap parent and actual **blocked by** relationships listed below.
   - type: dropdown
     id: lane
     attributes:
@@ -15,6 +15,16 @@ body:
         - web
         - abi
         - platform
+    validations:
+      required: true
+  - type: textarea
+    id: relationships
+    attributes:
+      label: Relationships
+      description: Link the pinned roadmap parent and actual prerequisites. Set these as native GitHub relationships before implementation; this answer does not create them.
+      placeholder: |
+        Parent: #<roadmap issue>
+        Blocked by: #<prerequisite issue(s)> or None
     validations:
       required: true
   - type: textarea
@@ -28,7 +38,7 @@ body:
     id: goal
     attributes:
       label: Goal
-      description: The user-visible outcome, in plain language.
+      description: The user-visible outcome and scope, in plain language.
     validations:
       required: true
   - type: textarea

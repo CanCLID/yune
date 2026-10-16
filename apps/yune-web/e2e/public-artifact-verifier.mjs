@@ -65,6 +65,10 @@ export async function validateLocalBundle(distRootValue, expectedCommit) {
       throw new Error(`Local release bundle has unexpected toolchain field ${key}`);
     }
   }
+  // Historical bundles predate the npm receipt; any recorded version must match.
+  if (Object.hasOwn(buildInfo.toolchain, "npmVersion") && buildInfo.toolchain.npmVersion !== "11.16.0") {
+    throw new Error("Local release bundle has unexpected toolchain field npmVersion");
+  }
   if (sha256(manifestBytes) !== buildInfo.publicArtifactManifestSha256) {
     throw new Error("Local public artifact manifest does not match build-info.json");
   }

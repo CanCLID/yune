@@ -96,6 +96,25 @@ test("local artifact reconciliation rejects the wrong source identity", async ()
   }
 });
 
+test("npm receipts accept the pin and reject a recorded mismatch", async () => {
+  const root = await fixture();
+  try {
+    const buildInfoPath = path.join(root, "build-info.json");
+    const buildInfo = JSON.parse(await readFile(buildInfoPath, "utf8"));
+    await validateLocalBundle(root, sourceCommit); // Historical receipt without npm.
+    buildInfo.toolchain.npmVersion = "11.16.0";
+    await writeFile(buildInfoPath, JSON.stringify(buildInfo));
+    await validateLocalBundle(root, sourceCommit);
+    for (const npmVersion of ["10.9.2", null]) {
+      buildInfo.toolchain.npmVersion = npmVersion;
+      await writeFile(buildInfoPath, JSON.stringify(buildInfo));
+      await assert.rejects(validateLocalBundle(root, sourceCommit), /toolchain field npmVersion/);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("local artifact reconciliation rejects duplicate inventory paths", async () => {
   const root = await fixture();
   try {

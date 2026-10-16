@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -15,6 +16,13 @@ from scripts.classify_yune_web_release import (
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+RELEASE_TOOLCHAIN = (
+    REPO_ROOT
+    / "apps"
+    / "yune-web"
+    / "public-demo"
+    / "public-release-toolchain.sh"
+)
 
 
 def workflow_job(workflow: str, name: str) -> str:
@@ -99,6 +107,101 @@ class PushRangeMarkerTests(unittest.TestCase):
 
 
 class YuneWebReleasePolicyTests(unittest.TestCase):
+    def test_public_release_toolchain_selects_and_records_pinned_npm(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fake_bin = root / "bootstrap"
+            fake_bin.mkdir()
+            pinned_npm = root / "pinned-npm"
+            pinned_npm.write_text(
+                "#!/bin/sh\nprintf '11.16.0\\n'\n", encoding="utf-8"
+            )
+            pinned_npm.chmod(0o755)
+            bootstrap_npm = fake_bin / "npm"
+            bootstrap_npm.write_text(
+                """#!/bin/sh
+printf '%s\n' "$*" > "$YUNE_TEST_NPM_LOG"
+while [ "$1" != --prefix ]; do shift; done
+mkdir -p "$2/node_modules/.bin"
+cp "$YUNE_TEST_PINNED_NPM" "$2/node_modules/.bin/npm"
+""",
+                encoding="utf-8",
+            )
+            bootstrap_npm.chmod(0o755)
+            log = root / "npm.log"
+            result = subprocess.run(
+                [
+                    "bash",
+                    "-c",
+                    '. "$1"; yune_web_activate_npm; command -v npm; npm --version',
+                    "bash",
+                    str(RELEASE_TOOLCHAIN),
+                ],
+                cwd=REPO_ROOT,
+                env={
+                    **os.environ,
+                    "PATH": f"{fake_bin}:{os.environ['PATH']}",
+                    "YUNE_TEST_NPM_LOG": str(log),
+                    "YUNE_TEST_PINNED_NPM": str(pinned_npm),
+                    "YUNE_WEB_NPM_PREFIX": str(root / "pinned"),
+                },
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                result.stdout.splitlines(),
+                [str(root / "pinned" / "node_modules" / ".bin" / "npm"), "11.16.0"],
+            )
+            install = log.read_text(encoding="utf-8")
+            for name in ("package.json", "package-lock.json"):
+                self.assertEqual(
+                    (root / "pinned" / name).read_bytes(),
+                    (RELEASE_TOOLCHAIN.parent / "npm-toolchain" / name).read_bytes(),
+                )
+        for argument in (
+            "ci --prefix",
+            "--ignore-scripts",
+            "--registry=https://registry.npmjs.org",
+        ):
+            self.assertIn(argument, install)
+        build = (
+            REPO_ROOT / "apps" / "yune-web" / "public-demo" / "build.mjs"
+        ).read_text(encoding="utf-8")
+        self.assertIn("npmVersion: process.env.YUNE_WEB_NPM_VERSION", build)
+
+    def test_npm_bootstrap_lock_pins_registry_archive_integrity(self):
+        tool = RELEASE_TOOLCHAIN.parent / "npm-toolchain"
+        package = json.loads((tool / "package.json").read_text(encoding="utf-8"))
+        lock = json.loads((tool / "package-lock.json").read_text(encoding="utf-8"))
+        self.assertEqual(package["dependencies"], {"npm": "11.16.0"})
+        self.assertEqual(lock["packages"][""]["dependencies"], package["dependencies"])
+        npm = lock["packages"]["node_modules/npm"]
+        self.assertEqual(npm["version"], "11.16.0")
+        self.assertEqual(npm["resolved"], "https://registry.npmjs.org/npm/-/npm-11.16.0.tgz")
+        self.assertRegex(npm["integrity"], r"^sha512-[A-Za-z0-9+/]{86}==$")
+
+    def test_public_release_toolchain_rejects_mismatched_npm(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fake_npm = Path(directory) / "npm"
+            fake_npm.write_text("#!/bin/sh\nprintf '10.9.2\\n'\n", encoding="utf-8")
+            fake_npm.chmod(0o755)
+            result = subprocess.run(
+                [
+                    "bash",
+                    "-c",
+                    '. "$1"; yune_web_assert_npm_version',
+                    "bash",
+                    str(RELEASE_TOOLCHAIN),
+                ],
+                cwd=REPO_ROOT,
+                env={**os.environ, "PATH": f"{directory}:{os.environ['PATH']}"},
+                text=True,
+                capture_output=True,
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("10.9.2 (expected 11.16.0)", result.stderr)
+
     def test_workflow_does_not_override_reserved_github_environment_names(self):
         workflow = (
             REPO_ROOT / ".github" / "workflows" / "deploy-yune-web.yml"

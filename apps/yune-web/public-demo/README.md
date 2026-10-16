@@ -71,14 +71,27 @@ a missing learned result cannot pass.
 Set `YUNE_WEB_LATENCY_OUTPUT_DIR` to preserve its JSON packet outside the
 tracked tree. Rust/WASM changes must first rebuild and copy the source-current
 Emscripten artifacts as the release build below does. The release workflow
-builds with pinned Rust `1.96.1`, Emscripten `4.0.23`, and the Emscripten SDK's
-Node `22.16.0`, rejects ambient Rust compiler flags, requires that exact
+builds with pinned Rust `1.96.1`, Emscripten `4.0.23`, the Emscripten SDK's
+Node `22.16.0`, and repo-cached npm `11.16.0`, rejects ambient Rust compiler flags, requires that exact
 toolchain receipt, and fails before production upload on any red row. A manual
 deployed diagnostic sets both
 `YUNE_WEB_APP_URL=https://yune-web.pages.dev/` and
 `YUNE_WEB_EXPECTED_SOURCE_COMMIT` to the full deployed commit before running
 `test:e2e:input-latency`; routine releases instead run the canary against the
 candidate preview, then verify exact source and artifact hashes on production.
+
+Reproduce the pinned npm selection and both frozen installs from the repository root:
+
+```bash
+bash -c 'set -euo pipefail
+. apps/yune-web/public-demo/public-release-toolchain.sh
+yune_web_activate_release_toolchain
+npm --version
+npm --prefix packages/yune-web-runtime ci
+npm --prefix apps/yune-web ci'
+```
+
+The version line must be `11.16.0`. The helper uses `npm ci` with the checked-in `npm-toolchain/package-lock.json`, including the npm archive URL and SHA-512 integrity, to reinstall the tool under the ignored repository `.cache/` directory. It does not write to the user-global npm prefix or change the app/runtime lockfiles. New release artifacts record the measured version as `build-info.json` → `toolchain.npmVersion`; older artifacts without that additive field remain valid.
 
 ## Launch Assets
 

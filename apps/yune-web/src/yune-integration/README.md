@@ -13,6 +13,8 @@ yune-web browser harness to the repository-owned
   assets from `apps/yune-web/public/schema/`.
 - `response.ts` translates `YuneWebResponse` data into the app-visible result
   contract.
+- `action-toast.ts` decides which engine action outcomes raise the error toast:
+  only a rejected action does; a `handled: false` pass-through never does.
 
 ## Active Build Flow
 

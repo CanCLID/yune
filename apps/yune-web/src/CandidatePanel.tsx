@@ -23,6 +23,7 @@ import Rime, {
 } from "./rime";
 import { notify } from "./toast";
 import { isPrintable } from "./utils";
+import { engineActionToastType } from "./yune-integration/action-toast";
 import {
 	mapWeb06KeyboardEvent,
 	snapshotKeyboardEvent,
@@ -42,6 +43,7 @@ import {
 	web06SingleActionFanout,
 } from "./yune-integration/web06-app-action-map";
 
+import type { ToastType } from "./toast";
 import type {
 	InputState,
 	Preferences,
@@ -362,9 +364,10 @@ export default function CandidatePanel({
 			invalidateWeb06Measurement("MISSING_ACTION_IDENTITY", "RimeResult promise has no WEB-06 action identity");
 		}
 		void (async () => {
-			let type: "warning" | "error" | undefined;
+			let type: ToastType | undefined;
 			try {
 				const result = await promise;
+				type = engineActionToastType({ status: "fulfilled", value: result });
 				// FIFO actions must observe the DOM left by the preceding completed
 				// action, not the potentially stale DOM from their enqueue time.
 				const beforePresentation = observeWeb06Measurement(
@@ -377,9 +380,6 @@ export default function CandidatePanel({
 				onInspectorDebug?.(result.isComposing ? result.debug : undefined);
 				onInspectorCandidates?.(result.isComposing ? result.candidates : []);
 				onStatus?.(result.status);
-				if (!result.success) {
-					type = "warning";
-				}
 				const state = result.isComposing
 					? {
 						inputBuffer: result.inputBuffer,
@@ -527,7 +527,7 @@ export default function CandidatePanel({
 				hideDictionary();
 			}
 			catch (error) {
-				type = "error";
+				type = engineActionToastType({ status: "rejected", reason: error });
 				invalidateWeb06Measurement(
 					"ACTION_RESULT_ERROR",
 					error instanceof Error ? `${error.name}: ${error.message}` : String(error),

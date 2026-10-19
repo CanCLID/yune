@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use serde_json::Value;
 use yune_core::{
-    Candidate, CandidateFilter, CandidateSource, DictionaryLookupFilter, Engine,
-    ReverseLookupTranslator, RimeCorrectionEntry, SchemaBehaviorProfile, SchemaListTranslator,
-    SimplifierFilter, StaticTableTranslator, Status, TableDictionary, Translator, UserDb,
-    TYPEDUCK_SENTENCE_WORD_PENALTY,
+    parse_rime_prism_runtime_payload, parse_rime_table_bin_advanced_data, Candidate,
+    CandidateFilter, CandidateSource, CompactTableByteSource, CompactTableStore,
+    DictionaryLookupFilter, Engine, ReverseLookupTranslator, RimeCorrectionEntry,
+    SchemaBehaviorProfile, SchemaListTranslator, SimplifierFilter, StaticTableTranslator, Status,
+    TableDictionary, Translator, UserDb, TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 
 const ORACLE: &str = include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json");
@@ -1498,11 +1501,69 @@ fn typeduck_jyut6ping3_mobile_engine_with_options(
         &typeduck_public_schema_asset("jyut6ping3.dict.yaml"),
     )
     .expect("production jyut6ping3 dictionary should parse");
+    typeduck_jyut6ping3_mobile_engine_from_translator(
+        StaticTableTranslator::from_dictionary(translator_dictionary),
+        enable_correction,
+        enable_sentence,
+        combine_candidates,
+    )
+}
+
+#[derive(Debug)]
+struct PublicSchemaByteSource(Arc<[u8]>);
+
+impl CompactTableByteSource for PublicSchemaByteSource {
+    fn bytes(&self) -> &[u8] {
+        &self.0
+    }
+
+    fn storage_label(&self) -> &'static str {
+        "byte_backed"
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        "owned_bytes"
+    }
+}
+
+/// The engine every host ships: the compiled public `jyut6ping3.table.bin`
+/// and `jyut6ping3_mobile.prism.bin` (canonical compact storage), configured
+/// exactly like the source-dictionary engine above.
+fn typeduck_jyut6ping3_mobile_compiled_engine() -> Engine {
+    let read_bin = |relative_path: &str| {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../apps/yune-web/public/schema")
+            .join(relative_path);
+        std::fs::read(&path)
+            .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
+    };
+    let table = read_bin("jyut6ping3.table.bin");
+    let advanced = parse_rime_table_bin_advanced_data(&table)
+        .expect("public jyut6ping3 table advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table, advanced)
+        .expect("public jyut6ping3 table should parse");
+    let prism_bytes: Arc<[u8]> = read_bin("jyut6ping3_mobile.prism.bin").into();
+    let prism = parse_rime_prism_runtime_payload(Arc::new(PublicSchemaByteSource(prism_bytes)))
+        .expect("public jyut6ping3_mobile prism should parse");
+    typeduck_jyut6ping3_mobile_engine_from_translator(
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism)),
+        false,
+        true,
+        true,
+    )
+}
+
+fn typeduck_jyut6ping3_mobile_engine_from_translator(
+    translator: StaticTableTranslator,
+    enable_correction: bool,
+    enable_sentence: bool,
+    combine_candidates: bool,
+) -> Engine {
     let lookup_dictionary = TableDictionary::parse_typeduck_lookup_dict_yaml(
         &typeduck_public_schema_asset("jyut6ping3_scolar.dict.yaml"),
     )
     .expect("production jyut6ping3_scolar lookup dictionary should parse");
-    let mut translator = StaticTableTranslator::from_dictionary(translator_dictionary)
+    let mut translator = translator
         .with_completion(true)
         .with_correction(enable_correction)
         .with_dynamic_correction_lookup(true)
@@ -1899,6 +1960,48 @@ fn m21_prediction_count_matches_typeduck_v112_real_dictionary_goldens() {
             .map(|index| selected_candidate_text(expected, index))
             .collect::<Vec<_>>();
         assert_eq!(actual_texts, expected_texts, "input {input}");
+    }
+}
+
+#[test]
+fn m21_prediction_rows_match_typeduck_v112_on_compiled_public_assets() {
+    // Issue #20: every TypeDuck test above builds from the source dictionary,
+    // while hosts ship the compiled table and prism, whose canonical toned
+    // codes no multi-syllable input is a literal prefix of. The bounded first
+    // page and the complete list must keep the oracle's prediction rows there.
+    let m21 = m21_prediction_ranking_fixture();
+    let m24 = m24_dogfooding_fixture();
+    let mut engine = typeduck_jyut6ping3_mobile_compiled_engine();
+    engine.set_menu_page_size(6);
+
+    for (input, expected) in [
+        ("santai", m21_prediction_case(&m21, "santai")),
+        ("sigin", m21_prediction_case(&m21, "sigin")),
+        ("gwongdung", m21_prediction_case(&m21, "gwongdung")),
+        ("hoenggong", m21_prediction_case(&m21, "hoenggong")),
+        ("jigaa", m24_dogfooding_case(&m24, "jigaa")),
+    ] {
+        let expected_texts = (0..12)
+            .map(|index| selected_candidate_text(expected, index))
+            .collect::<Vec<_>>();
+        engine.set_input(input);
+        let bounded = engine
+            .context()
+            .candidates
+            .iter()
+            .take(6)
+            .map(|candidate| candidate.text.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(bounded, expected_texts[..6], "{input} bounded first page");
+        engine.ensure_complete_candidate_list();
+        let complete = engine
+            .context()
+            .candidates
+            .iter()
+            .take(12)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(complete, expected_texts, "{input} complete rows");
     }
 }
 

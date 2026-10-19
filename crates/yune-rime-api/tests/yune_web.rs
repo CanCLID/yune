@@ -50,6 +50,14 @@ const TYPEDUCK_V112_M28_PARTIAL_SELECTION: &str = include_str!(
 );
 const TYPEDUCK_V112_M21_CLOSEOUT: &str =
     include_str!("../../yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m21-closeout.json");
+const TYPEDUCK_V112_M21_PREDICTION_RANKING: &str = include_str!(
+    "../../yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m21-prediction-ranking.json"
+);
+const TYPEDUCK_V112_M24_DOGFOODING: &str =
+    include_str!("../../yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m24-dogfooding.json");
+const TYPEDUCK_V112_M58_REACHABILITY: &str = include_str!(
+    "../../yune-core/tests/fixtures/typeduck-v1.1.2/m58-typeduck-profile-reachability-capture.json"
+);
 const M28_UPSTREAM_JYUTPING_COMPOSITION: &str = include_str!(
     "../../yune-core/tests/fixtures/upstream-jyutping/jyutping-m28-followup-composition.json"
 );
@@ -2502,6 +2510,181 @@ fn yune_web_adapter_browser_app_assets_compose_reported_multi_syllable_words() {
 
     unsafe { yune_web_cleanup(state) };
     runtime.remove();
+}
+
+/// An unpatched TypeDuck v1.1.2 capture, comparable with the shipped schema.
+fn typeduck_v112_unpatched_case<'a>(fixture: &'a Value, variant: &str, input: &str) -> &'a Value {
+    let case = fixture["cases"]
+        .as_array()
+        .expect("TypeDuck fixture should contain cases")
+        .iter()
+        .find(|case| case["variant"] == variant && case["input"] == input)
+        .unwrap_or_else(|| panic!("TypeDuck fixture should capture {variant} {input}"));
+    assert_eq!(
+        case["patches"],
+        json!([]),
+        "{variant} {input} must be an unpatched capture to compare with the shipped schema"
+    );
+    case
+}
+
+fn typeduck_v112_case_texts(case: &Value) -> Vec<String> {
+    case["selected_candidates"]
+        .as_array()
+        .expect("TypeDuck case should contain captured candidates")
+        .iter()
+        .map(|candidate| {
+            candidate["text"]
+                .as_str()
+                .expect("TypeDuck candidate text should be a string")
+                .to_owned()
+        })
+        .collect()
+}
+
+/// Texts of the first `rows` candidates, paging forward from `page` the way a
+/// host does, so the bounded first page and the pages after it are covered.
+fn leading_candidate_texts(
+    state: *mut yune_rime_api::YuneWebState,
+    mut page: Value,
+    rows: usize,
+) -> Vec<String> {
+    let mut texts = Vec::new();
+    loop {
+        texts.extend(
+            page["context"]["candidates"]
+                .as_array()
+                .expect("candidate page should be an array")
+                .iter()
+                .filter_map(|candidate| candidate["text"].as_str().map(str::to_owned)),
+        );
+        if texts.len() >= rows || page["context"]["is_last_page"] == Value::Bool(true) {
+            texts.truncate(rows);
+            return texts;
+        }
+        page = response_json(unsafe { yune_web_flip_page(state, FALSE) });
+        assert_eq!(page["handled"], Value::Bool(true));
+    }
+}
+
+#[test]
+fn yune_web_adapter_browser_app_assets_keep_typeduck_prediction_rows() {
+    // Issue #20. Every host ships the compiled table.bin + prism, whose
+    // canonical toned codes (`san1tai2gin6hong1`) are never a literal prefix of
+    // an input that crosses a syllable (`santai`). TypeDuck v1.1.2 still shows
+    // its long-word prediction there (身體健康, 市建局, 廣東話, 香港人, 而家都,
+    // 唔該晒), so the compiled path must reach the same rows as the source
+    // dictionary. Expected rows come from the unpatched oracle captures; the
+    // single-syllable and `being` cases guard against predictions TypeDuck does
+    // not show. Pages are read at the shipped page size of 6.
+    let _guard = test_guard();
+    let m21: Value = serde_json::from_str(TYPEDUCK_V112_M21_PREDICTION_RANKING)
+        .expect("TypeDuck v1.1.2 M21 prediction-ranking fixture should parse");
+    let closeout: Value = serde_json::from_str(TYPEDUCK_V112_M21_CLOSEOUT)
+        .expect("TypeDuck v1.1.2 M21 closeout fixture should parse");
+    let m24: Value = serde_json::from_str(TYPEDUCK_V112_M24_DOGFOODING)
+        .expect("TypeDuck v1.1.2 M24 dogfooding fixture should parse");
+    let m58: Value = serde_json::from_str(TYPEDUCK_V112_M58_REACHABILITY)
+        .expect("TypeDuck v1.1.2 M58 reachability fixture should parse");
+
+    let runtime = YuneWebRuntime::create_with_schema(
+        "browser-app-typeduck-prediction-rows",
+        "jyut6ping3_mobile",
+    );
+    runtime.write_browser_app_assets();
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+    let config_id = CString::new("jyut6ping3_mobile.schema").expect("config id should be valid");
+    for (key, value) in [
+        ("menu/page_size", "6"),
+        ("translator/enable_completion", "true"),
+    ] {
+        let key = CString::new(key).expect("custom key should be valid");
+        let value = CString::new(value).expect("custom value should be valid");
+        assert_eq!(
+            unsafe { yune_web_customize(state, config_id.as_ptr(), key.as_ptr(), value.as_ptr()) },
+            TRUE
+        );
+    }
+    assert_eq!(unsafe { yune_web_deploy(state) }, TRUE);
+
+    // (fixture, variant, input, leading captured rows compared; usize::MAX is
+    // every captured row). Twelve rows are the bounded first page plus the
+    // next page; the santai and sigin tails are blocked separately, as are
+    // mgoi's correction rows after its prediction row.
+    let cases = [
+        (&m21, "prediction_ranking_mobile", "santai", 12),
+        (&m21, "prediction_ranking_mobile", "sigin", 12),
+        (&m21, "prediction_ranking_mobile", "gwongdung", usize::MAX),
+        (&m21, "prediction_ranking_mobile", "hoenggong", usize::MAX),
+        (&m24, "default_combined", "jigaa", usize::MAX),
+        (&closeout, "default_combined", "mgoi", 2),
+        (&closeout, "default_combined", "nei", 12),
+        (&closeout, "default_combined", "ngo", 12),
+        (&closeout, "default_combined", "hou", 12),
+        (&closeout, "default_combined", "m", 12),
+        (&m58, "smoke", "being", 12),
+    ];
+    let mut mismatches = Vec::new();
+    for (fixture, variant, input, rows) in cases {
+        let case = typeduck_v112_unpatched_case(fixture, variant, input);
+        let expected = typeduck_v112_case_texts(case);
+        let rows = rows.min(expected.len());
+        let page = process_input(state, input);
+        assert_eq!(page["context"]["page_size"], Value::from(6), "{input}");
+        assert_eq!(page["context"]["page_no"], Value::from(0), "{input}");
+        if variant == "prediction_ranking_mobile" {
+            // The prediction row carries the full dictionary entry, so its
+            // lookup comment must be the oracle's byte for byte.
+            let expected_comment = &case["selected_candidates"][1]["comment"];
+            let actual_comment = &page["context"]["candidates"][1]["comment"];
+            if actual_comment != expected_comment {
+                mismatches.push(format!(
+                    "{input} comment: expected {expected_comment}\n  actual {actual_comment}"
+                ));
+            }
+        }
+        let actual = leading_candidate_texts(state, page, rows);
+        if actual[..] != expected[..rows] {
+            mismatches.push(format!(
+                "{input}: expected {:?}\n  actual {actual:?}",
+                &expected[..rows]
+            ));
+        }
+        drop(response_json(unsafe {
+            yune_web_process_key(state, 0xff1b, 0)
+        }));
+    }
+    assert!(
+        mismatches.is_empty(),
+        "compiled browser assets diverged from the TypeDuck v1.1.2 leading rows:\n{}",
+        mismatches.join("\n")
+    );
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+#[ignore = "blocked: on the compiled table.bin + prism, mgoi rows 2-5 (唔過 五個 每個 芒果) come from TypeDuck's default-off dynamic near-lookup, whose anchor (`storage.has_code(lookup)`) and candidate scan compare the typed surface with canonical toned codes, and the shipped whole-word prism maps `mgo` only to ng5go3; needs its own canonical-storage fix before asserting the full m21-closeout mgoi page"]
+fn yune_web_adapter_browser_app_assets_mgoi_correction_rows_are_blocked() {
+    panic!(
+        "assert the full TypeDuck v1.1.2 m21-closeout default_combined mgoi page on the compiled browser assets once the canonical-storage near-lookup lands"
+    );
+}
+
+#[test]
+#[ignore = "blocked: past their first twelve rows the santai and sigin captures diverge on the source dictionary path too, independent of prediction: TypeDuck interleaves 沙啞/沙俄 and orders the rare san1/san4/san6 singles differently, and keeps both 謚 readings (si3, si6) where Yune shows one; assert every captured m21 prediction_ranking_mobile santai and sigin row once those orderings match"]
+fn yune_web_adapter_browser_app_assets_santai_sigin_capture_tails_are_blocked() {
+    panic!(
+        "assert the full TypeDuck v1.1.2 m21 prediction_ranking_mobile santai and sigin lists on the compiled browser assets once the tail orderings match"
+    );
 }
 
 #[test]

@@ -3141,9 +3141,10 @@ fn yune_web_adapter_real_assets_learned_multisegment_page_matches_complete_refre
     let _guard = test_guard();
     let runtime =
         YuneWebRuntime::create_with_schema("browser-real-learned-page", "jyut6ping3_mobile");
-    runtime.write_browser_real_assets();
+    runtime.write_browser_app_assets();
+    let store_path = runtime.user.join("jyut6ping3.userdb");
     fs::write(
-        runtime.user.join("jyut6ping3.userdb"),
+        &store_path,
         "\
 # yune userdb
 /db_name\tjyut6ping3
@@ -3151,12 +3152,16 @@ fn yune_web_adapter_real_assets_learned_multisegment_page_matches_complete_refre
 /tick\t311
 /user_id\tunknown
 /rime_version\t0.1.0
-cung4fuk1 hok6zaap6 \t重複學習\tc=5 d=4.134706437831298 t=234
 coeng4 jam1zit3 syu1jap6 cak1 si3 \t長音節輸入測試\tc=1 d=1 t=1
 fa n6 \tFAN-LEARNED\tc=1 d=1 t=1
 ",
     )
     .expect("seeded userdb should be written");
+    let seeded = fs::read_to_string(&store_path).expect("seeded userdb should be readable");
+    assert!(
+        !seeded.contains("\t重複學習\t"),
+        "fresh natural phrase must not be pre-seeded: {seeded}"
+    );
 
     let state = unsafe {
         yune_web_init(
@@ -3175,6 +3180,45 @@ fa n6 \tFAN-LEARNED\tc=1 d=1 t=1
     );
     assert_eq!(unsafe { yune_web_deploy(state) }, TRUE);
 
+    // This proves shipped-path commit/reload self-consistency, not external-oracle ordering.
+    let fresh = process_input(state, "cungfukhokzaap");
+    assert_eq!(fresh["context"]["page_size"], Value::from(6));
+    assert_eq!(fresh["context"]["page_no"], Value::from(0));
+    let fresh_page = classic_candidate_projection(&fresh);
+    assert_eq!(fresh_page[0]["text"], Value::String("重複學習".to_owned()));
+    assert_eq!(
+        fresh_page
+            .as_array()
+            .expect("page should be an array")
+            .iter()
+            .filter(|row| row["text"] == "重複學習")
+            .count(),
+        1,
+        "fresh page should contain exactly one natural sentence row: {fresh_page}"
+    );
+    let committed = response_json(unsafe { yune_web_process_key(state, ' ' as i32, 0) });
+    assert_eq!(
+        committed["commits"],
+        Value::Array(vec![Value::String("重複學習".to_owned())])
+    );
+    let persisted = fs::read_to_string(&store_path).expect("learned userdb should be readable");
+    assert!(
+        persisted
+            .lines()
+            .any(|line| line.starts_with("cung4fuk1 hok6zaap6 \t重複學習\tc=")),
+        "learned phrase should persist its full component code: {persisted}"
+    );
+
+    unsafe { yune_web_cleanup(state) };
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
     let mut mismatches = Vec::new();
     // Keep the learned, duplicate-heavy `fan` case alongside the natural phrases.
     // The long phrase is explicitly seeded; it is not a fresh sentence-order pin.
@@ -3190,8 +3234,8 @@ fa n6 \tFAN-LEARNED\tc=1 d=1 t=1
                 .iter()
                 .filter(|row| row["text"] == "重複學習")
                 .count();
-            assert!(
-                learned_rows >= 2,
+            assert_eq!(
+                learned_rows, 2,
                 "{input} page 0 should keep the sentence row and the learned row: {bounded_page}"
             );
         }

@@ -1820,6 +1820,10 @@ pub struct StaticTableTranslator {
     // while recomputing span promotion, ordering, and deduplication per call.
     // A single entry bounds ownership independently of typing history.
     prefix_fallback_window_cache: Mutex<Option<Arc<PrefixFallbackWindowCacheEntry>>>,
+    // The last input whose letters no canonical code spells to the end. Its
+    // extensions cannot spell a prediction prefix either, so a long sentence
+    // input stops re-walking the dead prefix on every keystroke.
+    canonical_prediction_dead_input: Mutex<Option<String>>,
     sentence_word_penalty: f32,
     spelling_algebra: SpellingAlgebra,
     spelling_algebra_formulas: Vec<String>,
@@ -1909,6 +1913,7 @@ impl StaticTableTranslator {
             max_leading_prefix_len_cache: OnceLock::new(),
             bounded_upstream_script_cache: Mutex::new(BoundedUpstreamScriptCache::default()),
             prefix_fallback_window_cache: Mutex::new(None),
+            canonical_prediction_dead_input: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra: SpellingAlgebra::default(),
             spelling_algebra_formulas: Vec::new(),
@@ -1993,6 +1998,7 @@ impl StaticTableTranslator {
             max_leading_prefix_len_cache: OnceLock::new(),
             bounded_upstream_script_cache: Mutex::new(BoundedUpstreamScriptCache::default()),
             prefix_fallback_window_cache: Mutex::new(None),
+            canonical_prediction_dead_input: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra: SpellingAlgebra::default(),
             spelling_algebra_formulas: Vec::new(),
@@ -2068,6 +2074,7 @@ impl StaticTableTranslator {
             max_leading_prefix_len_cache: OnceLock::new(),
             bounded_upstream_script_cache: Mutex::new(BoundedUpstreamScriptCache::default()),
             prefix_fallback_window_cache: Mutex::new(None),
+            canonical_prediction_dead_input: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra: SpellingAlgebra::default(),
             spelling_algebra_formulas: Vec::new(),
@@ -2156,6 +2163,7 @@ impl StaticTableTranslator {
             max_leading_prefix_len_cache: OnceLock::new(),
             bounded_upstream_script_cache: Mutex::new(BoundedUpstreamScriptCache::default()),
             prefix_fallback_window_cache: Mutex::new(None),
+            canonical_prediction_dead_input: Mutex::new(None),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra: SpellingAlgebra::default(),
             spelling_algebra_formulas: Vec::new(),
@@ -2173,6 +2181,7 @@ impl StaticTableTranslator {
     fn reset_bounded_translation_caches(&mut self) {
         self.bounded_upstream_script_cache = Mutex::new(BoundedUpstreamScriptCache::default());
         self.prefix_fallback_window_cache = Mutex::new(None);
+        self.canonical_prediction_dead_input = Mutex::new(None);
     }
 
     #[must_use]
@@ -2863,6 +2872,91 @@ impl StaticTableTranslator {
 
     fn bounds_compact_fallback_expansion(&self) -> bool {
         matches!(self.storage, TableStorage::Compact(_)) && self.prism_payload.is_some()
+    }
+
+    /// Compact prism storage keeps canonical toned codes (`san1tai2gin6hong1`)
+    /// where heap storage indexes algebra-expanded toneless surfaces
+    /// (`santaiginhong`), so an input that crosses a syllable boundary
+    /// (`santai`) is never a literal prefix of a stored code and the completion
+    /// scan cannot reach the long-word rows behind it. Return the canonical
+    /// prefixes that spell `lookup_code` with a tone digit closing each of two
+    /// or more syllables (`san1tai2`, `san4tai2`). The rows strictly longer than
+    /// one of them are exactly the rows heap storage classifies as limited
+    /// predictions for the same surface (`complete_syllable_prefix_count`).
+    /// Single-syllable prefixes are literal prefixes and stay on that scan.
+    fn canonical_prediction_prefixes(&self, lookup_code: &str) -> Vec<String> {
+        let letters = lookup_code.as_bytes();
+        if self.prediction_candidate_limit.is_none()
+            || !self.enable_completion
+            || !self.spelling_algebra_active
+            || !self.bounds_compact_fallback_expansion()
+            || letters.len() < 2
+            || !letters.iter().all(u8::is_ascii_lowercase)
+            || self.untoned_dictionary()
+        {
+            return Vec::new();
+        }
+        let mut dead_input = self
+            .canonical_prediction_dead_input
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if dead_input
+            .as_deref()
+            .is_some_and(|dead| lookup_code.starts_with(dead))
+        {
+            return Vec::new();
+        }
+        let mut prefixes = Vec::new();
+        let mut spelled_every_letter = false;
+        // (canonical prefix, input letters spelled, syllables closed)
+        let mut pending = vec![(String::new(), 0, 0)];
+        while let Some((prefix, spelled, syllables)) = pending.pop() {
+            let Some(&letter) = letters.get(spelled) else {
+                continue;
+            };
+            let mut open = prefix;
+            open.push(char::from(letter));
+            // Every continuation appends a letter or a tone digit, so a prefix
+            // is viable only while a strictly longer code exists.
+            if !self.storage.has_strict_code_prefix(&open) {
+                continue;
+            }
+            let spelled = spelled + 1;
+            spelled_every_letter |= spelled == letters.len();
+            for tone in '0'..='9' {
+                open.push(tone);
+                if self.storage.has_strict_code_prefix(&open) {
+                    if spelled < letters.len() {
+                        pending.push((open.clone(), spelled, syllables + 1));
+                    } else if syllables > 0 {
+                        prefixes.push(open.clone());
+                    }
+                }
+                open.pop();
+            }
+            if spelled < letters.len() {
+                pending.push((open, spelled, syllables));
+            }
+        }
+        if !spelled_every_letter {
+            *dead_input = Some(lookup_code.to_owned());
+        }
+        prefixes.sort_unstable();
+        prefixes
+    }
+
+    /// Rows strictly longer than a canonical prediction prefix, keyed by their
+    /// toneless code as heap storage keys the same rows. The prefix's own code
+    /// is an exact reading that the prism alias spec already serves.
+    fn canonical_prediction_rows<'a>(
+        &'a self,
+        prefix: &'a str,
+    ) -> impl Iterator<Item = (Cow<'a, str>, LookupCandidate<'a>)> + 'a {
+        self.storage
+            .prefix_candidates(prefix)
+            .map(LookupCandidateEntry::into_parts)
+            .filter(move |(code, _)| code.len() > prefix.len())
+            .map(|(code, candidate)| (Cow::Owned(normalized_original_code(&code)), candidate))
     }
 
     fn expanded_lookup_specs(&self, lookup_code: &str) -> Vec<LookupCodeSpec> {
@@ -5205,6 +5299,8 @@ impl StaticTableTranslator {
         let short_key_filter_start =
             (record_short_key && crate::m37_metrics_enabled()).then(Instant::now);
         let mut short_key_rows_scanned = 0usize;
+        // Declared before the pending vectors, which borrow rows through it.
+        let canonical_prediction_prefixes = self.canonical_prediction_prefixes(lookup_code);
         let mut selected = Vec::new();
         let mut capped_completions = Vec::new();
         let mut limited_predictions = Vec::new();
@@ -5312,8 +5408,20 @@ impl StaticTableTranslator {
             {
                 let prefix_start = LookupTimer::start();
                 let mut prefix_candidates = 0;
-                for entry in self.storage.prefix_candidates(spec_lookup_code) {
-                    let (entry_code, candidate) = entry.into_parts();
+                let canonical_prefixes: &[String] = if spec_lookup_code == lookup_code {
+                    &canonical_prediction_prefixes
+                } else {
+                    &[]
+                };
+                let canonical_prediction_rows = canonical_prefixes
+                    .iter()
+                    .flat_map(|prefix| self.canonical_prediction_rows(prefix));
+                for (entry_code, candidate) in self
+                    .storage
+                    .prefix_candidates(spec_lookup_code)
+                    .map(LookupCandidateEntry::into_parts)
+                    .chain(canonical_prediction_rows)
+                {
                     if entry_code == spec_lookup_code {
                         continue;
                     }
@@ -6127,11 +6235,21 @@ impl StaticTableTranslator {
                 let prefix_start = LookupTimer::start();
                 let mut prefix_lookup_candidates = 0;
                 let mut completion_candidates = Vec::new();
-                for entry in self.storage.prefix_candidates(lookup_code) {
-                    let (entry_code, candidate) = entry.into_parts();
-                    if !entry_code.starts_with(lookup_code) {
-                        break;
-                    }
+                let canonical_prediction_prefixes = if lookup_spec.tolerance {
+                    Vec::new()
+                } else {
+                    self.canonical_prediction_prefixes(lookup_code)
+                };
+                let canonical_prediction_rows = canonical_prediction_prefixes
+                    .iter()
+                    .flat_map(|prefix| self.canonical_prediction_rows(prefix));
+                for (entry_code, candidate) in self
+                    .storage
+                    .prefix_candidates(lookup_code)
+                    .map(LookupCandidateEntry::into_parts)
+                    .take_while(|(code, _)| code.starts_with(lookup_code))
+                    .chain(canonical_prediction_rows)
+                {
                     if entry_code == lookup_code {
                         continue;
                     }

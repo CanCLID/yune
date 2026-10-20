@@ -2672,7 +2672,7 @@ fn yune_web_adapter_browser_app_assets_keep_typeduck_prediction_rows() {
 }
 
 #[test]
-#[ignore = "blocked: on the compiled table.bin + prism, mgoi rows 2-5 (唔過 五個 每個 芒果) come from TypeDuck's default-off dynamic near-lookup, whose anchor (`storage.has_code(lookup)`) and candidate scan compare the typed surface with canonical toned codes, and the shipped whole-word prism maps `mgo` only to ng5go3; needs its own canonical-storage fix before asserting the full m21-closeout mgoi page"]
+#[ignore = "blocked: issue #31: on the compiled table.bin + prism, mgoi rows 2-5 (唔過 五個 每個 芒果) come from TypeDuck's default-off dynamic near-lookup, whose anchor (`storage.has_code(lookup)`) and candidate scan compare the typed surface with canonical toned codes, and the shipped whole-word prism maps `mgo` only to ng5go3; needs its own canonical-storage fix before asserting the full m21-closeout mgoi page"]
 fn yune_web_adapter_browser_app_assets_mgoi_correction_rows_are_blocked() {
     panic!(
         "assert the full TypeDuck v1.1.2 m21-closeout default_combined mgoi page on the compiled browser assets once the canonical-storage near-lookup lands"
@@ -2680,7 +2680,7 @@ fn yune_web_adapter_browser_app_assets_mgoi_correction_rows_are_blocked() {
 }
 
 #[test]
-#[ignore = "blocked: past their first twelve rows the santai and sigin captures diverge on the source dictionary path too, independent of prediction: TypeDuck interleaves 沙啞/沙俄 and orders the rare san1/san4/san6 singles differently, and keeps both 謚 readings (si3, si6) where Yune shows one; assert every captured m21 prediction_ranking_mobile santai and sigin row once those orderings match"]
+#[ignore = "blocked: issue #31: past their first twelve rows the santai and sigin captures diverge on the source dictionary path too, independent of prediction: TypeDuck interleaves 沙啞/沙俄 and orders the rare san1/san4/san6 singles differently, and keeps both 謚 readings (si3, si6) where Yune shows one; assert every captured m21 prediction_ranking_mobile santai and sigin row once those orderings match"]
 fn yune_web_adapter_browser_app_assets_santai_sigin_capture_tails_are_blocked() {
     panic!(
         "assert the full TypeDuck v1.1.2 m21 prediction_ranking_mobile santai and sigin lists on the compiled browser assets once the tail orderings match"
